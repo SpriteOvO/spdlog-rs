@@ -76,7 +76,7 @@ impl LocalTimeCacher {
     fn cache(utc_time: &DateTime<Utc>) -> LocalTimeCache {
         LocalTimeCache {
             last_secs: utc_time.timestamp(),
-            local_time: Into::<DateTime<Local>>::into(utc_time.clone()).into(),
+            local_time: Into::<DateTime<Local>>::into(*utc_time).into(),
         }
     }
 
