@@ -13,3 +13,11 @@ thiserror = "1.0"
 atty = "0.2"
 if_chain = "1.0"
 getset = "0.1"
+
+[dev-dependencies]
+crossbeam = "0.8"
+clap = { version = "3.0.0-rc.7", features = ["derive"] }
+
+[[bench]]
+name = "compare_with_cpp_spdlog"
+harness = false
