@@ -7,3 +7,9 @@ edition = "2021"
 name = "spdlog"
 
 [dependencies]
+log = { version = "0.4", features = ["std"] }
+chrono = "0.4"
+thiserror = "1.0"
+atty = "0.2"
+if_chain = "1.0"
+getset = "0.1"
