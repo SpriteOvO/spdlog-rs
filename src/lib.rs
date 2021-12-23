@@ -6,19 +6,20 @@
 
 pub mod error;
 pub mod formatter;
+mod log_macros;
 pub mod log_msg;
 pub mod logger;
 pub mod sink;
 pub mod str_buf;
 pub mod terminal;
 
-pub use log::{debug, error, info, log, trace, warn, Level, LevelFilter, Metadata, Record};
+pub use log::{Level, LevelFilter, Metadata, Record};
 
 pub use error::{Error, ErrorHandler, Result};
 pub use log_msg::LogMsg;
 pub use str_buf::StrBuf;
 
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 
 use sink::StdoutStyleSink;
 
@@ -32,4 +33,22 @@ pub fn init() {
     ))))
     .map(|()| log::set_max_level(log::LevelFilter::Info))
     .unwrap()
+}
+
+#[doc(hidden)]
+pub fn __private_log(
+    args: fmt::Arguments,
+    level: Level,
+    &(target, module_path, file, line): &(&str, &'static str, &'static str, u32),
+) {
+    log::logger().log(
+        &Record::builder()
+            .args(args)
+            .level(level)
+            .target(target)
+            .module_path_static(Some(module_path))
+            .file_static(Some(file))
+            .line(Some(line))
+            .build(),
+    );
 }
