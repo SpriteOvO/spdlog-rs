@@ -30,13 +30,7 @@ fn bench_mt(name: &str, logger: &dyn Logger, threads_count: usize, iters: usize)
         for _ in 0..threads_count {
             scope.spawn(|_| {
                 for i in 0..(iters / threads_count) {
-                    // TODO:
-                    // Replace this with `info!(logger: custom_logger, "")` when it is implemented
-                    logger.sink_record(
-                        &log::RecordBuilder::new()
-                            .args(format_args!("Hello logger: msg number {}", i))
-                            .build(),
-                    );
+                    info!(logger: logger, "Hello logger: msg number {}", i);
                 }
             });
         }

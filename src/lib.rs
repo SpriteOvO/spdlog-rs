@@ -21,27 +21,37 @@ pub use str_buf::StrBuf;
 
 use std::{fmt, sync::Arc};
 
+use lazy_static::lazy_static;
+
 use sink::StdoutStyleSink;
+
+lazy_static! {
+    static ref DEFAULT_LOGGER: Box<dyn logger::Logger> = Box::new(logger::BasicLogger::with_sink(
+        Arc::new(StdoutStyleSink::default())
+    ));
+}
 
 /// Initializes the crate
 ///
 /// Users should initialize early at runtime and should only initialize once.
-/// Any log messages generated before the crate is initialized will be ignored.
 pub fn init() {
-    log::set_boxed_logger(Box::new(logger::BasicLogger::with_sink(Arc::new(
-        StdoutStyleSink::default(),
-    ))))
-    .map(|()| log::set_max_level(log::LevelFilter::Info))
-    .unwrap()
+    lazy_static::initialize(&DEFAULT_LOGGER);
+    log::set_max_level(log::LevelFilter::Info);
+}
+
+/// Returns a reference to the default logger.
+pub fn default_logger() -> &'static dyn logger::Logger {
+    DEFAULT_LOGGER.as_ref()
 }
 
 #[doc(hidden)]
 pub fn __private_log(
+    logger: &dyn logger::Logger,
     args: fmt::Arguments,
     level: Level,
     &(target, module_path, file, line): &(&str, &'static str, &'static str, u32),
 ) {
-    log::logger().log(
+    logger.log(
         &Record::builder()
             .args(args)
             .level(level)

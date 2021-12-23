@@ -13,6 +13,7 @@ thiserror = "1.0"
 atty = "0.2"
 if_chain = "1.0"
 getset = "0.1"
+lazy_static = "1.4"
 
 [dev-dependencies]
 crossbeam = "0.8"
