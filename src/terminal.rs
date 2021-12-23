@@ -290,7 +290,6 @@ mod tests {
     // For guarantee `LEVEL_COUNT`
     #[test]
     fn level_count() {
-        Style::new().bold();
         assert_eq!(Level::max() as usize + 1, LEVEL_COUNT);
         assert_eq!(LevelFilter::max() as usize + 1, LEVEL_COUNT);
     }
