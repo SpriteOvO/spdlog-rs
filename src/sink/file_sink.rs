@@ -9,7 +9,7 @@ use std::{
 use crate::{
     formatter::{BasicFormatter, Formatter},
     sink::Sink,
-    LevelFilter, LogMsg, Result, StrBuf,
+    LevelFilter, Record, Result, StrBuf,
 };
 
 /// A sink with a file as the target.
@@ -48,9 +48,9 @@ impl FileSink {
 }
 
 impl Sink for FileSink {
-    fn log(&self, msg: &LogMsg) -> Result<()> {
+    fn log(&self, record: &Record) -> Result<()> {
         let mut str_buf = StrBuf::new();
-        self.formatter.format(msg, &mut str_buf)?;
+        self.formatter.format(record, &mut str_buf)?;
 
         let mut file = self.file.lock().unwrap();
         writeln!(file, "{}", str_buf)?;

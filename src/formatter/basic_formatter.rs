@@ -6,12 +6,13 @@ use chrono::prelude::*;
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
-    LogMsg, Result, StrBuf,
+    Record, Result, StrBuf,
 };
 
 /// A basic and default log message formatter.
 ///
-/// The log message formatted by it looks like this: `[2021-12-23 01:23:45.067] [INFO] log content`.
+/// The log message formatted by it looks like this:
+/// `[2021-12-23 01:23:45.067] [info] log message`.
 pub struct BasicFormatter {
     local_time_cacher: Mutex<LocalTimeCacher>,
 }
@@ -26,12 +27,13 @@ impl BasicFormatter {
 }
 
 impl Formatter for BasicFormatter {
-    fn format(&self, msg: &LogMsg, dest: &mut StrBuf) -> Result<FmtExtraInfo> {
-        let time = self.local_time_cacher.lock().unwrap().get(msg.time());
+    fn format(&self, record: &Record, dest: &mut StrBuf) -> Result<FmtExtraInfo> {
+        let time = self.local_time_cacher.lock().unwrap().get(record.time());
 
+        // TODO: Write the logger name, if any
         write!(
             dest,
-            "[{}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}] [{}] [",
+            "[{}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}] [",
             // `time.format("%Y-%m-%d %H:%M:%S.%3f")` is slower than this way
             time.year,
             time.month,
@@ -40,16 +42,15 @@ impl Formatter for BasicFormatter {
             time.minute,
             time.second,
             time.millisecond,
-            msg.target()
         )?;
 
         let style_range_begin = dest.len();
 
-        write!(dest, "{}", msg.level())?;
+        write!(dest, "{}", record.level())?;
 
         let style_range_end = dest.len();
 
-        write!(dest, "] {}", msg.payload())?;
+        write!(dest, "] {}", record.payload())?;
 
         Ok(FmtExtraInfo {
             style_range: Some(style_range_begin..style_range_end),
@@ -149,32 +150,24 @@ impl Time {
 
 #[cfg(test)]
 mod tests {
-    use log::RecordBuilder;
 
     use super::*;
     use crate::Level;
 
     #[test]
     fn format() {
-        let record = RecordBuilder::new()
-            .level(Level::Warn)
-            .target("target")
-            .args(format_args!("test log content"))
-            .build();
-
-        let msg = LogMsg::new(&record);
-
+        let record = Record::new(Level::Warn, "test log content");
         let mut buf = StrBuf::new();
-
-        let extra_info = BasicFormatter::new().format(&msg, &mut buf).unwrap();
+        let extra_info = BasicFormatter::new().format(&record, &mut buf).unwrap();
 
         assert_eq!(
             format!(
-                "[{}] [target] [WARN] test log content",
-                Into::<DateTime::<Local>>::into(msg.time().clone()).format("%Y-%m-%d %H:%M:%S.%3f")
+                "[{}] [warn] test log content",
+                Into::<DateTime::<Local>>::into(record.time().clone())
+                    .format("%Y-%m-%d %H:%M:%S.%3f")
             ),
             buf
         );
-        assert_eq!(Some(36..40), extra_info.style_range());
+        assert_eq!(Some(27..31), extra_info.style_range());
     }
 }

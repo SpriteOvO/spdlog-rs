@@ -4,10 +4,27 @@ pub mod basic_logger;
 
 pub use basic_logger::BasicLogger;
 
-use crate::{sink::Sinks, ErrorHandler, LevelFilter, Record};
+use crate::{sink::Sinks, ErrorHandler, Level, LevelFilter, Record};
 
 /// A trait for loggers.
-pub trait Logger: log::Log {
+pub trait Logger: Sync + Send {
+    /// Determines if a log message with the specified level would be
+    /// logged.
+    ///
+    /// This allows callers to avoid expensive computation of log message
+    /// arguments if the message would be discarded anyway.
+    fn enabled(&self, level: Level) -> bool;
+
+    /// Logs the `Record`.
+    ///
+    /// Note that `enabled` is *not* necessarily called before this method.
+    /// Implementations of `log` should perform all necessary filtering
+    /// internally.
+    fn log(&self, record: &Record);
+
+    /// Flushes any buffered records.
+    fn flush(&self);
+
     /// Getter of the log filter level.
     fn level(&self) -> LevelFilter;
 

@@ -6,7 +6,7 @@ use crate::{
     formatter::{BasicFormatter, Formatter},
     sink::Sink,
     terminal::{LevelStyleCodes, Style, StyleMode},
-    LevelFilter, LogMsg, Result, StrBuf,
+    LevelFilter, Record, Result, StrBuf,
 };
 
 /// A standard output stream style sink.
@@ -66,10 +66,10 @@ impl<S> Sink for StdOutStreamStyleSink<S>
 where
     S: Write + Send + Sync,
 {
-    fn log(&self, msg: &LogMsg) -> Result<()> {
+    fn log(&self, record: &Record) -> Result<()> {
         let mut str_buf = StrBuf::new();
 
-        let extra_info = self.formatter.format(msg, &mut str_buf)?;
+        let extra_info = self.formatter.format(record, &mut str_buf)?;
 
         let mut out_stream = self.out_stream.lock().unwrap();
 
@@ -77,7 +77,7 @@ where
             if self.should_render_style;
             if let Some(style_range) = extra_info.style_range();
             then {
-                let style_code = self.level_style_codes.code(msg.level().to_level_filter());
+                let style_code = self.level_style_codes.code(record.level().to_level_filter());
 
                 out_stream.write_all(str_buf[..style_range.start].as_bytes())?;
                 out_stream.write_all(style_code.start.as_bytes())?;
@@ -141,19 +141,18 @@ where
 pub(crate) mod macros {
     macro_rules! forward_style_sink_methods {
         ($struct_type:ident, $inner_name:ident) => {
-            use crate::{
-                sink::{macros::forward_sink_methods, StyleSink},
-                terminal::{Style, StyleMode},
-            };
+            $crate::sink::macros::forward_sink_methods!($struct_type, $inner_name);
 
-            forward_sink_methods!($struct_type, $inner_name);
-
-            impl StyleSink for $struct_type {
-                fn set_style(&mut self, level: LevelFilter, style: Style) {
+            impl $crate::sink::StyleSink for $struct_type {
+                fn set_style(
+                    &mut self,
+                    level: $crate::LevelFilter,
+                    style: $crate::terminal::Style,
+                ) {
                     self.$inner_name.set_style(level, style);
                 }
 
-                fn set_style_mode(&mut self, mode: StyleMode) {
+                fn set_style_mode(&mut self, mode: $crate::terminal::StyleMode) {
                     self.$inner_name.set_style_mode(mode);
                 }
             }
@@ -165,7 +164,6 @@ pub(crate) mod macros {
 #[cfg(test)]
 mod tests {
     use chrono::prelude::*;
-    use log::RecordBuilder;
 
     use super::*;
     use crate::{
@@ -181,15 +179,9 @@ mod tests {
 
         sink.set_style_mode(StyleMode::Always);
 
-        let record = RecordBuilder::new()
-            .level(Level::Warn)
-            .target("target")
-            .args(format_args!("test log content"))
-            .build();
+        let record = Record::new(Level::Warn, "test log content");
 
-        let msg = LogMsg::new(&record);
-
-        sink.log(&msg).unwrap();
+        sink.log(&record).unwrap();
 
         let style_code: StyleCode = StyleBuilder::new()
             .color(Color::Yellow)
@@ -199,8 +191,9 @@ mod tests {
 
         assert_eq!(
             format!(
-                "[{}] [target] [{}WARN{}] test log content\n",
-                Into::<DateTime::<Local>>::into(msg.time().clone()).format("%Y-%m-%d %H:%M:%S.%3f"),
+                "[{}] [{}warn{}] test log content\n",
+                Into::<DateTime::<Local>>::into(record.time().clone())
+                    .format("%Y-%m-%d %H:%M:%S.%3f"),
                 style_code.start,
                 style_code.end
             )
@@ -217,23 +210,17 @@ mod tests {
 
         sink.set_style_mode(StyleMode::Always);
 
-        let record = RecordBuilder::new()
-            .level(Level::Error)
-            .target("target")
-            .args(format_args!("test log content"))
-            .build();
-
-        let msg = LogMsg::new(&record);
+        let record = Record::new(Level::Error, "test log content");
 
         // log with the default style
-        sink.log(&msg).unwrap();
+        sink.log(&record).unwrap();
 
         // change the style, log again
         sink.set_style(
             LevelFilter::Error,
             StyleBuilder::new().color(Color::Cyan).build(),
         );
-        sink.log(&msg).unwrap();
+        sink.log(&record).unwrap();
 
         let before_style_code: StyleCode =
             StyleBuilder::new().color(Color::Red).bold().build().into();
@@ -242,12 +229,14 @@ mod tests {
 
         assert_eq!(
             format!(
-                "[{}] [target] [{}ERROR{}] test log content\n\
-                 [{}] [target] [{}ERROR{}] test log content\n",
-                Into::<DateTime::<Local>>::into(msg.time().clone()).format("%Y-%m-%d %H:%M:%S.%3f"),
+                "[{}] [{}error{}] test log content\n\
+                 [{}] [{}error{}] test log content\n",
+                Into::<DateTime::<Local>>::into(record.time().clone())
+                    .format("%Y-%m-%d %H:%M:%S.%3f"),
                 before_style_code.start,
                 before_style_code.end,
-                Into::<DateTime::<Local>>::into(msg.time().clone()).format("%Y-%m-%d %H:%M:%S.%3f"),
+                Into::<DateTime::<Local>>::into(record.time().clone())
+                    .format("%Y-%m-%d %H:%M:%S.%3f"),
                 now_style_code.start,
                 now_style_code.end
             )

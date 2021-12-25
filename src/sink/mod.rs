@@ -18,7 +18,7 @@ pub use stdout_style_sink::*;
 
 use std::sync::Arc;
 
-use crate::{formatter::Formatter, LevelFilter, LogMsg, Metadata, Result};
+use crate::{formatter::Formatter, Level, LevelFilter, Record, Result};
 
 /// A trait for sinks.
 ///
@@ -30,19 +30,19 @@ use crate::{formatter::Formatter, LevelFilter, LogMsg, Metadata, Result};
 ///
 /// [`Logger`]: crate::logger::Logger
 pub trait Sink: Sync + Send {
-    /// Determines if a log message with the specified metadata would be logged.
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= self.level()
+    /// Determines if a log message with the specified level would be logged.
+    fn enabled(&self, level: Level) -> bool {
+        level <= self.level()
     }
 
-    /// Logs the `msg`.
+    /// Logs the record.
     ///
     /// Internally filtering the log message level is redundant, it should be
     /// filtered by the caller by calling [`Sink::enabled`]. Its implementation
     /// should guarantee that it will never panic even if the caller did not
     /// filter it by calling [`Sink::enabled`], otherwise it should always
     /// filter these potential panic cases internally.
-    fn log(&self, msg: &LogMsg) -> Result<()>;
+    fn log(&self, record: &Record) -> Result<()>;
 
     /// Flushes any buffered records.
     fn flush(&self) -> Result<()>;
@@ -66,25 +66,23 @@ pub type Sinks = Vec<Arc<dyn Sink>>;
 pub(crate) mod macros {
     macro_rules! forward_sink_methods {
         ($struct_type:ident, $inner_name:ident) => {
-            use crate::{formatter::Formatter, sink::Sink, LevelFilter, LogMsg, Result};
-
-            impl Sink for $struct_type {
-                fn log(&self, msg: &LogMsg) -> Result<()> {
-                    self.$inner_name.log(msg)
+            impl $crate::sink::Sink for $struct_type {
+                fn log(&self, record: &$crate::Record) -> $crate::Result<()> {
+                    self.$inner_name.log(record)
                 }
-                fn flush(&self) -> Result<()> {
+                fn flush(&self) -> $crate::Result<()> {
                     self.$inner_name.flush()
                 }
-                fn level(&self) -> LevelFilter {
+                fn level(&self) -> $crate::LevelFilter {
                     self.$inner_name.level()
                 }
-                fn set_level(&mut self, level: LevelFilter) {
+                fn set_level(&mut self, level: $crate::LevelFilter) {
                     self.$inner_name.set_level(level)
                 }
-                fn formatter(&self) -> &dyn Formatter {
+                fn formatter(&self) -> &dyn $crate::formatter::Formatter {
                     self.$inner_name.formatter()
                 }
-                fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
+                fn set_formatter(&mut self, formatter: Box<dyn $crate::formatter::Formatter>) {
                     self.$inner_name.set_formatter(formatter)
                 }
             }

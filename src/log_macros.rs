@@ -24,12 +24,13 @@
 macro_rules! log {
     (logger: $logger:expr, $lvl:expr, $($arg:tt)+) => ({
         let lvl = $lvl;
-        if lvl <= log::STATIC_MAX_LEVEL && lvl <= log::max_level() {
-            $crate::__private_log(
-                $logger,
-                format_args!($($arg)+),
-                lvl,
-                &(module_path!(), module_path!(), file!(), line!()),
+        if lvl <= $crate::STATIC_MAX_LEVEL {
+            $logger.log(
+                &$crate::Record::with_source_location(
+                    lvl,
+                    &format_args!($($arg)+).to_string(),
+                    $crate::source_location_current!()
+                )
             );
         }
     });

@@ -3,7 +3,7 @@ use std::{io::Write, sync::Mutex};
 use crate::{
     formatter::{BasicFormatter, Formatter},
     sink::Sink,
-    LevelFilter, LogMsg, Result, StrBuf,
+    LevelFilter, Record, Result, StrBuf,
 };
 
 /// A standard output stream sink.
@@ -38,9 +38,9 @@ impl<S> Sink for StdOutStreamSink<S>
 where
     S: Write + Send + Sync,
 {
-    fn log(&self, msg: &LogMsg) -> Result<()> {
+    fn log(&self, record: &Record) -> Result<()> {
         let mut str_buf = StrBuf::new();
-        self.formatter.format(msg, &mut str_buf)?;
+        self.formatter.format(record, &mut str_buf)?;
 
         let mut out_stream = self.out_stream.lock().unwrap();
         writeln!(out_stream, "{}", str_buf)?;
@@ -74,7 +74,6 @@ where
 #[cfg(test)]
 mod tests {
     use chrono::prelude::*;
-    use log::RecordBuilder;
 
     use super::*;
     use crate::Level;
@@ -86,30 +85,20 @@ mod tests {
         let sink = StdOutStreamSink::new(&mut out_stream);
 
         let record = (
-            RecordBuilder::new()
-                .level(Level::Warn)
-                .target("target")
-                .args(format_args!("test log content 0"))
-                .build(),
-            RecordBuilder::new()
-                .level(Level::Info)
-                .target("target")
-                .args(format_args!("test log content 1"))
-                .build(),
+            Record::new(Level::Warn, "test log content 0"),
+            Record::new(Level::Info, "test log content 1"),
         );
 
-        let msg = (LogMsg::new(&record.0), LogMsg::new(&record.1));
-
-        sink.log(&msg.0).unwrap();
-        sink.log(&msg.1).unwrap();
+        sink.log(&record.0).unwrap();
+        sink.log(&record.1).unwrap();
 
         assert_eq!(
             format!(
-                "[{}] [target] [WARN] test log content 0\n\
-                 [{}] [target] [INFO] test log content 1\n",
-                Into::<DateTime::<Local>>::into(msg.0.time().clone())
+                "[{}] [warn] test log content 0\n\
+                 [{}] [info] test log content 1\n",
+                Into::<DateTime::<Local>>::into(record.0.time().clone())
                     .format("%Y-%m-%d %H:%M:%S.%3f"),
-                Into::<DateTime::<Local>>::into(msg.1.time().clone())
+                Into::<DateTime::<Local>>::into(record.1.time().clone())
                     .format("%Y-%m-%d %H:%M:%S.%3f")
             )
             .as_bytes(),

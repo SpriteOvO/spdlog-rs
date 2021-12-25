@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 use crate::{
     logger::Logger,
     sink::{Sink, Sinks},
-    ErrorHandler, LevelFilter, LogMsg, Metadata, Record,
+    ErrorHandler, Level, LevelFilter, Record,
 };
 
 /// A basic and default logger.
@@ -47,22 +47,20 @@ impl BasicLogger {
     }
 }
 
-impl log::Log for BasicLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        metadata.level() <= self.level
+impl Logger for BasicLogger {
+    fn enabled(&self, level: Level) -> bool {
+        level <= self.level
     }
 
     fn log(&self, record: &Record) {
-        if !self.enabled(record.metadata()) {
+        if !self.enabled(record.level()) {
             return;
         }
         self.sink_record(record);
     }
 
     fn flush(&self) {}
-}
 
-impl Logger for BasicLogger {
     fn level(&self) -> LevelFilter {
         self.level
     }
@@ -80,12 +78,9 @@ impl Logger for BasicLogger {
     }
 
     fn sink_record(&self, record: &Record) {
-        let metadata = record.metadata();
-        let log_msg = LogMsg::new(record);
-
         self.sinks.iter().for_each(|sink| {
-            if sink.enabled(metadata) {
-                if let Err(err) = sink.log(&log_msg) {
+            if sink.enabled(record.level()) {
+                if let Err(err) = sink.log(record) {
                     if let Some(handler) = self.error_handler.lock().unwrap().as_mut() {
                         handler(err)
                     }

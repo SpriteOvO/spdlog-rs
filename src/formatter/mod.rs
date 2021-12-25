@@ -6,7 +6,7 @@ pub use basic_formatter::*;
 
 use std::ops::Range;
 
-use crate::{LogMsg, Result, StrBuf};
+use crate::{Record, Result, StrBuf};
 
 /// A trait for log message formatters.
 ///
@@ -16,7 +16,7 @@ use crate::{LogMsg, Result, StrBuf};
 /// [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 pub trait Formatter: Send + Sync {
     /// Format a log message
-    fn format(&self, msg: &LogMsg, dest: &mut StrBuf) -> Result<FmtExtraInfo>;
+    fn format(&self, record: &Record, dest: &mut StrBuf) -> Result<FmtExtraInfo>;
 }
 
 /// Extra information for formatted text.
