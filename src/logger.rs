@@ -4,13 +4,14 @@ use std::sync::{Arc, Mutex};
 
 use crate::{
     sink::{Sink, Sinks},
-    ErrorHandler, Level, LevelFilter, Record,
+    Error, ErrorHandler, Level, LevelFilter, Record,
 };
 
 /// A logger structure.
 pub struct Logger {
     level: LevelFilter,
     sinks: Sinks,
+    flush_level: LevelFilter,
     error_handler: Mutex<Option<ErrorHandler>>,
 }
 
@@ -20,6 +21,7 @@ impl Logger {
         Logger {
             level: LevelFilter::Info,
             sinks: vec![],
+            flush_level: LevelFilter::Off,
             error_handler: Mutex::new(None),
         }
     }
@@ -29,6 +31,7 @@ impl Logger {
         Logger {
             level: LevelFilter::Info,
             sinks: vec![sink],
+            flush_level: LevelFilter::Off,
             error_handler: Mutex::new(None),
         }
     }
@@ -41,6 +44,7 @@ impl Logger {
         Logger {
             level: LevelFilter::Info,
             sinks: iter.into_iter().collect(),
+            flush_level: LevelFilter::Off,
             error_handler: Mutex::new(None),
         }
     }
@@ -67,7 +71,19 @@ impl Logger {
     }
 
     /// Flushes any buffered records.
-    pub fn flush(&self) {}
+    pub fn flush(&self) {
+        self.flush_sinks();
+    }
+
+    /// Getter of the flush level.
+    pub fn flush_level(&self) -> LevelFilter {
+        self.flush_level
+    }
+
+    /// Flushes any buffered records on the level or more severe.
+    pub fn set_flush_level(&mut self, level: LevelFilter) {
+        self.flush_level = level;
+    }
 
     /// Getter of the log filter level.
     pub fn level(&self) -> LevelFilter {
@@ -101,12 +117,32 @@ impl Logger {
         self.sinks.iter().for_each(|sink| {
             if sink.should_log(record.level()) {
                 if let Err(err) = sink.log(record) {
-                    if let Some(handler) = self.error_handler.lock().unwrap().as_mut() {
-                        handler(err)
-                    }
+                    self.handle_error(err);
                 }
             }
-        })
+        });
+
+        if self.should_flush(record) {
+            self.flush();
+        }
+    }
+
+    fn flush_sinks(&self) {
+        self.sinks.iter().for_each(|sink| {
+            if let Err(err) = sink.flush() {
+                self.handle_error(err);
+            }
+        });
+    }
+
+    fn handle_error(&self, err: Error) {
+        if let Some(handler) = self.error_handler.lock().unwrap().as_mut() {
+            handler(err)
+        }
+    }
+
+    fn should_flush(&self, record: &Record) -> bool {
+        record.level() <= self.flush_level
     }
 }
 
@@ -119,11 +155,40 @@ impl Default for Logger {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::*;
+    use crate::{debug, error, info, test_utils::*, trace, warn};
 
     #[test]
     fn send_sync() {
         assert_send::<Logger>();
         assert_sync::<Logger>();
+    }
+
+    #[test]
+    fn flush_level() {
+        let test_sink = Arc::new(TestSink::new());
+        let mut test_logger = Logger::with_sink(test_sink.clone());
+
+        trace!(logger: test_logger, "");
+        error!(logger: test_logger, "");
+        assert_eq!(test_sink.flush_counter(), 0);
+        test_sink.reset();
+
+        test_logger.set_flush_level(LevelFilter::Warn);
+        debug!(logger: test_logger, "");
+        warn!(logger: test_logger, "");
+        assert_eq!(test_sink.flush_counter(), 1);
+        test_sink.reset();
+
+        test_logger.set_flush_level(LevelFilter::Off);
+        info!(logger: test_logger, "");
+        trace!(logger: test_logger, "");
+        assert_eq!(test_sink.flush_counter(), 0);
+        test_sink.reset();
+
+        test_logger.set_flush_level(LevelFilter::Trace);
+        info!(logger: test_logger, "");
+        warn!(logger: test_logger, "");
+        assert_eq!(test_sink.flush_counter(), 2);
+        test_sink.reset();
     }
 }

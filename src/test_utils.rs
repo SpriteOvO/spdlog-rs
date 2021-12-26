@@ -36,6 +36,12 @@ impl TestSink {
     pub fn payloads(&self) -> Vec<String> {
         self.payloads.lock().unwrap().clone()
     }
+
+    pub fn reset(&self) {
+        *self.log_counter.lock().unwrap() = 0;
+        *self.flush_counter.lock().unwrap() = 0;
+        self.payloads.lock().unwrap().clear();
+    }
 }
 
 impl Sink for TestSink {
