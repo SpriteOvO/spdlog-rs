@@ -50,17 +50,17 @@ impl Logger {
     ///
     /// This allows callers to avoid expensive computation of log message
     /// arguments if the message would be discarded anyway.
-    pub fn enabled(&self, level: Level) -> bool {
+    pub fn should_log(&self, level: Level) -> bool {
         level <= self.level
     }
 
-    /// Logs the `Record`.
+    /// Logs the message.
     ///
-    /// Note that `enabled` is *not* necessarily called before this method.
+    /// Note that `should_log` is *not* necessarily called before this method.
     /// Implementations of `log` should perform all necessary filtering
     /// internally.
     pub fn log(&self, record: &Record) {
-        if !self.enabled(record.level()) {
+        if !self.should_log(record.level()) {
             return;
         }
         self.sink_record(record);
@@ -99,7 +99,7 @@ impl Logger {
 
     fn sink_record(&self, record: &Record) {
         self.sinks.iter().for_each(|sink| {
-            if sink.enabled(record.level()) {
+            if sink.should_log(record.level()) {
                 if let Err(err) = sink.log(record) {
                     if let Some(handler) = self.error_handler.lock().unwrap().as_mut() {
                         handler(err)

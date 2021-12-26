@@ -31,17 +31,17 @@ use crate::{formatter::Formatter, Level, LevelFilter, Record, Result};
 /// [`Logger`]: crate::logger::Logger
 pub trait Sink: Sync + Send {
     /// Determines if a log message with the specified level would be logged.
-    fn enabled(&self, level: Level) -> bool {
+    fn should_log(&self, level: Level) -> bool {
         level <= self.level()
     }
 
     /// Logs the record.
     ///
     /// Internally filtering the log message level is redundant, it should be
-    /// filtered by the caller by calling [`Sink::enabled`]. Its implementation
-    /// should guarantee that it will never panic even if the caller did not
-    /// filter it by calling [`Sink::enabled`], otherwise it should always
-    /// filter these potential panic cases internally.
+    /// filtered by the caller by calling [`Sink::should_log`]. Its
+    /// implementation should guarantee that it will never panic even if the
+    /// caller did not filter it by calling [`Sink::should_log`], otherwise it
+    /// should always filter these potential panic cases internally.
     fn log(&self, record: &Record) -> Result<()>;
 
     /// Flushes any buffered records.
