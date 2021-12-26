@@ -45,25 +45,16 @@ impl<'a> Record<'a> {
         }
     }
 
-    /// Constructs a `Record` with a [`SourceLocation`].
+    /// Constructs a [`RecordBuilder`].
     ///
     /// Typically users should only use it for testing [`Sink`].
     ///
     /// [`Sink`]: crate::sink::Sink
-    pub fn with_source_location<S>(
-        level: Level,
-        payload: S,
-        source_location: Option<SourceLocation>,
-    ) -> Record<'a>
+    pub fn builder<S>(level: Level, payload: S) -> RecordBuilder<'a>
     where
         S: Into<Cow<'a, str>>,
     {
-        Record {
-            level,
-            payload: payload.into(),
-            source_location,
-            time: Utc::now(),
-        }
+        RecordBuilder::new(level, payload)
     }
 
     /// The verbosity level of the message.
@@ -84,5 +75,45 @@ impl<'a> Record<'a> {
     /// The time of the message.
     pub fn time(&self) -> &DateTime<Utc> {
         &self.time
+    }
+}
+
+/// The builder of [`Record`].
+///
+/// Typically users should only use it for testing [`Sink`].
+///
+/// [`Sink`]: crate::sink::Sink
+pub struct RecordBuilder<'a> {
+    record: Record<'a>,
+}
+
+impl<'a> RecordBuilder<'a> {
+    /// Constructs a `RecordBuilder`.
+    ///
+    /// The default value is the same as [`Record::new()`].
+    ///
+    /// Typically users should only use it for testing [`Sink`].
+    ///
+    /// [`Sink`]: crate::sink::Sink
+    pub fn new<S>(level: Level, payload: S) -> Self
+    where
+        S: Into<Cow<'a, str>>,
+    {
+        Self {
+            record: Record::new(level, payload),
+        }
+    }
+
+    /// Sets the source location.
+    // `Option` in the parameter is for the convenience of passing the result of
+    // the macro `source_location_current` directly.
+    pub fn source_location(mut self, srcloc: Option<SourceLocation>) -> Self {
+        self.record.source_location = srcloc;
+        self
+    }
+
+    /// Builds a [`Record`].
+    pub fn build(self) -> Record<'a> {
+        self.record
     }
 }

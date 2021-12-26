@@ -34,11 +34,12 @@ macro_rules! log {
                 };
 
                 $logger.log(
-                    &$crate::Record::with_source_location(
+                    &$crate::Record::builder(
                         lvl,
-                        payload,
-                        $crate::source_location_current!()
+                        payload
                     )
+                    .source_location($crate::source_location_current!())
+                    .build()
                 );
             })(format_args!($($arg)+));
         }
