@@ -1,6 +1,6 @@
 //! Provides a basic and default logger.
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::{
     sink::{Sink, Sinks},
@@ -12,7 +12,7 @@ pub struct Logger {
     level: LevelFilter,
     sinks: Sinks,
     flush_level: LevelFilter,
-    error_handler: Mutex<Option<ErrorHandler>>,
+    error_handler: Option<ErrorHandler>,
 }
 
 impl Logger {
@@ -22,7 +22,7 @@ impl Logger {
             level: LevelFilter::Info,
             sinks: vec![],
             flush_level: LevelFilter::Off,
-            error_handler: Mutex::new(None),
+            error_handler: None,
         }
     }
 
@@ -32,7 +32,7 @@ impl Logger {
             level: LevelFilter::Info,
             sinks: vec![sink],
             flush_level: LevelFilter::Off,
-            error_handler: Mutex::new(None),
+            error_handler: None,
         }
     }
 
@@ -45,7 +45,7 @@ impl Logger {
             level: LevelFilter::Info,
             sinks: iter.into_iter().collect(),
             flush_level: LevelFilter::Off,
-            error_handler: Mutex::new(None),
+            error_handler: None,
         }
     }
 
@@ -109,8 +109,8 @@ impl Logger {
     ///
     /// If an error occurs while logging, this handler will be called. If no
     /// handler is set, the error will be ignored.
-    pub fn set_error_handler(&mut self, handler: ErrorHandler) {
-        self.error_handler.lock().unwrap().replace(handler);
+    pub fn set_error_handler(&mut self, handler: Option<ErrorHandler>) {
+        self.error_handler = handler;
     }
 
     fn sink_record(&self, record: &Record) {
@@ -136,7 +136,7 @@ impl Logger {
     }
 
     fn handle_error(&self, err: Error) {
-        if let Some(handler) = self.error_handler.lock().unwrap().as_mut() {
+        if let Some(handler) = &self.error_handler {
             handler(err)
         }
     }
