@@ -155,7 +155,7 @@ impl Default for Logger {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{debug, error, info, test_utils::*, trace, warn};
+    use crate::{prelude::*, test_utils::*};
 
     #[test]
     fn send_sync() {

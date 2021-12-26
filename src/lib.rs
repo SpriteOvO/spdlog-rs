@@ -61,6 +61,11 @@ pub use record::Record;
 pub use source_location::SourceLocation;
 pub use str_buf::StrBuf;
 
+/// Contains available log macros.
+pub mod prelude {
+    pub use super::{debug, error, info, log, trace, warn};
+}
+
 use std::sync::{Arc, RwLock};
 
 use cfg_if::cfg_if;
