@@ -2,11 +2,7 @@ use std::{env, sync::Arc, time::Instant};
 
 use clap::Parser;
 
-use spdlog::{
-    info,
-    logger::{self, Logger},
-    sink::*,
-};
+use spdlog::{info, sink::*, Logger};
 
 fn bench_threaded_logging(threads: usize, iters: usize) {
     info!("**********************************************************************");
@@ -19,11 +15,11 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
         .unwrap()
         .join("logs/FileSink.log");
 
-    let logger = logger::BasicLogger::with_sink(Arc::new(FileSink::new(path, true).unwrap()));
+    let logger = Logger::with_sink(Arc::new(FileSink::new(path, true).unwrap()));
     bench_mt("FileSink (basic_mt)", &logger, threads, iters);
 }
 
-fn bench_mt(name: &str, logger: &dyn Logger, threads_count: usize, iters: usize) {
+fn bench_mt(name: &str, logger: &Logger, threads_count: usize, iters: usize) {
     let start = Instant::now();
 
     crossbeam::thread::scope(|scope| {

@@ -1,57 +1,28 @@
 use std::sync::Mutex;
 
-use crate::{logger::Logger, sink::Sinks, ErrorHandler, Level, LevelFilter, Record};
+use crate::{
+    formatter::{BasicFormatter, Formatter},
+    sink::Sink,
+    LevelFilter, Record, Result,
+};
 
-#[derive(Default)]
-pub struct EmptyLogger {
-    sinks: Sinks,
-}
-
-impl EmptyLogger {
-    pub fn new() -> EmptyLogger {
-        EmptyLogger::default()
-    }
-}
-
-impl Logger for EmptyLogger {
-    fn enabled(&self, _level: Level) -> bool {
-        true
-    }
-
-    fn log(&self, _record: &Record) {}
-
-    fn flush(&self) {}
-
-    fn level(&self) -> LevelFilter {
-        LevelFilter::Info
-    }
-
-    fn set_level(&mut self, _level: LevelFilter) {}
-
-    fn sinks(&self) -> &Sinks {
-        &self.sinks
-    }
-
-    fn sinks_mut(&mut self) -> &mut Sinks {
-        self.sinks.as_mut()
-    }
-
-    fn sink_record(&self, _record: &Record) {}
-
-    fn set_error_handler(&mut self, _handler: ErrorHandler) {}
-}
-
-#[derive(Default)]
-pub struct TestLogger {
-    sinks: Sinks,
+pub struct TestSink {
+    level: LevelFilter,
+    formatter: Box<dyn Formatter>,
     log_counter: Mutex<usize>,
     flush_counter: Mutex<usize>,
     payloads: Mutex<Vec<String>>,
 }
 
-impl TestLogger {
-    pub fn new() -> TestLogger {
-        TestLogger::default()
+impl TestSink {
+    pub fn new() -> TestSink {
+        TestSink {
+            level: LevelFilter::Info,
+            formatter: Box::new(BasicFormatter::new()),
+            log_counter: Mutex::new(0),
+            flush_counter: Mutex::new(0),
+            payloads: Mutex::new(vec![]),
+        }
     }
 
     pub fn log_counter(&self) -> usize {
@@ -67,41 +38,40 @@ impl TestLogger {
     }
 }
 
-impl Logger for TestLogger {
-    fn enabled(&self, _level: Level) -> bool {
-        true
-    }
-
-    fn log(&self, record: &Record) {
+impl Sink for TestSink {
+    fn log(&self, record: &Record) -> Result<()> {
         *self.log_counter.lock().unwrap() += 1;
 
-        self.sink_record(record);
-    }
-
-    fn flush(&self) {
-        *self.flush_counter.lock().unwrap() += 1;
-    }
-
-    fn level(&self) -> LevelFilter {
-        LevelFilter::Info
-    }
-
-    fn set_level(&mut self, _level: LevelFilter) {}
-
-    fn sinks(&self) -> &Sinks {
-        &self.sinks
-    }
-
-    fn sinks_mut(&mut self) -> &mut Sinks {
-        self.sinks.as_mut()
-    }
-
-    fn sink_record(&self, record: &Record) {
         self.payloads
             .lock()
             .unwrap()
             .push(record.payload().to_string());
+
+        Ok(())
     }
 
-    fn set_error_handler(&mut self, _handler: ErrorHandler) {}
+    fn flush(&self) -> Result<()> {
+        *self.flush_counter.lock().unwrap() += 1;
+        Ok(())
+    }
+
+    fn level(&self) -> LevelFilter {
+        self.level
+    }
+
+    fn set_level(&mut self, level: LevelFilter) {
+        self.level = level;
+    }
+
+    fn formatter(&self) -> &dyn Formatter {
+        self.formatter.as_ref()
+    }
+
+    fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
+        self.formatter = formatter;
+    }
 }
+
+pub fn assert_send<T: Send>() {}
+
+pub fn assert_sync<T: Sync>() {}

@@ -30,9 +30,8 @@ pub struct Record<'a> {
 impl<'a> Record<'a> {
     /// Constructs a `Record`.
     ///
-    /// Typically users should only use it for testing [`Logger`] or [`Sink`].
+    /// Typically users should only use it for testing [`Sink`].
     ///
-    /// [`Logger`]: crate::logger::Logger
     /// [`Sink`]: crate::sink::Sink
     pub fn new<S>(level: Level, payload: S) -> Record<'a>
     where
@@ -48,9 +47,8 @@ impl<'a> Record<'a> {
 
     /// Constructs a `Record` with a [`SourceLocation`].
     ///
-    /// Typically users should only use it for testing [`Logger`] or [`Sink`].
+    /// Typically users should only use it for testing [`Sink`].
     ///
-    /// [`Logger`]: crate::logger::Logger
     /// [`Sink`]: crate::sink::Sink
     pub fn with_source_location<S>(
         level: Level,
