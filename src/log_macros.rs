@@ -25,13 +25,22 @@ macro_rules! log {
     (logger: $logger:expr, $lvl:expr, $($arg:tt)+) => ({
         let lvl = $lvl;
         if lvl <= $crate::STATIC_MAX_LEVEL {
-            $logger.log(
-                &$crate::Record::with_source_location(
-                    lvl,
-                    &format_args!($($arg)+).to_string(),
-                    $crate::source_location_current!()
-                )
-            );
+            (|fmt_args: std::fmt::Arguments| {
+                // use `Cow` to avoid allocation as much as we can
+                let payload: std::borrow::Cow<str> = if let Some(literal_str) = fmt_args.as_str() {
+                    literal_str.into() // no format arguments, so it is a `&'static str`
+                } else {
+                    fmt_args.to_string().into()
+                };
+
+                $logger.log(
+                    &$crate::Record::with_source_location(
+                        lvl,
+                        payload,
+                        $crate::source_location_current!()
+                    )
+                );
+            })(format_args!($($arg)+));
         }
     });
     ($lvl:expr, $($arg:tt)+) => ($crate::log!(logger: $crate::default_logger(), $lvl, $($arg)+))

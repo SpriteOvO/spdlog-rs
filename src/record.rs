@@ -1,5 +1,7 @@
 //! Provides a log message structure.
 
+use std::borrow::{Borrow, Cow};
+
 use chrono::prelude::*;
 
 use crate::{Level, SourceLocation};
@@ -20,7 +22,7 @@ use crate::{Level, SourceLocation};
 #[derive(Clone, Debug)]
 pub struct Record<'a> {
     level: Level,
-    payload: &'a str,
+    payload: Cow<'a, str>,
     source_location: Option<SourceLocation>,
     time: DateTime<Utc>,
 }
@@ -32,10 +34,13 @@ impl<'a> Record<'a> {
     ///
     /// [`Logger`]: crate::logger::Logger
     /// [`Sink`]: crate::sink::Sink
-    pub fn new(level: Level, payload: &'a str) -> Record {
+    pub fn new<S>(level: Level, payload: S) -> Record<'a>
+    where
+        S: Into<Cow<'a, str>>,
+    {
         Record {
             level,
-            payload,
+            payload: payload.into(),
             source_location: None,
             time: Utc::now(),
         }
@@ -47,14 +52,17 @@ impl<'a> Record<'a> {
     ///
     /// [`Logger`]: crate::logger::Logger
     /// [`Sink`]: crate::sink::Sink
-    pub fn with_source_location(
+    pub fn with_source_location<S>(
         level: Level,
-        payload: &'a str,
+        payload: S,
         source_location: Option<SourceLocation>,
-    ) -> Record {
+    ) -> Record<'a>
+    where
+        S: Into<Cow<'a, str>>,
+    {
         Record {
             level,
-            payload,
+            payload: payload.into(),
             source_location,
             time: Utc::now(),
         }
@@ -67,7 +75,7 @@ impl<'a> Record<'a> {
 
     /// The payload of the message.
     pub fn payload(&self) -> &str {
-        self.payload
+        self.payload.borrow()
     }
 
     /// The source location of the message.
