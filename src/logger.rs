@@ -9,6 +9,7 @@ use crate::{
 
 /// A logger structure.
 pub struct Logger {
+    name: Option<String>,
     level: LevelFilter,
     sinks: Sinks,
     flush_level: LevelFilter,
@@ -19,6 +20,7 @@ impl Logger {
     /// Constructs a empty `Logger`.
     pub fn new() -> Logger {
         Logger {
+            name: None,
             level: LevelFilter::Info,
             sinks: vec![],
             flush_level: LevelFilter::Off,
@@ -29,6 +31,11 @@ impl Logger {
     /// Constructs a [`LoggerBuilder`].
     pub fn builder() -> LoggerBuilder {
         LoggerBuilder::new()
+    }
+
+    /// Gets the logger name.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_ref().map(|s| s.as_ref())
     }
 
     /// Determines if a log message with the specified level would be
@@ -147,6 +154,15 @@ impl LoggerBuilder {
         Self {
             logger: Logger::new(),
         }
+    }
+
+    /// Sets the logger name.
+    pub fn name<S>(mut self, name: S) -> Self
+    where
+        S: Into<String>,
+    {
+        self.logger.name = Some(name.into());
+        self
     }
 
     /// Sets the log filter level.

@@ -21,6 +21,7 @@ use crate::{Level, SourceLocation};
 /// [`log!`]: crate::log
 #[derive(Clone, Debug)]
 pub struct Record<'a> {
+    logger_name: Option<&'a str>,
     level: Level,
     payload: Cow<'a, str>,
     source_location: Option<SourceLocation>,
@@ -38,6 +39,7 @@ impl<'a> Record<'a> {
         S: Into<Cow<'a, str>>,
     {
         Record {
+            logger_name: None,
             level,
             payload: payload.into(),
             source_location: None,
@@ -55,6 +57,11 @@ impl<'a> Record<'a> {
         S: Into<Cow<'a, str>>,
     {
         RecordBuilder::new(level, payload)
+    }
+
+    /// The logger name.
+    pub fn logger_name(&self) -> Option<&'a str> {
+        self.logger_name
     }
 
     /// The verbosity level of the message.
@@ -102,6 +109,12 @@ impl<'a> RecordBuilder<'a> {
         Self {
             record: Record::new(level, payload),
         }
+    }
+
+    /// Sets the logger name.
+    pub fn logger_name(mut self, logger_name: &'a str) -> Self {
+        self.record.logger_name = Some(logger_name);
+        self
     }
 
     /// Sets the source location.

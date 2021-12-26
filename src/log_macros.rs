@@ -33,14 +33,15 @@ macro_rules! log {
                     fmt_args.to_string().into()
                 };
 
-                $logger.log(
-                    &$crate::Record::builder(
-                        lvl,
-                        payload
-                    )
-                    .source_location($crate::source_location_current!())
-                    .build()
-                );
+                let mut builder = $crate::Record::builder(lvl, payload)
+                    .source_location($crate::source_location_current!());
+
+                let logger = &$logger;
+                if let Some(logger_name) = logger.name() {
+                    builder = builder.logger_name(logger_name);
+                }
+
+                logger.log(&builder.build());
             })(format_args!($($arg)+));
         }
     });

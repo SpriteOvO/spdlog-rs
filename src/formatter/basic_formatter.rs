@@ -30,7 +30,6 @@ impl Formatter for BasicFormatter {
     fn format(&self, record: &Record, dest: &mut StrBuf) -> Result<FmtExtraInfo> {
         let time = self.local_time_cacher.lock().unwrap().get(record.time());
 
-        // TODO: Write the logger name, if any
         write!(
             dest,
             "[{}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}] [",
@@ -43,6 +42,10 @@ impl Formatter for BasicFormatter {
             time.second,
             time.millisecond,
         )?;
+
+        if let Some(logger_name) = record.logger_name() {
+            write!(dest, "{}] [", logger_name)?;
+        }
 
         let style_range_begin = dest.len();
 
