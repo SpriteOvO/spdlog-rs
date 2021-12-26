@@ -50,6 +50,10 @@ impl Formatter for BasicFormatter {
 
         let style_range_end = dest.len();
 
+        if let Some(srcloc) = record.source_location() {
+            write!(dest, "] [{}:{}", srcloc.file_name(), srcloc.line())?;
+        }
+
         write!(dest, "] {}", record.payload())?;
 
         Ok(FmtExtraInfo {

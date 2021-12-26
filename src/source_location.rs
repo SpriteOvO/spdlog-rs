@@ -1,5 +1,7 @@
 //! Provides stuff related to source location
 
+use std::path;
+
 /// Represents a location in source code.
 #[derive(Clone, Hash, Debug)]
 pub struct SourceLocation {
@@ -27,8 +29,21 @@ impl SourceLocation {
     }
 
     /// The source file.
+    ///
+    /// It returns a string slice like this: `src/main.rs`
     pub fn file(&self) -> &'static str {
         self.file
+    }
+
+    /// The source file name.
+    ///
+    /// It returns a string slice like this: `main.rs`
+    pub fn file_name(&self) -> &'static str {
+        if let Some(index) = self.file.rfind(path::MAIN_SEPARATOR) {
+            &self.file[index + 1..]
+        } else {
+            self.file
+        }
     }
 
     /// The line in the source file.
