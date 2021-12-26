@@ -50,12 +50,12 @@ impl<'a> Record<'a> {
     pub fn with_source_location(
         level: Level,
         payload: &'a str,
-        source_location: SourceLocation,
+        source_location: Option<SourceLocation>,
     ) -> Record {
         Record {
             level,
             payload,
-            source_location: Some(source_location),
+            source_location,
             time: Utc::now(),
         }
     }

@@ -29,6 +29,15 @@
 //! For example, a crate can disable trace level logs in debug builds and trace,
 //! debug, and info level logs in release builds with `features =
 //! ["max_level_debug", "release_max_level_warn"]`.
+//!
+//! # Crate Feature Flags
+//!
+//! The following crate feature flags are available in addition to the filters.
+//! They are configured in your `Cargo.toml`.
+//!
+//! * `source-location` allows recording the source location of each log, and it
+//!   is performance cheap to enable it. If you do not want the source location
+//!   information to appear in the binary file, you may prefer not to enable it.
 
 #![warn(missing_docs)]
 

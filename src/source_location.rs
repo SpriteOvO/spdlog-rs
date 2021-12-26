@@ -39,16 +39,40 @@ impl SourceLocation {
 
 /// Constructs a [`SourceLocation`] with current source location.
 ///
+/// Returns `None` if the feature `source_location` is not enabled.
+///
 /// # Example
 ///
 /// ```
 /// use spdlog::{SourceLocation, source_location_current};
 ///
-/// let source_location: SourceLocation = source_location_current!();
+/// let source_location: Option<SourceLocation> = source_location_current!();
 /// ```
 #[macro_export]
 macro_rules! source_location_current {
     () => {
-        $crate::SourceLocation::new(module_path!(), file!(), line!())
+        $crate::__private_source_location_current_inner!()
+    };
+}
+
+#[macro_export]
+#[doc(hidden)]
+#[cfg(feature = "source-location")]
+macro_rules! __private_source_location_current_inner {
+    () => {
+        Some($crate::SourceLocation::new(
+            module_path!(),
+            file!(),
+            line!(),
+        ))
+    };
+}
+
+#[macro_export]
+#[doc(hidden)]
+#[cfg(not(feature = "source-location"))]
+macro_rules! __private_source_location_current_inner {
+    () => {
+        None
     };
 }

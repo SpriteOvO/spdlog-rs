@@ -21,6 +21,8 @@ release_max_level_info  = []
 release_max_level_debug = []
 release_max_level_trace = []
 
+source-location = []
+
 [dependencies]
 chrono = "0.4"
 thiserror = "1.0"
