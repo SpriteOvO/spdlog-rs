@@ -16,7 +16,7 @@ pub struct Logger {
 }
 
 impl Logger {
-    /// Constructs a `Logger`.
+    /// Constructs a empty `Logger`.
     pub fn new() -> Logger {
         Logger {
             level: LevelFilter::Info,
@@ -26,27 +26,9 @@ impl Logger {
         }
     }
 
-    /// Constructs a `Logger` with a [`Sink`].
-    pub fn with_sink(sink: Arc<dyn Sink>) -> Logger {
-        Logger {
-            level: LevelFilter::Info,
-            sinks: vec![sink],
-            flush_level: LevelFilter::Off,
-            error_handler: None,
-        }
-    }
-
-    /// Constructs a `Logger` with multiple [`Sink`]s.
-    pub fn with_sinks<I>(iter: I) -> Logger
-    where
-        I: IntoIterator<Item = Arc<dyn Sink>>,
-    {
-        Logger {
-            level: LevelFilter::Info,
-            sinks: iter.into_iter().collect(),
-            flush_level: LevelFilter::Off,
-            error_handler: None,
-        }
+    /// Constructs a [`LoggerBuilder`].
+    pub fn builder() -> LoggerBuilder {
+        LoggerBuilder::new()
     }
 
     /// Determines if a log message with the specified level would be
@@ -152,6 +134,66 @@ impl Default for Logger {
     }
 }
 
+/// The builder of [`Logger`].
+pub struct LoggerBuilder {
+    logger: Logger,
+}
+
+impl LoggerBuilder {
+    /// Constructs a `LoggerBuilder`.
+    ///
+    /// The default value is the same as [`Logger::new()`].
+    pub fn new() -> Self {
+        Self {
+            logger: Logger::new(),
+        }
+    }
+
+    /// Sets the log filter level.
+    pub fn level(mut self, level: LevelFilter) -> Self {
+        self.logger.level = level;
+        self
+    }
+
+    /// Add a [`Sink`].
+    pub fn sink(mut self, sink: Arc<dyn Sink>) -> Self {
+        self.logger.sinks.push(sink);
+        self
+    }
+
+    /// Add multiple [`Sink`]s.
+    pub fn sinks<I>(mut self, sinks: I) -> Self
+    where
+        I: IntoIterator<Item = Arc<dyn Sink>>,
+    {
+        self.logger.sinks.append(&mut sinks.into_iter().collect());
+        self
+    }
+
+    /// Sets the flush level.
+    pub fn flush_level(mut self, level: LevelFilter) -> Self {
+        self.logger.flush_level = level;
+        self
+    }
+
+    /// Sets the error handler.
+    pub fn error_handler(mut self, handler: ErrorHandler) -> Self {
+        self.logger.error_handler = Some(handler);
+        self
+    }
+
+    /// Builds a [`Logger`].
+    pub fn build(self) -> Logger {
+        self.logger
+    }
+}
+
+impl Default for LoggerBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -166,7 +208,7 @@ mod tests {
     #[test]
     fn flush_level() {
         let test_sink = Arc::new(TestSink::new());
-        let mut test_logger = Logger::with_sink(test_sink.clone());
+        let mut test_logger = Logger::builder().sink(test_sink.clone()).build();
 
         trace!(logger: test_logger, "");
         error!(logger: test_logger, "");

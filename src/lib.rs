@@ -56,7 +56,7 @@ pub mod test_utils;
 
 pub use error::{Error, ErrorHandler, Result};
 pub use level::{Level, LevelFilter};
-pub use logger::Logger;
+pub use logger::{Logger, LoggerBuilder};
 pub use record::Record;
 pub use source_location::SourceLocation;
 pub use str_buf::StrBuf;
@@ -114,9 +114,11 @@ cfg_if! {
 }
 
 lazy_static! {
-    static ref DEFAULT_LOGGER: RwLock<Arc<Logger>> = RwLock::new(Arc::new(Logger::with_sink(
-        Arc::new(StdoutStyleSink::default())
-    )));
+    static ref DEFAULT_LOGGER: RwLock<Arc<Logger>> = RwLock::new(Arc::new(
+        Logger::builder()
+            .sink(Arc::new(StdoutStyleSink::default()))
+            .build()
+    ));
 }
 
 /// Initializes the crate
@@ -146,7 +148,7 @@ mod tests {
     fn test_default_logger() {
         let test_sink = Arc::new(TestSink::new());
 
-        let test_logger = Arc::new(Logger::with_sink(test_sink.clone()));
+        let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build());
         let empty_logger = Arc::new(Logger::new());
 
         set_default_logger(empty_logger.clone());

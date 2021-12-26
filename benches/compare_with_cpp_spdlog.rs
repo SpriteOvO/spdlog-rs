@@ -15,7 +15,9 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
         .unwrap()
         .join("logs/FileSink.log");
 
-    let logger = Logger::with_sink(Arc::new(FileSink::new(path, true).unwrap()));
+    let logger = Logger::builder()
+        .sink(Arc::new(FileSink::new(path, true).unwrap()))
+        .build();
     bench_mt("FileSink (basic_mt)", &logger, threads, iters);
 }
 
