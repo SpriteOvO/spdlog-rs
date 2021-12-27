@@ -79,3 +79,14 @@ impl Sink for FileSink {
         self.formatter = formatter;
     }
 }
+
+impl Drop for FileSink {
+    fn drop(&mut self) {
+        if let Err(err) = self.file.lock().unwrap().flush() {
+            // Sinks do not have an error handler, because it would increase complexity and
+            // the error is not common. So currently users cannot handle this error by
+            // themselves.
+            crate::default_error_handler("FileSink", err.into());
+        }
+    }
+}
