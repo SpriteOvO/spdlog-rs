@@ -63,7 +63,7 @@ pub use str_buf::StrBuf;
 
 /// Contains available log macros.
 pub mod prelude {
-    pub use super::{debug, error, info, log, trace, warn};
+    pub use super::{critical, debug, error, info, log, trace, warn};
 }
 
 use std::sync::{Arc, RwLock};

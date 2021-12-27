@@ -4,9 +4,9 @@
 
 use getset::{CopyGetters, Setters};
 
-use crate::LevelFilter;
+use crate::{level, LevelFilter};
 
-const LEVEL_COUNT: usize = 6;
+const LEVEL_COUNT: usize = level::LOG_LEVEL_NAMES.len();
 
 /// The terminal text color style.
 #[allow(missing_docs)]
@@ -224,6 +224,7 @@ impl Default for LevelStyles {
     fn default() -> LevelStyles {
         LevelStyles([
             StyleBuilder::new().reset().build(), // Off, should never be used
+            StyleBuilder::new().bg_color(Color::Red).bold().build(), // Critical
             StyleBuilder::new().color(Color::Red).bold().build(), // Error
             StyleBuilder::new().color(Color::Yellow).bold().build(), // Warn
             StyleBuilder::new().color(Color::Green).build(), // Info

@@ -4,7 +4,8 @@ use std::{cmp, fmt, str::FromStr};
 
 use crate::Error;
 
-static LOG_LEVEL_NAMES: [&str; 6] = ["off", "error", "warn", "info", "debug", "trace"];
+pub(crate) const LOG_LEVEL_NAMES: [&str; 7] =
+    ["off", "critical", "error", "warn", "info", "debug", "trace"];
 
 /// An enum representing the available verbosity levels of the logger.
 ///
@@ -15,13 +16,17 @@ static LOG_LEVEL_NAMES: [&str; 6] = ["off", "error", "warn", "info", "debug", "t
 #[repr(usize)]
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum Level {
-    /// The "error" level.
+    /// The "critical" level.
     ///
-    /// Designates very serious errors.
+    /// Designates critical errors.
     // This way these line up with the discriminants for LevelFilter below
     // This works because Rust treats field-less enums the same way as C does:
     // https://doc.rust-lang.org/reference/items/enumerations.html#custom-discriminant-values-for-field-less-enumerations
-    Error = 1,
+    Critical = 1,
+    /// The "error" level.
+    ///
+    /// Designates very serious errors.
+    Error,
     /// The "warn" level.
     ///
     /// Designates hazardous situations.
@@ -43,11 +48,12 @@ pub enum Level {
 impl Level {
     fn from_usize(u: usize) -> Option<Level> {
         match u {
-            1 => Some(Level::Error),
-            2 => Some(Level::Warn),
-            3 => Some(Level::Info),
-            4 => Some(Level::Debug),
-            5 => Some(Level::Trace),
+            1 => Some(Level::Critical),
+            2 => Some(Level::Error),
+            3 => Some(Level::Warn),
+            4 => Some(Level::Info),
+            5 => Some(Level::Debug),
+            6 => Some(Level::Trace),
             _ => None,
         }
     }
@@ -80,7 +86,7 @@ impl Level {
     ///
     /// let mut levels = Level::iter();
     ///
-    /// assert_eq!(Some(Level::Error), levels.next());
+    /// assert_eq!(Some(Level::Critical), levels.next());
     /// assert_eq!(Some(Level::Trace), levels.last());
     /// ```
     pub fn iter() -> impl Iterator<Item = Self> {
@@ -145,6 +151,8 @@ impl PartialOrd<LevelFilter> for Level {
 pub enum LevelFilter {
     /// A level lower than all log levels.
     Off,
+    /// Corresponds to the `Critical` log level.
+    Critical,
     /// Corresponds to the `Error` log level.
     Error,
     /// Corresponds to the `Warn` log level.
@@ -161,11 +169,12 @@ impl LevelFilter {
     fn from_usize(u: usize) -> Option<LevelFilter> {
         match u {
             0 => Some(LevelFilter::Off),
-            1 => Some(LevelFilter::Error),
-            2 => Some(LevelFilter::Warn),
-            3 => Some(LevelFilter::Info),
-            4 => Some(LevelFilter::Debug),
-            5 => Some(LevelFilter::Trace),
+            1 => Some(LevelFilter::Critical),
+            2 => Some(LevelFilter::Error),
+            3 => Some(LevelFilter::Warn),
+            4 => Some(LevelFilter::Info),
+            5 => Some(LevelFilter::Debug),
+            6 => Some(LevelFilter::Trace),
             _ => None,
         }
     }
@@ -340,6 +349,7 @@ mod tests {
     #[test]
     fn iter() {
         let mut iter = Level::iter();
+        assert_eq!(iter.next(), Some(Level::Critical));
         assert_eq!(iter.next(), Some(Level::Error));
         assert_eq!(iter.next(), Some(Level::Warn));
         assert_eq!(iter.next(), Some(Level::Info));
@@ -349,6 +359,7 @@ mod tests {
 
         let mut iter = LevelFilter::iter();
         assert_eq!(iter.next(), Some(LevelFilter::Off));
+        assert_eq!(iter.next(), Some(LevelFilter::Critical));
         assert_eq!(iter.next(), Some(LevelFilter::Error));
         assert_eq!(iter.next(), Some(LevelFilter::Warn));
         assert_eq!(iter.next(), Some(LevelFilter::Info));

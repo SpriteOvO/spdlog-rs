@@ -48,6 +48,31 @@ macro_rules! log {
     ($lvl:expr, $($arg:tt)+) => ($crate::log!(logger: $crate::default_logger(), $lvl, $($arg)+))
 }
 
+/// Logs a message at the critical level.
+///
+/// # Examples
+///
+/// ```
+/// use spdlog::critical;
+///
+/// # fn main() {
+/// # let app_events = spdlog::default_logger();
+/// let (left, right) = (true, false);
+///
+/// critical!("Runtime assertion failed. Left: `{}`, Right: `{}`", left, right);
+/// critical!(logger: app_events, "Runtime assertion failed. Left: `{}`, Right: `{}`", left, right);
+/// # }
+/// ```
+#[macro_export]
+macro_rules! critical {
+    (logger: $logger:expr, $($arg:tt)+) => (
+        $crate::log!(logger: $logger, $crate::Level::Critical, $($arg)+)
+    );
+    ($($arg:tt)+) => (
+        $crate::log!($crate::Level::Critical, $($arg)+)
+    )
+}
+
 /// Logs a message at the error level.
 ///
 /// # Examples
