@@ -8,7 +8,7 @@ pub use file_sink::FileSink;
 pub use std_out_stream_sink::StdOutStreamSink;
 pub use std_out_stream_style_sink::StdOutStreamStyleSink;
 
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use crate::{formatter::Formatter, Level, LevelFilter, Record, Result};
 
@@ -52,5 +52,5 @@ pub trait Sink: Sync + Send {
     fn set_formatter(&mut self, formatter: Box<dyn Formatter>);
 }
 
-/// A container for [`Sink`] s.
-pub type Sinks = Vec<Arc<dyn Sink>>;
+/// A container for [`Sink`]s.
+pub type Sinks = Vec<Arc<RwLock<dyn Sink>>>;

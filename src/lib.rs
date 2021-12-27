@@ -117,10 +117,10 @@ cfg_if! {
 lazy_static! {
     static ref DEFAULT_LOGGER: RwLock<Arc<Logger>> = RwLock::new(Arc::new(
         Logger::builder()
-            .sink(Arc::new(StdOutStreamStyleSink::new(
+            .sink(Arc::new(RwLock::new(StdOutStreamStyleSink::new(
                 StdOutStream::Stdout,
                 StyleMode::Auto
-            )))
+            ))))
             .build()
     ));
 }
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_default_logger() {
-        let test_sink = Arc::new(TestSink::new());
+        let test_sink = Arc::new(RwLock::new(TestSink::new()));
 
         let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build());
         let empty_logger = Arc::new(Logger::new());
@@ -180,9 +180,9 @@ mod tests {
         info!("hello");
         error!("spdlog");
 
-        assert_eq!(test_sink.log_counter(), 2);
+        assert_eq!(test_sink.read().unwrap().log_counter(), 2);
         assert_eq!(
-            test_sink.payloads(),
+            test_sink.read().unwrap().payloads(),
             vec!["hello".to_string(), "rust".to_string()]
         );
     }
