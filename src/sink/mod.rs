@@ -1,20 +1,12 @@
 //! Provides sinks to flexibly output log messages to specified targets.
 
 pub mod file_sink;
-pub mod stderr_sink;
-pub mod stderr_style_sink;
-pub mod stdout_sink;
-pub mod stdout_style_sink;
+pub mod std_out_stream_sink;
+pub mod std_out_stream_style_sink;
 
-mod std_out_stream_sink;
-mod std_out_stream_style_sink;
-
-pub use file_sink::*;
-pub use std_out_stream_style_sink::StyleSink;
-pub use stderr_sink::*;
-pub use stderr_style_sink::*;
-pub use stdout_sink::*;
-pub use stdout_style_sink::*;
+pub use file_sink::FileSink;
+pub use std_out_stream_sink::StdOutStreamSink;
+pub use std_out_stream_style_sink::StdOutStreamStyleSink;
 
 use std::sync::Arc;
 
@@ -62,31 +54,3 @@ pub trait Sink: Sync + Send {
 
 /// A container for [`Sink`] s.
 pub type Sinks = Vec<Arc<dyn Sink>>;
-
-pub(crate) mod macros {
-    macro_rules! forward_sink_methods {
-        ($struct_type:ident, $inner_name:ident) => {
-            impl $crate::sink::Sink for $struct_type {
-                fn log(&self, record: &$crate::Record) -> $crate::Result<()> {
-                    self.$inner_name.log(record)
-                }
-                fn flush(&self) -> $crate::Result<()> {
-                    self.$inner_name.flush()
-                }
-                fn level(&self) -> $crate::LevelFilter {
-                    self.$inner_name.level()
-                }
-                fn set_level(&mut self, level: $crate::LevelFilter) {
-                    self.$inner_name.set_level(level)
-                }
-                fn formatter(&self) -> &dyn $crate::formatter::Formatter {
-                    self.$inner_name.formatter()
-                }
-                fn set_formatter(&mut self, formatter: Box<dyn $crate::formatter::Formatter>) {
-                    self.$inner_name.set_formatter(formatter)
-                }
-            }
-        };
-    }
-    pub(crate) use forward_sink_methods;
-}

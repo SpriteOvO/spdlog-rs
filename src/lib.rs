@@ -71,7 +71,8 @@ use std::sync::{Arc, RwLock};
 use cfg_if::cfg_if;
 use lazy_static::lazy_static;
 
-use sink::StdoutStyleSink;
+use sink::std_out_stream_style_sink::{StdOutStream, StdOutStreamStyleSink};
+use terminal::StyleMode;
 
 /// The statically resolved maximum log level.
 ///
@@ -116,7 +117,10 @@ cfg_if! {
 lazy_static! {
     static ref DEFAULT_LOGGER: RwLock<Arc<Logger>> = RwLock::new(Arc::new(
         Logger::builder()
-            .sink(Arc::new(StdoutStyleSink::default()))
+            .sink(Arc::new(StdOutStreamStyleSink::new(
+                StdOutStream::Stdout,
+                StyleMode::Auto
+            )))
             .build()
     ));
 }

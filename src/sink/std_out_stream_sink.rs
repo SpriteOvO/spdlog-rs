@@ -1,4 +1,6 @@
-use std::{io::Write, sync::Mutex};
+//! Provides a std out stream plain text sink.
+
+use std::io::{self, Write};
 
 use crate::{
     formatter::{BasicFormatter, Formatter},
@@ -6,51 +8,104 @@ use crate::{
     LevelFilter, Record, Result, StrBuf,
 };
 
-/// A standard output stream sink.
-///
-/// For internal use, users should not use it directly.
-pub struct StdOutStreamSink<S>
-where
-    S: Write + Send + Sync,
-{
-    level: LevelFilter,
-    formatter: Box<dyn Formatter>,
-    out_stream: Mutex<S>,
+/// An enum representing the available standard output streams.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum StdOutStream {
+    /// Standard output.
+    Stdout,
+    /// Standard error.
+    Stderr,
 }
 
-impl<S> StdOutStreamSink<S>
-where
-    S: Write + Send + Sync,
-{
-    /// Constructs a [`StdOutStreamSink`].
-    ///
-    /// Level default maximum (no discard)
-    pub fn new(out_stream: S) -> StdOutStreamSink<S> {
-        StdOutStreamSink {
-            level: LevelFilter::max(),
-            formatter: Box::new(BasicFormatter::new()),
-            out_stream: Mutex::new(out_stream),
+// `io::stdout()` and `io::stderr()` return different types,
+// and `Std***::lock()` is not in any trait, so we need this struct to abstract
+// them.
+#[derive(Debug)]
+pub(crate) enum StdOutStreamDest<O, E> {
+    Stdout(O),
+    Stderr(E),
+}
+
+impl StdOutStreamDest<io::Stdout, io::Stderr> {
+    pub(crate) fn new(stream: StdOutStream) -> Self {
+        match stream {
+            StdOutStream::Stdout => StdOutStreamDest::Stdout(io::stdout()),
+            StdOutStream::Stderr => StdOutStreamDest::Stderr(io::stderr()),
+        }
+    }
+
+    pub(crate) fn lock(&self) -> StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>> {
+        match self {
+            StdOutStreamDest::Stdout(stream) => StdOutStreamDest::Stdout(stream.lock()),
+            StdOutStreamDest::Stderr(stream) => StdOutStreamDest::Stderr(stream.lock()),
         }
     }
 }
 
-impl<S> Sink for StdOutStreamSink<S>
-where
-    S: Write + Send + Sync,
-{
+macro_rules! impl_write_for_dest {
+    ( $dest:ty ) => {
+        impl Write for $dest {
+            fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+                match self {
+                    StdOutStreamDest::Stdout(stream) => stream.write(buf),
+                    StdOutStreamDest::Stderr(stream) => stream.write(buf),
+                }
+            }
+
+            fn flush(&mut self) -> io::Result<()> {
+                match self {
+                    StdOutStreamDest::Stdout(stream) => stream.flush(),
+                    StdOutStreamDest::Stderr(stream) => stream.flush(),
+                }
+            }
+        }
+    };
+}
+impl_write_for_dest!(StdOutStreamDest<io::Stdout, io::Stderr>);
+impl_write_for_dest!(StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
+
+/// A standard output stream sink.
+///
+/// For internal use, users should not use it directly.
+pub struct StdOutStreamSink {
+    level: LevelFilter,
+    formatter: Box<dyn Formatter>,
+    dest: StdOutStreamDest<io::Stdout, io::Stderr>,
+}
+
+impl StdOutStreamSink {
+    /// Constructs a [`StdOutStreamSink`].
+    ///
+    /// Level default maximum (no discard)
+    pub fn new(std_out_stream: StdOutStream) -> StdOutStreamSink {
+        StdOutStreamSink {
+            level: LevelFilter::max(),
+            formatter: Box::new(BasicFormatter::new()),
+            dest: StdOutStreamDest::new(std_out_stream),
+        }
+    }
+}
+
+impl Sink for StdOutStreamSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut str_buf = StrBuf::new();
         self.formatter.format(record, &mut str_buf)?;
 
-        let mut out_stream = self.out_stream.lock().unwrap();
-        writeln!(out_stream, "{}", str_buf)?;
+        let mut dest = self.dest.lock();
 
-        out_stream.flush()?;
+        writeln!(dest, "{}", str_buf)?;
+
+        // stderr is not buffered, so we don't need to flush it.
+        // https://doc.rust-lang.org/std/io/fn.stderr.html
+        if let StdOutStreamDest::Stdout(_) = dest {
+            dest.flush()?;
+        }
+
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.out_stream.lock().unwrap().flush()?;
+        self.dest.lock().flush()?;
         Ok(())
     }
 
@@ -68,41 +123,5 @@ where
 
     fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
         self.formatter = formatter;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use chrono::prelude::*;
-
-    use super::*;
-    use crate::Level;
-
-    #[test]
-    fn log() {
-        let mut out_stream = Vec::<u8>::new();
-
-        let sink = StdOutStreamSink::new(&mut out_stream);
-
-        let record = (
-            Record::new(Level::Warn, "test log content 0"),
-            Record::new(Level::Info, "test log content 1"),
-        );
-
-        sink.log(&record.0).unwrap();
-        sink.log(&record.1).unwrap();
-
-        assert_eq!(
-            format!(
-                "[{}] [warn] test log content 0\n\
-                 [{}] [info] test log content 1\n",
-                Into::<DateTime::<Local>>::into(record.0.time().clone())
-                    .format("%Y-%m-%d %H:%M:%S.%3f"),
-                Into::<DateTime::<Local>>::into(record.1.time().clone())
-                    .format("%Y-%m-%d %H:%M:%S.%3f")
-            )
-            .as_bytes(),
-            out_stream
-        );
     }
 }

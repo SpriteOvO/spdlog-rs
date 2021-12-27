@@ -1,10 +1,14 @@
-use std::{io::Write, sync::Mutex};
+//! Provides a std out stream style text sink.
+
+pub use crate::sink::std_out_stream_sink::StdOutStream;
+
+use std::io::{self, Write};
 
 use if_chain::if_chain;
 
 use crate::{
     formatter::{BasicFormatter, Formatter},
-    sink::Sink,
+    sink::{std_out_stream_sink::StdOutStreamDest, Sink},
     terminal::{LevelStyleCodes, Style, StyleMode},
     LevelFilter, Record, Result, StrBuf,
 };
@@ -12,45 +16,43 @@ use crate::{
 /// A standard output stream style sink.
 ///
 /// For internal use, users should not use it directly.
-pub struct StdOutStreamStyleSink<S>
-where
-    S: Write + Send + Sync,
-{
+pub struct StdOutStreamStyleSink {
     level: LevelFilter,
     formatter: Box<dyn Formatter>,
-    out_stream: Mutex<S>,
+    dest: StdOutStreamDest<io::Stdout, io::Stderr>,
     atty_stream: atty::Stream,
     should_render_style: bool,
     level_style_codes: LevelStyleCodes,
 }
 
-impl<S> StdOutStreamStyleSink<S>
-where
-    S: Write + Send + Sync,
-{
+impl StdOutStreamStyleSink {
     /// Constructs a [`StdOutStreamStyleSink`].
     ///
     /// Level default maximum (no discard)
-    pub fn new(out_stream: S, atty_stream: atty::Stream) -> StdOutStreamStyleSink<S> {
-        StdOutStreamStyleSink::with_style_mode(out_stream, atty_stream, StyleMode::Auto)
-    }
+    pub fn new(std_out_stream: StdOutStream, style_mode: StyleMode) -> StdOutStreamStyleSink {
+        let atty_stream = match std_out_stream {
+            StdOutStream::Stdout => atty::Stream::Stdout,
+            StdOutStream::Stderr => atty::Stream::Stderr,
+        };
 
-    /// Constructs a [`StdOutStreamStyleSink`] with a style mode.
-    ///
-    /// Level default maximum (no discard)
-    pub fn with_style_mode(
-        out_stream: S,
-        atty_stream: atty::Stream,
-        style_mode: StyleMode,
-    ) -> StdOutStreamStyleSink<S> {
         StdOutStreamStyleSink {
             level: LevelFilter::max(),
             formatter: Box::new(BasicFormatter::new()),
-            out_stream: Mutex::new(out_stream),
+            dest: StdOutStreamDest::new(std_out_stream),
             atty_stream,
             should_render_style: Self::should_render_style(style_mode, atty_stream),
             level_style_codes: LevelStyleCodes::default(),
         }
+    }
+
+    /// Sets the style of the specified log level.
+    pub fn set_style(&mut self, level: LevelFilter, style: Style) {
+        self.level_style_codes.set_code(level, style);
+    }
+
+    /// Sets the style mode.
+    pub fn set_style_mode(&mut self, style_mode: StyleMode) {
+        self.should_render_style = Self::should_render_style(style_mode, self.atty_stream);
     }
 
     fn should_render_style(style_mode: StyleMode, atty_stream: atty::Stream) -> bool {
@@ -62,16 +64,13 @@ where
     }
 }
 
-impl<S> Sink for StdOutStreamStyleSink<S>
-where
-    S: Write + Send + Sync,
-{
+impl Sink for StdOutStreamStyleSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut str_buf = StrBuf::new();
 
         let extra_info = self.formatter.format(record, &mut str_buf)?;
 
-        let mut out_stream = self.out_stream.lock().unwrap();
+        let mut dest = self.dest.lock();
 
         if_chain! {
             if self.should_render_style;
@@ -79,23 +78,27 @@ where
             then {
                 let style_code = self.level_style_codes.code(record.level().to_level_filter());
 
-                out_stream.write_all(str_buf[..style_range.start].as_bytes())?;
-                out_stream.write_all(style_code.start.as_bytes())?;
-                out_stream.write_all(str_buf[style_range.start..style_range.end].as_bytes())?;
-                out_stream.write_all(style_code.end.as_bytes())?;
-                writeln!(out_stream, "{}", &str_buf[style_range.end..])?;
+                dest.write_all(str_buf[..style_range.start].as_bytes())?;
+                dest.write_all(style_code.start.as_bytes())?;
+                dest.write_all(str_buf[style_range.start..style_range.end].as_bytes())?;
+                dest.write_all(style_code.end.as_bytes())?;
+                writeln!(dest, "{}", &str_buf[style_range.end..])?;
             } else {
-                writeln!(out_stream, "{}", str_buf)?;
+                writeln!(dest, "{}", str_buf)?;
             }
         }
 
-        out_stream.flush()?;
+        // stderr is not buffered, so we don't need to flush it.
+        // https://doc.rust-lang.org/std/io/fn.stderr.html
+        if let StdOutStreamDest::Stdout(_) = dest {
+            dest.flush()?;
+        }
 
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.out_stream.lock().unwrap().flush()?;
+        self.dest.lock().flush()?;
         Ok(())
     }
 
@@ -113,135 +116,5 @@ where
 
     fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
         self.formatter = formatter;
-    }
-}
-
-/// A trait for style sinks.
-pub trait StyleSink: Sink {
-    /// Sets the style of the specified log level.
-    fn set_style(&mut self, level: LevelFilter, style: Style);
-
-    /// Sets the style mode.
-    fn set_style_mode(&mut self, mode: StyleMode);
-}
-
-impl<S> StyleSink for StdOutStreamStyleSink<S>
-where
-    S: Write + Send + Sync,
-{
-    fn set_style(&mut self, level: LevelFilter, style: Style) {
-        self.level_style_codes.set_code(level, style);
-    }
-
-    fn set_style_mode(&mut self, style_mode: StyleMode) {
-        self.should_render_style = Self::should_render_style(style_mode, self.atty_stream);
-    }
-}
-
-pub(crate) mod macros {
-    macro_rules! forward_style_sink_methods {
-        ($struct_type:ident, $inner_name:ident) => {
-            $crate::sink::macros::forward_sink_methods!($struct_type, $inner_name);
-
-            impl $crate::sink::StyleSink for $struct_type {
-                fn set_style(
-                    &mut self,
-                    level: $crate::LevelFilter,
-                    style: $crate::terminal::Style,
-                ) {
-                    self.$inner_name.set_style(level, style);
-                }
-
-                fn set_style_mode(&mut self, mode: $crate::terminal::StyleMode) {
-                    self.$inner_name.set_style_mode(mode);
-                }
-            }
-        };
-    }
-    pub(crate) use forward_style_sink_methods;
-}
-
-#[cfg(test)]
-mod tests {
-    use chrono::prelude::*;
-
-    use super::*;
-    use crate::{
-        terminal::{Color, StyleBuilder, StyleCode},
-        Level,
-    };
-
-    #[test]
-    fn log() {
-        let mut out_stream = Vec::<u8>::new();
-
-        let mut sink = StdOutStreamStyleSink::new(&mut out_stream, atty::Stream::Stdout);
-
-        sink.set_style_mode(StyleMode::Always);
-
-        let record = Record::new(Level::Warn, "test log content");
-
-        sink.log(&record).unwrap();
-
-        let style_code: StyleCode = StyleBuilder::new()
-            .color(Color::Yellow)
-            .bold()
-            .build()
-            .into();
-
-        assert_eq!(
-            format!(
-                "[{}] [{}warn{}] test log content\n",
-                Into::<DateTime::<Local>>::into(record.time().clone())
-                    .format("%Y-%m-%d %H:%M:%S.%3f"),
-                style_code.start,
-                style_code.end
-            )
-            .as_bytes(),
-            out_stream
-        );
-    }
-
-    #[test]
-    fn style() {
-        let mut out_stream = Vec::<u8>::new();
-
-        let mut sink = StdOutStreamStyleSink::new(&mut out_stream, atty::Stream::Stdout);
-
-        sink.set_style_mode(StyleMode::Always);
-
-        let record = Record::new(Level::Error, "test log content");
-
-        // log with the default style
-        sink.log(&record).unwrap();
-
-        // change the style, log again
-        sink.set_style(
-            LevelFilter::Error,
-            StyleBuilder::new().color(Color::Cyan).build(),
-        );
-        sink.log(&record).unwrap();
-
-        let before_style_code: StyleCode =
-            StyleBuilder::new().color(Color::Red).bold().build().into();
-
-        let now_style_code: StyleCode = StyleBuilder::new().color(Color::Cyan).build().into();
-
-        assert_eq!(
-            format!(
-                "[{}] [{}error{}] test log content\n\
-                 [{}] [{}error{}] test log content\n",
-                Into::<DateTime::<Local>>::into(record.time().clone())
-                    .format("%Y-%m-%d %H:%M:%S.%3f"),
-                before_style_code.start,
-                before_style_code.end,
-                Into::<DateTime::<Local>>::into(record.time().clone())
-                    .format("%Y-%m-%d %H:%M:%S.%3f"),
-                now_style_code.start,
-                now_style_code.end
-            )
-            .as_bytes(),
-            out_stream
-        );
     }
 }
