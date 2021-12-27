@@ -127,6 +127,14 @@ impl Logger {
     fn handle_error(&self, err: Error) {
         if let Some(handler) = &self.error_handler {
             handler(err)
+        } else {
+            crate::default_error_handler(
+                format!(
+                    "Logger ({})",
+                    self.name.as_ref().map_or("*no name*", String::as_str)
+                ),
+                err,
+            );
         }
     }
 

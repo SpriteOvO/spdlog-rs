@@ -142,6 +142,19 @@ pub fn set_default_logger(logger: Arc<Logger>) {
     *DEFAULT_LOGGER.write().unwrap() = logger;
 }
 
+fn default_error_handler(from: impl AsRef<str>, error: Error) {
+    let date = chrono::Local::now()
+        .format("%Y-%m-%d %H:%M:%S.%3f")
+        .to_string();
+
+    eprintln!(
+        "[*** SPDLOG UNHANDLED ERROR ***] [{}] [{}] {}",
+        date,
+        from.as_ref(),
+        error
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
