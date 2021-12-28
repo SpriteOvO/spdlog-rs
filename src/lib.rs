@@ -49,7 +49,7 @@ pub mod logger;
 pub mod record;
 pub mod sink;
 pub mod source_location;
-pub mod str_buf;
+pub mod string_buf;
 pub mod terminal;
 #[cfg(test)]
 pub mod test_utils;
@@ -59,7 +59,7 @@ pub use level::{Level, LevelFilter};
 pub use logger::{Logger, LoggerBuilder};
 pub use record::Record;
 pub use source_location::SourceLocation;
-pub use str_buf::StrBuf;
+pub use string_buf::StringBuf;
 
 /// Contains available log macros.
 pub mod prelude {

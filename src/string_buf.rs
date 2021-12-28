@@ -11,4 +11,4 @@
 ///
 /// [`Sink`]: crate::sink::Sink
 /// [`Formatter`]: crate::formatter::Formatter
-pub type StrBuf = String;
+pub type StringBuf = String;

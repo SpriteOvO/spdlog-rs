@@ -6,7 +6,7 @@ use chrono::prelude::*;
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
-    Record, Result, StrBuf,
+    Record, Result, StringBuf,
 };
 
 /// A basic and default log message formatter.
@@ -27,7 +27,7 @@ impl BasicFormatter {
 }
 
 impl Formatter for BasicFormatter {
-    fn format(&self, record: &Record, dest: &mut StrBuf) -> Result<FmtExtraInfo> {
+    fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo> {
         let time = self.local_time_cacher.lock().unwrap().get(record.time());
 
         write!(
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn format() {
         let record = Record::new(Level::Warn, "test log content");
-        let mut buf = StrBuf::new();
+        let mut buf = StringBuf::new();
         let extra_info = BasicFormatter::new().format(&record, &mut buf).unwrap();
 
         assert_eq!(

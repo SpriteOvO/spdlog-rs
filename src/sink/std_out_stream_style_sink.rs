@@ -10,7 +10,7 @@ use crate::{
     formatter::{BasicFormatter, Formatter},
     sink::{std_out_stream_sink::StdOutStreamDest, Sink},
     terminal::{LevelStyleCodes, Style, StyleMode},
-    LevelFilter, Record, Result, StrBuf,
+    LevelFilter, Record, Result, StringBuf,
 };
 
 /// A standard output stream style sink.
@@ -66,9 +66,9 @@ impl StdOutStreamStyleSink {
 
 impl Sink for StdOutStreamStyleSink {
     fn log(&self, record: &Record) -> Result<()> {
-        let mut str_buf = StrBuf::new();
+        let mut string_buf = StringBuf::new();
 
-        let extra_info = self.formatter.format(record, &mut str_buf)?;
+        let extra_info = self.formatter.format(record, &mut string_buf)?;
 
         let mut dest = self.dest.lock();
 
@@ -78,13 +78,13 @@ impl Sink for StdOutStreamStyleSink {
             then {
                 let style_code = self.level_style_codes.code(record.level().to_level_filter());
 
-                dest.write_all(str_buf[..style_range.start].as_bytes())?;
+                dest.write_all(string_buf[..style_range.start].as_bytes())?;
                 dest.write_all(style_code.start.as_bytes())?;
-                dest.write_all(str_buf[style_range.start..style_range.end].as_bytes())?;
+                dest.write_all(string_buf[style_range.start..style_range.end].as_bytes())?;
                 dest.write_all(style_code.end.as_bytes())?;
-                writeln!(dest, "{}", &str_buf[style_range.end..])?;
+                writeln!(dest, "{}", &string_buf[style_range.end..])?;
             } else {
-                writeln!(dest, "{}", str_buf)?;
+                writeln!(dest, "{}", string_buf)?;
             }
         }
 
