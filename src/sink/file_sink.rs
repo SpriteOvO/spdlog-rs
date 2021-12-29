@@ -3,7 +3,6 @@ use std::{
     fs::{self, File, OpenOptions},
     io::{BufWriter, Write},
     path::Path,
-    sync::Mutex,
 };
 
 use crate::{
@@ -16,7 +15,7 @@ use crate::{
 pub struct FileSink {
     level: LevelFilter,
     formatter: Box<dyn Formatter>,
-    file: Mutex<BufWriter<File>>,
+    file: spin::Mutex<BufWriter<File>>,
 }
 
 impl FileSink {
@@ -40,7 +39,7 @@ impl FileSink {
         let sink = FileSink {
             level: LevelFilter::max(),
             formatter: Box::new(BasicFormatter::new()),
-            file: Mutex::new(BufWriter::new(file)),
+            file: spin::Mutex::new(BufWriter::new(file)),
         };
 
         Ok(sink)
@@ -52,14 +51,14 @@ impl Sink for FileSink {
         let mut string_buf = StringBuf::new();
         self.formatter.format(record, &mut string_buf)?;
 
-        let mut file = self.file.lock().unwrap();
+        let mut file = self.file.lock();
         writeln!(file, "{}", string_buf)?;
 
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.file.lock().unwrap().flush()?;
+        self.file.lock().flush()?;
         Ok(())
     }
 
@@ -82,7 +81,7 @@ impl Sink for FileSink {
 
 impl Drop for FileSink {
     fn drop(&mut self) {
-        if let Err(err) = self.file.lock().unwrap().flush() {
+        if let Err(err) = self.file.lock().flush() {
             // Sinks do not have an error handler, because it would increase complexity and
             // the error is not common. So currently users cannot handle this error by
             // themselves.

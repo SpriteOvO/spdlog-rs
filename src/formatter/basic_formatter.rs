@@ -1,6 +1,6 @@
 //! Provides a basic and default log message formatter.
 
-use std::{fmt::Write, sync::Mutex};
+use std::fmt::Write;
 
 use chrono::prelude::*;
 
@@ -14,21 +14,21 @@ use crate::{
 /// The log message formatted by it looks like this:
 /// `[2021-12-23 01:23:45.067] [info] log message`.
 pub struct BasicFormatter {
-    local_time_cacher: Mutex<LocalTimeCacher>,
+    local_time_cacher: spin::Mutex<LocalTimeCacher>,
 }
 
 impl BasicFormatter {
     /// Constructs a [`BasicFormatter`].
     pub fn new() -> BasicFormatter {
         BasicFormatter {
-            local_time_cacher: Mutex::new(LocalTimeCacher::new()),
+            local_time_cacher: spin::Mutex::new(LocalTimeCacher::new()),
         }
     }
 }
 
 impl Formatter for BasicFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo> {
-        let time = self.local_time_cacher.lock().unwrap().get(record.time());
+        let time = self.local_time_cacher.lock().get(record.time());
 
         write!(
             dest,
