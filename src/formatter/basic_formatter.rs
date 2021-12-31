@@ -31,24 +31,33 @@ impl Formatter for BasicFormatter {
         {
             let mut local_time_cacher = self.local_time_cacher.lock();
             let time = local_time_cacher.get(record.time());
-            write!(dest, "[{}.{:03}] [", time.0, time.1)?;
+            dest.write_str("[")?;
+            dest.write_str(time.0)?;
+            dest.write_str(".")?;
+            write!(dest, "{:03}", time.1)?;
+            dest.write_str("] [")?;
         }
 
         if let Some(logger_name) = record.logger_name() {
-            write!(dest, "{}] [", logger_name)?;
+            dest.write_str(logger_name)?;
+            dest.write_str("] [")?;
         }
 
         let style_range_begin = dest.len();
 
-        write!(dest, "{}", record.level())?;
+        dest.write_str(record.level().as_str())?;
 
         let style_range_end = dest.len();
 
         if let Some(srcloc) = record.source_location() {
-            write!(dest, "] [{}:{}", srcloc.file_name(), srcloc.line())?;
+            dest.write_str("] [")?;
+            dest.write_str(srcloc.file_name())?;
+            dest.write_str(":")?;
+            write!(dest, "{}", srcloc.line())?;
         }
 
-        write!(dest, "] {}", record.payload())?;
+        dest.write_str("] ")?;
+        dest.write_str(record.payload())?;
 
         Ok(FmtExtraInfo {
             style_range: Some(style_range_begin..style_range_end),

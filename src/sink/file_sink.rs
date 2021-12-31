@@ -52,7 +52,8 @@ impl Sink for FileSink {
         self.formatter.format(record, &mut string_buf)?;
 
         let mut file = self.file.lock();
-        writeln!(file, "{}", string_buf)?;
+        file.write_all(string_buf.as_bytes())?;
+        file.write_all(b"\n")?;
 
         Ok(())
     }
