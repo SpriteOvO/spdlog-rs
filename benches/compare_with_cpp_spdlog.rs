@@ -21,11 +21,13 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
 
     let logger = Logger::builder()
         .sink(Arc::new(RwLock::new(FileSink::new(path, true).unwrap())))
+        .name("FileSink (basic_mt)")
         .build();
-    bench_mt("FileSink (basic_mt)", &logger, threads, iters);
+
+    bench_mt(&logger, threads, iters);
 }
 
-fn bench_mt(name: &str, logger: &Logger, threads_count: usize, iters: usize) {
+fn bench_mt(logger: &Logger, threads_count: usize, iters: usize) {
     let start = Instant::now();
 
     crossbeam::thread::scope(|scope| {
@@ -43,7 +45,7 @@ fn bench_mt(name: &str, logger: &Logger, threads_count: usize, iters: usize) {
 
     info!(
         "{:<30} Elapsed: {:0.2} secs {:>16}/sec",
-        name,
+        logger.name().unwrap(),
         elapsed,
         (iters as f64 / elapsed) as usize
     );
