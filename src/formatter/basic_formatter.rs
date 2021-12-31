@@ -28,20 +28,11 @@ impl BasicFormatter {
 
 impl Formatter for BasicFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo> {
-        let time = self.local_time_cacher.lock().get(record.time());
-
-        write!(
-            dest,
-            "[{}-{:02}-{:02} {:02}:{:02}:{:02}.{:03}] [",
-            // `time.format("%Y-%m-%d %H:%M:%S.%3f")` is slower than this way
-            time.year,
-            time.month,
-            time.day,
-            time.hour,
-            time.minute,
-            time.second,
-            time.millisecond,
-        )?;
+        {
+            let mut local_time_cacher = self.local_time_cacher.lock();
+            let time = local_time_cacher.get(record.time());
+            write!(dest, "[{}.{:03}] [", time.0, time.1)?;
+        }
 
         if let Some(logger_name) = record.logger_name() {
             write!(dest, "{}] [", logger_name)?;
@@ -81,77 +72,49 @@ impl LocalTimeCacher {
         LocalTimeCacher::default()
     }
 
-    fn cache(utc_time: &DateTime<Utc>) -> LocalTimeCache {
-        LocalTimeCache {
-            last_secs: utc_time.timestamp(),
-            local_time: Into::<DateTime<Local>>::into(*utc_time).into(),
-        }
-    }
-
-    fn get(&mut self, utc_time: &DateTime<Utc>) -> Time {
+    // Returns (local_time_in_sec, millisecond)
+    fn get(&mut self, utc_time: &DateTime<Utc>) -> (&str, u32) {
         match &mut self.cache {
-            None => self.cache = Some(Self::cache(utc_time)),
+            None => self.cache = Some(LocalTimeCache::new(utc_time)),
             Some(cache) => {
                 let secs = utc_time.timestamp();
-
                 if cache.last_secs != secs {
-                    *cache = Self::cache(utc_time);
-                } else {
-                    // update nanosecond
-
-                    // `chrono::Timelike::with_nanosecond` is slower than this way
-                    cache
-                        .local_time
-                        .set_millisecond_from_nanosecond(utc_time.nanosecond());
+                    *cache = LocalTimeCache::new(utc_time);
                 }
             }
         }
 
-        self.cache.as_ref().unwrap().local_time.clone()
+        let millisecond = utc_time.nanosecond() % 1_000_000_000 / 1_000_000;
+
+        (
+            self.cache.as_ref().unwrap().local_time_str.as_str(),
+            millisecond,
+        )
     }
 }
 
 #[derive(Clone)]
 struct LocalTimeCache {
     last_secs: i64,
-    local_time: Time,
+    local_time_str: String,
 }
 
-#[derive(Clone)]
-struct Time {
-    year: i32,
-    month: u32,
-    day: u32,
-    hour: u32,
-    minute: u32,
-    second: u32,
-    millisecond: u32,
-}
-
-impl<T> From<DateTime<T>> for Time
-where
-    T: TimeZone,
-{
-    fn from(date_time: DateTime<T>) -> Time {
-        Time {
-            year: date_time.year(),
-            month: date_time.month(),
-            day: date_time.day(),
-            hour: date_time.hour(),
-            minute: date_time.minute(),
-            second: date_time.second(),
-            millisecond: Self::nanosecond_to_millisecond(date_time.nanosecond()),
+impl LocalTimeCache {
+    fn new(utc_time: &DateTime<Utc>) -> Self {
+        let time: DateTime<Local> = (*utc_time).into();
+        Self {
+            last_secs: time.timestamp(),
+            local_time_str: format!(
+                // `time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
+                "{}-{:02}-{:02} {:02}:{:02}:{:02}",
+                time.year(),
+                time.month(),
+                time.day(),
+                time.hour(),
+                time.minute(),
+                time.second(),
+            ),
         }
-    }
-}
-
-impl Time {
-    fn set_millisecond_from_nanosecond(&mut self, nanosecond: u32) {
-        self.millisecond = Self::nanosecond_to_millisecond(nanosecond);
-    }
-
-    fn nanosecond_to_millisecond(nanosecond: u32) -> u32 {
-        nanosecond % 1_000_000_000 / 1_000_000
     }
 }
 
