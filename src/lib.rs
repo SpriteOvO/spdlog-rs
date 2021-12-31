@@ -71,7 +71,10 @@ use std::sync::{Arc, RwLock};
 use cfg_if::cfg_if;
 use lazy_static::lazy_static;
 
-use sink::std_out_stream_style_sink::{StdOutStream, StdOutStreamStyleSink};
+use sink::{
+    std_out_stream_style_sink::{StdOutStream, StdOutStreamStyleSink},
+    Sink,
+};
 use terminal::StyleMode;
 
 /// The statically resolved maximum log level.
@@ -115,14 +118,18 @@ cfg_if! {
 }
 
 lazy_static! {
-    static ref DEFAULT_LOGGER: RwLock<Arc<Logger>> = RwLock::new(Arc::new(
-        Logger::builder()
-            .sink(Arc::new(RwLock::new(StdOutStreamStyleSink::new(
-                StdOutStream::Stdout,
-                StyleMode::Auto
-            ))))
-            .build()
-    ));
+    static ref DEFAULT_LOGGER: RwLock<Arc<Logger>> = {
+        let mut stdout = StdOutStreamStyleSink::new(StdOutStream::Stdout, StyleMode::Auto);
+        stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
+
+        let mut stderr = StdOutStreamStyleSink::new(StdOutStream::Stderr, StyleMode::Auto);
+        stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
+
+        let sinks: [Arc<RwLock<dyn Sink>>; 2] =
+            [Arc::new(RwLock::new(stdout)), Arc::new(RwLock::new(stderr))];
+
+        RwLock::new(Arc::new(Logger::builder().sinks(sinks).build()))
+    };
 }
 
 /// Initializes the crate
