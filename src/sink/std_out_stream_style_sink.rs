@@ -10,14 +10,14 @@ use crate::{
     formatter::{BasicFormatter, Formatter},
     sink::{std_out_stream_sink::StdOutStreamDest, Sink},
     terminal::{LevelStyleCodes, Style, StyleMode},
-    LevelFilter, Record, Result, StringBuf,
+    Level, LevelFilter, Record, Result, StringBuf,
 };
 
 /// A standard output stream style sink.
 ///
 /// For internal use, users should not use it directly.
 pub struct StdOutStreamStyleSink {
-    level: LevelFilter,
+    level_filter: LevelFilter,
     formatter: Box<dyn Formatter>,
     dest: StdOutStreamDest<io::Stdout, io::Stderr>,
     atty_stream: atty::Stream,
@@ -36,7 +36,7 @@ impl StdOutStreamStyleSink {
         };
 
         StdOutStreamStyleSink {
-            level: LevelFilter::max(),
+            level_filter: LevelFilter::All,
             formatter: Box::new(BasicFormatter::new()),
             dest: StdOutStreamDest::new(std_out_stream),
             atty_stream,
@@ -46,7 +46,7 @@ impl StdOutStreamStyleSink {
     }
 
     /// Sets the style of the specified log level.
-    pub fn set_style(&mut self, level: LevelFilter, style: Style) {
+    pub fn set_style(&mut self, level: Level, style: Style) {
         self.level_style_codes.set_code(level, style);
     }
 
@@ -76,7 +76,7 @@ impl Sink for StdOutStreamStyleSink {
             if self.should_render_style;
             if let Some(style_range) = extra_info.style_range();
             then {
-                let style_code = self.level_style_codes.code(record.level().to_level_filter());
+                let style_code = self.level_style_codes.code(record.level());
 
                 dest.write_all(string_buf[..style_range.start].as_bytes())?;
                 dest.write_all(style_code.start.as_bytes())?;
@@ -102,12 +102,12 @@ impl Sink for StdOutStreamStyleSink {
         Ok(())
     }
 
-    fn level(&self) -> LevelFilter {
-        self.level
+    fn level_filter(&self) -> LevelFilter {
+        self.level_filter
     }
 
-    fn set_level(&mut self, level: LevelFilter) {
-        self.level = level;
+    fn set_level_filter(&mut self, level_filter: LevelFilter) {
+        self.level_filter = level_filter;
     }
 
     fn formatter(&self) -> &dyn Formatter {

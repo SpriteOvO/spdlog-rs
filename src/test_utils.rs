@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub struct TestSink {
-    level: LevelFilter,
+    level_filter: LevelFilter,
     formatter: Box<dyn Formatter>,
     log_counter: Mutex<usize>,
     flush_counter: Mutex<usize>,
@@ -17,7 +17,7 @@ pub struct TestSink {
 impl TestSink {
     pub fn new() -> TestSink {
         TestSink {
-            level: LevelFilter::Info,
+            level_filter: LevelFilter::All,
             formatter: Box::new(BasicFormatter::new()),
             log_counter: Mutex::new(0),
             flush_counter: Mutex::new(0),
@@ -61,12 +61,12 @@ impl Sink for TestSink {
         Ok(())
     }
 
-    fn level(&self) -> LevelFilter {
-        self.level
+    fn level_filter(&self) -> LevelFilter {
+        self.level_filter
     }
 
-    fn set_level(&mut self, level: LevelFilter) {
-        self.level = level;
+    fn set_level_filter(&mut self, level_filter: LevelFilter) {
+        self.level_filter = level_filter;
     }
 
     fn formatter(&self) -> &dyn Formatter {

@@ -4,9 +4,7 @@
 
 use getset::{CopyGetters, Setters};
 
-use crate::{level, LevelFilter};
-
-const LEVEL_COUNT: usize = level::LOG_LEVEL_NAMES.len();
+use crate::Level;
 
 /// The terminal text color style.
 #[allow(missing_docs)]
@@ -200,16 +198,16 @@ impl StyleBuilder {
 }
 
 /// Represents styles of all log filtering levels.
-pub struct LevelStyles([Style; LEVEL_COUNT]);
+pub struct LevelStyles([Style; Level::count()]);
 
 impl LevelStyles {
     /// Getter of the style for the given level.
-    pub fn style(&self, level: LevelFilter) -> &Style {
+    pub fn style(&self, level: Level) -> &Style {
         &self.0[level as usize]
     }
 
     /// Setter of the style for the given level.
-    pub fn set_style(&mut self, level: LevelFilter, style: Style) {
+    pub fn set_style(&mut self, level: Level, style: Style) {
         self.0[level as usize] = style;
     }
 }
@@ -223,13 +221,12 @@ impl From<LevelStyles> for LevelStyleCodes {
 impl Default for LevelStyles {
     fn default() -> LevelStyles {
         LevelStyles([
-            StyleBuilder::new().reset().build(), // Off, should never be used
             StyleBuilder::new().bg_color(Color::Red).bold().build(), // Critical
-            StyleBuilder::new().color(Color::Red).bold().build(), // Error
+            StyleBuilder::new().color(Color::Red).bold().build(),    // Error
             StyleBuilder::new().color(Color::Yellow).bold().build(), // Warn
-            StyleBuilder::new().color(Color::Green).build(), // Info
-            StyleBuilder::new().color(Color::Cyan).build(), // Debug
-            StyleBuilder::new().color(Color::White).build(), // Trace
+            StyleBuilder::new().color(Color::Green).build(),         // Info
+            StyleBuilder::new().color(Color::Cyan).build(),          // Debug
+            StyleBuilder::new().color(Color::White).build(),         // Trace
         ])
     }
 }
@@ -243,16 +240,16 @@ pub struct StyleCode {
 }
 
 /// Represents style codes of all log filtering levels.
-pub struct LevelStyleCodes([StyleCode; LEVEL_COUNT]);
+pub struct LevelStyleCodes([StyleCode; Level::count()]);
 
 impl LevelStyleCodes {
     /// Getter of the code for the given level.
-    pub fn code(&self, level: LevelFilter) -> &StyleCode {
+    pub fn code(&self, level: Level) -> &StyleCode {
         &self.0[level as usize]
     }
 
     /// Setter of the code for the given level.
-    pub fn set_code<C>(&mut self, level: LevelFilter, code: C)
+    pub fn set_code<C>(&mut self, level: Level, code: C)
     where
         C: Into<StyleCode>,
     {
@@ -281,17 +278,4 @@ pub enum StyleMode {
     Auto,
     /// Always do not output style escape codes
     Never,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{Level, LevelFilter};
-
-    // For guarantee `LEVEL_COUNT`
-    #[test]
-    fn level_count() {
-        assert_eq!(Level::max() as usize + 1, LEVEL_COUNT);
-        assert_eq!(LevelFilter::max() as usize + 1, LEVEL_COUNT);
-    }
 }

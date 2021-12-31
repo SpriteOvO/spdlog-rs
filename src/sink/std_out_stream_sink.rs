@@ -68,7 +68,7 @@ impl_write_for_dest!(StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 ///
 /// For internal use, users should not use it directly.
 pub struct StdOutStreamSink {
-    level: LevelFilter,
+    level_filter: LevelFilter,
     formatter: Box<dyn Formatter>,
     dest: StdOutStreamDest<io::Stdout, io::Stderr>,
 }
@@ -79,7 +79,7 @@ impl StdOutStreamSink {
     /// Level default maximum (no discard)
     pub fn new(std_out_stream: StdOutStream) -> StdOutStreamSink {
         StdOutStreamSink {
-            level: LevelFilter::max(),
+            level_filter: LevelFilter::All,
             formatter: Box::new(BasicFormatter::new()),
             dest: StdOutStreamDest::new(std_out_stream),
         }
@@ -109,12 +109,12 @@ impl Sink for StdOutStreamSink {
         Ok(())
     }
 
-    fn level(&self) -> LevelFilter {
-        self.level
+    fn level_filter(&self) -> LevelFilter {
+        self.level_filter
     }
 
-    fn set_level(&mut self, level: LevelFilter) {
-        self.level = level;
+    fn set_level_filter(&mut self, level_filter: LevelFilter) {
+        self.level_filter = level_filter;
     }
 
     fn formatter(&self) -> &dyn Formatter {

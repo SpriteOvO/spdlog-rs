@@ -24,7 +24,7 @@
 macro_rules! log {
     (logger: $logger:expr, $lvl:expr, $($arg:tt)+) => ({
         let lvl = $lvl;
-        if lvl <= $crate::STATIC_MAX_LEVEL {
+        if $crate::STATIC_MAX_LEVEL.compare(lvl) {
             (|fmt_args: std::fmt::Arguments| {
                 // use `Cow` to avoid allocation as much as we can
                 let payload: std::borrow::Cow<str> = if let Some(literal_str) = fmt_args.as_str() {

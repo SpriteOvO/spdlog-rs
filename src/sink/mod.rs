@@ -24,7 +24,7 @@ use crate::{formatter::Formatter, Level, LevelFilter, Record, Result};
 pub trait Sink: Sync + Send {
     /// Determines if a log message with the specified level would be logged.
     fn should_log(&self, level: Level) -> bool {
-        level <= self.level()
+        self.level_filter().compare(level)
     }
 
     /// Logs the record.
@@ -39,11 +39,11 @@ pub trait Sink: Sync + Send {
     /// Flushes any buffered records.
     fn flush(&self) -> Result<()>;
 
-    /// Getter of the log filter level.
-    fn level(&self) -> LevelFilter;
+    /// Getter of the log level filter.
+    fn level_filter(&self) -> LevelFilter;
 
-    /// Setter of the log filter level.
-    fn set_level(&mut self, level: LevelFilter);
+    /// Setter of the log level filter.
+    fn set_level_filter(&mut self, level_filter: LevelFilter);
 
     /// Getter of the formatter.
     fn formatter(&self) -> &dyn Formatter;

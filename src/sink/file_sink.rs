@@ -13,7 +13,7 @@ use crate::{
 
 /// A sink with a file as the target.
 pub struct FileSink {
-    level: LevelFilter,
+    level_filter: LevelFilter,
     formatter: Box<dyn Formatter>,
     file: spin::Mutex<BufWriter<File>>,
 }
@@ -37,7 +37,7 @@ impl FileSink {
         let file = open_options.create(true).open(path)?;
 
         let sink = FileSink {
-            level: LevelFilter::max(),
+            level_filter: LevelFilter::All,
             formatter: Box::new(BasicFormatter::new()),
             file: spin::Mutex::new(BufWriter::new(file)),
         };
@@ -63,12 +63,12 @@ impl Sink for FileSink {
         Ok(())
     }
 
-    fn level(&self) -> LevelFilter {
-        self.level
+    fn level_filter(&self) -> LevelFilter {
+        self.level_filter
     }
 
-    fn set_level(&mut self, level: LevelFilter) {
-        self.level = level;
+    fn set_level_filter(&mut self, level_filter: LevelFilter) {
+        self.level_filter = level_filter;
     }
 
     fn formatter(&self) -> &dyn Formatter {

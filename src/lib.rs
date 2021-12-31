@@ -90,27 +90,27 @@ cfg_if! {
     if #[cfg(all(not(debug_assertions), feature = "release_max_level_off"))] {
         const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Off;
     } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_error"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Error;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
     } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_warn"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Warn;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Warn);
     } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_info"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Info;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Info);
     } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_debug"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Debug;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Debug);
     } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_trace"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Trace;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
     } else if #[cfg(feature = "max_level_off")] {
         const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Off;
     } else if #[cfg(feature = "max_level_error")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Error;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
     } else if #[cfg(feature = "max_level_warn")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Warn;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Warn);
     } else if #[cfg(feature = "max_level_info")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Info;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Info);
     } else if #[cfg(feature = "max_level_debug")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Debug;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Debug);
     } else {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Trace;
+        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
     }
 }
 

@@ -10,9 +10,9 @@ use crate::{
 /// A logger structure.
 pub struct Logger {
     name: Option<String>,
-    level: LevelFilter,
+    level_filter: LevelFilter,
     sinks: Sinks,
-    flush_level: LevelFilter,
+    flush_level_filter: LevelFilter,
     error_handler: Option<ErrorHandler>,
 }
 
@@ -21,9 +21,9 @@ impl Logger {
     pub fn new() -> Logger {
         Logger {
             name: None,
-            level: LevelFilter::Info,
+            level_filter: LevelFilter::MoreSevereEqual(Level::Info),
             sinks: vec![],
-            flush_level: LevelFilter::Off,
+            flush_level_filter: LevelFilter::Off,
             error_handler: None,
         }
     }
@@ -44,7 +44,7 @@ impl Logger {
     /// This allows callers to avoid expensive computation of log message
     /// arguments if the message would be discarded anyway.
     pub fn should_log(&self, level: Level) -> bool {
-        level <= self.level
+        self.level_filter.compare(level)
     }
 
     /// Logs the message.
@@ -64,24 +64,24 @@ impl Logger {
         self.flush_sinks();
     }
 
-    /// Getter of the flush level.
-    pub fn flush_level(&self) -> LevelFilter {
-        self.flush_level
+    /// Getter of the flush level filter.
+    pub fn flush_level_filter(&self) -> LevelFilter {
+        self.flush_level_filter
     }
 
-    /// Flushes any buffered records on the level or more severe.
-    pub fn set_flush_level(&mut self, level: LevelFilter) {
-        self.flush_level = level;
+    /// Flushes any buffered records if the level filter condition is true.
+    pub fn set_flush_level_filter(&mut self, level_filter: LevelFilter) {
+        self.flush_level_filter = level_filter;
     }
 
     /// Getter of the log filter level.
-    pub fn level(&self) -> LevelFilter {
-        self.level
+    pub fn level_filter(&self) -> LevelFilter {
+        self.level_filter
     }
 
     /// Setter of the log filter level.
-    pub fn set_level(&mut self, level: LevelFilter) {
-        self.level = level;
+    pub fn set_level_filter(&mut self, level_filter: LevelFilter) {
+        self.level_filter = level_filter;
     }
 
     /// Getter of the sinks.
@@ -141,7 +141,7 @@ impl Logger {
     }
 
     fn should_flush(&self, record: &Record) -> bool {
-        record.level() <= self.flush_level
+        self.flush_level_filter.compare(record.level())
     }
 }
 
@@ -176,8 +176,8 @@ impl LoggerBuilder {
     }
 
     /// Sets the log filter level.
-    pub fn level(mut self, level: LevelFilter) -> Self {
-        self.logger.level = level;
+    pub fn level_filter(mut self, level_filter: LevelFilter) -> Self {
+        self.logger.level_filter = level_filter;
         self
     }
 
@@ -196,9 +196,9 @@ impl LoggerBuilder {
         self
     }
 
-    /// Sets the flush level.
-    pub fn flush_level(mut self, level: LevelFilter) -> Self {
-        self.logger.flush_level = level;
+    /// Sets the flush level filter.
+    pub fn flush_level_filter(mut self, level_filter: LevelFilter) -> Self {
+        self.logger.flush_level_filter = level_filter;
         self
     }
 
@@ -241,19 +241,19 @@ mod tests {
         assert_eq!(test_sink.read().unwrap().flush_counter(), 0);
         test_sink.read().unwrap().reset();
 
-        test_logger.set_flush_level(LevelFilter::Warn);
+        test_logger.set_flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
         debug!(logger: test_logger, "");
         warn!(logger: test_logger, "");
         assert_eq!(test_sink.read().unwrap().flush_counter(), 1);
         test_sink.read().unwrap().reset();
 
-        test_logger.set_flush_level(LevelFilter::Off);
+        test_logger.set_flush_level_filter(LevelFilter::Off);
         info!(logger: test_logger, "");
         trace!(logger: test_logger, "");
         assert_eq!(test_sink.read().unwrap().flush_counter(), 0);
         test_sink.read().unwrap().reset();
 
-        test_logger.set_flush_level(LevelFilter::Trace);
+        test_logger.set_flush_level_filter(LevelFilter::MoreSevereEqual(Level::Trace));
         info!(logger: test_logger, "");
         warn!(logger: test_logger, "");
         assert_eq!(test_sink.read().unwrap().flush_counter(), 2);
