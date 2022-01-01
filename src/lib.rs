@@ -9,26 +9,26 @@
 //! present in the resulting binary. This level is configured separately for
 //! release and debug builds. The features are:
 //!
-//! * `max_level_off`
-//! * `max_level_error`
-//! * `max_level_warn`
-//! * `max_level_info`
-//! * `max_level_debug`
-//! * `max_level_trace`
-//! * `release_max_level_off`
-//! * `release_max_level_error`
-//! * `release_max_level_warn`
-//! * `release_max_level_info`
-//! * `release_max_level_debug`
-//! * `release_max_level_trace`
+//! * `level-off`
+//! * `level-error`
+//! * `level-warn`
+//! * `level-info`
+//! * `level-debug`
+//! * `level-trace`
+//! * `release-level-off`
+//! * `release-level-error`
+//! * `release-level-warn`
+//! * `release-level-info`
+//! * `release-level-debug`
+//! * `release-level-trace`
 //!
-//! These features control the value of the `STATIC_MAX_LEVEL` constant. The
+//! These features control the value of the `STATIC_LEVEL_FILTER` constant. The
 //! logging macros check this value before logging a message. By default, no
 //! levels are disabled.
 //!
 //! For example, a crate can disable trace level logs in debug builds and trace,
-//! debug, and info level logs in release builds with `features =
-//! ["max_level_debug", "release_max_level_warn"]`.
+//! debug, and info level logs in release builds with
+//! `features = ["level-debug", "release-level-warn"]`.
 //!
 //! # Crate Feature Flags
 //!
@@ -77,7 +77,7 @@ use sink::{
 };
 use terminal::StyleMode;
 
-/// The statically resolved maximum log level.
+/// The statically resolved log level filter.
 ///
 /// See the crate level documentation for information on how to configure this.
 ///
@@ -87,33 +87,33 @@ use terminal::StyleMode;
 ///
 /// [`Logger`]: crate::logger::Logger
 /// [`Sink`]: crate::sink::Sink
-pub const STATIC_MAX_LEVEL: LevelFilter = MAX_LEVEL_INNER;
+pub const STATIC_LEVEL_FILTER: LevelFilter = STATIC_LEVEL_FILTER_INNER;
 
 cfg_if! {
-    if #[cfg(all(not(debug_assertions), feature = "release_max_level_off"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Off;
-    } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_error"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
-    } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_warn"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Warn);
-    } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_info"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Info);
-    } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_debug"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Debug);
-    } else if #[cfg(all(not(debug_assertions), feature = "release_max_level_trace"))] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
-    } else if #[cfg(feature = "max_level_off")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::Off;
-    } else if #[cfg(feature = "max_level_error")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
-    } else if #[cfg(feature = "max_level_warn")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Warn);
-    } else if #[cfg(feature = "max_level_info")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Info);
-    } else if #[cfg(feature = "max_level_debug")] {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Debug);
+    if #[cfg(all(not(debug_assertions), feature = "release-level-off"))] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::Off;
+    } else if #[cfg(all(not(debug_assertions), feature = "release-level-error"))] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
+    } else if #[cfg(all(not(debug_assertions), feature = "release-level-warn"))] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Warn);
+    } else if #[cfg(all(not(debug_assertions), feature = "release-level-info"))] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Info);
+    } else if #[cfg(all(not(debug_assertions), feature = "release-level-debug"))] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Debug);
+    } else if #[cfg(all(not(debug_assertions), feature = "release-level-trace"))] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
+    } else if #[cfg(feature = "level-off")] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::Off;
+    } else if #[cfg(feature = "level-error")] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
+    } else if #[cfg(feature = "level-warn")] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Warn);
+    } else if #[cfg(feature = "level-info")] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Info);
+    } else if #[cfg(feature = "level-debug")] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Debug);
     } else {
-        const MAX_LEVEL_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
     }
 }
 
