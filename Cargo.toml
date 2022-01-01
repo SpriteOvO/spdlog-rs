@@ -7,19 +7,21 @@ edition = "2021"
 name = "spdlog"
 
 [features]
-level-off   = []
-level-error = []
-level-warn  = []
-level-info  = []
-level-debug = []
-level-trace = []
+level-off      = []
+level-critical = []
+level-error    = []
+level-warn     = []
+level-info     = []
+level-debug    = []
+level-trace    = []
 
-release-level-off   = []
-release-level-error = []
-release-level-warn  = []
-release-level-info  = []
-release-level-debug = []
-release-level-trace = []
+release-level-off      = []
+release-level-critical = []
+release-level-error    = []
+release-level-warn     = []
+release-level-info     = []
+release-level-debug    = []
+release-level-trace    = []
 
 source-location = []
 

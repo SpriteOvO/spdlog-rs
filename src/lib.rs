@@ -92,6 +92,8 @@ pub const STATIC_LEVEL_FILTER: LevelFilter = STATIC_LEVEL_FILTER_INNER;
 cfg_if! {
     if #[cfg(all(not(debug_assertions), feature = "release-level-off"))] {
         const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::Off;
+    } else if #[cfg(all(not(debug_assertions), feature = "release-level-critical"))] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Critical);
     } else if #[cfg(all(not(debug_assertions), feature = "release-level-error"))] {
         const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
     } else if #[cfg(all(not(debug_assertions), feature = "release-level-warn"))] {
@@ -104,6 +106,8 @@ cfg_if! {
         const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
     } else if #[cfg(feature = "level-off")] {
         const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::Off;
+    } else if #[cfg(feature = "level-critical")] {
+        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Critical);
     } else if #[cfg(feature = "level-error")] {
         const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
     } else if #[cfg(feature = "level-warn")] {
