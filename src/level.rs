@@ -149,15 +149,23 @@ pub enum LevelFilter {
 impl LevelFilter {
     /// Compares the log level filter condition
     pub fn compare(&self, level: Level) -> bool {
+        self.__compare_const(level)
+    }
+
+    // Users should not use this function directly.
+    #[doc(hidden)]
+    pub const fn __compare_const(&self, level: Level) -> bool {
+        let level_usize: usize = level as usize;
+
         match *self {
-            LevelFilter::Off => false,
-            LevelFilter::Equal(stored) => level == stored,
-            LevelFilter::NotEqual(stored) => level != stored,
-            LevelFilter::MoreSevere(stored) => (level as usize) < stored as usize,
-            LevelFilter::MoreSevereEqual(stored) => level as usize <= stored as usize,
-            LevelFilter::MoreVerbose(stored) => level as usize > stored as usize,
-            LevelFilter::MoreVerboseEqual(stored) => level as usize >= stored as usize,
-            LevelFilter::All => true,
+            Self::Off => false,
+            Self::Equal(stored) => level_usize == stored as usize,
+            Self::NotEqual(stored) => level_usize != stored as usize,
+            Self::MoreSevere(stored) => level_usize < stored as usize,
+            Self::MoreSevereEqual(stored) => level_usize <= stored as usize,
+            Self::MoreVerbose(stored) => level_usize > stored as usize,
+            Self::MoreVerboseEqual(stored) => level_usize >= stored as usize,
+            Self::All => true,
         }
     }
 }

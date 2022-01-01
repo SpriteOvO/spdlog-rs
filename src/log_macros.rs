@@ -22,9 +22,10 @@
 /// ```
 #[macro_export]
 macro_rules! log {
-    (logger: $logger:expr, $lvl:expr, $($arg:tt)+) => ({
-        let lvl = $lvl;
-        if $crate::STATIC_LEVEL_FILTER.compare(lvl) {
+    (logger: $logger:expr, $level:expr, $($arg:tt)+) => ({
+        const LEVEL: $crate::Level = $level;
+        const SHOULD_LOG: bool = $crate::STATIC_LEVEL_FILTER.__compare_const(LEVEL);
+        if SHOULD_LOG {
             (|fmt_args: std::fmt::Arguments| {
                 // use `Cow` to avoid allocation as much as we can
                 let payload: std::borrow::Cow<str> = if let Some(literal_str) = fmt_args.as_str() {
@@ -33,7 +34,7 @@ macro_rules! log {
                     fmt_args.to_string().into()
                 };
 
-                let mut builder = $crate::Record::builder(lvl, payload)
+                let mut builder = $crate::Record::builder(LEVEL, payload)
                     .source_location($crate::source_location_current!());
 
                 let logger = &$logger;
