@@ -8,7 +8,7 @@ pub use file_sink::FileSink;
 pub use std_out_stream_sink::StdOutStreamSink;
 pub use std_out_stream_style_sink::StdOutStreamStyleSink;
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use crate::{formatter::Formatter, Level, LevelFilter, Record, Result};
 
@@ -53,4 +53,4 @@ pub trait Sink: Sync + Send {
 }
 
 /// A container for [`Sink`]s.
-pub type Sinks = Vec<Arc<RwLock<dyn Sink>>>;
+pub type Sinks = Vec<Arc<dyn Sink>>;

@@ -66,7 +66,7 @@ pub mod prelude {
     pub use super::{critical, debug, error, info, log, trace, warn};
 }
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use cfg_if::cfg_if;
@@ -130,8 +130,7 @@ lazy_static! {
         let mut stderr = StdOutStreamStyleSink::new(StdOutStream::Stderr, StyleMode::Auto);
         stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
 
-        let sinks: [Arc<RwLock<dyn Sink>>; 2] =
-            [Arc::new(RwLock::new(stdout)), Arc::new(RwLock::new(stderr))];
+        let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
 
         ArcSwap::from_pointee(Logger::builder().sinks(sinks).build())
     };
@@ -175,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_default_logger() {
-        let test_sink = Arc::new(RwLock::new(TestSink::new()));
+        let test_sink = Arc::new(TestSink::new());
 
         let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build());
         let empty_logger = Arc::new(Logger::new());
@@ -192,9 +191,9 @@ mod tests {
         info!("hello");
         error!("spdlog");
 
-        assert_eq!(test_sink.read().unwrap().log_counter(), 2);
+        assert_eq!(test_sink.log_counter(), 2);
         assert_eq!(
-            test_sink.read().unwrap().payloads(),
+            test_sink.payloads(),
             vec!["hello".to_string(), "rust".to_string()]
         );
     }

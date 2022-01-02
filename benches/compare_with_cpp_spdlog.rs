@@ -1,8 +1,4 @@
-use std::{
-    env,
-    sync::{Arc, RwLock},
-    time::Instant,
-};
+use std::{env, sync::Arc, time::Instant};
 
 use clap::Parser;
 
@@ -20,7 +16,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
         .join("logs/FileSink.log");
 
     let logger = Logger::builder()
-        .sink(Arc::new(RwLock::new(FileSink::new(path, true).unwrap())))
+        .sink(Arc::new(FileSink::new(path, true).unwrap()))
         .name("FileSink (basic_mt)")
         .build();
 

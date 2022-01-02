@@ -1,6 +1,6 @@
 //! Provides a basic and default logger.
 
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use crate::{
     sink::{Sink, Sinks},
@@ -104,10 +104,8 @@ impl Logger {
 
     fn sink_record(&self, record: &Record) {
         self.sinks.iter().for_each(|sink| {
-            let sink = sink.read().unwrap();
             if sink.should_log(record.level()) {
                 if let Err(err) = sink.log(record) {
-                    drop(sink);
                     self.handle_error(err);
                 }
             }
@@ -120,7 +118,7 @@ impl Logger {
 
     fn flush_sinks(&self) {
         self.sinks.iter().for_each(|sink| {
-            if let Err(err) = sink.read().unwrap().flush() {
+            if let Err(err) = sink.flush() {
                 self.handle_error(err);
             }
         });
@@ -182,7 +180,7 @@ impl LoggerBuilder {
     }
 
     /// Add a [`Sink`].
-    pub fn sink(mut self, sink: Arc<RwLock<dyn Sink>>) -> Self {
+    pub fn sink(mut self, sink: Arc<dyn Sink>) -> Self {
         self.logger.sinks.push(sink);
         self
     }
@@ -190,7 +188,7 @@ impl LoggerBuilder {
     /// Add multiple [`Sink`]s.
     pub fn sinks<I>(mut self, sinks: I) -> Self
     where
-        I: IntoIterator<Item = Arc<RwLock<dyn Sink>>>,
+        I: IntoIterator<Item = Arc<dyn Sink>>,
     {
         self.logger.sinks.append(&mut sinks.into_iter().collect());
         self
@@ -233,30 +231,30 @@ mod tests {
 
     #[test]
     fn flush_level() {
-        let test_sink = Arc::new(RwLock::new(TestSink::new()));
+        let test_sink = Arc::new(TestSink::new());
         let mut test_logger = Logger::builder().sink(test_sink.clone()).build();
 
         trace!(logger: test_logger, "");
         error!(logger: test_logger, "");
-        assert_eq!(test_sink.read().unwrap().flush_counter(), 0);
-        test_sink.read().unwrap().reset();
+        assert_eq!(test_sink.flush_counter(), 0);
+        test_sink.reset();
 
         test_logger.set_flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
         debug!(logger: test_logger, "");
         warn!(logger: test_logger, "");
-        assert_eq!(test_sink.read().unwrap().flush_counter(), 1);
-        test_sink.read().unwrap().reset();
+        assert_eq!(test_sink.flush_counter(), 1);
+        test_sink.reset();
 
         test_logger.set_flush_level_filter(LevelFilter::Off);
         info!(logger: test_logger, "");
         trace!(logger: test_logger, "");
-        assert_eq!(test_sink.read().unwrap().flush_counter(), 0);
-        test_sink.read().unwrap().reset();
+        assert_eq!(test_sink.flush_counter(), 0);
+        test_sink.reset();
 
         test_logger.set_flush_level_filter(LevelFilter::MoreSevereEqual(Level::Trace));
         info!(logger: test_logger, "");
         warn!(logger: test_logger, "");
-        assert_eq!(test_sink.read().unwrap().flush_counter(), 2);
-        test_sink.read().unwrap().reset();
+        assert_eq!(test_sink.flush_counter(), 2);
+        test_sink.reset();
     }
 }
