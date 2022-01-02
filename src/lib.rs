@@ -68,6 +68,7 @@ pub mod prelude {
 
 use std::sync::{Arc, RwLock};
 
+use arc_swap::ArcSwap;
 use cfg_if::cfg_if;
 use lazy_static::lazy_static;
 
@@ -122,7 +123,7 @@ cfg_if! {
 }
 
 lazy_static! {
-    static ref DEFAULT_LOGGER: RwLock<Arc<Logger>> = {
+    static ref DEFAULT_LOGGER: ArcSwap<Logger> = {
         let mut stdout = StdOutStreamStyleSink::new(StdOutStream::Stdout, StyleMode::Auto);
         stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
 
@@ -132,7 +133,7 @@ lazy_static! {
         let sinks: [Arc<RwLock<dyn Sink>>; 2] =
             [Arc::new(RwLock::new(stdout)), Arc::new(RwLock::new(stderr))];
 
-        RwLock::new(Arc::new(Logger::builder().sinks(sinks).build()))
+        ArcSwap::from_pointee(Logger::builder().sinks(sinks).build())
     };
 }
 
@@ -145,12 +146,12 @@ pub fn init() {
 
 /// Returns a reference to the default logger.
 pub fn default_logger() -> Arc<Logger> {
-    DEFAULT_LOGGER.read().unwrap().clone()
+    DEFAULT_LOGGER.load().clone()
 }
 
 /// Sets the default logger to the given logger.
 pub fn set_default_logger(logger: Arc<Logger>) {
-    *DEFAULT_LOGGER.write().unwrap() = logger;
+    DEFAULT_LOGGER.store(logger);
 }
 
 fn default_error_handler(from: impl AsRef<str>, error: Error) {
