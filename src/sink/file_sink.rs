@@ -8,7 +8,7 @@ use std::{
 use crate::{
     formatter::{BasicFormatter, Formatter},
     sink::Sink,
-    LevelFilter, Record, Result, StringBuf,
+    Error, LevelFilter, Record, Result, StringBuf,
 };
 
 /// A sink with a file as the target.
@@ -25,7 +25,7 @@ impl FileSink {
         P: AsRef<Path>,
     {
         if let Some(parent) = path.as_ref().parent() {
-            fs::create_dir_all(parent)?;
+            fs::create_dir_all(parent).map_err(Error::CreateDirectory)?;
         }
 
         let mut open_options = OpenOptions::new();
@@ -34,7 +34,10 @@ impl FileSink {
         } else {
             open_options.append(true);
         }
-        let file = open_options.create(true).open(path)?;
+        let file = open_options
+            .create(true)
+            .open(path)
+            .map_err(Error::OpenFile)?;
 
         let sink = FileSink {
             level_filter: LevelFilter::All,
@@ -52,15 +55,16 @@ impl Sink for FileSink {
         self.formatter.format(record, &mut string_buf)?;
 
         let mut file = self.file.lock();
-        file.write_all(string_buf.as_bytes())?;
-        file.write_all(b"\n")?;
+
+        file.write_all(string_buf.as_bytes())
+            .map_err(Error::WriteRecord)?;
+        file.write_all(b"\n").map_err(Error::WriteRecord)?;
 
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.file.lock().flush()?;
-        Ok(())
+        self.file.lock().flush().map_err(Error::FlushBuffer)
     }
 
     fn level_filter(&self) -> LevelFilter {
@@ -86,7 +90,7 @@ impl Drop for FileSink {
             // Sinks do not have an error handler, because it would increase complexity and
             // the error is not common. So currently users cannot handle this error by
             // themselves.
-            crate::default_error_handler("FileSink", err.into());
+            crate::default_error_handler("FileSink", Error::FlushBuffer(err));
         }
     }
 }

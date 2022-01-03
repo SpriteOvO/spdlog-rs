@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use crate::{
     formatter::{BasicFormatter, Formatter},
     sink::Sink,
-    LevelFilter, Record, Result, StringBuf,
+    Error, LevelFilter, Record, Result, StringBuf,
 };
 
 /// An enum representing the available standard output streams.
@@ -93,20 +93,19 @@ impl Sink for StdOutStreamSink {
 
         let mut dest = self.dest.lock();
 
-        writeln!(dest, "{}", string_buf)?;
+        writeln!(dest, "{}", string_buf).map_err(Error::WriteRecord)?;
 
         // stderr is not buffered, so we don't need to flush it.
         // https://doc.rust-lang.org/std/io/fn.stderr.html
         if let StdOutStreamDest::Stdout(_) = dest {
-            dest.flush()?;
+            dest.flush().map_err(Error::FlushBuffer)?;
         }
 
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.dest.lock().flush()?;
-        Ok(())
+        self.dest.lock().flush().map_err(Error::FlushBuffer)
     }
 
     fn level_filter(&self) -> LevelFilter {

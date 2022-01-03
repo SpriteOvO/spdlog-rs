@@ -10,7 +10,7 @@ use crate::{
     formatter::{BasicFormatter, Formatter},
     sink::{std_out_stream_sink::StdOutStreamDest, Sink},
     terminal::{LevelStyleCodes, Style, StyleMode},
-    Level, LevelFilter, Record, Result, StringBuf,
+    Error, Level, LevelFilter, Record, Result, StringBuf,
 };
 
 /// A standard output stream style sink.
@@ -72,34 +72,37 @@ impl Sink for StdOutStreamStyleSink {
 
         let mut dest = self.dest.lock();
 
-        if_chain! {
-            if self.should_render_style;
-            if let Some(style_range) = extra_info.style_range();
-            then {
-                let style_code = self.level_style_codes.code(record.level());
+        (|| {
+            if_chain! {
+                if self.should_render_style;
+                if let Some(style_range) = extra_info.style_range();
+                then {
+                    let style_code = self.level_style_codes.code(record.level());
 
-                dest.write_all(string_buf[..style_range.start].as_bytes())?;
-                dest.write_all(style_code.start.as_bytes())?;
-                dest.write_all(string_buf[style_range.start..style_range.end].as_bytes())?;
-                dest.write_all(style_code.end.as_bytes())?;
-                writeln!(dest, "{}", &string_buf[style_range.end..])?;
-            } else {
-                writeln!(dest, "{}", string_buf)?;
+                    dest.write_all(string_buf[..style_range.start].as_bytes())?;
+                    dest.write_all(style_code.start.as_bytes())?;
+                    dest.write_all(string_buf[style_range.start..style_range.end].as_bytes())?;
+                    dest.write_all(style_code.end.as_bytes())?;
+                    writeln!(dest, "{}", &string_buf[style_range.end..])?;
+                } else {
+                    writeln!(dest, "{}", string_buf)?;
+                }
             }
-        }
+            Ok(())
+        })()
+        .map_err(Error::WriteRecord)?;
 
         // stderr is not buffered, so we don't need to flush it.
         // https://doc.rust-lang.org/std/io/fn.stderr.html
         if let StdOutStreamDest::Stdout(_) = dest {
-            dest.flush()?;
+            dest.flush().map_err(Error::FlushBuffer)?;
         }
 
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.dest.lock().flush()?;
-        Ok(())
+        self.dest.lock().flush().map_err(Error::FlushBuffer)
     }
 
     fn level_filter(&self) -> LevelFilter {

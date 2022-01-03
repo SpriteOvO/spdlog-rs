@@ -1,12 +1,12 @@
 //! Provides a basic and default log message formatter.
 
-use std::fmt::Write;
+use std::fmt::{self, Write};
 
 use chrono::prelude::*;
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
-    Record, Result, StringBuf,
+    Error, Record, StringBuf,
 };
 
 /// A basic and default log message formatter.
@@ -24,10 +24,12 @@ impl BasicFormatter {
             local_time_cacher: spin::Mutex::new(LocalTimeCacher::new()),
         }
     }
-}
 
-impl Formatter for BasicFormatter {
-    fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo> {
+    fn format_impl(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+    ) -> Result<FmtExtraInfo, fmt::Error> {
         {
             let mut local_time_cacher = self.local_time_cacher.lock();
             let time = local_time_cacher.get(record.time());
@@ -62,6 +64,12 @@ impl Formatter for BasicFormatter {
         Ok(FmtExtraInfo {
             style_range: Some(style_range_begin..style_range_end),
         })
+    }
+}
+
+impl Formatter for BasicFormatter {
+    fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
+        self.format_impl(record, dest).map_err(Error::FormatRecord)
     }
 }
 
