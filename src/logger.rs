@@ -1,8 +1,12 @@
 //! Provides a basic and default logger.
 
-use std::sync::Arc;
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 use crate::{
+    periodic_worker::PeriodicWorker,
     sink::{Sink, Sinks},
     Error, ErrorHandler, Level, LevelFilter, Record,
 };
@@ -13,6 +17,7 @@ pub struct Logger {
     level_filter: LevelFilter,
     sinks: Sinks,
     flush_level_filter: LevelFilter,
+    periodic_flusher: Mutex<Option<PeriodicWorker>>,
     error_handler: Option<ErrorHandler>,
 }
 
@@ -24,6 +29,7 @@ impl Logger {
             level_filter: LevelFilter::MoreSevereEqual(Level::Info),
             sinks: vec![],
             flush_level_filter: LevelFilter::Off,
+            periodic_flusher: Mutex::new(None),
             error_handler: None,
         }
     }
@@ -82,6 +88,31 @@ impl Logger {
     /// Setter of the log filter level.
     pub fn set_level_filter(&mut self, level_filter: LevelFilter) {
         self.level_filter = level_filter;
+    }
+
+    /// Sets periodic flush.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `interval` is zero.
+    pub fn set_flush_period(self: &Arc<Self>, interval: Option<Duration>) {
+        let mut periodic_flusher = self.periodic_flusher.lock().unwrap();
+
+        *periodic_flusher = None;
+
+        if let Some(interval) = interval {
+            let weak = Arc::downgrade(self);
+            let callback = move || {
+                let strong = weak.upgrade();
+                if let Some(strong) = strong {
+                    strong.flush_sinks();
+                    true
+                } else {
+                    false // All `Arc`s are dropped, return `false` to quit the worker thread.
+                }
+            };
+            *periodic_flusher = Some(PeriodicWorker::new(Box::new(callback), interval));
+        }
     }
 
     /// Getter of the sinks.
@@ -223,6 +254,8 @@ mod tests {
     use super::*;
     use crate::{prelude::*, test_utils::*};
 
+    use std::{thread, time::Duration};
+
     #[test]
     fn send_sync() {
         assert_send::<Logger>();
@@ -256,5 +289,31 @@ mod tests {
         warn!(logger: test_logger, "");
         assert_eq!(test_sink.flush_counter(), 2);
         test_sink.reset();
+    }
+
+    #[test]
+    fn periodic_flush() {
+        let test_sink = Arc::new(TestSink::new());
+        let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build());
+
+        test_logger.set_flush_period(Some(Duration::from_secs(1)));
+
+        assert_eq!(test_sink.flush_counter(), 0);
+
+        thread::sleep(Duration::from_millis(1250));
+        assert_eq!(test_sink.flush_counter(), 1);
+
+        thread::sleep(Duration::from_millis(1250));
+        assert_eq!(test_sink.flush_counter(), 2);
+
+        test_logger.set_flush_period(None);
+
+        thread::sleep(Duration::from_millis(1250));
+        assert_eq!(test_sink.flush_counter(), 2);
+
+        test_logger.set_flush_period(Some(Duration::from_secs(1)));
+
+        thread::sleep(Duration::from_millis(1250));
+        assert_eq!(test_sink.flush_counter(), 3);
     }
 }

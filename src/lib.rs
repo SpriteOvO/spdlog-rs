@@ -46,6 +46,7 @@ pub mod formatter;
 pub mod level;
 mod log_macros;
 pub mod logger;
+mod periodic_worker;
 pub mod record;
 pub mod sink;
 pub mod source_location;
