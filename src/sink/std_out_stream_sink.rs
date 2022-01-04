@@ -93,7 +93,8 @@ impl Sink for StdOutStreamSink {
 
         let mut dest = self.dest.lock();
 
-        writeln!(dest, "{}", string_buf).map_err(Error::WriteRecord)?;
+        dest.write_all(string_buf.as_bytes())
+            .map_err(Error::WriteRecord)?;
 
         // stderr is not buffered, so we don't need to flush it.
         // https://doc.rust-lang.org/std/io/fn.stderr.html

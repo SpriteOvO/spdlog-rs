@@ -54,11 +54,10 @@ impl Sink for FileSink {
         let mut string_buf = StringBuf::new();
         self.formatter.format(record, &mut string_buf)?;
 
-        let mut file = self.file.lock();
-
-        file.write_all(string_buf.as_bytes())
+        self.file
+            .lock()
+            .write_all(string_buf.as_bytes())
             .map_err(Error::WriteRecord)?;
-        file.write_all(b"\n").map_err(Error::WriteRecord)?;
 
         Ok(())
     }

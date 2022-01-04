@@ -123,6 +123,11 @@ cfg_if! {
     }
 }
 
+#[cfg(not(windows))]
+pub(crate) const EOL: &str = "\n";
+#[cfg(windows)]
+pub(crate) const EOL: &str = "\r\n";
+
 lazy_static! {
     static ref DEFAULT_LOGGER: ArcSwap<Logger> = {
         let mut stdout = StdOutStreamStyleSink::new(StdOutStream::Stdout, StyleMode::Auto);

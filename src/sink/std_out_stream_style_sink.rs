@@ -83,9 +83,9 @@ impl Sink for StdOutStreamStyleSink {
                     dest.write_all(style_code.start.as_bytes())?;
                     dest.write_all(string_buf[style_range.start..style_range.end].as_bytes())?;
                     dest.write_all(style_code.end.as_bytes())?;
-                    writeln!(dest, "{}", &string_buf[style_range.end..])?;
+                    dest.write_all(string_buf[style_range.end..].as_bytes())?;
                 } else {
-                    writeln!(dest, "{}", string_buf)?;
+                    dest.write_all(string_buf.as_bytes())?;
                 }
             }
             Ok(())

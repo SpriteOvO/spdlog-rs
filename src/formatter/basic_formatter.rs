@@ -6,7 +6,7 @@ use chrono::prelude::*;
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
-    Error, Record, StringBuf,
+    Error, Record, StringBuf, EOL,
 };
 
 /// A basic and default log message formatter.
@@ -60,6 +60,7 @@ impl BasicFormatter {
 
         dest.write_str("] ")?;
         dest.write_str(record.payload())?;
+        dest.write_str(EOL)?;
 
         Ok(FmtExtraInfo {
             style_range: Some(style_range_begin..style_range_end),
@@ -139,7 +140,7 @@ impl LocalTimeCache {
 mod tests {
 
     use super::*;
-    use crate::Level;
+    use crate::{Level, EOL};
 
     #[test]
     fn format() {
@@ -149,9 +150,10 @@ mod tests {
 
         assert_eq!(
             format!(
-                "[{}] [warn] test log content",
+                "[{}] [warn] test log content{}",
                 Into::<DateTime::<Local>>::into(record.time().clone())
-                    .format("%Y-%m-%d %H:%M:%S.%3f")
+                    .format("%Y-%m-%d %H:%M:%S.%3f"),
+                EOL
             ),
             buf
         );
