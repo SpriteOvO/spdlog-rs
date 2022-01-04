@@ -1,29 +1,52 @@
-use std::{env, sync::Arc, time::Instant};
+mod common;
+
+use std::{env, fs, path::PathBuf, sync::Arc, time::Instant};
 
 use clap::Parser;
+use lazy_static::lazy_static;
 
 use spdlog::{info, sink::*, Logger};
+
+lazy_static! {
+    pub static ref LOGS_PATH: PathBuf = {
+        let path = common::BENCH_LOGS_PATH.join("compare_with_cpp_spdlog");
+        fs::create_dir_all(&path).unwrap();
+        path
+    };
+}
+
+const FILE_SIZE: u64 = 30 * 1024 * 1024;
+const ROTATING_FILES: usize = 5;
 
 fn bench_threaded_logging(threads: usize, iters: usize) {
     info!("**********************************************************************");
     info!("Multi threaded: {} threads, {} messages", threads, iters);
     info!("**********************************************************************");
 
-    let path = env::current_exe()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("logs/FileSink.log");
+    let logger = Logger::builder()
+        .sink(Arc::new(
+            FileSink::new(LOGS_PATH.join("FileSink.log"), true).unwrap(),
+        ))
+        .name("basic_mt")
+        .build();
+    bench_mt(logger, threads, iters);
 
     let logger = Logger::builder()
-        .sink(Arc::new(FileSink::new(path, true).unwrap()))
-        .name("FileSink (basic_mt)")
+        .sink(Arc::new(
+            RotatingFileSink::new(
+                LOGS_PATH.join("RotatingFileSink.log"),
+                FILE_SIZE,
+                ROTATING_FILES,
+                false,
+            )
+            .unwrap(),
+        ))
+        .name("rotating_mt")
         .build();
-
-    bench_mt(&logger, threads, iters);
+    bench_mt(logger, threads, iters);
 }
 
-fn bench_mt(logger: &Logger, threads_count: usize, iters: usize) {
+fn bench_mt(logger: Logger, threads_count: usize, iters: usize) {
     let start = Instant::now();
 
     crossbeam::thread::scope(|scope| {
