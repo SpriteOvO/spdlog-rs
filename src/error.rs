@@ -41,6 +41,25 @@ pub enum Error {
     #[error("open file error: {0}")]
     OpenFile(io::Error),
 
+    /// The variant returned by [`Sink`]s when an error occurs in querying the
+    /// metadata of a file.
+    ///
+    /// [`Sink`]: crate::sink::Sink
+    #[error("query file metadata error: {0}")]
+    QueryFileMetadata(io::Error),
+
+    /// The variant returned by [`Sink`]s when an error occurs in renaming a file.
+    ///
+    /// [`Sink`]: crate::sink::Sink
+    #[error("rename file error: {0}")]
+    RenameFile(io::Error),
+
+    /// The variant returned by [`Sink`]s when an error occurs in removing a file.
+    ///
+    /// [`Sink`]: crate::sink::Sink
+    #[error("remove file error: {0}")]
+    RemoveFile(io::Error),
+
     /// The variant returned by [`from_str`] when the string doesn't match any of
     /// the log levels.
     ///

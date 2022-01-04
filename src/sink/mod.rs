@@ -1,10 +1,12 @@
 //! Provides sinks to flexibly output log messages to specified targets.
 
 pub mod file_sink;
+pub mod rotating_file_sink;
 pub mod std_out_stream_sink;
 pub mod std_out_stream_style_sink;
 
 pub use file_sink::FileSink;
+pub use rotating_file_sink::RotatingFileSink;
 pub use std_out_stream_sink::StdOutStreamSink;
 pub use std_out_stream_style_sink::StdOutStreamStyleSink;
 

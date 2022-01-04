@@ -1,10 +1,24 @@
-use std::sync::Mutex;
+use std::{env, fmt::Write, fs, path::PathBuf, sync::Mutex};
+
+use lazy_static::lazy_static;
 
 use crate::{
-    formatter::{BasicFormatter, Formatter},
+    formatter::{BasicFormatter, FmtExtraInfo, Formatter},
     sink::Sink,
-    LevelFilter, Record, Result,
+    Error, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
 };
+
+lazy_static! {
+    pub static ref TEST_LOGS_PATH: PathBuf = {
+        let path = env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("dev/test_logs");
+        fs::create_dir_all(&path).unwrap();
+        path
+    };
+}
 
 pub struct TestSink {
     level_filter: LevelFilter,
@@ -13,6 +27,9 @@ pub struct TestSink {
     flush_counter: Mutex<usize>,
     payloads: Mutex<Vec<String>>,
 }
+
+// no modifications formatter, it will write `record` to `dest` as is.
+pub struct NoModFormatter {}
 
 impl TestSink {
     pub fn new() -> TestSink {
@@ -76,6 +93,25 @@ impl Sink for TestSink {
     fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
         self.formatter = formatter;
     }
+}
+
+impl NoModFormatter {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Formatter for NoModFormatter {
+    fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo> {
+        dest.write_str(record.payload())
+            .map_err(Error::FormatRecord)?;
+
+        Ok(FmtExtraInfo::default())
+    }
+}
+
+pub fn test_logger_builder() -> LoggerBuilder {
+    LoggerBuilder::new().error_handler(Box::new(|err| panic!("{}", err)))
 }
 
 pub fn assert_send<T: Send>() {}
