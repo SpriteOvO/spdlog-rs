@@ -1,6 +1,6 @@
 //! Provides a file sink.
 use std::{
-    fs::{self, File, OpenOptions},
+    fs::File,
     io::{BufWriter, Write},
     path::Path,
 };
@@ -8,7 +8,7 @@ use std::{
 use crate::{
     formatter::{Formatter, FullFormatter},
     sink::Sink,
-    Error, LevelFilter, Record, Result, StringBuf,
+    utils, Error, LevelFilter, Record, Result, StringBuf,
 };
 
 /// A sink with a file as the target.
@@ -24,20 +24,7 @@ impl FileSink {
     where
         P: AsRef<Path>,
     {
-        if let Some(parent) = path.as_ref().parent() {
-            fs::create_dir_all(parent).map_err(Error::CreateDirectory)?;
-        }
-
-        let mut open_options = OpenOptions::new();
-        if truncate {
-            open_options.write(true).truncate(true);
-        } else {
-            open_options.append(true);
-        }
-        let file = open_options
-            .create(true)
-            .open(path)
-            .map_err(Error::OpenFile)?;
+        let file = utils::open_file(path, truncate)?;
 
         let sink = FileSink {
             level_filter: LevelFilter::All,

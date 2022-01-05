@@ -2,7 +2,7 @@
 
 use std::{
     ffi::OsString,
-    fs::{self, File, OpenOptions},
+    fs::{self, File},
     io::{BufWriter, Write},
     path::{Path, PathBuf},
 };
@@ -10,7 +10,7 @@ use std::{
 use crate::{
     formatter::{Formatter, FullFormatter},
     sink::Sink,
-    Error, LevelFilter, Record, Result, StringBuf,
+    utils, Error, LevelFilter, Record, Result, StringBuf,
 };
 
 /// A sink with a file as the target, rotating according to the file size.
@@ -51,13 +51,7 @@ impl RotatingFileSink {
         P: Into<PathBuf>,
     {
         let base_path = base_path.into();
-
-        if let Some(parent) = base_path.parent() {
-            fs::create_dir_all(parent).map_err(Error::CreateDirectory)?;
-        }
-
-        let file = Self::open(&base_path)?;
-
+        let file = utils::open_file(&base_path, false)?;
         let current_size = file.metadata().map_err(Error::QueryFileMetadata)?.len();
 
         let res = Self {
@@ -77,22 +71,9 @@ impl RotatingFileSink {
         Ok(res)
     }
 
-    fn open(path: impl AsRef<Path>) -> Result<File> {
-        OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open(path)
-            .map_err(Error::OpenFile)
-    }
-
     fn reopen(&self) -> Result<File> {
         // always truncate
-        OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(&self.base_path)
-            .map_err(Error::OpenFile)
+        utils::open_file(&self.base_path, true)
     }
 
     fn rotate(&self, opened_file: &mut spin::MutexGuard<OpenedFile>) -> Result<()> {

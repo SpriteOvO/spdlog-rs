@@ -54,6 +54,7 @@ pub mod string_buf;
 pub mod terminal_styles;
 #[cfg(test)]
 pub mod test_utils;
+mod utils;
 
 pub use error::{Error, ErrorHandler, Result};
 pub use level::{Level, LevelFilter};
