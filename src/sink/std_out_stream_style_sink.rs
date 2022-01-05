@@ -7,7 +7,7 @@ use std::io::{self, Write};
 use if_chain::if_chain;
 
 use crate::{
-    formatter::{BasicFormatter, Formatter},
+    formatter::{Formatter, FullFormatter},
     sink::{std_out_stream_sink::StdOutStreamDest, Sink},
     terminal::{LevelStyleCodes, Style, StyleMode},
     Error, Level, LevelFilter, Record, Result, StringBuf,
@@ -37,7 +37,7 @@ impl StdOutStreamStyleSink {
 
         StdOutStreamStyleSink {
             level_filter: LevelFilter::All,
-            formatter: Box::new(BasicFormatter::new()),
+            formatter: Box::new(FullFormatter::new()),
             dest: StdOutStreamDest::new(std_out_stream),
             atty_stream,
             should_render_style: Self::should_render_style(style_mode, atty_stream),

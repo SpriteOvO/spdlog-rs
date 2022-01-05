@@ -3,7 +3,7 @@
 use std::io::{self, Write};
 
 use crate::{
-    formatter::{BasicFormatter, Formatter},
+    formatter::{Formatter, FullFormatter},
     sink::Sink,
     Error, LevelFilter, Record, Result, StringBuf,
 };
@@ -80,7 +80,7 @@ impl StdOutStreamSink {
     pub fn new(std_out_stream: StdOutStream) -> StdOutStreamSink {
         StdOutStreamSink {
             level_filter: LevelFilter::All,
-            formatter: Box::new(BasicFormatter::new()),
+            formatter: Box::new(FullFormatter::new()),
             dest: StdOutStreamDest::new(std_out_stream),
         }
     }

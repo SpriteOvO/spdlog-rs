@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    formatter::{BasicFormatter, Formatter},
+    formatter::{Formatter, FullFormatter},
     sink::Sink,
     Error, LevelFilter, Record, Result, StringBuf,
 };
@@ -41,7 +41,7 @@ impl FileSink {
 
         let sink = FileSink {
             level_filter: LevelFilter::All,
-            formatter: Box::new(BasicFormatter::new()),
+            formatter: Box::new(FullFormatter::new()),
             file: spin::Mutex::new(BufWriter::new(file)),
         };
 

@@ -3,7 +3,7 @@ use std::{env, fmt::Write, fs, path::PathBuf, sync::Mutex};
 use lazy_static::lazy_static;
 
 use crate::{
-    formatter::{BasicFormatter, FmtExtraInfo, Formatter},
+    formatter::{FmtExtraInfo, Formatter, FullFormatter},
     sink::Sink,
     Error, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
 };
@@ -35,7 +35,7 @@ impl TestSink {
     pub fn new() -> TestSink {
         TestSink {
             level_filter: LevelFilter::All,
-            formatter: Box::new(BasicFormatter::new()),
+            formatter: Box::new(FullFormatter::new()),
             log_counter: Mutex::new(0),
             flush_counter: Mutex::new(0),
             payloads: Mutex::new(vec![]),

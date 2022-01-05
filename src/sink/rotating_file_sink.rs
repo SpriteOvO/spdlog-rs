@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    formatter::{BasicFormatter, Formatter},
+    formatter::{Formatter, FullFormatter},
     sink::Sink,
     Error, LevelFilter, Record, Result, StringBuf,
 };
@@ -62,7 +62,7 @@ impl RotatingFileSink {
 
         let res = Self {
             level_filter: LevelFilter::All,
-            formatter: Box::new(BasicFormatter::new()),
+            formatter: Box::new(FullFormatter::new()),
             opened_file: spin::Mutex::new(OpenedFile::new(BufWriter::new(file), current_size)),
             base_path,
             max_size,

@@ -1,4 +1,4 @@
-//! Provides a basic and default log message formatter.
+//! Provides a full info formatter.
 
 use std::{
     fmt::{self, Write},
@@ -16,14 +16,14 @@ use crate::{
 ///
 /// The log message formatted by it looks like this:
 /// `[2021-12-23 01:23:45.067] [info] log message`.
-pub struct BasicFormatter {
+pub struct FullFormatter {
     local_time_cacher: spin::Mutex<LocalTimeCacher>,
 }
 
-impl BasicFormatter {
-    /// Constructs a [`BasicFormatter`].
-    pub fn new() -> BasicFormatter {
-        BasicFormatter {
+impl FullFormatter {
+    /// Constructs a [`FullFormatter`].
+    pub fn new() -> FullFormatter {
+        FullFormatter {
             local_time_cacher: spin::Mutex::new(LocalTimeCacher::new()),
         }
     }
@@ -71,15 +71,15 @@ impl BasicFormatter {
     }
 }
 
-impl Formatter for BasicFormatter {
+impl Formatter for FullFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
         self.format_impl(record, dest).map_err(Error::FormatRecord)
     }
 }
 
-impl Default for BasicFormatter {
-    fn default() -> BasicFormatter {
-        BasicFormatter::new()
+impl Default for FullFormatter {
+    fn default() -> FullFormatter {
+        FullFormatter::new()
     }
 }
 
@@ -133,7 +133,7 @@ mod tests {
     fn format() {
         let record = Record::new(Level::Warn, "test log content");
         let mut buf = StringBuf::new();
-        let extra_info = BasicFormatter::new().format(&record, &mut buf).unwrap();
+        let extra_info = FullFormatter::new().format(&record, &mut buf).unwrap();
 
         assert_eq!(
             format!(

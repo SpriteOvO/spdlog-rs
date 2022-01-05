@@ -1,8 +1,8 @@
 //! Provides formatters for sink formatting log messages.
 
-pub mod basic_formatter;
+pub mod full_formatter;
 
-pub use basic_formatter::*;
+pub use full_formatter::*;
 
 use std::ops::Range;
 
