@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn test_default_logger() {
-        let test_sink = Arc::new(TestSink::new());
+        let test_sink = Arc::new(CounterSink::new());
 
         let test_logger = Arc::new(test_logger_builder().sink(test_sink.clone()).build());
         let empty_logger = Arc::new(Logger::new());
@@ -197,7 +197,7 @@ mod tests {
         info!("hello");
         error!("spdlog");
 
-        assert_eq!(test_sink.log_counter(), 2);
+        assert_eq!(test_sink.log_count(), 2);
         assert_eq!(
             test_sink.payloads(),
             vec!["hello".to_string(), "rust".to_string()]

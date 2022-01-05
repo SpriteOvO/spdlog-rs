@@ -20,7 +20,7 @@ lazy_static! {
     };
 }
 
-pub struct TestSink {
+pub struct CounterSink {
     level_filter: LevelFilter,
     formatter: Box<dyn Formatter>,
     log_counter: Mutex<usize>,
@@ -31,9 +31,9 @@ pub struct TestSink {
 // no modifications formatter, it will write `record` to `dest` as is.
 pub struct NoModFormatter {}
 
-impl TestSink {
-    pub fn new() -> TestSink {
-        TestSink {
+impl CounterSink {
+    pub fn new() -> Self {
+        Self {
             level_filter: LevelFilter::All,
             formatter: Box::new(FullFormatter::new()),
             log_counter: Mutex::new(0),
@@ -42,11 +42,11 @@ impl TestSink {
         }
     }
 
-    pub fn log_counter(&self) -> usize {
+    pub fn log_count(&self) -> usize {
         *self.log_counter.lock().unwrap()
     }
 
-    pub fn flush_counter(&self) -> usize {
+    pub fn flush_count(&self) -> usize {
         *self.flush_counter.lock().unwrap()
     }
 
@@ -61,7 +61,7 @@ impl TestSink {
     }
 }
 
-impl Sink for TestSink {
+impl Sink for CounterSink {
     fn log(&self, record: &Record) -> Result<()> {
         *self.log_counter.lock().unwrap() += 1;
 

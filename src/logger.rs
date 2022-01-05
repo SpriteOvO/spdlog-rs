@@ -264,56 +264,56 @@ mod tests {
 
     #[test]
     fn flush_level() {
-        let test_sink = Arc::new(TestSink::new());
+        let test_sink = Arc::new(CounterSink::new());
         let mut test_logger = Logger::builder().sink(test_sink.clone()).build();
 
         trace!(logger: test_logger, "");
         error!(logger: test_logger, "");
-        assert_eq!(test_sink.flush_counter(), 0);
+        assert_eq!(test_sink.flush_count(), 0);
         test_sink.reset();
 
         test_logger.set_flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
         debug!(logger: test_logger, "");
         warn!(logger: test_logger, "");
-        assert_eq!(test_sink.flush_counter(), 1);
+        assert_eq!(test_sink.flush_count(), 1);
         test_sink.reset();
 
         test_logger.set_flush_level_filter(LevelFilter::Off);
         info!(logger: test_logger, "");
         trace!(logger: test_logger, "");
-        assert_eq!(test_sink.flush_counter(), 0);
+        assert_eq!(test_sink.flush_count(), 0);
         test_sink.reset();
 
         test_logger.set_flush_level_filter(LevelFilter::MoreSevereEqual(Level::Trace));
         info!(logger: test_logger, "");
         warn!(logger: test_logger, "");
-        assert_eq!(test_sink.flush_counter(), 2);
+        assert_eq!(test_sink.flush_count(), 2);
         test_sink.reset();
     }
 
     #[test]
     fn periodic_flush() {
-        let test_sink = Arc::new(TestSink::new());
+        let test_sink = Arc::new(CounterSink::new());
         let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build());
 
         test_logger.set_flush_period(Some(Duration::from_secs(1)));
 
-        assert_eq!(test_sink.flush_counter(), 0);
+        assert_eq!(test_sink.flush_count(), 0);
 
         thread::sleep(Duration::from_millis(1250));
-        assert_eq!(test_sink.flush_counter(), 1);
+        assert_eq!(test_sink.flush_count(), 1);
 
         thread::sleep(Duration::from_millis(1250));
-        assert_eq!(test_sink.flush_counter(), 2);
+        assert_eq!(test_sink.flush_count(), 2);
 
         test_logger.set_flush_period(None);
 
         thread::sleep(Duration::from_millis(1250));
-        assert_eq!(test_sink.flush_counter(), 2);
+        assert_eq!(test_sink.flush_count(), 2);
 
         test_logger.set_flush_period(Some(Duration::from_secs(1)));
 
         thread::sleep(Duration::from_millis(1250));
-        assert_eq!(test_sink.flush_counter(), 3);
+        assert_eq!(test_sink.flush_count(), 3);
     }
 }
