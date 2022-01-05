@@ -9,7 +9,7 @@ use if_chain::if_chain;
 use crate::{
     formatter::{Formatter, FullFormatter},
     sink::{std_out_stream_sink::StdOutStreamDest, Sink},
-    terminal::{LevelStyleCodes, Style, StyleMode},
+    terminal_styles::{LevelStyleCodes, Style, StyleMode},
     Error, Level, LevelFilter, Record, Result, StringBuf,
 };
 
