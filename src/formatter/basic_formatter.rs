@@ -1,6 +1,9 @@
 //! Provides a basic and default log message formatter.
 
-use std::fmt::{self, Write};
+use std::{
+    fmt::{self, Write},
+    time::SystemTime,
+};
 
 use chrono::prelude::*;
 
@@ -32,7 +35,7 @@ impl BasicFormatter {
     ) -> Result<FmtExtraInfo, fmt::Error> {
         {
             let mut local_time_cacher = self.local_time_cacher.lock();
-            let time = local_time_cacher.get((*record.time()).into());
+            let time = local_time_cacher.get(*record.time());
             dest.write_str("[")?;
             dest.write_str(time.0)?;
             dest.write_str(".")?;
@@ -82,7 +85,8 @@ impl Default for BasicFormatter {
 
 #[derive(Clone, Default)]
 struct LocalTimeCacher {
-    cache: Option<LocalTimeCache>,
+    last_secs: i64,
+    local_time_str: Option<String>,
 }
 
 impl LocalTimeCacher {
@@ -91,48 +95,31 @@ impl LocalTimeCacher {
     }
 
     // Returns (local_time_in_sec, millisecond)
-    fn get(&mut self, utc_time: DateTime<Utc>) -> (&str, u32) {
-        match &mut self.cache {
-            None => self.cache = Some(LocalTimeCache::new(utc_time)),
-            Some(cache) => {
-                let secs = utc_time.timestamp();
-                if cache.last_secs != secs {
-                    *cache = LocalTimeCache::new(utc_time);
-                }
-            }
-        }
-
+    fn get(&mut self, system_time: SystemTime) -> (&str, u32) {
+        let utc_time: DateTime<Utc> = system_time.into();
         let millisecond = utc_time.nanosecond() % 1_000_000_000 / 1_000_000;
-
-        (
-            self.cache.as_ref().unwrap().local_time_str.as_str(),
-            millisecond,
-        )
+        (self.update(utc_time), millisecond)
     }
-}
 
-#[derive(Clone)]
-struct LocalTimeCache {
-    last_secs: i64,
-    local_time_str: String,
-}
+    fn update(&mut self, utc_time: DateTime<Utc>) -> &str {
+        let secs = utc_time.timestamp();
 
-impl LocalTimeCache {
-    fn new(utc_time: DateTime<Utc>) -> Self {
-        let time: DateTime<Local> = utc_time.into();
-        Self {
-            last_secs: time.timestamp(),
-            local_time_str: format!(
-                // `time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
+        if self.local_time_str.is_none() || self.last_secs != secs {
+            let local_time: DateTime<Local> = utc_time.into();
+            self.local_time_str = Some(format!(
+                // `local_time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
                 "{}-{:02}-{:02} {:02}:{:02}:{:02}",
-                time.year(),
-                time.month(),
-                time.day(),
-                time.hour(),
-                time.minute(),
-                time.second(),
-            ),
+                local_time.year(),
+                local_time.month(),
+                local_time.day(),
+                local_time.hour(),
+                local_time.minute(),
+                local_time.second(),
+            ));
+            self.last_secs = secs;
         }
+
+        self.local_time_str.as_ref().unwrap().as_str()
     }
 }
 
