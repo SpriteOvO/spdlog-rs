@@ -175,7 +175,7 @@ impl Sink for RotatingFileSink {
             .as_mut()
             .unwrap()
             .flush()
-            .map_err(Error::OpenFile)
+            .map_err(Error::FlushBuffer)
     }
 
     fn level_filter(&self) -> LevelFilter {
