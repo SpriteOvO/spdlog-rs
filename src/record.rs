@@ -1,8 +1,9 @@
 //! Provides a log message structure.
 
-use std::borrow::{Borrow, Cow};
-
-use chrono::prelude::*;
+use std::{
+    borrow::{Borrow, Cow},
+    time::SystemTime,
+};
 
 use crate::{Level, SourceLocation};
 
@@ -25,7 +26,7 @@ pub struct Record<'a> {
     level: Level,
     payload: Cow<'a, str>,
     source_location: Option<SourceLocation>,
-    time: DateTime<Utc>,
+    time: SystemTime,
 }
 
 impl<'a> Record<'a> {
@@ -43,7 +44,7 @@ impl<'a> Record<'a> {
             level,
             payload: payload.into(),
             source_location: None,
-            time: Utc::now(),
+            time: SystemTime::now(),
         }
     }
 
@@ -80,7 +81,7 @@ impl<'a> Record<'a> {
     }
 
     /// The time of the message.
-    pub fn time(&self) -> &DateTime<Utc> {
+    pub fn time(&self) -> &SystemTime {
         &self.time
     }
 }

@@ -32,7 +32,7 @@ impl BasicFormatter {
     ) -> Result<FmtExtraInfo, fmt::Error> {
         {
             let mut local_time_cacher = self.local_time_cacher.lock();
-            let time = local_time_cacher.get(record.time());
+            let time = local_time_cacher.get((*record.time()).into());
             dest.write_str("[")?;
             dest.write_str(time.0)?;
             dest.write_str(".")?;
@@ -91,7 +91,7 @@ impl LocalTimeCacher {
     }
 
     // Returns (local_time_in_sec, millisecond)
-    fn get(&mut self, utc_time: &DateTime<Utc>) -> (&str, u32) {
+    fn get(&mut self, utc_time: DateTime<Utc>) -> (&str, u32) {
         match &mut self.cache {
             None => self.cache = Some(LocalTimeCache::new(utc_time)),
             Some(cache) => {
@@ -118,8 +118,8 @@ struct LocalTimeCache {
 }
 
 impl LocalTimeCache {
-    fn new(utc_time: &DateTime<Utc>) -> Self {
-        let time: DateTime<Local> = (*utc_time).into();
+    fn new(utc_time: DateTime<Utc>) -> Self {
+        let time: DateTime<Local> = utc_time.into();
         Self {
             last_secs: time.timestamp(),
             local_time_str: format!(
