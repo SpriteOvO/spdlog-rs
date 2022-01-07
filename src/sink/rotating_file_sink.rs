@@ -275,7 +275,7 @@ mod tests {
 
             let formatter = Box::new(NoModFormatter::new());
             let mut sink =
-                RotatingFileSink::new(LOGS_PATH.join(&base_path), 16, 3, rotate_on_open).unwrap();
+                RotatingFileSink::new(LOGS_PATH.join(&base_path), 16, 2, rotate_on_open).unwrap();
             sink.set_formatter(formatter);
             let sink = Arc::new(sink);
             let mut logger = test_logger_builder().sink(sink.clone()).build();
@@ -287,10 +287,17 @@ mod tests {
             |index| RotatingFileSink::calc_file_name(PathBuf::from(&base_path), index);
 
         let file_exists = |index| index_to_path(index).exists();
-        let files_exists_3 = || (file_exists(0), file_exists(1), file_exists(2));
+        let files_exists_4 = || {
+            (
+                file_exists(0),
+                file_exists(1),
+                file_exists(2),
+                file_exists(3),
+            )
+        };
 
         let read_file = |index| fs::read_to_string(index_to_path(index)).ok();
-        let read_file_3 = || (read_file(0), read_file(1), read_file(2));
+        let read_file_4 = || (read_file(0), read_file(1), read_file(2), read_file(3));
 
         const STR_4: &'static str = "abcd";
         const STR_5: &'static str = "abcde";
@@ -298,34 +305,35 @@ mod tests {
         {
             let (sink, logger) = build(true, false);
 
-            assert_eq!(files_exists_3(), (true, false, false));
+            assert_eq!(files_exists_4(), (true, false, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 0);
 
             info!(logger: logger, "{}", STR_4);
-            assert_eq!(files_exists_3(), (true, false, false));
+            assert_eq!(files_exists_4(), (true, false, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 4);
 
             info!(logger: logger, "{}", STR_4);
-            assert_eq!(files_exists_3(), (true, false, false));
+            assert_eq!(files_exists_4(), (true, false, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 8);
 
             info!(logger: logger, "{}", STR_4);
-            assert_eq!(files_exists_3(), (true, false, false));
+            assert_eq!(files_exists_4(), (true, false, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 12);
 
             info!(logger: logger, "{}", STR_4);
-            assert_eq!(files_exists_3(), (true, false, false));
+            assert_eq!(files_exists_4(), (true, false, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 16);
 
             info!(logger: logger, "{}", STR_4);
-            assert_eq!(files_exists_3(), (true, true, false));
+            assert_eq!(files_exists_4(), (true, true, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 4);
         }
         assert_eq!(
-            read_file_3(),
+            read_file_4(),
             (
                 Some("abcd".to_string()),
                 Some("abcdabcdabcdabcd".to_string()),
+                None,
                 None
             )
         );
@@ -333,63 +341,89 @@ mod tests {
         {
             let (sink, logger) = build(true, false);
 
-            assert_eq!(files_exists_3(), (true, false, false));
+            assert_eq!(files_exists_4(), (true, false, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 0);
 
             info!(logger: logger, "{}", STR_4);
             info!(logger: logger, "{}", STR_4);
             info!(logger: logger, "{}", STR_4);
-            assert_eq!(files_exists_3(), (true, false, false));
+            assert_eq!(files_exists_4(), (true, false, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 12);
 
             info!(logger: logger, "{}", STR_5);
-            assert_eq!(files_exists_3(), (true, true, false));
+            assert_eq!(files_exists_4(), (true, true, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 5);
         }
         assert_eq!(
-            read_file_3(),
+            read_file_4(),
             (
                 Some("abcde".to_string()),
                 Some("abcdabcdabcd".to_string()),
+                None,
                 None
             )
         );
 
+        // test `rotate_on_open` == false
         {
             let (sink, logger) = build(false, false);
 
-            assert_eq!(files_exists_3(), (true, true, false));
+            assert_eq!(files_exists_4(), (true, true, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 5);
 
             info!(logger: logger, "{}", STR_5);
-            assert_eq!(files_exists_3(), (true, true, false));
+            assert_eq!(files_exists_4(), (true, true, false, false));
             assert_eq!(sink.opened_file.lock().current_size, 10);
         }
         assert_eq!(
-            read_file_3(),
+            read_file_4(),
             (
+                Some("abcdeabcde".to_string()),
+                Some("abcdabcdabcd".to_string()),
+                None,
+                None
+            )
+        );
+
+        // test `rotate_on_open` == true
+        {
+            let (sink, logger) = build(false, true);
+
+            assert_eq!(files_exists_4(), (true, true, true, false));
+            assert_eq!(sink.opened_file.lock().current_size, 0);
+
+            info!(logger: logger, "{}", STR_5);
+            assert_eq!(files_exists_4(), (true, true, true, false));
+            assert_eq!(sink.opened_file.lock().current_size, 5);
+        }
+        assert_eq!(
+            read_file_4(),
+            (
+                Some("abcde".to_string()),
                 Some("abcdeabcde".to_string()),
                 Some("abcdabcdabcd".to_string()),
                 None
             )
         );
 
+        // test `max_files`
         {
             let (sink, logger) = build(false, true);
 
-            assert_eq!(files_exists_3(), (true, true, true));
+            assert_eq!(files_exists_4(), (true, true, true, false));
             assert_eq!(sink.opened_file.lock().current_size, 0);
 
-            info!(logger: logger, "{}", STR_5);
-            assert_eq!(files_exists_3(), (true, true, true));
-            assert_eq!(sink.opened_file.lock().current_size, 5);
+            info!(logger: logger, "{}", STR_4);
+            assert_eq!(files_exists_4(), (true, true, true, false));
+            assert_eq!(sink.opened_file.lock().current_size, 4);
         }
         assert_eq!(
-            read_file_3(),
+            read_file_4(),
             (
+                Some("abcd".to_string()),
                 Some("abcde".to_string()),
                 Some("abcdeabcde".to_string()),
-                Some("abcdabcdabcd".to_string()),
+                None
             )
         );
     }
