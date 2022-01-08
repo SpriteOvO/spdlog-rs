@@ -78,7 +78,7 @@ impl RotatingFileSink {
 
     fn rotate(&self, opened_file: &mut spin::MutexGuard<OpenedFile>) -> Result<()> {
         let inner = || {
-            for i in (1..=self.max_files).rev() {
+            for i in (1..self.max_files).rev() {
                 let src = Self::calc_file_name(&self.base_path, i - 1);
                 if !src.exists() {
                     continue;
@@ -275,7 +275,7 @@ mod tests {
 
             let formatter = Box::new(NoModFormatter::new());
             let mut sink =
-                RotatingFileSink::new(LOGS_PATH.join(&base_path), 16, 2, rotate_on_open).unwrap();
+                RotatingFileSink::new(LOGS_PATH.join(&base_path), 16, 3, rotate_on_open).unwrap();
             sink.set_formatter(formatter);
             let sink = Arc::new(sink);
             let mut logger = test_logger_builder().sink(sink.clone()).build();

@@ -16,7 +16,12 @@ lazy_static! {
 }
 
 const FILE_SIZE: u64 = 30 * 1024 * 1024;
-const ROTATING_FILES: usize = 5;
+// C++ "spdlog" is `5` here because it does not include the current file,
+// "spdlog_rs" does.
+//
+// However, this actually barely affects the benchmark results, because the data
+// that will be written is not enough to rotate 5 times.
+const ROTATING_FILES: usize = 6;
 
 fn bench_threaded_logging(threads: usize, iters: usize) {
     info!("**********************************************************************");
