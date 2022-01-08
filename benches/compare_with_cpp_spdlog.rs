@@ -1,6 +1,11 @@
+#![feature(test)]
+
+extern crate test;
+
 mod common;
 
 use std::{env, fs, path::PathBuf, sync::Arc, time::Instant};
+use test::black_box;
 
 use clap::Parser;
 use lazy_static::lazy_static;
@@ -8,7 +13,7 @@ use lazy_static::lazy_static;
 use spdlog::{
     info,
     sink::{rotating_file_sink::RotationPolicy, *},
-    Logger,
+    LevelFilter, Logger,
 };
 
 lazy_static! {
@@ -67,6 +72,10 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
         .name("daily_mt")
         .build();
     bench_mt(logger, threads, iters);
+
+    let mut logger = Logger::builder().name("level-off").build();
+    logger.set_level_filter(LevelFilter::Off);
+    bench_mt(logger, threads, iters);
 }
 
 fn bench_mt(logger: Logger, threads_count: usize, iters: usize) {
@@ -76,7 +85,7 @@ fn bench_mt(logger: Logger, threads_count: usize, iters: usize) {
         for _ in 0..threads_count {
             scope.spawn(|_| {
                 for i in 0..(iters / threads_count) {
-                    info!(logger: logger, "Hello logger: msg number {}", i);
+                    black_box(info!(logger: logger, "Hello logger: msg number {}", i));
                 }
             });
         }
