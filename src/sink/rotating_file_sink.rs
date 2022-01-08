@@ -535,17 +535,17 @@ impl Rotator for RotatorTimePoint {
 
         let mut file_path = None;
         let record_time = record.time();
-        let should_rotate = record_time >= &inner.rotation_time_point;
+        let should_rotate = record_time >= inner.rotation_time_point;
 
         if should_rotate {
             file_path = Some(Self::calc_file_path(
                 &self.base_path,
                 self.time_point,
-                *record_time,
+                record_time,
             ));
             inner.file = BufWriter::new(utils::open_file(file_path.as_ref().unwrap(), true)?);
             inner.rotation_time_point =
-                Self::next_rotation_time_point(self.time_point, *record_time);
+                Self::next_rotation_time_point(self.time_point, record_time);
         }
 
         inner
@@ -934,7 +934,7 @@ mod tests {
             {
                 let logger = build(true);
                 let mut record = Record::new(Level::Info, "test log message");
-                let initial_time = *record.time();
+                let initial_time = record.time();
 
                 assert_eq!(exist_hourly_files(), 1);
                 assert_eq!(exist_daily_files(), 1);
@@ -943,17 +943,17 @@ mod tests {
                 assert_eq!(exist_hourly_files(), 1);
                 assert_eq!(exist_daily_files(), 1);
 
-                record.set_time(*record.time() + HOUR_1 + SECOND_1);
+                record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
                 assert_eq!(exist_hourly_files(), 2);
                 assert_eq!(exist_daily_files(), 1);
 
-                record.set_time(*record.time() + HOUR_1 + SECOND_1);
+                record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
                 assert_eq!(exist_hourly_files(), 3);
                 assert_eq!(exist_daily_files(), 1);
 
-                record.set_time(*record.time() + SECOND_1);
+                record.set_time(record.time() + SECOND_1);
                 logger.log(&record);
                 assert_eq!(exist_hourly_files(), 3);
                 assert_eq!(exist_daily_files(), 1);

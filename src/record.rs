@@ -81,8 +81,8 @@ impl<'a> Record<'a> {
     }
 
     /// The time of the message.
-    pub fn time(&self) -> &SystemTime {
-        &self.time
+    pub fn time(&self) -> SystemTime {
+        self.time
     }
 
     #[cfg(test)]

@@ -35,7 +35,7 @@ impl FullFormatter {
     ) -> Result<FmtExtraInfo, fmt::Error> {
         {
             let mut local_time_cacher = self.local_time_cacher.lock();
-            let time = local_time_cacher.get(*record.time());
+            let time = local_time_cacher.get(record.time());
             dest.write_str("[")?;
             dest.write_str(time.0)?;
             dest.write_str(".")?;
