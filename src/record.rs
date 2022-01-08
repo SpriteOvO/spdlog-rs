@@ -84,6 +84,11 @@ impl<'a> Record<'a> {
     pub fn time(&self) -> &SystemTime {
         &self.time
     }
+
+    #[cfg(test)]
+    pub(crate) fn set_time(&mut self, new: SystemTime) {
+        self.time = new;
+    }
 }
 
 /// The builder of [`Record`].

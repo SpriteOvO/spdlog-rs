@@ -29,6 +29,7 @@ pub struct CounterSink {
 }
 
 // no modifications formatter, it will write `record` to `dest` as is.
+#[derive(Copy, Clone)]
 pub struct NoModFormatter {}
 
 impl CounterSink {

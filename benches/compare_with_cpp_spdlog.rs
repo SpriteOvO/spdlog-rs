@@ -5,7 +5,11 @@ use std::{env, fs, path::PathBuf, sync::Arc, time::Instant};
 use clap::Parser;
 use lazy_static::lazy_static;
 
-use spdlog::{info, sink::*, Logger};
+use spdlog::{
+    info,
+    sink::{rotating_file_sink::RotationPolicy, *},
+    Logger,
+};
 
 lazy_static! {
     pub static ref LOGS_PATH: PathBuf = {
@@ -40,7 +44,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
         .sink(Arc::new(
             RotatingFileSink::new(
                 LOGS_PATH.join("RotatingFileSink.log"),
-                FILE_SIZE,
+                RotationPolicy::FileSize(FILE_SIZE),
                 ROTATING_FILES,
                 false,
             )
