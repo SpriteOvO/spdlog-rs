@@ -690,8 +690,8 @@ mod tests {
             let read_file = |index| fs::read_to_string(index_to_path(index)).ok();
             let read_file_4 = || (read_file(0), read_file(1), read_file(2), read_file(3));
 
-            const STR_4: &'static str = "abcd";
-            const STR_5: &'static str = "abcde";
+            const STR_4: &str = "abcd";
+            const STR_5: &str = "abcde";
 
             {
                 let (sink, logger) = build(true, false);

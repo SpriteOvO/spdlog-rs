@@ -135,11 +135,11 @@ mod tests {
         let mut buf = StringBuf::new();
         let extra_info = FullFormatter::new().format(&record, &mut buf).unwrap();
 
+        let local_time: DateTime<Local> = record.time().into();
         assert_eq!(
             format!(
                 "[{}] [warn] test log content{}",
-                Into::<DateTime::<Local>>::into(record.time().clone())
-                    .format("%Y-%m-%d %H:%M:%S.%3f"),
+                local_time.format("%Y-%m-%d %H:%M:%S.%3f"),
                 EOL
             ),
             buf

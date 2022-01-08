@@ -27,12 +27,12 @@ macro_rules! log {
         const LEVEL: $crate::Level = $level;
         const SHOULD_LOG: bool = $crate::STATIC_LEVEL_FILTER.__compare_const(LEVEL);
         if SHOULD_LOG && logger.should_log(LEVEL) {
+            #[allow(clippy::redundant_closure_call)]
             (|fmt_args: std::fmt::Arguments| {
                 // use `Cow` to avoid allocation as much as we can
-                let payload: std::borrow::Cow<str> = if let Some(literal_str) = fmt_args.as_str() {
-                    literal_str.into() // no format arguments, so it is a `&'static str`
-                } else {
-                    fmt_args.to_string().into()
+                let payload: std::borrow::Cow<str> = match fmt_args.as_str() {
+                    Some(literal_str) => literal_str.into(), // no format arguments, so it is a `&'static str`
+                    None => fmt_args.to_string().into()
                 };
 
                 let mut builder = $crate::Record::builder(LEVEL, payload)

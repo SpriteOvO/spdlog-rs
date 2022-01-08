@@ -190,7 +190,7 @@ mod tests {
         info!("hello");
         error!("world");
 
-        set_default_logger(test_logger.clone());
+        set_default_logger(test_logger);
         warn!("hello");
         error!("rust");
 

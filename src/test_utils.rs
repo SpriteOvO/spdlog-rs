@@ -1,4 +1,13 @@
-use std::{env, fmt::Write, fs, path::PathBuf, sync::Mutex};
+use std::{
+    env,
+    fmt::Write,
+    fs,
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Mutex,
+    },
+};
 
 use lazy_static::lazy_static;
 
@@ -23,8 +32,8 @@ lazy_static! {
 pub struct CounterSink {
     level_filter: LevelFilter,
     formatter: Box<dyn Formatter>,
-    log_counter: Mutex<usize>,
-    flush_counter: Mutex<usize>,
+    log_counter: AtomicUsize,
+    flush_counter: AtomicUsize,
     payloads: Mutex<Vec<String>>,
 }
 
@@ -37,18 +46,18 @@ impl CounterSink {
         Self {
             level_filter: LevelFilter::All,
             formatter: Box::new(FullFormatter::new()),
-            log_counter: Mutex::new(0),
-            flush_counter: Mutex::new(0),
+            log_counter: AtomicUsize::new(0),
+            flush_counter: AtomicUsize::new(0),
             payloads: Mutex::new(vec![]),
         }
     }
 
     pub fn log_count(&self) -> usize {
-        *self.log_counter.lock().unwrap()
+        self.log_counter.load(Ordering::Relaxed)
     }
 
     pub fn flush_count(&self) -> usize {
-        *self.flush_counter.lock().unwrap()
+        self.flush_counter.load(Ordering::Relaxed)
     }
 
     pub fn payloads(&self) -> Vec<String> {
@@ -56,15 +65,15 @@ impl CounterSink {
     }
 
     pub fn reset(&self) {
-        *self.log_counter.lock().unwrap() = 0;
-        *self.flush_counter.lock().unwrap() = 0;
+        self.log_counter.store(0, Ordering::Relaxed);
+        self.flush_counter.store(0, Ordering::Relaxed);
         self.payloads.lock().unwrap().clear();
     }
 }
 
 impl Sink for CounterSink {
     fn log(&self, record: &Record) -> Result<()> {
-        *self.log_counter.lock().unwrap() += 1;
+        self.log_counter.fetch_add(1, Ordering::Relaxed);
 
         self.payloads
             .lock()
@@ -75,7 +84,7 @@ impl Sink for CounterSink {
     }
 
     fn flush(&self) -> Result<()> {
-        *self.flush_counter.lock().unwrap() += 1;
+        self.flush_counter.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
 
@@ -96,6 +105,12 @@ impl Sink for CounterSink {
     }
 }
 
+impl Default for CounterSink {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NoModFormatter {
     pub fn new() -> Self {
         Self {}
@@ -108,6 +123,12 @@ impl Formatter for NoModFormatter {
             .map_err(Error::FormatRecord)?;
 
         Ok(FmtExtraInfo::default())
+    }
+}
+
+impl Default for NoModFormatter {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
