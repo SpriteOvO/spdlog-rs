@@ -8,6 +8,7 @@ pub struct SourceLocation {
     module_path: &'static str,
     file: &'static str,
     line: u32,
+    column: u32,
 }
 
 impl SourceLocation {
@@ -15,11 +16,12 @@ impl SourceLocation {
     ///
     /// Users should usually use macro [`source_location_current`] to construct
     /// it.
-    pub fn new(module_path: &'static str, file: &'static str, line: u32) -> Self {
+    pub fn new(module_path: &'static str, file: &'static str, line: u32, column: u32) -> Self {
         Self {
             module_path,
             file,
             line,
+            column,
         }
     }
 
@@ -46,9 +48,14 @@ impl SourceLocation {
         }
     }
 
-    /// The line in the source file.
+    /// The line number in the source file.
     pub fn line(&self) -> u32 {
         self.line
+    }
+
+    /// The column number in the source file.
+    pub fn column(&self) -> u32 {
+        self.column
     }
 }
 
@@ -79,6 +86,7 @@ macro_rules! __private_source_location_current_inner {
             module_path!(),
             file!(),
             line!(),
+            column!(),
         ))
     };
 }
