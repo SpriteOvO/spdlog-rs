@@ -104,7 +104,7 @@ impl RotatingFileSink {
         P: Into<PathBuf>,
     {
         // will panic if invalid
-        rotation_policy.validation();
+        rotation_policy.validate();
 
         let base_path = base_path.into();
 
@@ -190,7 +190,7 @@ impl Drop for RotatingFileSink {
 }
 
 impl RotationPolicy {
-    fn validation(&self) {
+    fn validate(&self) {
         match self {
             Self::FileSize(max_size) => {
                 if *max_size == 0 {
