@@ -96,6 +96,7 @@ impl<'a> Record<'a> {
 /// Typically users should only use it for testing [`Sink`].
 ///
 /// [`Sink`]: crate::sink::Sink
+#[derive(Clone, Debug)]
 pub struct RecordBuilder<'a> {
     record: Record<'a>,
 }

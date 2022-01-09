@@ -205,6 +205,7 @@ impl StyleBuilder {
 }
 
 /// Represents styles of all log filtering levels.
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct LevelStyles([Style; Level::count()]);
 
 impl LevelStyles {
@@ -239,6 +240,7 @@ impl Default for LevelStyles {
 }
 
 /// Represents the start escape code and the end escape code of a style.
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct StyleCode {
     /// The start escape code for rendering style text.
     pub start: String,
@@ -247,6 +249,7 @@ pub struct StyleCode {
 }
 
 /// Represents style codes of all log filtering levels.
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct LevelStyleCodes([StyleCode; Level::count()]);
 
 impl LevelStyleCodes {
