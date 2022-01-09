@@ -143,13 +143,6 @@ lazy_static! {
     };
 }
 
-/// Initializes the crate
-///
-/// Users should initialize early at runtime and should only initialize once.
-pub fn init() {
-    lazy_static::initialize(&DEFAULT_LOGGER);
-}
-
 /// Returns a reference to the default logger.
 pub fn default_logger() -> Arc<Logger> {
     DEFAULT_LOGGER.load().clone()

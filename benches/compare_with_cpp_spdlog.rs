@@ -118,8 +118,6 @@ struct Args {
 fn main() {
     let args = Args::parse_from(env::args().filter(|arg| arg != "--bench"));
 
-    spdlog::init();
-
     bench_threaded_logging(1, args.iters);
     bench_threaded_logging(args.threads, args.iters);
 }
