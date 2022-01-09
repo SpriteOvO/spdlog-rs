@@ -150,8 +150,8 @@ pub fn default_logger() -> Arc<Logger> {
 }
 
 /// Sets the default logger to the given logger.
-pub fn set_default_logger(logger: Arc<Logger>) {
-    DEFAULT_LOGGER.store(logger);
+pub fn set_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
+    DEFAULT_LOGGER.swap(logger)
 }
 
 fn default_error_handler(from: impl AsRef<str>, error: Error) {
