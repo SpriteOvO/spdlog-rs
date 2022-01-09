@@ -44,6 +44,7 @@ log = "0.4"
 slog = "2.7"
 sloggers = "2.1"
 log4rs = "1.0"
+fern = "0.6"
 
 [[bench]]
 name = "compare_with_cpp_spdlog"
