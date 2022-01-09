@@ -88,6 +88,11 @@ impl Style {
         Style::default()
     }
 
+    /// Constructs a [`StyleBuilder`].
+    pub fn builder() -> StyleBuilder {
+        StyleBuilder::new()
+    }
+
     /// Gets the escape code for rendering style text.
     pub fn render_code(&self) -> StyleCode {
         if self.reset {
