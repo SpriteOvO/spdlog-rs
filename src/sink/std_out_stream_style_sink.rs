@@ -2,8 +2,12 @@
 
 pub use crate::sink::std_out_stream_sink::StdOutStream;
 
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    sync::atomic::Ordering,
+};
 
+use atomic::Atomic;
 use if_chain::if_chain;
 
 use crate::{
@@ -17,8 +21,8 @@ use crate::{
 ///
 /// For internal use, users should not use it directly.
 pub struct StdOutStreamStyleSink {
-    level_filter: LevelFilter,
-    formatter: Box<dyn Formatter>,
+    level_filter: Atomic<LevelFilter>,
+    formatter: spin::RwLock<Box<dyn Formatter>>,
     dest: StdOutStreamDest<io::Stdout, io::Stderr>,
     atty_stream: atty::Stream,
     should_render_style: bool,
@@ -36,8 +40,8 @@ impl StdOutStreamStyleSink {
         };
 
         StdOutStreamStyleSink {
-            level_filter: LevelFilter::All,
-            formatter: Box::new(FullFormatter::new()),
+            level_filter: Atomic::new(LevelFilter::All),
+            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
             dest: StdOutStreamDest::new(std_out_stream),
             atty_stream,
             should_render_style: Self::should_render_style(style_mode, atty_stream),
@@ -68,7 +72,7 @@ impl Sink for StdOutStreamStyleSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
 
-        let extra_info = self.formatter.format(record, &mut string_buf)?;
+        let extra_info = self.formatter.read().format(record, &mut string_buf)?;
 
         let mut dest = self.dest.lock();
 
@@ -106,18 +110,14 @@ impl Sink for StdOutStreamStyleSink {
     }
 
     fn level_filter(&self) -> LevelFilter {
-        self.level_filter
+        self.level_filter.load(Ordering::Relaxed)
     }
 
-    fn set_level_filter(&mut self, level_filter: LevelFilter) {
-        self.level_filter = level_filter;
+    fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn formatter(&self) -> &dyn Formatter {
-        self.formatter.as_ref()
-    }
-
-    fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
-        self.formatter = formatter;
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
     }
 }

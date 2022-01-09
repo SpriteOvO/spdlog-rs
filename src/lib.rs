@@ -132,10 +132,10 @@ pub(crate) const EOL: &str = "\r\n";
 
 lazy_static! {
     static ref DEFAULT_LOGGER: ArcSwap<Logger> = {
-        let mut stdout = StdOutStreamStyleSink::new(StdOutStream::Stdout, StyleMode::Auto);
+        let stdout = StdOutStreamStyleSink::new(StdOutStream::Stdout, StyleMode::Auto);
         stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
 
-        let mut stderr = StdOutStreamStyleSink::new(StdOutStream::Stderr, StyleMode::Auto);
+        let stderr = StdOutStreamStyleSink::new(StdOutStream::Stderr, StyleMode::Auto);
         stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
 
         let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];

@@ -1,9 +1,11 @@
 //! Provides a basic and default logger.
 
 use std::{
-    sync::{Arc, Mutex},
+    sync::{atomic::Ordering, Arc, Mutex},
     time::Duration,
 };
+
+use atomic::Atomic;
 
 use crate::{
     periodic_worker::PeriodicWorker,
@@ -14,11 +16,11 @@ use crate::{
 /// A logger structure.
 pub struct Logger {
     name: Option<String>,
-    level_filter: LevelFilter,
+    level_filter: Atomic<LevelFilter>,
     sinks: Sinks,
-    flush_level_filter: LevelFilter,
+    flush_level_filter: Atomic<LevelFilter>,
     periodic_flusher: Mutex<Option<PeriodicWorker>>,
-    error_handler: Option<ErrorHandler>,
+    error_handler: spin::RwLock<Option<ErrorHandler>>,
 }
 
 impl Logger {
@@ -26,11 +28,11 @@ impl Logger {
     pub fn new() -> Logger {
         Logger {
             name: None,
-            level_filter: LevelFilter::MoreSevereEqual(Level::Info),
+            level_filter: Atomic::new(LevelFilter::MoreSevereEqual(Level::Info)),
             sinks: vec![],
-            flush_level_filter: LevelFilter::Off,
+            flush_level_filter: Atomic::new(LevelFilter::Off),
             periodic_flusher: Mutex::new(None),
-            error_handler: None,
+            error_handler: spin::RwLock::new(None),
         }
     }
 
@@ -50,7 +52,7 @@ impl Logger {
     /// This allows callers to avoid expensive computation of log message
     /// arguments if the message would be discarded anyway.
     pub fn should_log(&self, level: Level) -> bool {
-        self.level_filter.compare(level)
+        self.level_filter().compare(level)
     }
 
     /// Logs the message.
@@ -72,22 +74,23 @@ impl Logger {
 
     /// Getter of the flush level filter.
     pub fn flush_level_filter(&self) -> LevelFilter {
-        self.flush_level_filter
+        self.flush_level_filter.load(Ordering::Relaxed)
     }
 
     /// Flushes any buffered records if the level filter condition is true.
-    pub fn set_flush_level_filter(&mut self, level_filter: LevelFilter) {
-        self.flush_level_filter = level_filter;
+    pub fn set_flush_level_filter(&self, level_filter: LevelFilter) {
+        self.flush_level_filter
+            .store(level_filter, Ordering::Relaxed);
     }
 
     /// Getter of the log filter level.
     pub fn level_filter(&self) -> LevelFilter {
-        self.level_filter
+        self.level_filter.load(Ordering::Relaxed)
     }
 
     /// Setter of the log filter level.
-    pub fn set_level_filter(&mut self, level_filter: LevelFilter) {
-        self.level_filter = level_filter;
+    pub fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
     /// Sets periodic flush.
@@ -129,8 +132,8 @@ impl Logger {
     ///
     /// If an error occurs while logging, this handler will be called. If no
     /// handler is set, the error will be ignored.
-    pub fn set_error_handler(&mut self, handler: Option<ErrorHandler>) {
-        self.error_handler = handler;
+    pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+        *self.error_handler.write() = handler;
     }
 
     fn sink_record(&self, record: &Record) {
@@ -156,7 +159,7 @@ impl Logger {
     }
 
     fn handle_error(&self, err: Error) {
-        if let Some(handler) = &self.error_handler {
+        if let Some(handler) = self.error_handler.read().as_ref() {
             handler(err)
         } else {
             crate::default_error_handler(
@@ -170,7 +173,7 @@ impl Logger {
     }
 
     fn should_flush(&self, record: &Record) -> bool {
-        self.flush_level_filter.compare(record.level())
+        self.flush_level_filter().compare(record.level())
     }
 }
 
@@ -207,8 +210,9 @@ impl LoggerBuilder {
 
     /// Sets the log filter level.
     #[must_use]
+    #[allow(unused_mut)]
     pub fn level_filter(mut self, level_filter: LevelFilter) -> Self {
-        self.logger.level_filter = level_filter;
+        self.logger.set_level_filter(level_filter);
         self
     }
 
@@ -231,15 +235,17 @@ impl LoggerBuilder {
 
     /// Sets the flush level filter.
     #[must_use]
+    #[allow(unused_mut)]
     pub fn flush_level_filter(mut self, level_filter: LevelFilter) -> Self {
-        self.logger.flush_level_filter = level_filter;
+        self.logger.set_flush_level_filter(level_filter);
         self
     }
 
     /// Sets the error handler.
     #[must_use]
+    #[allow(unused_mut)]
     pub fn error_handler(mut self, handler: ErrorHandler) -> Self {
-        self.logger.error_handler = Some(handler);
+        self.logger.set_error_handler(Some(handler));
         self
     }
 
@@ -271,7 +277,7 @@ mod tests {
     #[test]
     fn flush_level() {
         let test_sink = Arc::new(CounterSink::new());
-        let mut test_logger = Logger::builder().sink(test_sink.clone()).build();
+        let test_logger = Logger::builder().sink(test_sink.clone()).build();
 
         trace!(logger: test_logger, "");
         error!(logger: test_logger, "");

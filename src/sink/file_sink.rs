@@ -3,7 +3,10 @@ use std::{
     fs::File,
     io::{BufWriter, Write},
     path::Path,
+    sync::atomic::Ordering,
 };
+
+use atomic::Atomic;
 
 use crate::{
     formatter::{Formatter, FullFormatter},
@@ -13,8 +16,8 @@ use crate::{
 
 /// A sink with a file as the target.
 pub struct FileSink {
-    level_filter: LevelFilter,
-    formatter: Box<dyn Formatter>,
+    level_filter: Atomic<LevelFilter>,
+    formatter: spin::RwLock<Box<dyn Formatter>>,
     file: spin::Mutex<BufWriter<File>>,
 }
 
@@ -27,8 +30,8 @@ impl FileSink {
         let file = utils::open_file(path, truncate)?;
 
         let sink = FileSink {
-            level_filter: LevelFilter::All,
-            formatter: Box::new(FullFormatter::new()),
+            level_filter: Atomic::new(LevelFilter::All),
+            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
             file: spin::Mutex::new(BufWriter::new(file)),
         };
 
@@ -39,7 +42,7 @@ impl FileSink {
 impl Sink for FileSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
-        self.formatter.format(record, &mut string_buf)?;
+        self.formatter.read().format(record, &mut string_buf)?;
 
         self.file
             .lock()
@@ -54,19 +57,15 @@ impl Sink for FileSink {
     }
 
     fn level_filter(&self) -> LevelFilter {
-        self.level_filter
+        self.level_filter.load(Ordering::Relaxed)
     }
 
-    fn set_level_filter(&mut self, level_filter: LevelFilter) {
-        self.level_filter = level_filter;
+    fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn formatter(&self) -> &dyn Formatter {
-        self.formatter.as_ref()
-    }
-
-    fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
-        self.formatter = formatter;
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
     }
 }
 

@@ -45,13 +45,10 @@ pub trait Sink: Sync + Send {
     fn level_filter(&self) -> LevelFilter;
 
     /// Setter of the log level filter.
-    fn set_level_filter(&mut self, level_filter: LevelFilter);
-
-    /// Getter of the formatter.
-    fn formatter(&self) -> &dyn Formatter;
+    fn set_level_filter(&self, level_filter: LevelFilter);
 
     /// Setter of the formatter.
-    fn set_formatter(&mut self, formatter: Box<dyn Formatter>);
+    fn set_formatter(&self, formatter: Box<dyn Formatter>);
 }
 
 /// A container for [`Sink`]s.

@@ -9,6 +9,7 @@ use std::{
     },
 };
 
+use atomic::Atomic;
 use lazy_static::lazy_static;
 
 use crate::{
@@ -30,8 +31,8 @@ lazy_static! {
 }
 
 pub struct CounterSink {
-    level_filter: LevelFilter,
-    formatter: Box<dyn Formatter>,
+    level_filter: Atomic<LevelFilter>,
+    formatter: spin::RwLock<Box<dyn Formatter>>,
     log_counter: AtomicUsize,
     flush_counter: AtomicUsize,
     payloads: Mutex<Vec<String>>,
@@ -44,8 +45,8 @@ pub struct NoModFormatter {}
 impl CounterSink {
     pub fn new() -> Self {
         Self {
-            level_filter: LevelFilter::All,
-            formatter: Box::new(FullFormatter::new()),
+            level_filter: Atomic::new(LevelFilter::All),
+            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
             log_counter: AtomicUsize::new(0),
             flush_counter: AtomicUsize::new(0),
             payloads: Mutex::new(vec![]),
@@ -89,19 +90,15 @@ impl Sink for CounterSink {
     }
 
     fn level_filter(&self) -> LevelFilter {
-        self.level_filter
+        self.level_filter.load(Ordering::Relaxed)
     }
 
-    fn set_level_filter(&mut self, level_filter: LevelFilter) {
-        self.level_filter = level_filter;
+    fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn formatter(&self) -> &dyn Formatter {
-        self.formatter.as_ref()
-    }
-
-    fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
-        self.formatter = formatter;
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
     }
 }
 

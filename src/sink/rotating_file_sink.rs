@@ -7,9 +7,11 @@ use std::{
     hash::Hash,
     io::{BufWriter, Write},
     path::{Path, PathBuf},
+    sync::atomic::Ordering,
     time::{Duration, SystemTime},
 };
 
+use atomic::Atomic;
 use chrono::prelude::*;
 use spin::MutexGuard;
 
@@ -87,8 +89,8 @@ struct RotatorTimePointInner {
 ///
 /// When the max file size is reached, close the file, rename it, and create a new file.
 pub struct RotatingFileSink {
-    level_filter: LevelFilter,
-    formatter: Box<dyn Formatter>,
+    level_filter: Atomic<LevelFilter>,
+    formatter: spin::RwLock<Box<dyn Formatter>>,
     rotator: RotatorKind,
 }
 
@@ -132,8 +134,8 @@ impl RotatingFileSink {
         };
 
         let res = Self {
-            level_filter: LevelFilter::All,
-            formatter: Box::new(FullFormatter::new()),
+            level_filter: Atomic::new(LevelFilter::All),
+            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
             rotator,
         };
 
@@ -153,7 +155,7 @@ impl RotatingFileSink {
 impl Sink for RotatingFileSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
-        self.formatter.format(record, &mut string_buf)?;
+        self.formatter.read().format(record, &mut string_buf)?;
         self.rotator.log(record, &string_buf)
     }
 
@@ -162,19 +164,15 @@ impl Sink for RotatingFileSink {
     }
 
     fn level_filter(&self) -> LevelFilter {
-        self.level_filter
+        self.level_filter.load(Ordering::Relaxed)
     }
 
-    fn set_level_filter(&mut self, level_filter: LevelFilter) {
-        self.level_filter = level_filter;
+    fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn formatter(&self) -> &dyn Formatter {
-        self.formatter.as_ref()
-    }
-
-    fn set_formatter(&mut self, formatter: Box<dyn Formatter>) {
-        self.formatter = formatter;
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
     }
 }
 
@@ -660,7 +658,7 @@ mod tests {
                 }
 
                 let formatter = Box::new(NoModFormatter::new());
-                let mut sink = RotatingFileSink::new(
+                let sink = RotatingFileSink::new(
                     LOGS_PATH.join(&base_path),
                     RotationPolicy::FileSize(16),
                     3,
@@ -669,7 +667,7 @@ mod tests {
                 .unwrap();
                 sink.set_formatter(formatter);
                 let sink = Arc::new(sink);
-                let mut logger = test_logger_builder().sink(sink.clone()).build();
+                let logger = test_logger_builder().sink(sink.clone()).build();
                 logger.set_level_filter(LevelFilter::All);
                 (sink, logger)
             };
@@ -902,7 +900,7 @@ mod tests {
                 .unwrap();
 
                 let sinks: [Arc<dyn Sink>; 2] = [Arc::new(hourly_sink), Arc::new(daily_sink)];
-                let mut logger = test_logger_builder().sinks(sinks).build();
+                let logger = test_logger_builder().sinks(sinks).build();
                 logger.set_level_filter(LevelFilter::All);
                 logger
             };

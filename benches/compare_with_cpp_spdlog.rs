@@ -73,7 +73,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
         .build();
     bench_mt(logger, threads, iters);
 
-    let mut logger = Logger::builder().name("level-off").build();
+    let logger = Logger::builder().name("level-off").build();
     logger.set_level_filter(LevelFilter::Off);
     bench_mt(logger, threads, iters);
 }

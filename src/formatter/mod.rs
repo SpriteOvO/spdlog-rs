@@ -10,9 +10,8 @@ use crate::{Record, Result, StringBuf};
 
 /// A trait for log message formatters.
 ///
-/// Used at [`Sink::formatter`] and [`Sink::set_formatter`].
+/// Used at [`Sink::set_formatter`].
 ///
-/// [`Sink::formatter`]: crate::sink::Sink::formatter
 /// [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 pub trait Formatter: Send + Sync {
     /// Format a log message
