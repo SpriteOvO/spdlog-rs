@@ -63,9 +63,10 @@ pub use record::Record;
 pub use source_location::SourceLocation;
 pub use string_buf::StringBuf;
 
-/// Contains available log macros.
+/// Contains available log macros and common types.
 pub mod prelude {
     pub use super::{critical, debug, error, info, log, trace, warn};
+    pub use super::{Level, LevelFilter, Logger};
 }
 
 use std::sync::Arc;
