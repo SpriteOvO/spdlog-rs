@@ -40,6 +40,8 @@ arc-swap = "1.5"
 crossbeam = "0.8"
 clap = { version = "3.0.0-rc.7", features = ["derive"] }
 lazy_static = "1.4"
+slog = "2.7"
+sloggers = "2.1"
 
 [[bench]]
 name = "compare_with_cpp_spdlog"
