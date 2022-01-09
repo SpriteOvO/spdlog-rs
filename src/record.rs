@@ -118,6 +118,7 @@ impl<'a> RecordBuilder<'a> {
     }
 
     /// Sets the logger name.
+    #[must_use]
     pub fn logger_name(mut self, logger_name: &'a str) -> Self {
         self.record.logger_name = Some(logger_name);
         self
@@ -126,6 +127,7 @@ impl<'a> RecordBuilder<'a> {
     /// Sets the source location.
     // `Option` in the parameter is for the convenience of passing the result of
     // the macro `source_location_current` directly.
+    #[must_use]
     pub fn source_location(mut self, srcloc: Option<SourceLocation>) -> Self {
         self.record.source_location = srcloc;
         self

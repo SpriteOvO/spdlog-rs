@@ -85,7 +85,7 @@ fn bench_mt(logger: Logger, threads_count: usize, iters: usize) {
         for _ in 0..threads_count {
             scope.spawn(|_| {
                 for i in 0..(iters / threads_count) {
-                    black_box(info!(logger: logger, "Hello logger: msg number {}", i));
+                    info!(logger: logger, "Hello logger: msg number {}", black_box(i));
                 }
             });
         }

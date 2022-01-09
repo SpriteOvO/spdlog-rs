@@ -196,6 +196,7 @@ impl LoggerBuilder {
     }
 
     /// Sets the logger name.
+    #[must_use]
     pub fn name<S>(mut self, name: S) -> Self
     where
         S: Into<String>,
@@ -205,18 +206,21 @@ impl LoggerBuilder {
     }
 
     /// Sets the log filter level.
+    #[must_use]
     pub fn level_filter(mut self, level_filter: LevelFilter) -> Self {
         self.logger.level_filter = level_filter;
         self
     }
 
     /// Add a [`Sink`].
+    #[must_use]
     pub fn sink(mut self, sink: Arc<dyn Sink>) -> Self {
         self.logger.sinks.push(sink);
         self
     }
 
     /// Add multiple [`Sink`]s.
+    #[must_use]
     pub fn sinks<I>(mut self, sinks: I) -> Self
     where
         I: IntoIterator<Item = Arc<dyn Sink>>,
@@ -226,12 +230,14 @@ impl LoggerBuilder {
     }
 
     /// Sets the flush level filter.
+    #[must_use]
     pub fn flush_level_filter(mut self, level_filter: LevelFilter) -> Self {
         self.logger.flush_level_filter = level_filter;
         self
     }
 
     /// Sets the error handler.
+    #[must_use]
     pub fn error_handler(mut self, handler: ErrorHandler) -> Self {
         self.logger.error_handler = Some(handler);
         self
