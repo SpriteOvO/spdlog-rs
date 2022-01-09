@@ -119,7 +119,7 @@ impl Formatter for NoModFormatter {
         dest.write_str(record.payload())
             .map_err(Error::FormatRecord)?;
 
-        Ok(FmtExtraInfo::default())
+        Ok(FmtExtraInfo::new())
     }
 }
 
