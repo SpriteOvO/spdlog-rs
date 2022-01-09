@@ -45,6 +45,7 @@ slog = "2.7"
 sloggers = "2.1"
 log4rs = "1.0"
 fern = "0.6"
+flexi_logger = "0.22"
 
 [[bench]]
 name = "compare_with_cpp_spdlog"
