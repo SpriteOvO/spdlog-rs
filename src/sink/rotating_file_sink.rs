@@ -193,7 +193,7 @@ impl RotationPolicy {
             Self::FileSize(max_size) => {
                 if *max_size == 0 {
                     panic!(
-                        "invalid rotation policy. (FileSize)
+                        "invalid rotation policy. (FileSize) \
                          expect `max_size` to be (0, u64::MAX] but {}",
                         *max_size
                     );
@@ -202,7 +202,7 @@ impl RotationPolicy {
             Self::Daily { hour, minute } => {
                 if *hour > 23 || *minute > 59 {
                     panic!(
-                        "invalid rotation policy. (Daily)
+                        "invalid rotation policy. (Daily) \
                          expect (`hour`, `minute`) to be ([0, 23], [0, 59]) but ({}, {})",
                         *hour, *minute
                     );
