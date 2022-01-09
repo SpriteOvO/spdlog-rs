@@ -51,7 +51,7 @@ pub mod record;
 pub mod sink;
 pub mod source_location;
 pub mod string_buf;
-pub mod terminal_styles;
+pub mod terminal_style;
 #[cfg(test)]
 pub mod test_utils;
 mod utils;
@@ -78,7 +78,7 @@ use sink::{
     std_out_stream_style_sink::{StdOutStream, StdOutStreamStyleSink},
     Sink,
 };
-use terminal_styles::StyleMode;
+use terminal_style::StyleMode;
 
 /// The statically resolved log level filter.
 ///
