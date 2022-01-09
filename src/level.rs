@@ -2,6 +2,8 @@
 
 use std::{fmt, str::FromStr};
 
+use cfg_if::cfg_if;
+
 use crate::Error;
 
 pub(crate) const LOG_LEVEL_NAMES: [&str; Level::count()] =
@@ -13,7 +15,7 @@ pub(crate) const LOG_LEVEL_NAMES: [&str; Level::count()] =
 /// `Level` directly to a [`LevelFilter`].
 ///
 /// [`log!`]: crate::log
-#[repr(usize)]
+#[repr(u16)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Level {
     /// The "critical" level.
@@ -40,6 +42,12 @@ pub enum Level {
     ///
     /// Designates very low priority, often extremely verbose, information.
     Trace,
+}
+
+cfg_if! {
+    if #[cfg(test)] {
+        static_assertions::const_assert!(atomic::Atomic::<Level>::is_lock_free());
+    }
 }
 
 impl Level {
@@ -126,6 +134,7 @@ impl FromStr for Level {
 /// An enum representing the available verbosity level filters of the logger.
 ///
 /// A `LevelFilter` may be compared directly to a [`Level`].
+#[repr(align(4))]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum LevelFilter {
     /// Disables all log levels.
@@ -146,6 +155,20 @@ pub enum LevelFilter {
     All,
 }
 
+cfg_if! {
+    if #[cfg(test)] {
+        static_assertions::const_assert!(atomic::Atomic::<LevelFilter>::is_lock_free());
+        static_assertions::const_assert_eq!(
+            std::mem::size_of::<Level>() * 2,
+            std::mem::size_of::<LevelFilter>()
+        );
+        static_assertions::const_assert_eq!(
+            std::mem::align_of::<Level>() * 2,
+            std::mem::align_of::<LevelFilter>()
+        );
+    }
+}
+
 impl LevelFilter {
     /// Compares the log level filter condition
     pub fn compare(&self, level: Level) -> bool {
@@ -155,16 +178,16 @@ impl LevelFilter {
     // Users should not use this function directly.
     #[doc(hidden)]
     pub const fn __compare_const(&self, level: Level) -> bool {
-        let level_usize: usize = level as usize;
+        let level_num: u16 = level as u16;
 
         match *self {
             Self::Off => false,
-            Self::Equal(stored) => level_usize == stored as usize,
-            Self::NotEqual(stored) => level_usize != stored as usize,
-            Self::MoreSevere(stored) => level_usize < stored as usize,
-            Self::MoreSevereEqual(stored) => level_usize <= stored as usize,
-            Self::MoreVerbose(stored) => level_usize > stored as usize,
-            Self::MoreVerboseEqual(stored) => level_usize >= stored as usize,
+            Self::Equal(stored) => level_num == stored as u16,
+            Self::NotEqual(stored) => level_num != stored as u16,
+            Self::MoreSevere(stored) => level_num < stored as u16,
+            Self::MoreSevereEqual(stored) => level_num <= stored as u16,
+            Self::MoreVerbose(stored) => level_num > stored as u16,
+            Self::MoreVerboseEqual(stored) => level_num >= stored as u16,
             Self::All => true,
         }
     }
