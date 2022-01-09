@@ -101,7 +101,7 @@ fn bench_rotating_daily(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_no_level(bencher: &mut Bencher) {
+fn bench_level_off(bencher: &mut Bencher) {
     HANDLE.lock().unwrap().set_new_spec(LogSpecification::off());
 
     bencher.iter(|| info!(bench_log_message!()))

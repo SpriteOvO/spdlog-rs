@@ -95,7 +95,7 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_no_level(bencher: &mut Bencher) {
+fn bench_level_off(bencher: &mut Bencher) {
     let config = Config::builder()
         .build(Root::builder().build(LevelFilter::Off))
         .unwrap();

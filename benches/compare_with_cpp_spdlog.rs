@@ -26,7 +26,7 @@ lazy_static! {
 
 const FILE_SIZE: u64 = 30 * 1024 * 1024;
 // C++ "spdlog" is `5` here because it does not include the current file,
-// "spdlog_rs" does.
+// "spdlog-rs" does.
 //
 // However, this actually barely affects the benchmark results, because the data
 // that will be written is not enough to rotate 5 times.
@@ -73,8 +73,10 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
         .build();
     bench_mt(logger, threads, iters);
 
-    let logger = Logger::builder().name("level-off").build();
-    logger.set_level_filter(LevelFilter::Off);
+    let logger = Logger::builder()
+        .name("level-off")
+        .level_filter(LevelFilter::Off)
+        .build();
     bench_mt(logger, threads, iters);
 }
 

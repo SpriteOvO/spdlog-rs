@@ -66,7 +66,7 @@ fn bench_rotating_daily(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_no_level(bencher: &mut Bencher) {
+fn bench_level_off(bencher: &mut Bencher) {
     let logger = Logger::builder().level_filter(LevelFilter::Off).build();
 
     bencher.iter(|| info!(logger: logger, bench_log_message!()))

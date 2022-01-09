@@ -55,7 +55,7 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_no_level(bencher: &mut Bencher) {
+fn bench_level_off(bencher: &mut Bencher) {
     let logger = Logger::root(slog::Discard, o!());
 
     bencher.iter(|| info!(logger, bench_log_message!()))
