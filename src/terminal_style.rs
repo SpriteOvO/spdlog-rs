@@ -157,7 +157,7 @@ pub(crate) mod macros {
         ($builder_type:ident => $visibility:vis $field_name:ident: Option<$field_type:ty>, $($tail:tt)*) => {
             #[allow(missing_docs)]
             #[must_use]
-            $visibility fn $field_name(mut self, $field_name: $field_type) -> $builder_type {
+            $visibility fn $field_name(&mut self, $field_name: $field_type) -> &mut $builder_type {
                 self.style.$field_name = Some($field_name);
                 self
             }
@@ -166,7 +166,7 @@ pub(crate) mod macros {
         ($builder_type:ident => $visibility:vis $field_name:ident: bool, $($tail:tt)*) => {
             #[allow(missing_docs)]
             #[must_use]
-            $visibility fn $field_name(mut self) -> $builder_type {
+            $visibility fn $field_name(&mut self) -> &mut $builder_type {
                 self.style.$field_name = true;
                 self
             }
@@ -199,8 +199,8 @@ impl StyleBuilder {
     }
 
     /// Builds a [`Style`].
-    pub fn build(self) -> Style {
-        self.style
+    pub fn build(&mut self) -> Style {
+        self.style.clone()
     }
 }
 
