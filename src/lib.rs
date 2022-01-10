@@ -66,7 +66,7 @@ pub use string_buf::StringBuf;
 /// Contains available log macros and common types.
 pub mod prelude {
     pub use super::{critical, debug, error, info, log, trace, warn};
-    pub use super::{Level, LevelFilter, Logger};
+    pub use super::{Level, LevelFilter, Logger, LoggerBuilder};
 }
 
 use std::sync::Arc;
