@@ -72,4 +72,4 @@ pub enum Error {
 pub type Result<T> = result::Result<T, Error>;
 
 /// The error handler function type.
-pub type ErrorHandler = Box<dyn Fn(Error) + Send + Sync>;
+pub type ErrorHandler = fn(Error);

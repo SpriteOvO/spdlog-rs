@@ -183,7 +183,28 @@ impl Default for Logger {
     }
 }
 
+impl Clone for Logger {
+    fn clone(&self) -> Self {
+        if self.periodic_flusher.lock().unwrap().is_some() {
+            panic!(
+                "you can't clone a `Logger` with a `flush_period` value, \
+                 clone a `Arc<Logger>` instead."
+            );
+        }
+
+        Logger {
+            name: self.name.clone(),
+            level_filter: Atomic::new(self.level_filter()),
+            sinks: self.sinks.clone(),
+            flush_level_filter: Atomic::new(self.flush_level_filter()),
+            periodic_flusher: Mutex::new(None),
+            error_handler: spin::RwLock::new(*self.error_handler.read()),
+        }
+    }
+}
+
 /// The builder of [`Logger`].
+#[derive(Clone)]
 pub struct LoggerBuilder {
     logger: Logger,
 }

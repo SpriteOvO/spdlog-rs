@@ -130,7 +130,7 @@ impl Default for NoModFormatter {
 }
 
 pub fn test_logger_builder() -> LoggerBuilder {
-    LoggerBuilder::new().error_handler(Box::new(|err| panic!("{}", err)))
+    LoggerBuilder::new().error_handler(|err| panic!("{}", err))
 }
 
 pub fn assert_send<T: Send>() {}
