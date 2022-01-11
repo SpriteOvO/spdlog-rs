@@ -149,9 +149,14 @@ pub fn default_logger() -> Arc<Logger> {
     DEFAULT_LOGGER.load().clone()
 }
 
-/// Sets the default logger to the given logger.
-pub fn set_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
+/// Swaps the default logger to the given logger.
+pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
     DEFAULT_LOGGER.swap(logger)
+}
+
+/// Sets the default logger to the given logger.
+pub fn set_default_logger(logger: Arc<Logger>) {
+    swap_default_logger(logger);
 }
 
 fn default_error_handler(from: impl AsRef<str>, error: Error) {
