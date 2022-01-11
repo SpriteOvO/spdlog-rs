@@ -2,6 +2,7 @@
 use std::{
     fs::File,
     io::{BufWriter, Write},
+    mem,
     path::Path,
     sync::atomic::Ordering,
 };
@@ -64,8 +65,9 @@ impl Sink for FileSink {
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
+    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
+        mem::swap(&mut *self.formatter.write(), &mut formatter);
+        formatter
     }
 }
 

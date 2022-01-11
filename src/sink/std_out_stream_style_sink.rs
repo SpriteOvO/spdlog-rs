@@ -4,6 +4,7 @@ pub use crate::sink::std_out_stream_sink::StdOutStream;
 
 use std::{
     io::{self, Write},
+    mem,
     sync::atomic::Ordering,
 };
 
@@ -117,7 +118,8 @@ impl Sink for StdOutStreamStyleSink {
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
+    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
+        mem::swap(&mut *self.formatter.write(), &mut formatter);
+        formatter
     }
 }
