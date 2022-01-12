@@ -57,6 +57,10 @@ impl FileSink {
 
 impl Sink for FileSink {
     fn log(&self, record: &Record) -> Result<()> {
+        if !self.should_log(record.level()) {
+            return Ok(());
+        }
+
         let mut string_buf = StringBuf::new();
         self.formatter.read().format(record, &mut string_buf)?;
 

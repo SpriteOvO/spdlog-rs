@@ -256,10 +256,8 @@ impl Logger {
 
     fn sink_record(&self, record: &Record) {
         self.sinks.iter().for_each(|sink| {
-            if sink.should_log(record.level()) {
-                if let Err(err) = sink.log(record) {
-                    self.handle_error(err);
-                }
+            if let Err(err) = sink.log(record) {
+                self.handle_error(err);
             }
         });
 

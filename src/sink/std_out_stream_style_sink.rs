@@ -71,6 +71,10 @@ impl StdOutStreamStyleSink {
 
 impl Sink for StdOutStreamStyleSink {
     fn log(&self, record: &Record) -> Result<()> {
+        if !self.should_log(record.level()) {
+            return Ok(());
+        }
+
         let mut string_buf = StringBuf::new();
 
         let extra_info = self.formatter.read().format(record, &mut string_buf)?;

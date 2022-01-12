@@ -32,6 +32,9 @@ pub trait Sink: Sync + Send {
     }
 
     /// Logs a record.
+    ///
+    /// Implementors should always call [`Sink::should_log`] internally to
+    /// filter records.
     fn log(&self, record: &Record) -> Result<()>;
 
     /// Flushes any buffered records.
