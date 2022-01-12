@@ -4,8 +4,6 @@
 //!
 //! [ANSI escape code]: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
 
-use getset::{CopyGetters, Setters};
-
 use crate::Level;
 
 /// The terminal text color style.
@@ -55,32 +53,19 @@ impl Color {
 /// The terminal text style structure.
 ///
 /// You can construct it easily with [`StyleBuilder`].
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default, CopyGetters, Setters)]
-#[getset(get_copy = "pub", set = "pub")]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub struct Style {
-    ///
     color: Option<Color>,
-    ///
     bg_color: Option<Color>,
-    ///
     bold: bool,
-    ///
     faint: bool,
-    ///
     italic: bool,
-    ///
     underline: bool,
-    ///
     slow_blink: bool,
-    ///
     rapid_blink: bool,
-    ///
     invert: bool,
-    ///
     conceal: bool,
-    ///
     strikethrough: bool,
-    ///
     reset: bool,
 }
 
