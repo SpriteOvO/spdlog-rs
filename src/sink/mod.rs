@@ -2,11 +2,11 @@
 
 pub mod file_sink;
 pub mod rotating_file_sink;
-pub mod std_out_stream_sink;
+pub mod std_stream_sink;
 
 pub use file_sink::FileSink;
 pub use rotating_file_sink::{RotatingFileSink, RotationPolicy};
-pub use std_out_stream_sink::StdOutStreamSink;
+pub use std_stream_sink::StdStreamSink;
 
 use std::sync::Arc;
 

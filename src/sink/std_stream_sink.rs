@@ -1,4 +1,4 @@
-//! Provides a std out stream sink.
+//! Provides a std stream sink.
 
 use std::{
     io::{self, Write},
@@ -16,9 +16,9 @@ use crate::{
     Error, Level, LevelFilter, Record, Result, StringBuf,
 };
 
-/// An enum representing the available standard output streams.
+/// An enum representing the available standard streams.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum StdOutStream {
+pub enum StdStream {
     /// Standard output.
     Stdout,
     /// Standard error.
@@ -29,23 +29,23 @@ pub enum StdOutStream {
 // `Std***::lock()` is not in any trait, so we need this struct to abstract
 // them.
 #[derive(Debug)]
-enum StdOutStreamDest<O, E> {
+enum StdStreamDest<O, E> {
     Stdout(O),
     Stderr(E),
 }
 
-impl StdOutStreamDest<io::Stdout, io::Stderr> {
-    fn new(stream: StdOutStream) -> Self {
+impl StdStreamDest<io::Stdout, io::Stderr> {
+    fn new(stream: StdStream) -> Self {
         match stream {
-            StdOutStream::Stdout => StdOutStreamDest::Stdout(io::stdout()),
-            StdOutStream::Stderr => StdOutStreamDest::Stderr(io::stderr()),
+            StdStream::Stdout => StdStreamDest::Stdout(io::stdout()),
+            StdStream::Stderr => StdStreamDest::Stderr(io::stderr()),
         }
     }
 
-    fn lock(&self) -> StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>> {
+    fn lock(&self) -> StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>> {
         match self {
-            StdOutStreamDest::Stdout(stream) => StdOutStreamDest::Stdout(stream.lock()),
-            StdOutStreamDest::Stderr(stream) => StdOutStreamDest::Stderr(stream.lock()),
+            StdStreamDest::Stdout(stream) => StdStreamDest::Stdout(stream.lock()),
+            StdStreamDest::Stderr(stream) => StdStreamDest::Stderr(stream.lock()),
         }
     }
 }
@@ -55,49 +55,49 @@ macro_rules! impl_write_for_dest {
         impl Write for $dest {
             fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
                 match self {
-                    StdOutStreamDest::Stdout(stream) => stream.write(buf),
-                    StdOutStreamDest::Stderr(stream) => stream.write(buf),
+                    StdStreamDest::Stdout(stream) => stream.write(buf),
+                    StdStreamDest::Stderr(stream) => stream.write(buf),
                 }
             }
 
             fn flush(&mut self) -> io::Result<()> {
                 match self {
-                    StdOutStreamDest::Stdout(stream) => stream.flush(),
-                    StdOutStreamDest::Stderr(stream) => stream.flush(),
+                    StdStreamDest::Stdout(stream) => stream.flush(),
+                    StdStreamDest::Stderr(stream) => stream.flush(),
                 }
             }
         }
     };
 }
-impl_write_for_dest!(StdOutStreamDest<io::Stdout, io::Stderr>);
-impl_write_for_dest!(StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
+impl_write_for_dest!(StdStreamDest<io::Stdout, io::Stderr>);
+impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 
-/// A sink with a std output stream as the target.
+/// A sink with a std stream as the target.
 ///
 /// It writes styled text or plain text according to the given [`StyleMode`].
 ///
 /// Note that this sink always flushes the buffer once with each logging.
-pub struct StdOutStreamSink {
+pub struct StdStreamSink {
     level_filter: Atomic<LevelFilter>,
     formatter: spin::RwLock<Box<dyn Formatter>>,
-    dest: StdOutStreamDest<io::Stdout, io::Stderr>,
+    dest: StdStreamDest<io::Stdout, io::Stderr>,
     atty_stream: atty::Stream,
     should_render_style: bool,
     level_style_codes: LevelStyleCodes,
 }
 
-impl StdOutStreamSink {
-    /// Constructs a `StdOutStreamSink`.
-    pub fn new(std_out_stream: StdOutStream, style_mode: StyleMode) -> StdOutStreamSink {
-        let atty_stream = match std_out_stream {
-            StdOutStream::Stdout => atty::Stream::Stdout,
-            StdOutStream::Stderr => atty::Stream::Stderr,
+impl StdStreamSink {
+    /// Constructs a `StdStreamSink`.
+    pub fn new(std_stream: StdStream, style_mode: StyleMode) -> StdStreamSink {
+        let atty_stream = match std_stream {
+            StdStream::Stdout => atty::Stream::Stdout,
+            StdStream::Stderr => atty::Stream::Stderr,
         };
 
-        StdOutStreamSink {
+        StdStreamSink {
             level_filter: Atomic::new(LevelFilter::All),
             formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
-            dest: StdOutStreamDest::new(std_out_stream),
+            dest: StdStreamDest::new(std_stream),
             atty_stream,
             should_render_style: Self::should_render_style(style_mode, atty_stream),
             level_style_codes: LevelStyleCodes::default(),
@@ -123,7 +123,7 @@ impl StdOutStreamSink {
     }
 }
 
-impl Sink for StdOutStreamSink {
+impl Sink for StdStreamSink {
     fn log(&self, record: &Record) -> Result<()> {
         if !self.should_log(record.level()) {
             return Ok(());
@@ -157,7 +157,7 @@ impl Sink for StdOutStreamSink {
 
         // stderr is not buffered, so we don't need to flush it.
         // https://doc.rust-lang.org/std/io/fn.stderr.html
-        if let StdOutStreamDest::Stdout(_) = dest {
+        if let StdStreamDest::Stdout(_) = dest {
             dest.flush().map_err(Error::FlushBuffer)?;
         }
 
