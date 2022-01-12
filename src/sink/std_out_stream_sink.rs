@@ -1,4 +1,4 @@
-//! Provides a std out stream plain text sink.
+//! Provides a std out stream sink.
 
 use std::{
     io::{self, Write},
@@ -7,11 +7,13 @@ use std::{
 };
 
 use atomic::Atomic;
+use if_chain::if_chain;
 
 use crate::{
     formatter::{Formatter, FullFormatter},
     sink::Sink,
-    Error, LevelFilter, Record, Result, StringBuf,
+    terminal_style::{LevelStyleCodes, Style, StyleMode},
+    Error, Level, LevelFilter, Record, Result, StringBuf,
 };
 
 /// An enum representing the available standard output streams.
@@ -27,20 +29,20 @@ pub enum StdOutStream {
 // `Std***::lock()` is not in any trait, so we need this struct to abstract
 // them.
 #[derive(Debug)]
-pub(crate) enum StdOutStreamDest<O, E> {
+enum StdOutStreamDest<O, E> {
     Stdout(O),
     Stderr(E),
 }
 
 impl StdOutStreamDest<io::Stdout, io::Stderr> {
-    pub(crate) fn new(stream: StdOutStream) -> Self {
+    fn new(stream: StdOutStream) -> Self {
         match stream {
             StdOutStream::Stdout => StdOutStreamDest::Stdout(io::stdout()),
             StdOutStream::Stderr => StdOutStreamDest::Stderr(io::stderr()),
         }
     }
 
-    pub(crate) fn lock(&self) -> StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>> {
+    fn lock(&self) -> StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>> {
         match self {
             StdOutStreamDest::Stdout(stream) => StdOutStreamDest::Stdout(stream.lock()),
             StdOutStreamDest::Stderr(stream) => StdOutStreamDest::Stderr(stream.lock()),
@@ -72,22 +74,51 @@ impl_write_for_dest!(StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 
 /// A sink with a std output stream as the target.
 ///
-/// It writes plain text.
+/// It writes styled text or plain text according to the given [`StyleMode`].
 ///
 /// Note that this sink always flushes the buffer once with each logging.
 pub struct StdOutStreamSink {
     level_filter: Atomic<LevelFilter>,
     formatter: spin::RwLock<Box<dyn Formatter>>,
     dest: StdOutStreamDest<io::Stdout, io::Stderr>,
+    atty_stream: atty::Stream,
+    should_render_style: bool,
+    level_style_codes: LevelStyleCodes,
 }
 
 impl StdOutStreamSink {
     /// Constructs a `StdOutStreamSink`.
-    pub fn new(std_out_stream: StdOutStream) -> StdOutStreamSink {
+    pub fn new(std_out_stream: StdOutStream, style_mode: StyleMode) -> StdOutStreamSink {
+        let atty_stream = match std_out_stream {
+            StdOutStream::Stdout => atty::Stream::Stdout,
+            StdOutStream::Stderr => atty::Stream::Stderr,
+        };
+
         StdOutStreamSink {
             level_filter: Atomic::new(LevelFilter::All),
             formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
             dest: StdOutStreamDest::new(std_out_stream),
+            atty_stream,
+            should_render_style: Self::should_render_style(style_mode, atty_stream),
+            level_style_codes: LevelStyleCodes::default(),
+        }
+    }
+
+    /// Sets the style of the specified log level.
+    pub fn set_style(&mut self, level: Level, style: Style) {
+        self.level_style_codes.set_code(level, style);
+    }
+
+    /// Sets the style mode.
+    pub fn set_style_mode(&mut self, style_mode: StyleMode) {
+        self.should_render_style = Self::should_render_style(style_mode, self.atty_stream);
+    }
+
+    fn should_render_style(style_mode: StyleMode, atty_stream: atty::Stream) -> bool {
+        match style_mode {
+            StyleMode::Always => true,
+            StyleMode::Auto => atty::is(atty_stream),
+            StyleMode::Never => false,
         }
     }
 }
@@ -99,12 +130,30 @@ impl Sink for StdOutStreamSink {
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+
+        let extra_info = self.formatter.read().format(record, &mut string_buf)?;
 
         let mut dest = self.dest.lock();
 
-        dest.write_all(string_buf.as_bytes())
-            .map_err(Error::WriteRecord)?;
+        (|| {
+            if_chain! {
+                if self.should_render_style;
+                if let Some(style_range) = extra_info.style_range();
+                then {
+                    let style_code = self.level_style_codes.code(record.level());
+
+                    dest.write_all(string_buf[..style_range.start].as_bytes())?;
+                    dest.write_all(style_code.start.as_bytes())?;
+                    dest.write_all(string_buf[style_range.start..style_range.end].as_bytes())?;
+                    dest.write_all(style_code.end.as_bytes())?;
+                    dest.write_all(string_buf[style_range.end..].as_bytes())?;
+                } else {
+                    dest.write_all(string_buf.as_bytes())?;
+                }
+            }
+            Ok(())
+        })()
+        .map_err(Error::WriteRecord)?;
 
         // stderr is not buffered, so we don't need to flush it.
         // https://doc.rust-lang.org/std/io/fn.stderr.html

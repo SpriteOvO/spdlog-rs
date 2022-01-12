@@ -156,7 +156,7 @@ use cfg_if::cfg_if;
 use lazy_static::lazy_static;
 
 use sink::{
-    std_out_stream_style_sink::{StdOutStream, StdOutStreamStyleSink},
+    std_out_stream_sink::{StdOutStream, StdOutStreamSink},
     Sink,
 };
 use terminal_style::StyleMode;
@@ -212,10 +212,10 @@ pub(crate) const EOL: &str = "\r\n";
 
 lazy_static! {
     static ref DEFAULT_LOGGER: ArcSwap<Logger> = {
-        let stdout = StdOutStreamStyleSink::new(StdOutStream::Stdout, StyleMode::Auto);
+        let stdout = StdOutStreamSink::new(StdOutStream::Stdout, StyleMode::Auto);
         stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
 
-        let stderr = StdOutStreamStyleSink::new(StdOutStream::Stderr, StyleMode::Auto);
+        let stderr = StdOutStreamSink::new(StdOutStream::Stderr, StyleMode::Auto);
         stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
 
         let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
@@ -226,9 +226,9 @@ lazy_static! {
 
 /// Returns an [`Arc`] default logger.
 ///
-/// Default logger contains two [`StdOutStreamStyleSink`]s, writing logs on
-/// `info` level and more verbose levels to `stdout`, and writing logs on `warn`
-/// level and more severe levels to `stderr`.
+/// Default logger contains two [`StdOutStreamSink`]s, writing logs on `info`
+/// level and more verbose levels to `stdout`, and writing logs on `warn` level
+/// and more severe levels to `stderr`.
 ///
 /// # Examples
 ///
