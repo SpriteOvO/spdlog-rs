@@ -23,8 +23,8 @@ pub enum Color {
 }
 
 impl Color {
-    /// Gets foreground color terminal escape code.
-    pub fn to_fg_code(&self) -> &'static str {
+    // Gets foreground color terminal escape code.
+    pub(crate) fn fg_code(&self) -> &'static str {
         match self {
             Color::Black => "\x1b[30m",
             Color::Red => "\x1b[31m",
@@ -37,8 +37,8 @@ impl Color {
         }
     }
 
-    /// Gets background color terminal escape code.
-    pub fn to_bg_code(&self) -> &'static str {
+    // Gets background color terminal escape code.
+    pub(crate) fn bg_code(&self) -> &'static str {
         match self {
             Color::Black => "\x1b[40m",
             Color::Red => "\x1b[41m",
@@ -95,8 +95,7 @@ impl Style {
         StyleBuilder::new()
     }
 
-    /// Gets the escape code for rendering style text.
-    pub fn render_code(&self) -> StyleCode {
+    pub(crate) fn code(&self) -> StyleCode {
         if self.reset {
             return StyleCode {
                 start: Style::reset_code(),
@@ -123,8 +122,8 @@ impl Style {
         }
 
         push_escape_code! {
-            color: Option => color.to_fg_code(),
-            bg_color: Option => bg_color.to_bg_code(),
+            color: Option => color.fg_code(),
+            bg_color: Option => bg_color.bg_code(),
             bold: bool => "\x1b[1m",
             faint: bool => "\x1b[2m",
             italic: bool => "\x1b[3m",
@@ -206,18 +205,29 @@ impl StyleBuilder {
     }
 }
 
-/// Represents styles of all log levels.
+/// Represents style enable mode.
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum StyleMode {
+    /// Always output style escape codes.
+    Always,
+    /// Output style escape codes only when the target is detected as a
+    /// terminal.
+    Auto,
+    /// Always do not output style escape codes.
+    Never,
+}
+
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct LevelStyles([Style; Level::count()]);
+pub(crate) struct LevelStyles([Style; Level::count()]);
 
 impl LevelStyles {
-    /// Gets the style for the given level.
-    pub fn style(&self, level: Level) -> &Style {
+    #[allow(dead_code)]
+    pub(crate) fn style(&self, level: Level) -> &Style {
         &self.0[level as usize]
     }
 
-    /// Sets the style for the given level.
-    pub fn set_style(&mut self, level: Level, style: Style) {
+    #[allow(dead_code)]
+    pub(crate) fn set_style(&mut self, level: Level, style: Style) {
         self.0[level as usize] = style;
     }
 }
@@ -241,27 +251,23 @@ impl Default for LevelStyles {
     }
 }
 
-/// Represents the start escape code and the end escape code of a style.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct StyleCode {
+pub(crate) struct StyleCode {
     /// The start escape code for rendering style text.
-    pub start: String,
+    pub(crate) start: String,
     /// The end escape code for rendering style text.
-    pub end: String,
+    pub(crate) end: String,
 }
 
-/// Represents style codes of all log levels.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct LevelStyleCodes([StyleCode; Level::count()]);
+pub(crate) struct LevelStyleCodes([StyleCode; Level::count()]);
 
 impl LevelStyleCodes {
-    /// Gets the code for the given level.
-    pub fn code(&self, level: Level) -> &StyleCode {
+    pub(crate) fn code(&self, level: Level) -> &StyleCode {
         &self.0[level as usize]
     }
 
-    /// Sets the code for the given level.
-    pub fn set_code<C>(&mut self, level: Level, code: C)
+    pub(crate) fn set_code<C>(&mut self, level: Level, code: C)
     where
         C: Into<StyleCode>,
     {
@@ -271,7 +277,7 @@ impl LevelStyleCodes {
 
 impl From<Style> for StyleCode {
     fn from(style: Style) -> StyleCode {
-        style.render_code()
+        style.code()
     }
 }
 
@@ -279,16 +285,4 @@ impl Default for LevelStyleCodes {
     fn default() -> LevelStyleCodes {
         LevelStyles::default().into()
     }
-}
-
-/// Represents style enable mode.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum StyleMode {
-    /// Always output style escape codes.
-    Always,
-    /// Output style escape codes only when the target is detected as a
-    /// terminal.
-    Auto,
-    /// Always do not output style escape codes.
-    Never,
 }
