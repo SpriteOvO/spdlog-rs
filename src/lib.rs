@@ -53,7 +53,7 @@ pub mod source_location;
 pub mod string_buf;
 pub mod terminal_style;
 #[cfg(test)]
-pub mod test_utils;
+mod test_utils;
 mod utils;
 
 pub use error::{Error, ErrorHandler, Result};
