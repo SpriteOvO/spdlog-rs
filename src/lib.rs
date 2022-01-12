@@ -294,7 +294,7 @@ fn default_error_handler(from: impl AsRef<str>, error: Error) {
         .to_string();
 
     eprintln!(
-        "[*** SPDLOG UNHANDLED ERROR ***] [{}] [{}] {}",
+        "[*** SPDLOG-RS UNHANDLED ERROR ***] [{}] [{}] {}",
         date,
         from.as_ref(),
         error
