@@ -9,37 +9,55 @@ use crate::Error;
 pub(crate) const LOG_LEVEL_NAMES: [&str; Level::count()] =
     ["critical", "error", "warn", "info", "debug", "trace"];
 
-/// An enum representing the available verbosity levels of the logger.
+/// An enum representing log levels.
 ///
 /// Typical usage includes: specifying the `Level` of [`log!`], and comparing a
-/// `Level` directly to a [`LevelFilter`].
+/// `Level` to a [`LevelFilter`] through [`LevelFilter::compare`].
 ///
-/// [`log!`]: crate::log
+/// # Warnings
+///
+/// Users should never convert variants of this enum to integers for persistent
+/// storage (e.g., configuration files), using [`Level::as_str`] instead,
+/// because integers corresponding to variants may change in the future.
+///
+/// Do **not** do this:
+/// ```
+/// # use spdlog::prelude::*;
+/// # fn save_config(_: usize) {}
+/// let level: usize = Level::Info as usize;
+/// save_config(level);
+/// ```
+///
+/// Instead:
+/// ```
+/// # use spdlog::prelude::*;
+/// # fn save_config(_: &str) {}
+/// let level: &'static str = Level::Info.as_str();
+/// save_config(level);
+/// ```
+///
+/// # Examples
+///
+/// ```
+/// use spdlog::prelude::*;
+///
+/// log!(Level::Info, "hello, world");
+/// ```
+///
+/// [`log!`]: crate::log!
 #[repr(u16)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Level {
-    /// The "critical" level.
-    ///
     /// Designates critical errors.
     Critical = 0,
-    /// The "error" level.
-    ///
     /// Designates very serious errors.
     Error,
-    /// The "warn" level.
-    ///
     /// Designates hazardous situations.
     Warn,
-    /// The "info" level.
-    ///
     /// Designates useful information.
     Info,
-    /// The "debug" level.
-    ///
     /// Designates lower priority information.
     Debug,
-    /// The "trace" level.
-    ///
     /// Designates very low priority, often extremely verbose, information.
     Trace,
 }
@@ -94,7 +112,7 @@ impl Level {
 
     /// Iterate through all supported logging levels.
     ///
-    /// The order of iteration is from more severe to less severe log messages.
+    /// The order of iteration is from more severe to more verbose.
     ///
     /// # Examples
     ///
@@ -131,13 +149,27 @@ impl FromStr for Level {
     }
 }
 
-/// An enum representing the available verbosity level filters of the logger.
+/// An enum representing log level logical filter conditions.
 ///
-/// A `LevelFilter` may be compared directly to a [`Level`].
+/// A `LevelFilter` may be compared to a [`Level`] through
+/// [`LevelFilter::compare`].
+///
+/// # Examples
+///
+/// ```
+/// use spdlog::prelude::*;
+///
+/// let level_filter: LevelFilter = LevelFilter::MoreSevere(Level::Info);
+///
+/// assert_eq!(level_filter.compare(Level::Trace), false);
+/// assert_eq!(level_filter.compare(Level::Info), false);
+/// assert_eq!(level_filter.compare(Level::Warn), true);
+/// assert_eq!(level_filter.compare(Level::Error), true);
+/// ```
 #[repr(align(4))]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum LevelFilter {
-    /// Disables all log levels.
+    /// Disables all levels.
     Off,
     /// Enables if the target level is equal to the filter level.
     Equal(Level),
@@ -145,13 +177,15 @@ pub enum LevelFilter {
     NotEqual(Level),
     /// Enables if the target level is more severe than the filter level.
     MoreSevere(Level),
-    /// Enables if the target level is more severe than or equal to the filter level.
+    /// Enables if the target level is more severe than or equal to the filter
+    /// level.
     MoreSevereEqual(Level),
     /// Enables if the target level is more verbose than the filter level.
     MoreVerbose(Level),
-    /// Enables if the target level is more verbose than or equal to the filter level.
+    /// Enables if the target level is more verbose than or equal to the filter
+    /// level.
     MoreVerboseEqual(Level),
-    /// Enables all log levels.
+    /// Enables all levels.
     All,
 }
 
@@ -170,7 +204,11 @@ cfg_if! {
 }
 
 impl LevelFilter {
-    /// Compares the log level filter condition
+    /// Compares the given level with the logical filter condition
+    ///
+    /// # Examples
+    ///
+    /// See the documentation of [`LevelFilter`].
     pub fn compare(&self, level: Level) -> bool {
         self.__compare_const(level)
     }

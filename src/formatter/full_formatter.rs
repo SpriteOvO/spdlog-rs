@@ -12,16 +12,29 @@ use crate::{
     Error, Record, StringBuf, EOL,
 };
 
-/// A basic and default log message formatter.
+/// A full info log records formatter.
 ///
-/// The log message formatted by it looks like this:
-/// `[2021-12-23 01:23:45.067] [info] log message`.
+/// It is the default formatter for sinks.
+///
+/// Log messages formatted by it look like:
+///
+///  - Default:
+///
+///    `[2021-12-23 01:23:45.067] [info] log message`
+///
+///  - If the logger has a name:
+///
+///    `[2021-12-23 01:23:45.067] [logger-name] [info] log message`
+///
+///  - If crate feature `source-location` is enabled:
+///
+///    `[2021-12-23 01:23:45.067] [info] [main.rs:2] log message`
 pub struct FullFormatter {
     local_time_cacher: spin::Mutex<LocalTimeCacher>,
 }
 
 impl FullFormatter {
-    /// Constructs a [`FullFormatter`].
+    /// Constructs a `FullFormatter`.
     pub fn new() -> FullFormatter {
         FullFormatter {
             local_time_cacher: spin::Mutex::new(LocalTimeCacher::new()),

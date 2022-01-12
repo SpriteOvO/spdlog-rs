@@ -1,4 +1,4 @@
-//! Provides stuff related to source location
+//! Provides stuff related to source location.
 
 use std::path;
 
@@ -25,19 +25,19 @@ impl SourceLocation {
         }
     }
 
-    /// The module path.
+    /// Gets the module path.
     pub fn module_path(&self) -> &'static str {
         self.module_path
     }
 
-    /// The source file.
+    /// Gets the source file.
     ///
     /// It returns a string slice like this: `src/main.rs`
     pub fn file(&self) -> &'static str {
         self.file
     }
 
-    /// The source file name.
+    /// Gets the source file name.
     ///
     /// It returns a string slice like this: `main.rs`
     pub fn file_name(&self) -> &'static str {
@@ -48,12 +48,12 @@ impl SourceLocation {
         }
     }
 
-    /// The line number in the source file.
+    /// Gets the line number in the source file.
     pub fn line(&self) -> u32 {
         self.line
     }
 
-    /// The column number in the source file.
+    /// Gets the column number in the source file.
     pub fn column(&self) -> u32 {
         self.column
     }
@@ -63,7 +63,7 @@ impl SourceLocation {
 ///
 /// Returns `None` if the feature `source_location` is not enabled.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```
 /// use spdlog::{SourceLocation, source_location_current};

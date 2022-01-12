@@ -1,6 +1,44 @@
-//! A fast and flexible Rust logging library.
+//! A fast and combinable Rust logging library.
 //!
-//! Inspired by the C++ logging library [spdlog](https://github.com/gabime/spdlog).
+//! It is inspired by the C++ logging library [spdlog], so if you are familiar
+//! with C++ `spdlog`, you should be able to get started with this crate quite
+//! easily. Of course, there are some differences, you can see [Significant
+//! differences from C++ spdlog](#significant-differences-from-c-spdlog) below.
+//!
+//! # Getting started
+//!
+//! `spdlog-rs` is out-of-the-box, it has a default logger, so users can output
+//! logs to terminal by default without any configuration. For more details
+//! about the default logger, please read the documentation of
+//! [`default_logger`].
+//!
+//! The basic use of this crate is through these logging macros: [`trace!`],
+//! [`debug!`], [`info!`], [`warn!`], [`error!`], [`critical!`] and [`log!`],
+//! where [`critical!`] represents the most severe log messages and [`trace!`]
+//! the most verbose. Each of these macros accept format strings similarly to
+//! [`println!`]. All log macros and common types are already under [`prelude`]
+//! module.
+//!
+//! [`Logger`] and [`Sink`] are the most important components of `spdlog-rs`.
+//! Make sure to read their documentation. In short, a logger contains a
+//! combination of sinks, and sinks implement writing log messages to actual
+//! targets.
+//!
+//! ## Examples
+//!
+//! ```
+//! use spdlog::prelude::*;
+//!
+//! info!("hello, {}", "world");
+//! ```
+//!
+//! For more examples, see [./examples] directory.
+//!
+//! ## Help
+//!
+//! If you have any questions or need help while using this crate, feel free to
+//! [open a discussion]. For feature requests or bug reports, please [open an
+//! issue].
 //!
 //! # Compile time filters
 //!
@@ -9,18 +47,18 @@
 //! present in the resulting binary. This level is configured separately for
 //! release and debug builds. The features are:
 //!
-//! * `level-off`
-//! * `level-error`
-//! * `level-warn`
-//! * `level-info`
-//! * `level-debug`
-//! * `level-trace`
-//! * `release-level-off`
-//! * `release-level-error`
-//! * `release-level-warn`
-//! * `release-level-info`
-//! * `release-level-debug`
-//! * `release-level-trace`
+//!  - `level-off`
+//!  - `level-error`
+//!  - `level-warn`
+//!  - `level-info`
+//!  - `level-debug`
+//!  - `level-trace`
+//!  - `release-level-off`
+//!  - `release-level-error`
+//!  - `release-level-warn`
+//!  - `release-level-info`
+//!  - `release-level-debug`
+//!  - `release-level-trace`
 //!
 //! These features control the value of the `STATIC_LEVEL_FILTER` constant. The
 //! logging macros check this value before logging a message. By default, no
@@ -35,9 +73,51 @@
 //! The following crate feature flags are available in addition to the filters.
 //! They are configured in your `Cargo.toml`.
 //!
-//! * `source-location` allows recording the source location of each log, and it
-//!   is performance cheap to enable it. If you do not want the source location
-//!   information to appear in the binary file, you may prefer not to enable it.
+//!  - `source-location` allows recording the source location of each log. When
+//!    it is enabled the default formatter [`FullFormatter`] will always format
+//!    the source location information. If you do not want the source location
+//!    information to appear in your binary file, you may prefer not to enable
+//!    it.
+//!
+//! # Significant differences from C++ spdlog
+//!
+//! The significant differences between `spdlog-rs` and C++ `spdlog`[^1]:
+//!  - `spdlog-rs` does not have `registry`[^2]. You don't need to register for
+//!    loggers.
+//!
+//!  - `spdlog-rs` does not have `backtrace`[^2].
+//!
+//!  - `spdlog-rs` currently does not have `pattern_formatter`. The solution for
+//!    custom formatting log messages is to implement your own [`Formatter`]
+//!    structure and then call [`Sink::set_formatter`].
+//!
+//!  - In `spdlog-rs`, [`LevelFilter`] is a more flexible and readable enum with
+//!    logical conditions.
+//!
+//!  - In `spdlog-rs`, there is no "_st" sinks, all sinks are "_mt".
+//!
+//!  - `daily_file_sink` and `hourly_file_sink` in C++ `spdlog` are merged into
+//!    [`RotatingFileSink`] in `spdlog-rs`. They correspond to rotation policies
+//!    [`RotationPolicy::Daily`] and [`RotationPolicy::Hourly`].
+//!
+//!  - Some sinks in C++ `spdlog` are not yet implemented in `spdlog-rs`. (Yes,
+//!    PRs are welcome)
+//!
+//!  - ...
+//!
+//! [^1]: At the time of writing this section, the latest version of C++ `spdlog` is v1.9.2.
+//!
+//! [^2]: C++ `spdlog` is also planned to remove it in v2.x.
+//!
+//! [spdlog]: https://github.com/gabime/spdlog
+//! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+//! [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
+//! [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
+//! [`FullFormatter`]: crate::formatter::FullFormatter
+//! [`RotatingFileSink`]: crate::sink::RotatingFileSink
+//! [`Formatter`]: crate::formatter::Formatter
+//! [`RotationPolicy::Daily`]: crate::sink::RotationPolicy::Daily
+//! [`RotationPolicy::Hourly`]: crate::sink::RotationPolicy::Hourly
 
 #![warn(missing_docs)]
 
@@ -63,7 +143,7 @@ pub use record::Record;
 pub use source_location::SourceLocation;
 pub use string_buf::StringBuf;
 
-/// Contains available log macros and common types.
+/// Contains all log macros and common types.
 pub mod prelude {
     pub use super::{critical, debug, error, info, log, trace, warn};
     pub use super::{Level, LevelFilter, Logger, LoggerBuilder};
@@ -144,17 +224,66 @@ lazy_static! {
     };
 }
 
-/// Returns a reference to the default logger.
+/// Returns an [`Arc`] default logger.
+///
+/// Default logger contains two [`StdOutStreamStyleSink`]s, writing logs on
+/// `info` level and more verbose levels to `stdout`, and writing logs on `warn`
+/// level and more severe levels to `stderr`.
+///
+/// # Examples
+///
+/// ```
+/// # use std::sync::Arc;
+/// use spdlog::prelude::*;
+///
+/// let default_logger: Arc<Logger> = spdlog::default_logger();
+///
+/// default_logger.set_level_filter(LevelFilter::All);
+///
+/// info!("this log will be written to `stdout`");
+/// debug!("this log will be written to `stdout`");
+/// trace!("this log will be written to `stdout`");
+///
+/// warn!("this log will be written to `stderr`");
+/// error!("this log will be written to `stderr`");
+/// critical!("this log will be written to `stderr`");
+/// ```
 pub fn default_logger() -> Arc<Logger> {
     DEFAULT_LOGGER.load().clone()
 }
 
-/// Swaps the default logger to the given logger.
+/// Sets the given logger as the default logger, and returns the old default
+/// logger.
+///
+/// # Examples
+///
+/// ```
+/// # use std::sync::Arc;
+/// use spdlog::prelude::*;
+///
+/// # let new_logger = spdlog::default_logger();
+/// let old_logger: Arc<Logger> = spdlog::swap_default_logger(new_logger);
+///
+/// info!("this log will be handled by `new_logger`");
+/// info!(logger: old_logger, "this log will be handled by `old_logger`");
+/// ```
 pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
     DEFAULT_LOGGER.swap(logger)
 }
 
-/// Sets the default logger to the given logger.
+/// Sets the given logger as the default logger.
+///
+/// # Examples
+///
+/// ```
+/// # use std::sync::Arc;
+/// use spdlog::prelude::*;
+///
+/// # let new_logger = spdlog::default_logger();
+/// spdlog::set_default_logger(new_logger);
+///
+/// info!("this log will be handled by `new_logger`");
+/// ```
 pub fn set_default_logger(logger: Arc<Logger>) {
     swap_default_logger(logger);
 }

@@ -1,4 +1,5 @@
 //! Provides a file sink.
+
 use std::{
     fs::File,
     io::{BufWriter, Write},
@@ -16,6 +17,12 @@ use crate::{
 };
 
 /// A sink with a file as the target.
+///
+/// # Examples
+///
+/// See [./examples] directory.
+///
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 pub struct FileSink {
     level_filter: Atomic<LevelFilter>,
     formatter: spin::RwLock<Box<dyn Formatter>>,
@@ -23,7 +30,15 @@ pub struct FileSink {
 }
 
 impl FileSink {
-    /// Constructs a [`FileSink`].
+    /// Constructs a `FileSink`.
+    ///
+    /// If the parameter `truncate` is `true`, the existing contents of the file
+    /// will be discarded.
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs opening the file, [`Error::CreateDirectory`] or
+    /// [`Error::OpenFile`] will be returned.
     pub fn new<P>(path: P, truncate: bool) -> Result<FileSink>
     where
         P: AsRef<Path>,

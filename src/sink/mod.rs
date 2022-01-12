@@ -16,11 +16,13 @@ use crate::{formatter::Formatter, Level, LevelFilter, Record, Result};
 
 /// A trait for sinks.
 ///
-/// Sinks are the objects that actually write the log to their target. Each sink
-/// should be responsible for only single target (e.g file, console, db), and
-/// each sink has its own private instance of [`Formatter`] object.
+/// Sinks are the objects that actually write logs to their targets. Each sink
+/// should be responsible for only single target (e.g file, console, database),
+/// and each sink has its own private instance of [`Formatter`] object.
 ///
-/// A [`Logger`] can combine multiple [`Sink`] s.
+/// A [`Logger`] can combine multiple [`Sink`]s.
+///
+/// A sink has its own level filter that is not shared with the logger.
 ///
 /// [`Logger`]: crate::logger::Logger
 pub trait Sink: Sync + Send {
@@ -29,28 +31,22 @@ pub trait Sink: Sync + Send {
         self.level_filter().compare(level)
     }
 
-    /// Logs the record.
-    ///
-    /// Internally filtering the log message level is redundant, it should be
-    /// filtered by the caller by calling [`Sink::should_log`]. Its
-    /// implementation should guarantee that it will never panic even if the
-    /// caller did not filter it by calling [`Sink::should_log`], otherwise it
-    /// should always filter these potential panic cases internally.
+    /// Logs a record.
     fn log(&self, record: &Record) -> Result<()>;
 
     /// Flushes any buffered records.
     fn flush(&self) -> Result<()>;
 
-    /// Getter of the log level filter.
+    /// Gets the log level filter.
     fn level_filter(&self) -> LevelFilter;
 
-    /// Setter of the log level filter.
+    /// Sets the log level filter.
     fn set_level_filter(&self, level_filter: LevelFilter);
 
-    /// Swaps the formatter.
+    /// Sets the log level filter, and returns the old formatter.
     fn swap_formatter(&self, formatter: Box<dyn Formatter>) -> Box<dyn Formatter>;
 
-    /// Setter of the formatter.
+    /// Sets the formatter.
     fn set_formatter(&self, formatter: Box<dyn Formatter>) {
         self.swap_formatter(formatter);
     }

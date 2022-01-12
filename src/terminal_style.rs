@@ -1,6 +1,8 @@
 //! Provides stuff related to terminal style.
 //!
-//! Refer from [ANSI escape code](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters)
+//! They are referenced from [ANSI escape code].
+//!
+//! [ANSI escape code]: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
 
 use getset::{CopyGetters, Setters};
 
@@ -83,7 +85,7 @@ pub struct Style {
 }
 
 impl Style {
-    /// Constructs a [`Style`] with no styles.
+    /// Constructs a `Style` with no styles.
     pub fn new() -> Style {
         Style::default()
     }
@@ -177,7 +179,7 @@ pub(crate) mod macros {
 }
 
 impl StyleBuilder {
-    /// Constructs a [`StyleBuilder`].
+    /// Constructs a `StyleBuilder`.
     pub fn new() -> StyleBuilder {
         StyleBuilder::default()
     }
@@ -204,17 +206,17 @@ impl StyleBuilder {
     }
 }
 
-/// Represents styles of all log filtering levels.
+/// Represents styles of all log levels.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct LevelStyles([Style; Level::count()]);
 
 impl LevelStyles {
-    /// Getter of the style for the given level.
+    /// Gets the style for the given level.
     pub fn style(&self, level: Level) -> &Style {
         &self.0[level as usize]
     }
 
-    /// Setter of the style for the given level.
+    /// Sets the style for the given level.
     pub fn set_style(&mut self, level: Level, style: Style) {
         self.0[level as usize] = style;
     }
@@ -248,17 +250,17 @@ pub struct StyleCode {
     pub end: String,
 }
 
-/// Represents style codes of all log filtering levels.
+/// Represents style codes of all log levels.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct LevelStyleCodes([StyleCode; Level::count()]);
 
 impl LevelStyleCodes {
-    /// Getter of the code for the given level.
+    /// Gets the code for the given level.
     pub fn code(&self, level: Level) -> &StyleCode {
         &self.0[level as usize]
     }
 
-    /// Setter of the code for the given level.
+    /// Sets the code for the given level.
     pub fn set_code<C>(&mut self, level: Level, code: C)
     where
         C: Into<StyleCode>,
@@ -279,13 +281,14 @@ impl Default for LevelStyleCodes {
     }
 }
 
-/// Represents style enable mode
+/// Represents style enable mode.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum StyleMode {
-    /// Always output style escape codes
+    /// Always output style escape codes.
     Always,
-    /// Output style escape codes only when the target is detected as a terminal
+    /// Output style escape codes only when the target is detected as a
+    /// terminal.
     Auto,
-    /// Always do not output style escape codes
+    /// Always do not output style escape codes.
     Never,
 }

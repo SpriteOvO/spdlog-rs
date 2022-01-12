@@ -23,11 +23,16 @@ use crate::{
 };
 
 /// Rotation policies for [`RotatingFileSink`].
+///
+/// # Panics
+///
+/// Note that some parameters have range requirements, functions that receive it
+/// will panic if the requirements are not met.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RotationPolicy {
     /// Rotates when the log file reaches the given max file size.
     FileSize(
-        /// Max file size.
+        /// Max file size (in bytes). Range: (0, u64::MAX].
         u64,
     ),
     /// Rotates daily at the given time point.
@@ -86,9 +91,13 @@ struct RotatorTimePointInner {
     file_paths: Option<LinkedList<PathBuf>>,
 }
 
-/// A sink with a file as the target, rotating according to the file size.
+/// A sink with a file as the target, rotating according to the rotation policy.
 ///
-/// When the max file size is reached, close the file, rename it, and create a new file.
+/// # Examples
+///
+/// See [./examples] directory.
+///
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 pub struct RotatingFileSink {
     level_filter: Atomic<LevelFilter>,
     formatter: spin::RwLock<Box<dyn Formatter>>,
@@ -97,16 +106,35 @@ pub struct RotatingFileSink {
 
 impl RotatingFileSink {
     /// Constructs a `RotatingFileSink`.
+    ///
+    /// The parameter `max_files` specifies the maximum number of files. If the
+    /// number of existing files reaches this parameter, the oldest file will be
+    /// deleted on the next rotation. Pass `0` for no limit.
+    ///
+    /// The parameter `rotate_on_open` specifies whether to rotate files once
+    /// when constructing `RotatingFileSink`. For the [`RotationPolicy::Daily`]
+    /// and [`RotationPolicy::Hourly`] rotation policies, it may truncate the
+    /// contents of the existing file if the parameter is `true`, since the file
+    /// name is a time point and not an index.
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs opening the file, [`Error::CreateDirectory`] or
+    /// [`Error::OpenFile`] will be returned.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the parameter `rotation_policy` is invalid. See the
+    /// documentation of [`RotationPolicy`] for requirements.
     pub fn new<P>(
         base_path: P,
         rotation_policy: RotationPolicy,
-        max_files: usize,     // zero for unlimited files
-        rotate_on_open: bool, // maybe truncate
+        max_files: usize,
+        rotate_on_open: bool,
     ) -> Result<Self>
     where
         P: Into<PathBuf>,
     {
-        // will panic if invalid
         rotation_policy.validate();
 
         let base_path = base_path.into();
@@ -428,7 +456,8 @@ impl RotatorTimePoint {
         }
     }
 
-    // a little expensive, should only be called when rotation is needed or in constructor.
+    // a little expensive, should only be called when rotation is needed or in
+    // constructor.
     fn next_rotation_time_point(time_point: TimePoint, now: SystemTime) -> SystemTime {
         let now: DateTime<Utc> = now.into();
         let mut rotation_time: DateTime<Utc> = now;

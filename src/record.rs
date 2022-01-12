@@ -1,4 +1,4 @@
-//! Provides a log message structure.
+//! Provides a log record structure.
 
 use std::{
     borrow::{Borrow, Cow},
@@ -7,15 +7,14 @@ use std::{
 
 use crate::{Level, SourceLocation};
 
-/// Represents a log message.
+/// Represents a log record.
 ///
 /// # Use
 ///
-/// `Record` structures are passed as parameters to methods [`Logger::log`] and
-/// [`Sink::log`]. Logger implementors forward these structures to its sinks,
-/// then sink implementors manipulate these structures in order to process log
-/// messages. `Record`s are automatically created by the [`log!`] macro and so
-/// are not seen by log users.
+/// `Record` structures are passed as arguments to methods [`Logger::log`].
+/// Loggers forward these structures to its sinks, then sink implementors
+/// manipulate these structures in order to process log records. `Record`s are
+/// automatically created by log macros and so are not seen by log users.
 ///
 /// [`Logger::log`]: crate::logger::Logger::log
 /// [`Sink::log`]: crate::sink::Sink::log
@@ -60,27 +59,27 @@ impl<'a> Record<'a> {
         RecordBuilder::new(level, payload)
     }
 
-    /// The logger name.
+    /// Gets the logger name.
     pub fn logger_name(&self) -> Option<&'a str> {
         self.logger_name
     }
 
-    /// The verbosity level of the message.
+    /// Gets the level.
     pub fn level(&self) -> Level {
         self.level
     }
 
-    /// The payload of the message.
+    /// Gets the payload.
     pub fn payload(&self) -> &str {
         self.payload.borrow()
     }
 
-    /// The source location of the message.
+    /// Gets the source location.
     pub fn source_location(&self) -> Option<&SourceLocation> {
         self.source_location.as_ref()
     }
 
-    /// The time of the message.
+    /// Gets the time when the record was created.
     pub fn time(&self) -> SystemTime {
         self.time
     }
@@ -104,7 +103,7 @@ pub struct RecordBuilder<'a> {
 impl<'a> RecordBuilder<'a> {
     /// Constructs a `RecordBuilder`.
     ///
-    /// The default value is the same as [`Record::new()`].
+    /// The default value of [`Record`] is the same as [`Record::new()`].
     ///
     /// Typically users should only use it for testing [`Sink`].
     ///

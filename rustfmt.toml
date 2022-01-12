@@ -1,0 +1,4 @@
+wrap_comments = true
+ignore = [
+    "src/string_buf.rs",
+]

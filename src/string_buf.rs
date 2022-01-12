@@ -2,7 +2,7 @@
 
 /// A string buffer type.
 ///
-/// Used in [`Sink`] s and [`Formatter`] s.
+/// Used in [`Sink`]s and [`Formatter`]s.
 ///
 /// # Todo
 ///

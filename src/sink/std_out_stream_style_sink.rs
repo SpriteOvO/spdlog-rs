@@ -18,9 +18,11 @@ use crate::{
     Error, Level, LevelFilter, Record, Result, StringBuf,
 };
 
-/// A standard output stream style sink.
+/// A sink with a std output stream as the target.
 ///
-/// For internal use, users should not use it directly.
+/// It writes styled text or plain text according to the given [`StyleMode`].
+///
+/// Note that this sink always flushes the buffer once with each logging.
 pub struct StdOutStreamStyleSink {
     level_filter: Atomic<LevelFilter>,
     formatter: spin::RwLock<Box<dyn Formatter>>,
@@ -31,9 +33,7 @@ pub struct StdOutStreamStyleSink {
 }
 
 impl StdOutStreamStyleSink {
-    /// Constructs a [`StdOutStreamStyleSink`].
-    ///
-    /// Level default maximum (no discard)
+    /// Constructs a `StdOutStreamStyleSink`.
     pub fn new(std_out_stream: StdOutStream, style_mode: StyleMode) -> StdOutStreamStyleSink {
         let atty_stream = match std_out_stream {
             StdOutStream::Stdout => atty::Stream::Stdout,

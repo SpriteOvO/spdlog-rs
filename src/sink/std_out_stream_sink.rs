@@ -23,8 +23,8 @@ pub enum StdOutStream {
     Stderr,
 }
 
-// `io::stdout()` and `io::stderr()` return different types,
-// and `Std***::lock()` is not in any trait, so we need this struct to abstract
+// `io::stdout()` and `io::stderr()` return different types, and
+// `Std***::lock()` is not in any trait, so we need this struct to abstract
 // them.
 #[derive(Debug)]
 pub(crate) enum StdOutStreamDest<O, E> {
@@ -70,9 +70,11 @@ macro_rules! impl_write_for_dest {
 impl_write_for_dest!(StdOutStreamDest<io::Stdout, io::Stderr>);
 impl_write_for_dest!(StdOutStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 
-/// A standard output stream sink.
+/// A sink with a std output stream as the target.
 ///
-/// For internal use, users should not use it directly.
+/// It writes plain text.
+///
+/// Note that this sink always flushes the buffer once with each logging.
 pub struct StdOutStreamSink {
     level_filter: Atomic<LevelFilter>,
     formatter: spin::RwLock<Box<dyn Formatter>>,
@@ -80,9 +82,7 @@ pub struct StdOutStreamSink {
 }
 
 impl StdOutStreamSink {
-    /// Constructs a [`StdOutStreamSink`].
-    ///
-    /// Level default maximum (no discard)
+    /// Constructs a `StdOutStreamSink`.
     pub fn new(std_out_stream: StdOutStream) -> StdOutStreamSink {
         StdOutStreamSink {
             level_filter: Atomic::new(LevelFilter::All),
