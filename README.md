@@ -1,4 +1,9 @@
 # spdlog-rs
+
+[![](https://img.shields.io/crates/v/spdlog-rs?style=flat-square)](https://crates.io/crates/spdlog-rs)
+[![](https://img.shields.io/github/workflow/status/SpriteOvO/spdlog-rs/CI?style=flat-square)](https://github.com/SpriteOvO/spdlog-rs/actions/workflows/ci.yml)
+[![](https://img.shields.io/docsrs/spdlog-rs?style=flat-square)](https://docs.rs/spdlog-rs)
+[![](https://img.shields.io/crates/l/spdlog-rs?style=flat-square)](https://github.com/SpriteOvO/spdlog-rs#license)
  
 A fast and combinable Rust logging crate, inspired by the C++ logging library [spdlog].
 
