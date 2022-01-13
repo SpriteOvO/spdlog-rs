@@ -24,6 +24,7 @@ release-level-debug    = []
 release-level-trace    = []
 
 source-location = []
+flexible-string = []
 
 [dependencies]
 chrono = "0.4"

@@ -79,6 +79,10 @@
 //!    information to appear in your binary file, you may prefer not to enable
 //!    it.
 //!
+//!  - `flexible-string` improves the performance of formatting records, however
+//!    contains unsafe code. For more details, see the documentation of
+//!    [`StringBuf`].
+//!
 //! # Significant differences from C++ spdlog
 //!
 //! The significant differences between `spdlog-rs` and C++ `spdlog`[^1]:
