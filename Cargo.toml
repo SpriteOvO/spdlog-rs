@@ -2,6 +2,11 @@
 name = "spdlog-rs"
 version = "0.1.0"
 edition = "2021"
+description = "A fast and combinable Rust logging crate, inspired by the C++ logging library spdlog"
+repository = "https://github.com/SpriteOvO/spdlog-rs"
+license = "MIT OR Apache-2.0"
+keywords = ["spdlog", "log", "logging"]
+categories = ["development-tools::debugging"]
 
 [lib]
 name = "spdlog"
