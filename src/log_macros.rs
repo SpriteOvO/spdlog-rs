@@ -27,23 +27,7 @@ macro_rules! log {
         const LEVEL: $crate::Level = $level;
         const SHOULD_LOG: bool = $crate::STATIC_LEVEL_FILTER.__compare_const(LEVEL);
         if SHOULD_LOG && logger.should_log(LEVEL) {
-            #[allow(clippy::redundant_closure_call)]
-            (|fmt_args: std::fmt::Arguments| {
-                // use `Cow` to avoid allocation as much as we can
-                let payload: std::borrow::Cow<str> = match fmt_args.as_str() {
-                    Some(literal_str) => literal_str.into(), // no format arguments, so it is a `&'static str`
-                    None => fmt_args.to_string().into()
-                };
-
-                let mut builder = $crate::Record::builder(LEVEL, payload)
-                    .source_location($crate::source_location_current!());
-
-                if let Some(logger_name) = logger.name() {
-                    builder = builder.logger_name(logger_name);
-                }
-
-                logger.log(&builder.build());
-            })(format_args!($($arg)+));
+            $crate::__log(logger, LEVEL, format_args!($($arg)+));
         }
     });
     ($level:expr, $($arg:tt)+) => ($crate::log!(logger: $crate::default_logger(), $level, $($arg)+))
