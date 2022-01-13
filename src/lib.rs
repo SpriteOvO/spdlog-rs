@@ -1,4 +1,4 @@
-//! A fast and combinable Rust logging library.
+//! A fast and combinable Rust logging crate.
 //!
 //! It is inspired by the C++ logging library [spdlog], so if you are familiar
 //! with C++ `spdlog`, you should be able to get started with this crate quite
