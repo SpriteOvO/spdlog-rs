@@ -1284,11 +1284,9 @@ mod inner {
                     let bytes = self.as_bytes();
 
                     if let Some(capacity) = estimated_capacity {
-                        unsafe {
-                            let mut vec = Vec::with_capacity(capacity);
-                            vec.extend_from_slice(bytes);
-                            String::from_utf8_unchecked(vec)
-                        }
+                        let mut vec = Vec::with_capacity(capacity);
+                        vec.extend_from_slice(bytes);
+                        unsafe { String::from_utf8_unchecked(vec) }
                     } else {
                         unsafe { String::from_utf8_unchecked(bytes.into()) }
                     }
