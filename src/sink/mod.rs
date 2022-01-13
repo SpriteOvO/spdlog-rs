@@ -1,12 +1,12 @@
 //! Provides sinks to flexibly output log messages to specified targets.
 
-pub mod file_sink;
-pub mod rotating_file_sink;
-pub mod std_stream_sink;
+mod file_sink;
+mod rotating_file_sink;
+mod std_stream_sink;
 
-pub use file_sink::FileSink;
-pub use rotating_file_sink::{RotatingFileSink, RotationPolicy};
-pub use std_stream_sink::StdStreamSink;
+pub use file_sink::*;
+pub use rotating_file_sink::*;
+pub use std_stream_sink::*;
 
 use std::sync::Arc;
 

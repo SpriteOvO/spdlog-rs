@@ -125,26 +125,27 @@
 
 #![warn(missing_docs)]
 
-pub mod error;
+mod error;
 pub mod formatter;
-pub mod level;
+mod level;
 mod log_macros;
-pub mod logger;
+mod logger;
 mod periodic_worker;
-pub mod record;
+mod record;
 pub mod sink;
-pub mod source_location;
+mod source_location;
+#[doc(hidden)]
 pub mod string_buf;
 pub mod terminal_style;
 #[cfg(test)]
 mod test_utils;
 mod utils;
 
-pub use error::{Error, ErrorHandler, Result};
-pub use level::{Level, LevelFilter};
-pub use logger::{Logger, LoggerBuilder};
-pub use record::Record;
-pub use source_location::SourceLocation;
+pub use error::*;
+pub use level::*;
+pub use logger::*;
+pub use record::*;
+pub use source_location::*;
 pub use string_buf::StringBuf;
 
 /// Contains all log macros and common types.
@@ -160,8 +161,7 @@ use cfg_if::cfg_if;
 use lazy_static::lazy_static;
 
 use sink::{
-    std_stream_sink::{StdStream, StdStreamSink},
-    Sink,
+    Sink, {StdStream, StdStreamSink},
 };
 use terminal_style::StyleMode;
 

@@ -12,7 +12,7 @@ use lazy_static::lazy_static;
 
 use spdlog::{
     info,
-    sink::{rotating_file_sink::RotationPolicy, *},
+    sink::{RotationPolicy, *},
     LevelFilter, Logger,
 };
 

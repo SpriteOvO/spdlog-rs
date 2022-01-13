@@ -4,9 +4,9 @@
 //!
 //! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 
-pub mod full_formatter;
+mod full_formatter;
 
-pub use full_formatter::FullFormatter;
+pub use full_formatter::*;
 
 use std::ops::Range;
 
