@@ -42,12 +42,13 @@ static_assertions = "1.1"
 crossbeam = "0.8"
 clap = { version = "3.0", features = ["derive"] }
 lazy_static = "1.4"
-log = "0.4"
-slog = "2.7"
-sloggers = "2.1"
-log4rs = "1.0"
-fern = "0.6"
-flexi_logger = "0.22"
+# The following dependencies are used for benchmarks
+log = "0.4.14"
+slog = "2.7.0"
+sloggers = "2.1.1"
+log4rs = "1.0.0"
+fern = "0.6.0"
+flexi_logger = "0.22.2"
 
 [[bench]]
 name = "compare_with_cpp_spdlog"
