@@ -43,6 +43,9 @@ arc-swap = "1.5"
 atomic = "0.5"
 static_assertions = "1.1"
 
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["debugapi"] }
+
 [dev-dependencies]
 crossbeam = "0.8"
 clap = { version = "3.0", features = ["derive"] }
