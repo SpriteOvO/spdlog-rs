@@ -7,6 +7,12 @@
 //!
 //! # Getting started
 //!
+//! Add this to `Cargo.toml`:
+//! ```toml
+//! [dependencies]
+//! spdlog-rs = "0.1"
+//! ```
+//!
 //! `spdlog-rs` is out-of-the-box, it has a default logger, so users can output
 //! logs to terminal by default without any configuration. For more details
 //! about the default logger, please read the documentation of
