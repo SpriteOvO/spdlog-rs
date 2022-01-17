@@ -6,6 +6,7 @@ use thiserror::Error;
 
 /// The error type of this crate.
 #[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// The variant returned by [`Formatter`]s when an error occurs in
     /// formatting a record.
