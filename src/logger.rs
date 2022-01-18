@@ -51,18 +51,6 @@ pub struct Logger {
 }
 
 impl Logger {
-    /// Constructs a `Logger` with empty sink.
-    pub fn new() -> Logger {
-        Logger {
-            name: None,
-            level_filter: Atomic::new(LevelFilter::MoreSevereEqual(Level::Info)),
-            sinks: vec![],
-            flush_level_filter: Atomic::new(LevelFilter::Off),
-            periodic_flusher: Mutex::new(None),
-            error_handler: spin::RwLock::new(None),
-        }
-    }
-
     /// Constructs a [`LoggerBuilder`].
     pub fn builder() -> LoggerBuilder {
         LoggerBuilder::new()
@@ -293,12 +281,6 @@ impl Logger {
     }
 }
 
-impl Default for Logger {
-    fn default() -> Logger {
-        Logger::new()
-    }
-}
-
 impl Clone for Logger {
     /// Clones the `Logger`.
     ///
@@ -333,11 +315,16 @@ pub struct LoggerBuilder {
 
 impl LoggerBuilder {
     /// Constructs a `LoggerBuilder`.
-    ///
-    /// The default value of [`Logger`] is the same as [`Logger::new`].
     pub fn new() -> Self {
         Self {
-            logger: Logger::new(),
+            logger: Logger {
+                name: None,
+                level_filter: Atomic::new(LevelFilter::MoreSevereEqual(Level::Info)),
+                sinks: vec![],
+                flush_level_filter: Atomic::new(LevelFilter::Off),
+                periodic_flusher: Mutex::new(None),
+                error_handler: spin::RwLock::new(None),
+            },
         }
     }
 

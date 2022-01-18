@@ -338,7 +338,7 @@ mod tests {
         let test_sink = Arc::new(CounterSink::new());
 
         let test_logger = Arc::new(test_logger_builder().sink(test_sink.clone()).build());
-        let empty_logger = Arc::new(Logger::new());
+        let empty_logger = Arc::new(Logger::builder().build());
 
         set_default_logger(empty_logger.clone());
         info!("hello");
