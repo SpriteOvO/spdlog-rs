@@ -7,7 +7,7 @@ mod common;
 use std::{fs, path::PathBuf, sync::Mutex};
 use test::Bencher;
 
-use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 
 use flexi_logger::{
     writers::FileLogWriter, Age, Cleanup, Criterion, DeferredNow, FileSpec, LogSpecification,
@@ -15,20 +15,27 @@ use flexi_logger::{
 };
 use log::{info, Record};
 
-lazy_static! {
-    pub static ref LOGS_PATH: PathBuf = {
-        let path = common::BENCH_LOGS_PATH.join("flexi_logger");
+fn logs_path() -> &'static PathBuf {
+    static LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
+    LOGS_PATH.get_or_init(|| {
+        let path = common::bench_logs_path().join("flexi_logger");
         fs::create_dir_all(&path).unwrap();
         path
-    };
-    pub static ref HANDLE: Mutex<LoggerHandle> = Mutex::new(
-        Logger::with(LogSpecification::off())
-            .log_to_file(FileSpec::try_from(LOGS_PATH.join("empty.log")).unwrap())
-            .write_mode(WriteMode::BufferDontFlush)
-            .format(formatter)
-            .start()
-            .unwrap()
-    );
+    })
+}
+
+fn handle() -> &'static Mutex<LoggerHandle> {
+    static HANDLE: OnceCell<Mutex<LoggerHandle>> = OnceCell::new();
+    HANDLE.get_or_init(|| {
+        Mutex::new(
+            Logger::with(LogSpecification::off())
+                .log_to_file(FileSpec::try_from(logs_path().join("empty.log")).unwrap())
+                .write_mode(WriteMode::BufferDontFlush)
+                .format(formatter)
+                .start()
+                .unwrap(),
+        )
+    })
 }
 
 pub fn formatter(
@@ -47,13 +54,13 @@ pub fn formatter(
 
 #[bench]
 fn bench_file(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("file.log");
+    let path = logs_path().join("file.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
         .write_mode(WriteMode::BufferDontFlush)
         .format(formatter);
 
-    let mut handle = HANDLE.lock().unwrap();
+    let mut handle = handle().lock().unwrap();
     handle.set_new_spec(LogSpecification::info());
     handle.reset_flw(&writer_builder).unwrap();
 
@@ -62,7 +69,7 @@ fn bench_file(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_rotating_file_size(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("rotating_file_size.log");
+    let path = logs_path().join("rotating_file_size.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
         .write_mode(WriteMode::BufferDontFlush)
@@ -73,7 +80,7 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
             Cleanup::KeepLogFiles(common::ROTATING_FILES),
         );
 
-    let mut handle = HANDLE.lock().unwrap();
+    let mut handle = handle().lock().unwrap();
     handle.set_new_spec(LogSpecification::info());
     handle.reset_flw(&writer_builder).unwrap();
 
@@ -82,7 +89,7 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_rotating_daily(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("rotating_daily.log");
+    let path = logs_path().join("rotating_daily.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
         .write_mode(WriteMode::BufferDontFlush)
@@ -93,7 +100,7 @@ fn bench_rotating_daily(bencher: &mut Bencher) {
             Cleanup::KeepLogFiles(common::ROTATING_FILES),
         );
 
-    let mut handle = HANDLE.lock().unwrap();
+    let mut handle = handle().lock().unwrap();
     handle.set_new_spec(LogSpecification::info());
     handle.reset_flw(&writer_builder).unwrap();
 
@@ -102,7 +109,10 @@ fn bench_rotating_daily(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_level_off(bencher: &mut Bencher) {
-    HANDLE.lock().unwrap().set_new_spec(LogSpecification::off());
+    handle()
+        .lock()
+        .unwrap()
+        .set_new_spec(LogSpecification::off());
 
     bencher.iter(|| info!(bench_log_message!()))
 }

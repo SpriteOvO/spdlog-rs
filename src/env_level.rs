@@ -4,16 +4,17 @@ use std::{
     sync::RwLock,
 };
 
-use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 use thiserror::Error;
 
 use crate::LevelFilter;
 
-lazy_static! {
-    static ref ENV_LEVEL: RwLock<Option<EnvLevel>> = RwLock::new(None);
-}
-
 pub(crate) type EnvLevel = HashMap<EnvLevelLogger, LevelFilter>;
+
+fn global_env_level() -> &'static RwLock<Option<EnvLevel>> {
+    static ENV_LEVEL: OnceCell<RwLock<Option<EnvLevel>>> = OnceCell::new();
+    ENV_LEVEL.get_or_init(|| RwLock::new(None))
+}
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub(crate) enum EnvLevelLogger {
@@ -69,7 +70,7 @@ pub(crate) fn from_env(env_name: &str) -> Result<bool, EnvLevelError> {
 
 pub(crate) fn from_str(var: &str) -> Result<(), EnvLevelError> {
     let env_level = from_str_inner(var)?;
-    *ENV_LEVEL.write().unwrap() = Some(env_level);
+    *global_env_level().write().unwrap() = Some(env_level);
     Ok(())
 }
 
@@ -125,7 +126,7 @@ pub(crate) fn from_str_inner(var: &str) -> Result<EnvLevel, EnvLevelError> {
 }
 
 pub(crate) fn logger_level(kind: LoggerKind) -> Option<LevelFilter> {
-    logger_level_inner(ENV_LEVEL.read().unwrap().as_ref()?, kind)
+    logger_level_inner(global_env_level().read().unwrap().as_ref()?, kind)
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]

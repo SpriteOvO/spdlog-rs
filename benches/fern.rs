@@ -7,22 +7,23 @@ mod common;
 use std::{fs, path::PathBuf};
 use test::Bencher;
 
-use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 
 use fern::Dispatch;
 use log::info;
 
-lazy_static! {
-    pub static ref LOGS_PATH: PathBuf = {
-        let path = common::BENCH_LOGS_PATH.join("fern");
+fn logs_path() -> &'static PathBuf {
+    static LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
+    LOGS_PATH.get_or_init(|| {
+        let path = common::bench_logs_path().join("fern");
         fs::create_dir_all(&path).unwrap();
         path
-    };
+    })
 }
 
 #[bench]
 fn bench_file(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("file.log");
+    let path = logs_path().join("file.log");
 
     Dispatch::new()
         .format(|out, message, record| {

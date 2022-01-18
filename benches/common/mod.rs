@@ -1,9 +1,10 @@
 use std::{env, fs, path::PathBuf};
 
-use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 
-lazy_static! {
-    pub static ref BENCH_LOGS_PATH: PathBuf = {
+pub fn bench_logs_path() -> &'static PathBuf {
+    static BENCH_LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
+    BENCH_LOGS_PATH.get_or_init(|| {
         let path = env::current_exe()
             .unwrap()
             .parent()
@@ -11,7 +12,7 @@ lazy_static! {
             .join("dev/bench_logs");
         fs::create_dir_all(&path).unwrap();
         path
-    };
+    })
 }
 
 #[macro_export]

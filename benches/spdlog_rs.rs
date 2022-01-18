@@ -7,21 +7,22 @@ mod common;
 use std::{fs, path::PathBuf, sync::Arc};
 use test::Bencher;
 
-use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 
 use spdlog::{prelude::*, sink::*, LevelFilter, Logger};
 
-lazy_static! {
-    pub static ref LOGS_PATH: PathBuf = {
-        let path = common::BENCH_LOGS_PATH.join("spdlog_rs");
+fn logs_path() -> &'static PathBuf {
+    static LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
+    LOGS_PATH.get_or_init(|| {
+        let path = common::bench_logs_path().join("spdlog_rs");
         fs::create_dir_all(&path).unwrap();
         path
-    };
+    })
 }
 
 #[bench]
 fn bench_file(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("file.log");
+    let path = logs_path().join("file.log");
 
     let sink = Arc::new(FileSink::new(path, true).unwrap());
     let logger = Logger::builder().sink(sink).build();
@@ -31,7 +32,7 @@ fn bench_file(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_rotating_file_size(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("rotating_file_size.log");
+    let path = logs_path().join("rotating_file_size.log");
 
     let sink = Arc::new(
         RotatingFileSink::new(
@@ -49,7 +50,7 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_rotating_daily(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("rotating_daily.log");
+    let path = logs_path().join("rotating_daily.log");
 
     let sink = Arc::new(
         RotatingFileSink::new(

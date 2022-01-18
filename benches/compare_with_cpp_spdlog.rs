@@ -8,7 +8,7 @@ use std::{env, fs, path::PathBuf, sync::Arc, time::Instant};
 use test::black_box;
 
 use clap::Parser;
-use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 
 use spdlog::{
     info,
@@ -16,12 +16,13 @@ use spdlog::{
     LevelFilter, Logger,
 };
 
-lazy_static! {
-    pub static ref LOGS_PATH: PathBuf = {
-        let path = common::BENCH_LOGS_PATH.join("compare_with_cpp_spdlog");
+fn logs_path() -> &'static PathBuf {
+    static LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
+    LOGS_PATH.get_or_init(|| {
+        let path = common::bench_logs_path().join("compare_with_cpp_spdlog");
         fs::create_dir_all(&path).unwrap();
         path
-    };
+    })
 }
 
 const FILE_SIZE: u64 = 30 * 1024 * 1024;
@@ -39,7 +40,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
 
     let logger = Logger::builder()
         .sink(Arc::new(
-            FileSink::new(LOGS_PATH.join("FileSink.log"), true).unwrap(),
+            FileSink::new(logs_path().join("FileSink.log"), true).unwrap(),
         ))
         .name("basic_mt")
         .build();
@@ -48,7 +49,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     let logger = Logger::builder()
         .sink(Arc::new(
             RotatingFileSink::new(
-                LOGS_PATH.join("RotatingFileSink_FileSize.log"),
+                logs_path().join("RotatingFileSink_FileSize.log"),
                 RotationPolicy::FileSize(FILE_SIZE),
                 ROTATING_FILES,
                 false,
@@ -62,7 +63,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     let logger = Logger::builder()
         .sink(Arc::new(
             RotatingFileSink::new(
-                LOGS_PATH.join("RotatingFileSink_Daily.log"),
+                logs_path().join("RotatingFileSink_Daily.log"),
                 RotationPolicy::Daily { hour: 0, minute: 0 },
                 0,
                 false,

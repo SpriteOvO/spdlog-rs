@@ -173,7 +173,7 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use cfg_if::cfg_if;
-use lazy_static::lazy_static;
+use once_cell::sync::OnceCell;
 
 use sink::{
     Sink, {StdStream, StdStreamSink},
@@ -229,8 +229,9 @@ pub(crate) const EOL: &str = "\n";
 #[cfg(windows)]
 pub(crate) const EOL: &str = "\r\n";
 
-lazy_static! {
-    static ref DEFAULT_LOGGER: ArcSwap<Logger> = {
+fn global_default_logger() -> &'static ArcSwap<Logger> {
+    static DEFAULT_LOGGER: OnceCell<ArcSwap<Logger>> = OnceCell::new();
+    DEFAULT_LOGGER.get_or_init(|| {
         let stdout = StdStreamSink::new(StdStream::Stdout, StyleMode::Auto);
         stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
 
@@ -240,7 +241,7 @@ lazy_static! {
         let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
 
         ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default())
-    };
+    })
 }
 
 /// Returns an [`Arc`] default logger.
@@ -268,7 +269,7 @@ lazy_static! {
 /// critical!("this log will be written to `stderr`");
 /// ```
 pub fn default_logger() -> Arc<Logger> {
-    DEFAULT_LOGGER.load().clone()
+    global_default_logger().load().clone()
 }
 
 /// Sets the given logger as the default logger, and returns the old default
@@ -287,7 +288,7 @@ pub fn default_logger() -> Arc<Logger> {
 /// info!(logger: old_logger, "this log will be handled by `old_logger`");
 /// ```
 pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
-    DEFAULT_LOGGER.swap(logger)
+    global_default_logger().swap(logger)
 }
 
 /// Sets the given logger as the default logger.
