@@ -11,13 +11,14 @@ A fast and combinable Rust logging crate, inspired by the C++ logging library [s
 
  - Very fast (see [Benchmarks](#Benchmarks) below).
  - Various log targets:
-    - Standard streams.
+    - Standard streams with optional colors.
     - Files.
     - Rotating log files by file size.
     - Rotating log files hourly.
     - Rotating log files daily.
     - ... (more targets are implementing, PRs are welcome)
     - Extendable with custom log targets.
+ - Configured via environment variable.
  - Custom formatting.
  - Log filtering - log levels can be modified in runtime as well as in compile time.
 

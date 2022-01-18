@@ -46,6 +46,13 @@
 //! [open a discussion]. For feature requests or bug reports, please [open an
 //! issue].
 //!
+//! # Configured via environment variable
+//!
+//! Users can optionally configure the level filter of loggers via the
+//! environment variable `SPDLOG_RS_LEVEL`.
+//!
+//! For more details, see the documentation of [`init_env_level`].
+//!
 //! # Compile time filters
 //!
 //! Log levels can be statically disabled at compile time via Cargo features.
@@ -131,6 +138,7 @@
 
 #![warn(missing_docs)]
 
+mod env_level;
 mod error;
 pub mod formatter;
 mod level;
@@ -147,6 +155,7 @@ pub mod terminal_style;
 mod test_utils;
 mod utils;
 
+pub use env_level::EnvLevelError;
 pub use error::*;
 pub use level::*;
 pub use logger::*;
@@ -230,7 +239,7 @@ lazy_static! {
 
         let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
 
-        ArcSwap::from_pointee(Logger::builder().sinks(sinks).build())
+        ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default())
     };
 }
 
@@ -296,6 +305,136 @@ pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
 /// ```
 pub fn set_default_logger(logger: Arc<Logger>) {
     swap_default_logger(logger);
+}
+
+/// Initialize environment variable level filters.
+///
+/// Returns whether the level in the environment variable was applied if there
+/// are no errors.
+///
+/// The default level filter of loggers built after calling this function will
+/// be configured based on the value of environment variable `SPDLOG_RS_LEVEL`.
+///
+/// Users should call this function early, the level filter of loggers built
+/// before calling this function will not be configured by environment variable.
+///
+/// Format of the environment variable value:
+///
+/// - `all`
+///
+///   Specifies the level filter of the default logger as `LevelFilter::All`.
+///
+/// - `=trace`
+///
+///   Specifies the level filter of unnamed loggers as
+/// `LevelFilter::MoreSevereEqual(Level::Trace)`.
+///
+/// - `example=off`
+///
+///   Specifies the level filter of loggers with name "example" as
+/// `LevelFilter::Off`.
+///
+/// - `*=error`
+///
+///   Specifies the level filter of all loggers (except the default logger) as
+/// `LevelFilter::MoreSevereEqual(Level::Error)` (respect the above rules if
+/// they are matched).
+///
+/// The level filter is not case-sensitive, and these rules are combinable,
+/// separated by commas. For example, these are legal:
+///
+/// - `ALL,*=ALL`
+///
+///   Specifies the level filter of all loggers as `LevelFilter::All`.
+///
+/// - `off,*=ERROR`
+///
+///   Specifies the level filter of the default logger as `LevelFilter::Off`,
+/// the rest of loggers as `LevelFilter::MoreSevereEqual(Level::Error)`.
+///
+/// - `gui=warn,network=trace`
+///
+///   Specifies the level filter of loggers with name "gui" as
+/// `LevelFilter::MoreSevereEqual(Level::Warn)`, loggers with name "network" as
+/// `LevelFilter::MoreSevereEqual(Level::Trace)`.
+///
+/// However, the same rule cannot be specified more than once.
+///
+/// # Examples
+///
+/// - Environment variable `SPDLOG_RS_LEVEL` is not present:
+///
+///   ```
+///   use spdlog::prelude::*;
+///  
+///   # fn main() -> Result<(), spdlog::EnvLevelError> {
+///   assert_eq!(spdlog::init_env_level()?, false);
+///  
+///   assert_eq!(
+///       spdlog::default_logger().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
+///   );
+///   assert_eq!(
+///       Logger::builder().build().level_filter(), // unnamed logger
+///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
+///   );
+///   assert_eq!(
+///       Logger::builder().name("gui").build().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
+///   );
+///   assert_eq!(
+///       Logger::builder().name("network").build().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
+///   );
+///   # Ok(()) }
+///   ```
+///
+/// - `SPDLOG_RS_LEVEL="TRACE,network=Warn,*=error"`:
+///
+///   ```
+///   use spdlog::prelude::*;
+///  
+///   # fn main() -> Result<(), spdlog::EnvLevelError> {
+///   # std::env::set_var("SPDLOG_RS_LEVEL", "TRACE,network=Warn,*=error");
+///   assert_eq!(spdlog::init_env_level()?, true);
+///  
+///   assert_eq!(
+///       spdlog::default_logger().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Trace)
+///   );
+///   assert_eq!(
+///       Logger::builder().build().level_filter(), // unnamed logger
+///       LevelFilter::MoreSevereEqual(Level::Error)
+///   );
+///   assert_eq!(
+///       Logger::builder().name("gui").build().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Error)
+///   );
+///   assert_eq!(
+///       Logger::builder().name("network").build().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Warn)
+///   );
+///   # Ok(()) }
+///   ```
+///
+/// - `SPDLOG_RS_LEVEL="network=Warn,network=Warn` will fail, as the same rule
+///   is specified multiple times.
+///
+///   ```
+///   # std::env::set_var("SPDLOG_RS_LEVEL", "network=Warn,network=Warn");
+///   let result = spdlog::init_env_level();
+///   # // TODO: commented out since `assert_matches` is currently unstable.
+///   # //       change to use `assert_matches` when it is stable.
+///   # // assert_matches!(result, Err(spdlog::EnvLevelError::ParseEnvVar(_)));
+///   if let Err(spdlog::EnvLevelError::ParseEnvVar(_)) = result {
+///       // expected
+///   } else {
+///       // unexpected
+///       assert!(false);
+///   }
+///   ```
+pub fn init_env_level() -> std::result::Result<bool, EnvLevelError> {
+    env_level::from_env("SPDLOG_RS_LEVEL")
 }
 
 fn default_error_handler(from: impl AsRef<str>, error: Error) {

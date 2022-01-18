@@ -8,6 +8,7 @@ use std::{
 use atomic::Atomic;
 
 use crate::{
+    env_level,
     periodic_worker::PeriodicWorker,
     sink::{Sink, Sinks},
     Error, ErrorHandler, Level, LevelFilter, Record,
@@ -329,11 +330,39 @@ impl LoggerBuilder {
     }
 
     /// Sets the name of the logger.
+    ///
+    /// A literal constant string is usually set.
+    ///
+    /// # Panics
+    ///
+    /// A logger name should not contain any of these characters:
+    /// `,` `=` `*` `?` `$` `{` `}` `"` `'` `;`,
+    /// and cannot start or end with a whitespace.
     pub fn name<S>(&mut self, name: S) -> &mut Self
     where
         S: Into<String>,
     {
-        self.logger.name = Some(name.into());
+        let name = name.into();
+
+        if name.chars().any(|ch| {
+            ch == ','
+                || ch == '='
+                || ch == '*'
+                || ch == '?'
+                || ch == '$'
+                || ch == '{'
+                || ch == '}'
+                || ch == '"'
+                || ch == '\''
+                || ch == ';'
+        }) {
+            panic!("logger name contains disallowed character");
+        }
+        if name.starts_with(' ') || name.ends_with(' ') {
+            panic!("logger name cannot start or end with a whitespace");
+        }
+
+        self.logger.name = Some(name);
         self
     }
 
@@ -375,7 +404,44 @@ impl LoggerBuilder {
 
     /// Builds a [`Logger`].
     pub fn build(&mut self) -> Logger {
-        self.logger.clone()
+        self.build_inner(false)
+    }
+
+    pub(crate) fn build_default(&mut self) -> Logger {
+        self.build_inner(true)
+    }
+
+    fn build_inner(&mut self, is_default: bool) -> Logger {
+        let res = self.logger.clone();
+        let level = if is_default {
+            env_level::logger_level(env_level::LoggerKind::Default)
+        } else {
+            env_level::logger_level(env_level::LoggerKind::Other(res.name()))
+        };
+        if let Some(level) = level {
+            res.set_level_filter(level);
+        }
+        res
+    }
+
+    #[cfg(test)]
+    fn build_inner_for_test(&mut self, env_level: &str, is_default: bool) -> Logger {
+        let res = self.logger.clone();
+        let level = if is_default {
+            env_level::logger_level_inner(
+                &env_level::from_str_inner(env_level).unwrap(),
+                env_level::LoggerKind::Default,
+            )
+        } else {
+            env_level::logger_level_inner(
+                &env_level::from_str_inner(env_level).unwrap(),
+                env_level::LoggerKind::Other(res.name()),
+            )
+        };
+        if let Some(level) = level {
+            res.set_level_filter(level);
+        }
+        res
     }
 }
 
@@ -451,5 +517,179 @@ mod tests {
 
         thread::sleep(Duration::from_millis(1250));
         assert_eq!(test_sink.flush_count(), 3);
+    }
+
+    #[test]
+    fn builder_name() {
+        LoggerBuilder::new().name("hello-world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_whitespace_start() {
+        LoggerBuilder::new().name(" hello");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_whitespace_end() {
+        LoggerBuilder::new().name("hello ");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_comma() {
+        LoggerBuilder::new().name("hello,world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_eq() {
+        LoggerBuilder::new().name("hello=world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_asterisk() {
+        LoggerBuilder::new().name("hello*world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_question_mark() {
+        LoggerBuilder::new().name("hello?world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_dollar_sign() {
+        LoggerBuilder::new().name("hello$world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_curly_bracket_left() {
+        LoggerBuilder::new().name("hello{world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_curly_bracket_right() {
+        LoggerBuilder::new().name("hello}world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_quotation() {
+        LoggerBuilder::new().name("hello\"world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_apostrophe() {
+        LoggerBuilder::new().name("hello'world");
+    }
+
+    #[test]
+    #[should_panic]
+    fn builder_name_panic_semicolon() {
+        LoggerBuilder::new().name("hello;world");
+    }
+
+    #[test]
+    fn env_level() {
+        macro_rules! assert_levels {
+            ($env_level:literal, DEFAULT => $default:expr, UNNAMED => $unnamed:expr, NAMED($name:literal) => $named:expr $(,)?) => {
+                assert_eq!(
+                    Logger::builder()
+                        .build_inner_for_test($env_level, true)
+                        .level_filter(),
+                    $default
+                );
+                assert_eq!(
+                    Logger::builder()
+                        .build_inner_for_test($env_level, false)
+                        .level_filter(),
+                    $unnamed
+                );
+                assert_eq!(
+                    Logger::builder()
+                        .name($name)
+                        .build_inner_for_test($env_level, false)
+                        .level_filter(),
+                    $named
+                );
+            };
+            (_, DEFAULT => $default:expr, UNNAMED => $unnamed:expr, NAMED($name:literal) => $named:expr $(,)?) => {
+                assert_eq!(Logger::builder().build_default().level_filter(), $default);
+                assert_eq!(Logger::builder().build().level_filter(), $unnamed);
+                assert_eq!(Logger::builder().name($name).build().level_filter(), $named);
+            };
+        }
+
+        let unchanged = LevelFilter::MoreSevereEqual(Level::Info);
+
+        assert_levels!(
+            _,
+            DEFAULT => unchanged,
+            UNNAMED => unchanged,
+            NAMED("name") => unchanged,
+        );
+
+        assert_levels!(
+            "deBug",
+            DEFAULT => LevelFilter::MoreSevereEqual(Level::Debug),
+            UNNAMED => unchanged,
+            NAMED("name") => unchanged,
+        );
+
+        assert_levels!(
+            "deBug,*=tRace",
+            DEFAULT => LevelFilter::MoreSevereEqual(Level::Debug),
+            UNNAMED => LevelFilter::MoreSevereEqual(Level::Trace),
+            NAMED("name") => LevelFilter::MoreSevereEqual(Level::Trace),
+        );
+
+        assert_levels!(
+            "=trAce",
+            DEFAULT => unchanged,
+            UNNAMED => LevelFilter::MoreSevereEqual(Level::Trace),
+            NAMED("name") => unchanged,
+        );
+
+        assert_levels!(
+            "*=waRn",
+            DEFAULT => unchanged,
+            UNNAMED => LevelFilter::MoreSevereEqual(Level::Warn),
+            NAMED("name") => LevelFilter::MoreSevereEqual(Level::Warn),
+        );
+
+        assert_levels!(
+            "=eRror,*=waRn",
+            DEFAULT => unchanged,
+            UNNAMED => LevelFilter::MoreSevereEqual(Level::Error),
+            NAMED("name") => LevelFilter::MoreSevereEqual(Level::Warn),
+        );
+
+        assert_levels!(
+            "=eRror,*=waRn,name=trAce",
+            DEFAULT => unchanged,
+            UNNAMED => LevelFilter::MoreSevereEqual(Level::Error),
+            NAMED("name") => LevelFilter::MoreSevereEqual(Level::Trace),
+        );
+
+        assert_levels!(
+            "all,*=all",
+            DEFAULT => LevelFilter::All,
+            UNNAMED => LevelFilter::All,
+            NAMED("name") => LevelFilter::All,
+        );
+
+        assert_levels!(
+            "off,*=all",
+            DEFAULT => LevelFilter::Off,
+            UNNAMED => LevelFilter::All,
+            NAMED("name") => LevelFilter::All,
+        );
     }
 }

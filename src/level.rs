@@ -229,6 +229,18 @@ impl LevelFilter {
             Self::All => true,
         }
     }
+
+    pub(crate) fn from_str_for_env(text: &str) -> Option<LevelFilter> {
+        if let Ok(level) = Level::from_str(text) {
+            Some(LevelFilter::MoreSevereEqual(level))
+        } else if text.eq_ignore_ascii_case("off") {
+            Some(LevelFilter::Off)
+        } else if text.eq_ignore_ascii_case("all") {
+            Some(LevelFilter::All)
+        } else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
@@ -277,6 +289,29 @@ mod tests {
         }
 
         assert!(Level::from_str("notexist").is_err());
+    }
+
+    #[test]
+    fn level_filter_from_str_for_env() {
+        assert_eq!(
+            LevelFilter::MoreSevereEqual(Level::Info),
+            LevelFilter::from_str_for_env("iNFo").unwrap()
+        );
+
+        assert_eq!(
+            LevelFilter::MoreSevereEqual(Level::Warn),
+            LevelFilter::from_str_for_env("wARn").unwrap()
+        );
+
+        assert_eq!(
+            LevelFilter::Off,
+            LevelFilter::from_str_for_env("oFf").unwrap()
+        );
+
+        assert_eq!(
+            LevelFilter::All,
+            LevelFilter::from_str_for_env("aLl").unwrap()
+        );
     }
 
     #[test]
