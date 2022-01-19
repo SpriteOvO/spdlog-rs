@@ -46,7 +46,7 @@ mod inner {
 
     cfg_if! {
         if #[cfg(feature = "flexible-string")] {
-            use std::{fmt, mem::MaybeUninit, ops, ptr, slice, str, string};
+            use std::{fmt, mem::MaybeUninit, ops, ptr, slice, str, string, ffi::OsStr};
 
             // The following implementations are referenced from :
             // https://github.com/rust-lang/rust/blob/f1edd0429582dd29cccacaf50fd134b05593bd9c/library/alloc/src/string.rs
@@ -826,6 +826,13 @@ mod inner {
                 #[inline]
                 fn as_ref(&self) -> &[u8] {
                     self.as_bytes()
+                }
+            }
+
+            impl<const CAPACITY: usize> AsRef<OsStr> for FlexibleString<CAPACITY> {
+                #[inline]
+                fn as_ref(&self) -> &OsStr {
+                    (&**self).as_ref()
                 }
             }
 
