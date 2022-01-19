@@ -29,7 +29,6 @@ release-level-debug    = []
 release-level-trace    = []
 
 source-location = []
-flexible-string = []
 
 [dependencies]
 chrono = "0.4"
@@ -42,6 +41,7 @@ spin = "0.9"
 arc-swap = "1.5"
 atomic = "0.5"
 static_assertions = "1.1"
+flexible-string = { version = "0.1", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["debugapi"] }
