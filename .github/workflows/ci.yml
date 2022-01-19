@@ -28,13 +28,16 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest', 'windows-latest']
+        features: ['', 'flexible-string']
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --features "flexible-string" --verbose
+    - name: Run tests with default features
+      if: matrix.features == ''
+      run: cargo test --verbose
+    - name: Run tests with specified features
+      if: matrix.features != ''
+      run: cargo test --features ${{ matrix.features }} --verbose
 
   clippy:
     runs-on: ubuntu-latest
