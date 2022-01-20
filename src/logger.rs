@@ -210,7 +210,7 @@ impl Logger {
                           // worker thread.
                 }
             };
-            *periodic_flusher = Some(PeriodicWorker::new(Box::new(callback), interval));
+            *periodic_flusher = Some(PeriodicWorker::new(callback, interval));
         }
     }
 
