@@ -44,23 +44,7 @@ Disclaimer, I'm not entirely familiar with using the other Rust crates below, so
 
 ### `spdlog-rs` (0.1.0)
 
-Default features (corresponds to C++ `spdlog` using standard `<format>`)
-```
-[info] **********************************************************************
-[info] Multi threaded: 1 threads, 250000 messages
-[info] **********************************************************************
-[info] basic_mt                       Elapsed: 0.13 secs          1940870/sec
-[info] rotating_mt                    Elapsed: 0.13 secs          1894612/sec
-[info] daily_mt                       Elapsed: 0.13 secs          1920024/sec
-[info] level-off                      Elapsed: 0.00 secs        444919024/sec
-[info] **********************************************************************
-[info] Multi threaded: 4 threads, 250000 messages
-[info] **********************************************************************
-[info] basic_mt                       Elapsed: 0.14 secs          1825379/sec
-[info] rotating_mt                    Elapsed: 0.14 secs          1845651/sec
-[info] daily_mt                       Elapsed: 0.13 secs          1854885/sec
-[info] level-off                      Elapsed: 0.00 secs        485625485/sec
-```
+Default features
 ```
 test bench_file               ... bench:         376 ns/iter (+/- 12)
 test bench_level_off          ... bench:           1 ns/iter (+/- 0)
@@ -68,66 +52,12 @@ test bench_rotating_daily     ... bench:         380 ns/iter (+/- 12)
 test bench_rotating_file_size ... bench:         379 ns/iter (+/- 50)
 ```
 
-Enable `flexible-string` feature (corresponds to C++ `spdlog` using `fmt` library)
-```
-[info] **********************************************************************
-[info] Multi threaded: 1 threads, 250000 messages
-[info] **********************************************************************
-[info] basic_mt                       Elapsed: 0.08 secs          3003511/sec
-[info] rotating_mt                    Elapsed: 0.08 secs          3006090/sec
-[info] daily_mt                       Elapsed: 0.08 secs          3032813/sec
-[info] level-off                      Elapsed: 0.00 secs        484871993/sec
-[info] **********************************************************************
-[info] Multi threaded: 4 threads, 250000 messages
-[info] **********************************************************************
-[info] basic_mt                       Elapsed: 0.06 secs          4266393/sec
-[info] rotating_mt                    Elapsed: 0.06 secs          4271496/sec
-[info] daily_mt                       Elapsed: 0.06 secs          4164993/sec
-[info] level-off                      Elapsed: 0.00 secs        462962962/sec
-```
+Enable `flexible-string` feature
 ```
 test bench_file               ... bench:         166 ns/iter (+/- 10)
 test bench_level_off          ... bench:           1 ns/iter (+/- 0)
 test bench_rotating_daily     ... bench:         172 ns/iter (+/- 7)
 test bench_rotating_file_size ... bench:         176 ns/iter (+/- 20)
-```
-
-### Compare with C++ `spdlog` ([`4cfdc8c`])
-
-Compiled with `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DSPDLOG_BUILD_BENCH=ON -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_USE_STD_FORMAT=ON`
-```
-[info] **************************************************************
-[info] Multi threaded: 1 threads, 250,000 messages
-[info] **************************************************************
-[info] basic_mt                       Elapsed: 0.15 secs        1,654,676/sec
-[info] rotating_mt                    Elapsed: 0.16 secs        1,576,156/sec
-[info] daily_mt                       Elapsed: 0.15 secs        1,671,424/sec
-[info] level-off                      Elapsed: 0.00 secs      132,597,857/sec
-[info] **************************************************************
-[info] Multi threaded: 4 threads, 250,000 messages
-[info] **************************************************************
-[info] basic_mt                       Elapsed: 0.26 secs          965,885/sec
-[info] rotating_mt                    Elapsed: 0.26 secs          964,368/sec
-[info] daily_mt                       Elapsed: 0.25 secs          981,449/sec
-[info] level-off                      Elapsed: 0.00 secs      135,310,673/sec
-```
-
-Compiled with `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DSPDLOG_BUILD_BENCH=ON -DSPDLOG_BUILD_EXAMPLE=OFF`
-```
-[info] **************************************************************
-[info] Multi threaded: 1 threads, 250,000 messages
-[info] **************************************************************
-[info] basic_mt                       Elapsed: 0.06 secs        3,917,304/sec
-[info] rotating_mt                    Elapsed: 0.06 secs        3,942,073/sec
-[info] daily_mt                       Elapsed: 0.07 secs        3,784,707/sec
-[info] level-off                      Elapsed: 0.00 secs      148,174,490/sec
-[info] **************************************************************
-[info] Multi threaded: 4 threads, 250,000 messages
-[info] **************************************************************
-[info] basic_mt                       Elapsed: 0.11 secs        2,356,303/sec
-[info] rotating_mt                    Elapsed: 0.12 secs        2,138,911/sec
-[info] daily_mt                       Elapsed: 0.12 secs        2,163,183/sec
-[info] level-off                      Elapsed: 0.00 secs      148,060,408/sec
 ```
 
 ### Compare with `slog` (2.7.0)
@@ -164,6 +94,84 @@ test bench_file               ... bench:       3,687 ns/iter (+/- 101)
 test bench_level_off          ... bench:         unavailable
 test bench_rotating_daily     ... bench:         unavailable
 test bench_rotating_file_size ... bench:         unavailable
+```
+
+### Compare with C++ `spdlog`
+
+#### `spdlog-rs` (0.1.0)
+
+Default features (corresponds to C++ `spdlog` using standard `<format>`)
+```
+[info] **********************************************************************
+[info] Multi threaded: 1 threads, 250000 messages
+[info] **********************************************************************
+[info] basic_mt                       Elapsed: 0.13 secs          1940870/sec
+[info] rotating_mt                    Elapsed: 0.13 secs          1894612/sec
+[info] daily_mt                       Elapsed: 0.13 secs          1920024/sec
+[info] level-off                      Elapsed: 0.00 secs        444919024/sec
+[info] **********************************************************************
+[info] Multi threaded: 4 threads, 250000 messages
+[info] **********************************************************************
+[info] basic_mt                       Elapsed: 0.14 secs          1825379/sec
+[info] rotating_mt                    Elapsed: 0.14 secs          1845651/sec
+[info] daily_mt                       Elapsed: 0.13 secs          1854885/sec
+[info] level-off                      Elapsed: 0.00 secs        485625485/sec
+```
+
+Enable `flexible-string` feature (corresponds to C++ `spdlog` using `fmt` library)
+```
+[info] **********************************************************************
+[info] Multi threaded: 1 threads, 250000 messages
+[info] **********************************************************************
+[info] basic_mt                       Elapsed: 0.08 secs          3003511/sec
+[info] rotating_mt                    Elapsed: 0.08 secs          3006090/sec
+[info] daily_mt                       Elapsed: 0.08 secs          3032813/sec
+[info] level-off                      Elapsed: 0.00 secs        484871993/sec
+[info] **********************************************************************
+[info] Multi threaded: 4 threads, 250000 messages
+[info] **********************************************************************
+[info] basic_mt                       Elapsed: 0.06 secs          4266393/sec
+[info] rotating_mt                    Elapsed: 0.06 secs          4271496/sec
+[info] daily_mt                       Elapsed: 0.06 secs          4164993/sec
+[info] level-off                      Elapsed: 0.00 secs        462962962/sec
+```
+
+#### C++ `spdlog` ([`4cfdc8c`])
+
+Using standard `<format>` (compiled with `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DSPDLOG_BUILD_BENCH=ON -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_USE_STD_FORMAT=ON`)
+```
+[info] **************************************************************
+[info] Multi threaded: 1 threads, 250,000 messages
+[info] **************************************************************
+[info] basic_mt                       Elapsed: 0.15 secs        1,654,676/sec
+[info] rotating_mt                    Elapsed: 0.16 secs        1,576,156/sec
+[info] daily_mt                       Elapsed: 0.15 secs        1,671,424/sec
+[info] level-off                      Elapsed: 0.00 secs      132,597,857/sec
+[info] **************************************************************
+[info] Multi threaded: 4 threads, 250,000 messages
+[info] **************************************************************
+[info] basic_mt                       Elapsed: 0.26 secs          965,885/sec
+[info] rotating_mt                    Elapsed: 0.26 secs          964,368/sec
+[info] daily_mt                       Elapsed: 0.25 secs          981,449/sec
+[info] level-off                      Elapsed: 0.00 secs      135,310,673/sec
+```
+
+Using `fmt` library (compiled with `cmake -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DSPDLOG_BUILD_BENCH=ON -DSPDLOG_BUILD_EXAMPLE=OFF`)
+```
+[info] **************************************************************
+[info] Multi threaded: 1 threads, 250,000 messages
+[info] **************************************************************
+[info] basic_mt                       Elapsed: 0.06 secs        3,917,304/sec
+[info] rotating_mt                    Elapsed: 0.06 secs        3,942,073/sec
+[info] daily_mt                       Elapsed: 0.07 secs        3,784,707/sec
+[info] level-off                      Elapsed: 0.00 secs      148,174,490/sec
+[info] **************************************************************
+[info] Multi threaded: 4 threads, 250,000 messages
+[info] **************************************************************
+[info] basic_mt                       Elapsed: 0.11 secs        2,356,303/sec
+[info] rotating_mt                    Elapsed: 0.12 secs        2,138,911/sec
+[info] daily_mt                       Elapsed: 0.12 secs        2,163,183/sec
+[info] level-off                      Elapsed: 0.00 secs      148,060,408/sec
 ```
 
 ## License
