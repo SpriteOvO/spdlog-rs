@@ -1,0 +1,4 @@
+contact_links:
+  - name: Ask a question
+    url: https://github.com/SpriteOvO/spdlog-rs/discussions/new
+    about: Ask a question about this project
