@@ -31,24 +31,25 @@ release-level-trace    = []
 source-location = []
 
 [dependencies]
-chrono = "0.4"
-thiserror = "1.0"
-atty = "0.2"
-if_chain = "1.0"
-once_cell = "1.9"
-cfg-if = "1.0"
-spin = "0.9"
 arc-swap = "1.5"
 atomic = "0.5"
-static_assertions = "1.1"
+atty = "0.2"
+cfg-if = "1.0"
+chrono = "0.4"
 flexible-string = { version = "0.1", optional = true }
+if_chain = "1.0"
+once_cell = "1.9"
+spin = "0.9"
+static_assertions = "1.1"
+thiserror = "1.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["debugapi"] }
 
 [dev-dependencies]
-crossbeam = "0.8"
 clap = { version = "3.0", features = ["derive"] }
+crossbeam = "0.8"
+
 # The following dependencies are used for benchmarks
 log = "0.4.14"
 slog = "2.7.0"
