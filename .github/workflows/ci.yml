@@ -48,4 +48,4 @@ jobs:
         rustup toolchain install nightly
         rustup component add clippy --toolchain nightly
     - name: Run clippy
-      run: cargo +nightly clippy --tests --benches
+      run: cargo +nightly clippy --all-features --tests --benches
