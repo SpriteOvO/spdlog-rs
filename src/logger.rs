@@ -215,7 +215,7 @@ impl Logger {
     }
 
     /// Gets a reference to sinks in the logger.
-    pub fn sinks(&self) -> &Sinks {
+    pub fn sinks(&self) -> &[Arc<dyn Sink>] {
         &self.sinks
     }
 

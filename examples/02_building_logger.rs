@@ -9,7 +9,7 @@ fn main() {
     // later examples. Here we clone sinks of the default logger so that we can see
     // the output in our terminal.
 
-    let sinks: Vec<Arc<dyn Sink>> = spdlog::default_logger().sinks().clone();
+    let sinks: Vec<Arc<dyn Sink>> = spdlog::default_logger().sinks().to_owned();
     let mut builder: LoggerBuilder = Logger::builder();
     let builder: &mut LoggerBuilder = builder.sinks(sinks).level_filter(LevelFilter::All);
 
