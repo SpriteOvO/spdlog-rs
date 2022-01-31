@@ -46,6 +46,24 @@
 //! [open a discussion]. For feature requests or bug reports, please [open an
 //! issue].
 //!
+//! # Compatible with log crate
+//!
+//! This is optional and is controlled by crate feature `log`.
+//!
+//! The compatibility with [log crate] is mainly through a proxy layer
+//! [`LogCrateProxy`]. Call [`init_log_crate_proxy`] function to enable the
+//! proxy layer, and all logs from [log crate] will be handled by it. You can
+//! use it to output [log crate] logs of upstream dependencies or to quickly
+//! migrate from [log crate] for your projects.
+//!
+//! [`LogCrateProxy`] forwards all logs from [log crate] to [`default_logger`]
+//! by default, you can call [`log_crate_proxy()`] to get a reference to this
+//! proxy to configure it.
+//!
+//! ## Examples
+//!
+//! See [./examples] directory.
+//!
 //! # Configured via environment variable
 //!
 //! Users can optionally configure the level filter of loggers via the
@@ -96,6 +114,8 @@
 //!    contains unsafe code. For more details, see the documentation of
 //!    [`StringBuf`].
 //!
+//!  - `log` see [Compatible with log crate](#compatible-with-log-crate) above.
+//!
 //! # Significant differences from C++ spdlog
 //!
 //! The significant differences between `spdlog-rs` and C++ `spdlog`[^1]:
@@ -130,18 +150,23 @@
 //! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 //! [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 //! [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
+//! [log crate]: https://crates.io/crates/log
 //! [`FullFormatter`]: crate::formatter::FullFormatter
 //! [`RotatingFileSink`]: crate::sink::RotatingFileSink
 //! [`Formatter`]: crate::formatter::Formatter
 //! [`RotationPolicy::Daily`]: crate::sink::RotationPolicy::Daily
 //! [`RotationPolicy::Hourly`]: crate::sink::RotationPolicy::Hourly
 
+// Credits: https://blog.wnut.pw/2020/03/24/documentation-and-unstable-rustdoc-features/
+#![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 
 mod env_level;
 mod error;
 pub mod formatter;
 mod level;
+#[cfg(feature = "log")]
+mod log_crate_proxy;
 mod log_macros;
 mod logger;
 mod periodic_worker;
@@ -158,6 +183,8 @@ mod utils;
 pub use env_level::EnvLevelError;
 pub use error::*;
 pub use level::*;
+#[cfg(feature = "log")]
+pub use log_crate_proxy::LogCrateProxy;
 pub use logger::*;
 pub use record::*;
 pub use source_location::*;
@@ -169,7 +196,7 @@ pub mod prelude {
     pub use super::{Level, LevelFilter, Logger, LoggerBuilder};
 }
 
-use std::sync::Arc;
+use std::{result::Result as StdResult, sync::Arc};
 
 use arc_swap::ArcSwap;
 use cfg_if::cfg_if;
@@ -434,8 +461,32 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///       assert!(false);
 ///   }
 ///   ```
-pub fn init_env_level() -> std::result::Result<bool, EnvLevelError> {
+pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
     env_level::from_env("SPDLOG_RS_LEVEL")
+}
+
+/// Initialize log crate proxy.
+///
+/// This function calls [`log::set_logger`] to set up a [`LogCrateProxy`] and
+/// all logs from log crate will be forwarded to `spdlog-rs`'s logger.
+///
+/// Users should call this function only once. Get the proxy to configure by
+/// calling [`log_crate_proxy()`].
+///
+/// For more details, please read documentation of [`log::set_logger`] and
+/// [`LogCrateProxy`].
+#[cfg(feature = "log")]
+pub fn init_log_crate_proxy() -> StdResult<(), log::SetLoggerError> {
+    log::set_logger(log_crate_proxy())
+}
+
+/// Returns a [`LogCrateProxy`].
+#[cfg(feature = "log")]
+pub fn log_crate_proxy() -> &'static LogCrateProxy {
+    use once_cell::sync::Lazy;
+
+    static PROXY: Lazy<LogCrateProxy> = Lazy::new(LogCrateProxy::new);
+    &PROXY
 }
 
 fn default_error_handler(from: impl AsRef<str>, error: Error) {

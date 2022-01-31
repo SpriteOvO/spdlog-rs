@@ -28,7 +28,7 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest', 'windows-latest']
-        features: ['', 'flexible-string']
+        features: ['', 'flexible-string', 'log']
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2

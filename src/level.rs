@@ -129,6 +129,19 @@ impl Level {
     }
 }
 
+#[cfg(feature = "log")]
+impl From<log::Level> for Level {
+    fn from(level: log::Level) -> Self {
+        match level {
+            log::Level::Error => Self::Error,
+            log::Level::Warn => Self::Warn,
+            log::Level::Info => Self::Info,
+            log::Level::Debug => Self::Debug,
+            log::Level::Trace => Self::Trace,
+        }
+    }
+}
+
 impl fmt::Display for Level {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(self.as_str())

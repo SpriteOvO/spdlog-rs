@@ -84,6 +84,26 @@ impl<'a> Record<'a> {
         self.time
     }
 
+    #[cfg(feature = "log")]
+    pub(crate) fn from_log_crate_record(
+        logger: &'a crate::Logger,
+        record: &log::Record,
+        time: SystemTime,
+    ) -> Self {
+        let args = record.args();
+
+        Self {
+            logger_name: logger.name(),
+            level: record.level().into(),
+            payload: match args.as_str() {
+                Some(literal_str) => literal_str.into(),
+                None => args.to_string().into(),
+            },
+            source_location: None, // `module_path` and `file` in `log::Record` are not `'static`
+            time,
+        }
+    }
+
     #[cfg(test)]
     pub(crate) fn set_time(&mut self, new: SystemTime) {
         self.time = new;

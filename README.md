@@ -18,6 +18,7 @@ A fast and combinable Rust logging crate, inspired by the C++ logging library [s
     - Rotating log files daily.
     - ... (more targets are implementing, PRs are welcome)
     - Extendable with custom log targets.
+ - Compatible with [log crate] (optional).
  - Configured via environment variable.
  - Custom formatting.
  - Log filtering - log levels can be modified in runtime as well as in compile time.
@@ -192,6 +193,7 @@ for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 
 [spdlog]: https://github.com/gabime/spdlog
+[log crate]: https://crates.io/crates/log
 [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 [docs.rs]: https://docs.rs/spdlog-rs/
 [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
