@@ -28,7 +28,7 @@ A fast and combinable Rust logging crate, inspired by the C++ logging library [s
 Add this to `Cargo.toml`:
 ```toml
 [dependencies]
-spdlog-rs = "0.1"
+spdlog-rs = "0.2"
 ```
 
 The documentation of this crate is hosted on [docs.rs], and you can find examples under [./examples] directory.

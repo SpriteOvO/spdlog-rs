@@ -10,7 +10,7 @@
 //! Add this to `Cargo.toml`:
 //! ```toml
 //! [dependencies]
-//! spdlog-rs = "0.1"
+//! spdlog-rs = "0.2"
 //! ```
 //!
 //! `spdlog-rs` is out-of-the-box, it has a default logger, so users can output
