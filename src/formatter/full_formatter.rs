@@ -28,7 +28,7 @@ use crate::{
 ///
 ///  - If crate feature `source-location` is enabled:
 ///
-///    `[2021-12-23 01:23:45.067] [info] [main.rs:2] log message`
+///    `[2021-12-23 01:23:45.067] [info] [crate::mod, main.rs:2] log message`
 pub struct FullFormatter {
     local_time_cacher: spin::Mutex<LocalTimeCacher>,
 }
@@ -69,6 +69,8 @@ impl FullFormatter {
 
         if let Some(srcloc) = record.source_location() {
             dest.write_str("] [")?;
+            dest.write_str(srcloc.module_path())?;
+            dest.write_str(", ")?;
             dest.write_str(srcloc.file_name())?;
             dest.write_str(":")?;
             write!(dest, "{}", srcloc.line())?;
