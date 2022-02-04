@@ -504,14 +504,19 @@ fn default_error_handler(from: impl AsRef<str>, error: Error) {
 
 // Used at log macros
 #[doc(hidden)]
-pub fn __log(logger: &Logger, level: Level, fmt_args: std::fmt::Arguments) {
+pub fn __log(
+    logger: &Logger,
+    level: Level,
+    srcloc: Option<SourceLocation>,
+    fmt_args: std::fmt::Arguments,
+) {
     // use `Cow` to avoid allocation as much as we can
     let payload: std::borrow::Cow<str> = match fmt_args.as_str() {
         Some(literal_str) => literal_str.into(), // no format arguments, so it is a `&'static str`
         None => fmt_args.to_string().into(),
     };
 
-    let mut builder = Record::builder(level, payload).source_location(source_location_current!());
+    let mut builder = Record::builder(level, payload).source_location(srcloc);
     if let Some(logger_name) = logger.name() {
         builder = builder.logger_name(logger_name);
     }
