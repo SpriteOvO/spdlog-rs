@@ -625,28 +625,22 @@ mod tests {
 
     use std::sync::Arc;
 
-    use once_cell::sync::OnceCell;
+    use once_cell::sync::Lazy;
 
-    fn base_logs_path() -> &'static PathBuf {
-        static BASE_LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
-        BASE_LOGS_PATH.get_or_init(|| {
-            let path = test_logs_path().join("rotating_file_sink");
-            fs::create_dir_all(&path).unwrap();
-            path
-        })
-    }
+    static BASE_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
+        let path = TEST_LOGS_PATH.join("rotating_file_sink");
+        fs::create_dir_all(&path).unwrap();
+        path
+    });
 
     mod policy_file_size {
         use super::*;
 
-        fn logs_path() -> &'static PathBuf {
-            static LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
-            LOGS_PATH.get_or_init(|| {
-                let path = base_logs_path().join("policy_file_size");
-                fs::create_dir_all(&path).unwrap();
-                path
-            })
-        }
+        static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
+            let path = BASE_LOGS_PATH.join("policy_file_size");
+            fs::create_dir_all(&path).unwrap();
+            path
+        });
 
         #[test]
         fn calc_file_path() {
@@ -686,17 +680,17 @@ mod tests {
 
         #[test]
         fn rotate() {
-            let base_path = logs_path().join("test.log");
+            let base_path = LOGS_PATH.join("test.log");
 
             let build = |clean, rotate_on_open| {
                 if clean {
-                    fs::remove_dir_all(logs_path().as_path()).unwrap();
-                    fs::create_dir(logs_path().as_path()).unwrap();
+                    fs::remove_dir_all(LOGS_PATH.as_path()).unwrap();
+                    fs::create_dir(LOGS_PATH.as_path()).unwrap();
                 }
 
                 let formatter = Box::new(NoModFormatter::new());
                 let sink = RotatingFileSink::new(
-                    logs_path().join(&base_path),
+                    LOGS_PATH.join(&base_path),
                     RotationPolicy::FileSize(16),
                     3,
                     rotate_on_open,
@@ -858,14 +852,11 @@ mod tests {
     mod policy_time_point {
         use super::*;
 
-        fn logs_path() -> &'static PathBuf {
-            static LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
-            LOGS_PATH.get_or_init(|| {
-                let path = base_logs_path().join("policy_time_point");
-                fs::create_dir_all(&path).unwrap();
-                path
-            })
-        }
+        static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
+            let path = BASE_LOGS_PATH.join("policy_time_point");
+            fs::create_dir_all(&path).unwrap();
+            path
+        });
 
         #[test]
         fn calc_file_path() {
@@ -914,11 +905,11 @@ mod tests {
         #[test]
         fn rotate() {
             let build = |rotate_on_open| {
-                fs::remove_dir_all(logs_path().as_path()).unwrap();
-                fs::create_dir(logs_path().as_path()).unwrap();
+                fs::remove_dir_all(LOGS_PATH.as_path()).unwrap();
+                fs::create_dir(LOGS_PATH.as_path()).unwrap();
 
                 let hourly_sink = RotatingFileSink::new(
-                    logs_path().join("hourly.log"),
+                    LOGS_PATH.join("hourly.log"),
                     RotationPolicy::Hourly,
                     0,
                     rotate_on_open,
@@ -927,7 +918,7 @@ mod tests {
 
                 let local_time_now = Local::now();
                 let daily_sink = RotatingFileSink::new(
-                    logs_path().join("daily.log"),
+                    LOGS_PATH.join("daily.log"),
                     RotationPolicy::Daily {
                         hour: local_time_now.hour(),
                         minute: local_time_now.minute(),
@@ -944,7 +935,7 @@ mod tests {
             };
 
             let exist_files = |file_name_prefix| {
-                let paths = fs::read_dir(logs_path().clone()).unwrap();
+                let paths = fs::read_dir(LOGS_PATH.clone()).unwrap();
 
                 paths.fold(0_usize, |count, entry| {
                     if entry

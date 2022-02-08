@@ -7,7 +7,7 @@ mod common;
 use std::{fs, path::PathBuf};
 use test::Bencher;
 
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 
 use log::{info, LevelFilter};
 use log4rs::{
@@ -26,30 +26,24 @@ use log4rs::{
     Handle,
 };
 
-fn logs_path() -> &'static PathBuf {
-    static LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
-    LOGS_PATH.get_or_init(|| {
-        let path = common::bench_logs_path().join("log4rs");
-        fs::create_dir_all(&path).unwrap();
-        path
-    })
-}
+static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    let path = common::BENCH_LOGS_PATH.join("log4rs");
+    fs::create_dir_all(&path).unwrap();
+    path
+});
 
-fn handle() -> &'static Handle {
-    static HANDLE: OnceCell<Handle> = OnceCell::new();
-    HANDLE.get_or_init(|| {
-        log4rs::init_config(
-            Config::builder()
-                .build(Root::builder().build(LevelFilter::Off))
-                .unwrap(),
-        )
-        .unwrap()
-    })
-}
+static HANDLE: Lazy<Handle> = Lazy::new(|| {
+    log4rs::init_config(
+        Config::builder()
+            .build(Root::builder().build(LevelFilter::Off))
+            .unwrap(),
+    )
+    .unwrap()
+});
 
 #[bench]
 fn bench_file(bencher: &mut Bencher) {
-    let path = logs_path().join("file.log");
+    let path = LOGS_PATH.join("file.log");
 
     let appender = FileAppender::builder()
         .append(false)
@@ -61,15 +55,15 @@ fn bench_file(bencher: &mut Bencher) {
         .build(Root::builder().appender("file").build(LevelFilter::Info))
         .unwrap();
 
-    handle().set_config(config);
+    HANDLE.set_config(config);
 
     bencher.iter(|| info!(bench_log_message!()))
 }
 
 #[bench]
 fn bench_rotating_file_size(bencher: &mut Bencher) {
-    let pattern_path = logs_path().join("rotating_file_size_{}.log");
-    let path = logs_path().join("rotating_file_size.log");
+    let pattern_path = LOGS_PATH.join("rotating_file_size_{}.log");
+    let path = LOGS_PATH.join("rotating_file_size.log");
 
     let policy = CompoundPolicy::new(
         Box::new(SizeTrigger::new(common::FILE_SIZE)),
@@ -96,7 +90,7 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
         )
         .unwrap();
 
-    handle().set_config(config);
+    HANDLE.set_config(config);
 
     bencher.iter(|| info!(bench_log_message!()))
 }
@@ -107,7 +101,7 @@ fn bench_level_off(bencher: &mut Bencher) {
         .build(Root::builder().build(LevelFilter::Off))
         .unwrap();
 
-    handle().set_config(config);
+    HANDLE.set_config(config);
 
     bencher.iter(|| info!(bench_log_message!()))
 }

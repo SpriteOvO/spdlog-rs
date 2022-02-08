@@ -7,23 +7,20 @@ mod common;
 use std::{fs, path::PathBuf};
 use test::Bencher;
 
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 
 use slog::{info, o, Fuse, Logger};
 use sloggers::{file::FileLoggerBuilder, types::SourceLocation, Build};
 
-fn logs_path() -> &'static PathBuf {
-    static LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
-    LOGS_PATH.get_or_init(|| {
-        let path = common::bench_logs_path().join("slog");
-        fs::create_dir_all(&path).unwrap();
-        path
-    })
-}
+static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    let path = common::BENCH_LOGS_PATH.join("slog");
+    fs::create_dir_all(&path).unwrap();
+    path
+});
 
 #[bench]
 fn bench_file(bencher: &mut Bencher) {
-    let path = logs_path().join("file.log");
+    let path = LOGS_PATH.join("file.log");
 
     let drain = Fuse(
         FileLoggerBuilder::new(path)
@@ -39,7 +36,7 @@ fn bench_file(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_rotating_file_size(bencher: &mut Bencher) {
-    let path = logs_path().join("rotating_file_size.log");
+    let path = LOGS_PATH.join("rotating_file_size.log");
 
     let drain = Fuse(
         FileLoggerBuilder::new(path)

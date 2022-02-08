@@ -200,7 +200,7 @@ use std::{result::Result as StdResult, sync::Arc};
 
 use arc_swap::ArcSwap;
 use cfg_if::cfg_if;
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 
 use sink::{
     Sink, {StdStream, StdStreamSink},
@@ -256,20 +256,17 @@ pub(crate) const EOL: &str = "\n";
 #[cfg(windows)]
 pub(crate) const EOL: &str = "\r\n";
 
-fn global_default_logger() -> &'static ArcSwap<Logger> {
-    static DEFAULT_LOGGER: OnceCell<ArcSwap<Logger>> = OnceCell::new();
-    DEFAULT_LOGGER.get_or_init(|| {
-        let stdout = StdStreamSink::new(StdStream::Stdout, StyleMode::Auto);
-        stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
+static DEFAULT_LOGGER: Lazy<ArcSwap<Logger>> = Lazy::new(|| {
+    let stdout = StdStreamSink::new(StdStream::Stdout, StyleMode::Auto);
+    stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
 
-        let stderr = StdStreamSink::new(StdStream::Stderr, StyleMode::Auto);
-        stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
+    let stderr = StdStreamSink::new(StdStream::Stderr, StyleMode::Auto);
+    stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
 
-        let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
+    let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
 
-        ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default())
-    })
-}
+    ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default())
+});
 
 /// Returns an [`Arc`] default logger.
 ///
@@ -296,7 +293,7 @@ fn global_default_logger() -> &'static ArcSwap<Logger> {
 /// critical!("this log will be written to `stderr`");
 /// ```
 pub fn default_logger() -> Arc<Logger> {
-    global_default_logger().load().clone()
+    DEFAULT_LOGGER.load().clone()
 }
 
 /// Sets the given logger as the default logger, and returns the old default
@@ -315,7 +312,7 @@ pub fn default_logger() -> Arc<Logger> {
 /// info!(logger: old_logger, "this log will be handled by `old_logger`");
 /// ```
 pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
-    global_default_logger().swap(logger)
+    DEFAULT_LOGGER.swap(logger)
 }
 
 /// Sets the given logger as the default logger.
@@ -483,8 +480,6 @@ pub fn init_log_crate_proxy() -> StdResult<(), log::SetLoggerError> {
 /// Returns a [`LogCrateProxy`].
 #[cfg(feature = "log")]
 pub fn log_crate_proxy() -> &'static LogCrateProxy {
-    use once_cell::sync::Lazy;
-
     static PROXY: Lazy<LogCrateProxy> = Lazy::new(LogCrateProxy::new);
     &PROXY
 }

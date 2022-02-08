@@ -10,7 +10,7 @@ use std::{
 };
 
 use atomic::Atomic;
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter, FullFormatter},
@@ -18,18 +18,15 @@ use crate::{
     Error, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
 };
 
-pub fn test_logs_path() -> &'static PathBuf {
-    static TEST_LOGS_PATH: OnceCell<PathBuf> = OnceCell::new();
-    TEST_LOGS_PATH.get_or_init(|| {
-        let path = env::current_exe()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("dev/test_logs");
-        fs::create_dir_all(&path).unwrap();
-        path
-    })
-}
+pub static TEST_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    let path = env::current_exe()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("dev/test_logs");
+    fs::create_dir_all(&path).unwrap();
+    path
+});
 
 pub struct CounterSink {
     level_filter: Atomic<LevelFilter>,
