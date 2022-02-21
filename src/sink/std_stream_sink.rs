@@ -117,7 +117,7 @@ impl StdStreamSink {
     fn should_render_style(style_mode: StyleMode, atty_stream: atty::Stream) -> bool {
         match style_mode {
             StyleMode::Always => true,
-            StyleMode::Auto => atty::is(atty_stream),
+            StyleMode::Auto => atty::is(atty_stream) && enable_ansi_escape_sequences(),
             StyleMode::Never => false,
         }
     }
@@ -180,4 +180,14 @@ impl Sink for StdStreamSink {
         mem::swap(&mut *self.formatter.write(), &mut formatter);
         formatter
     }
+}
+
+#[cfg(windows)]
+fn enable_ansi_escape_sequences() -> bool {
+    crossterm::ansi_support::supports_ansi()
+}
+
+#[cfg(not(windows))]
+fn enable_ansi_escape_sequences() -> bool {
+    true
 }
