@@ -79,12 +79,14 @@
 //! release and debug builds. The features are:
 //!
 //!  - `level-off`
+//!  - `level-critical`
 //!  - `level-error`
 //!  - `level-warn`
 //!  - `level-info`
 //!  - `level-debug`
 //!  - `level-trace`
 //!  - `release-level-off`
+//!  - `release-level-critical`
 //!  - `release-level-error`
 //!  - `release-level-warn`
 //!  - `release-level-info`
