@@ -256,6 +256,16 @@ impl LevelFilter {
     }
 }
 
+#[cfg(feature = "log")]
+impl From<log::LevelFilter> for LevelFilter {
+    fn from(filter: log::LevelFilter) -> Self {
+        match filter {
+            log::LevelFilter::Off => Self::Off,
+            filter => Self::MoreSevereEqual(Level::from(filter.to_level().unwrap())),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -372,5 +382,31 @@ mod tests {
         assert!(LevelFilter::All.compare(Level::Trace));
         assert!(LevelFilter::All.compare(Level::Critical));
         assert!(LevelFilter::All.compare(Level::Error));
+    }
+
+    #[cfg(feature = "log")]
+    #[test]
+    fn filter_from_log() {
+        assert_eq!(LevelFilter::from(log::LevelFilter::Off), LevelFilter::Off);
+        assert_eq!(
+            LevelFilter::from(log::LevelFilter::Error),
+            LevelFilter::MoreSevereEqual(Level::Error)
+        );
+        assert_eq!(
+            LevelFilter::from(log::LevelFilter::Warn),
+            LevelFilter::MoreSevereEqual(Level::Warn)
+        );
+        assert_eq!(
+            LevelFilter::from(log::LevelFilter::Info),
+            LevelFilter::MoreSevereEqual(Level::Info)
+        );
+        assert_eq!(
+            LevelFilter::from(log::LevelFilter::Debug),
+            LevelFilter::MoreSevereEqual(Level::Debug)
+        );
+        assert_eq!(
+            LevelFilter::from(log::LevelFilter::Trace),
+            LevelFilter::MoreSevereEqual(Level::Trace)
+        );
     }
 }
