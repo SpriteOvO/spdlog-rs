@@ -391,10 +391,10 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///
 ///   ```
 ///   use spdlog::prelude::*;
-///  
+///
 ///   # fn main() -> Result<(), spdlog::EnvLevelError> {
 ///   assert_eq!(spdlog::init_env_level()?, false);
-///  
+///
 ///   assert_eq!(
 ///       spdlog::default_logger().level_filter(),
 ///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
@@ -418,11 +418,11 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///
 ///   ```
 ///   use spdlog::prelude::*;
-///  
+///
 ///   # fn main() -> Result<(), spdlog::EnvLevelError> {
 ///   # std::env::set_var("SPDLOG_RS_LEVEL", "TRACE,network=Warn,*=error");
 ///   assert_eq!(spdlog::init_env_level()?, true);
-///  
+///
 ///   assert_eq!(
 ///       spdlog::default_logger().level_filter(),
 ///       LevelFilter::MoreSevereEqual(Level::Trace)
@@ -469,6 +469,11 @@ pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
 ///
 /// Users should call this function only once. Get the proxy to configure by
 /// calling [`log_crate_proxy()`].
+///
+/// Note that the `log` crate uses a different log level filter and by default
+/// it rejects all log messages. To log messages via the `log` crate, you have
+/// to call [`log::set_max_level`] manually before logging. For more
+/// information, please read the documentation of [`log::set_max_level`].
 ///
 /// For more details, please read documentation of [`log::set_logger`] and
 /// [`LogCrateProxy`].

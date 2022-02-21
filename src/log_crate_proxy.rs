@@ -9,6 +9,11 @@ use crate::{default_logger, Logger, Record};
 /// It forwards all logs from log crate to [`default_logger`] by default, and
 /// you can set a separate logger for it via [`LogCrateProxy::set_logger`].
 ///
+/// Note that the `log` crate uses a different log level filter and by default
+/// it rejects all log messages. To log messages via the `log` crate, you have
+/// to call [`log::set_max_level`] manually before logging. For more
+/// information, please read the documentation of [`log::set_max_level`].
+///
 /// ## Examples
 ///
 /// See [./examples] directory.
