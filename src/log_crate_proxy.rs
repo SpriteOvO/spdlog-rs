@@ -1,8 +1,6 @@
-use std::{sync::Arc, time::SystemTime};
+use std::time::SystemTime;
 
-use arc_swap::ArcSwapOption;
-
-use crate::{default_logger, Logger, Record};
+use crate::{default_logger, sync::*, Logger, Record};
 
 /// Log crate proxy.
 ///

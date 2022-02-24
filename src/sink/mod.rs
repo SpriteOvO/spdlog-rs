@@ -14,9 +14,7 @@ pub use std_stream_sink::*;
 pub use win_debug_sink::*;
 pub use write_sink::*;
 
-use std::sync::Arc;
-
-use crate::{formatter::Formatter, Level, LevelFilter, Record, Result};
+use crate::{formatter::Formatter, sync::*, Level, LevelFilter, Record, Result};
 
 /// A trait for sinks.
 ///

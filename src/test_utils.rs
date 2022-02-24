@@ -1,20 +1,9 @@
-use std::{
-    env,
-    fmt::Write,
-    fs, mem,
-    path::PathBuf,
-    sync::{
-        atomic::{AtomicUsize, Ordering},
-        Mutex,
-    },
-};
-
-use atomic::Atomic;
-use once_cell::sync::Lazy;
+use std::{env, fmt::Write, fs, mem, path::PathBuf};
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter, FullFormatter},
     sink::Sink,
+    sync::*,
     Error, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
 };
 
@@ -30,7 +19,7 @@ pub static TEST_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
 
 pub struct CounterSink {
     level_filter: Atomic<LevelFilter>,
-    formatter: spin::RwLock<Box<dyn Formatter>>,
+    formatter: SpinRwLock<Box<dyn Formatter>>,
     log_counter: AtomicUsize,
     flush_counter: AtomicUsize,
     payloads: Mutex<Vec<String>>,
@@ -44,7 +33,7 @@ impl CounterSink {
     pub fn new() -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
             log_counter: AtomicUsize::new(0),
             flush_counter: AtomicUsize::new(0),
             payloads: Mutex::new(vec![]),
@@ -60,13 +49,13 @@ impl CounterSink {
     }
 
     pub fn payloads(&self) -> Vec<String> {
-        self.payloads.lock().unwrap().clone()
+        self.payloads.lock_expect().clone()
     }
 
     pub fn reset(&self) {
         self.log_counter.store(0, Ordering::Relaxed);
         self.flush_counter.store(0, Ordering::Relaxed);
-        self.payloads.lock().unwrap().clear();
+        self.payloads.lock_expect().clear();
     }
 }
 
@@ -75,8 +64,7 @@ impl Sink for CounterSink {
         self.log_counter.fetch_add(1, Ordering::Relaxed);
 
         self.payloads
-            .lock()
-            .unwrap()
+            .lock_expect()
             .push(record.payload().to_string());
 
         Ok(())

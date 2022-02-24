@@ -5,14 +5,12 @@ use std::{
     io::{BufWriter, Write},
     mem,
     path::Path,
-    sync::atomic::Ordering,
 };
-
-use atomic::Atomic;
 
 use crate::{
     formatter::{Formatter, FullFormatter},
     sink::Sink,
+    sync::*,
     utils, Error, LevelFilter, Record, Result, StringBuf,
 };
 
@@ -25,8 +23,8 @@ use crate::{
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 pub struct FileSink {
     level_filter: Atomic<LevelFilter>,
-    formatter: spin::RwLock<Box<dyn Formatter>>,
-    file: spin::Mutex<BufWriter<File>>,
+    formatter: SpinRwLock<Box<dyn Formatter>>,
+    file: SpinMutex<BufWriter<File>>,
 }
 
 impl FileSink {
@@ -47,8 +45,8 @@ impl FileSink {
 
         let sink = FileSink {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
-            file: spin::Mutex::new(BufWriter::new(file)),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            file: SpinMutex::new(BufWriter::new(file)),
         };
 
         Ok(sink)

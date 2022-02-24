@@ -8,17 +8,15 @@ use std::{
     io::{BufWriter, Write},
     mem,
     path::{Path, PathBuf},
-    sync::atomic::Ordering,
     time::{Duration, SystemTime},
 };
 
-use atomic::Atomic;
 use chrono::prelude::*;
-use spin::MutexGuard;
 
 use crate::{
     formatter::{Formatter, FullFormatter},
     sink::Sink,
+    sync::*,
     utils, Error, LevelFilter, Record, Result, StringBuf,
 };
 
@@ -64,7 +62,7 @@ struct RotatorFileSize {
     base_path: PathBuf,
     max_size: u64,
     max_files: usize,
-    inner: spin::Mutex<RotatorFileSizeInner>,
+    inner: SpinMutex<RotatorFileSizeInner>,
 }
 
 struct RotatorFileSizeInner {
@@ -76,7 +74,7 @@ struct RotatorTimePoint {
     base_path: PathBuf,
     time_point: TimePoint,
     max_files: usize,
-    inner: spin::Mutex<RotatorTimePointInner>,
+    inner: SpinMutex<RotatorTimePointInner>,
 }
 
 #[derive(Copy, Clone)]
@@ -100,7 +98,7 @@ struct RotatorTimePointInner {
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 pub struct RotatingFileSink {
     level_filter: Atomic<LevelFilter>,
-    formatter: spin::RwLock<Box<dyn Formatter>>,
+    formatter: SpinRwLock<Box<dyn Formatter>>,
     rotator: RotatorKind,
 }
 
@@ -164,7 +162,7 @@ impl RotatingFileSink {
 
         let res = Self {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
             rotator,
         };
 
@@ -284,7 +282,7 @@ impl RotatorFileSize {
             base_path,
             max_size,
             max_files,
-            inner: spin::Mutex::new(RotatorFileSizeInner::new(file, current_size)),
+            inner: SpinMutex::new(RotatorFileSizeInner::new(file, current_size)),
         };
 
         if rotate_on_open && current_size > 0 {
@@ -300,7 +298,7 @@ impl RotatorFileSize {
         utils::open_file(&self.base_path, true)
     }
 
-    fn rotate(&self, opened_file: &mut spin::MutexGuard<RotatorFileSizeInner>) -> Result<()> {
+    fn rotate(&self, opened_file: &mut SpinMutexGuard<RotatorFileSizeInner>) -> Result<()> {
         let inner = || {
             for i in (1..self.max_files).rev() {
                 let src = Self::calc_file_path(&self.base_path, i - 1);
@@ -357,7 +355,7 @@ impl RotatorFileSize {
     }
 
     // if `self.inner.file` is `None`, try to reopen the file.
-    fn lock_inner(&self) -> Result<spin::MutexGuard<RotatorFileSizeInner>> {
+    fn lock_inner(&self) -> Result<SpinMutexGuard<RotatorFileSizeInner>> {
         let mut inner = self.inner.lock();
         if inner.file.is_none() {
             inner.file = Some(BufWriter::new(self.reopen()?));
@@ -433,7 +431,7 @@ impl RotatorTimePoint {
             base_path,
             time_point,
             max_files,
-            inner: spin::Mutex::new(inner),
+            inner: SpinMutex::new(inner),
         };
 
         res.init_previous_file_paths(max_files, now);
@@ -500,7 +498,7 @@ impl RotatorTimePoint {
     fn push_new_remove_old(
         &self,
         new: PathBuf,
-        inner: &mut MutexGuard<RotatorTimePointInner>,
+        inner: &mut SpinMutexGuard<RotatorTimePointInner>,
     ) -> Result<()> {
         let file_paths = inner.file_paths.as_mut().unwrap();
 
@@ -620,12 +618,7 @@ impl TimePoint {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use crate::{prelude::*, test_utils::*, Level, Record};
-
-    use std::sync::Arc;
-
-    use once_cell::sync::Lazy;
 
     static BASE_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
         let path = TEST_LOGS_PATH.join("rotating_file_sink");

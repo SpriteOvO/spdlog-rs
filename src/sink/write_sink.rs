@@ -1,14 +1,9 @@
-use std::{
-    io::Write,
-    mem,
-    sync::{self, atomic::Ordering},
-};
-
-use atomic::Atomic;
+use std::{io::Write, mem};
 
 use crate::{
     formatter::{Formatter, FullFormatter},
     prelude::*,
+    sync::*,
     Error, Record, Result, Sink, StringBuf,
 };
 
@@ -35,8 +30,8 @@ where
     W: Write + Send,
 {
     level_filter: Atomic<LevelFilter>,
-    formatter: spin::RwLock<Box<dyn Formatter>>,
-    target: sync::Mutex<W>,
+    formatter: SpinRwLock<Box<dyn Formatter>>,
+    target: Mutex<W>,
 }
 
 impl<W> WriteSink<W>
@@ -48,8 +43,8 @@ where
     pub fn new(target: W) -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
-            target: sync::Mutex::new(target),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            target: Mutex::new(target),
         }
     }
 
@@ -70,9 +65,8 @@ where
         callback(&mut *self.lock_target())
     }
 
-    fn lock_target(&self) -> sync::MutexGuard<W> {
-        const MUTEX_POISONED_MESSAGE: &str = "mutex is poisoned";
-        self.target.lock().expect(MUTEX_POISONED_MESSAGE)
+    fn lock_target(&self) -> MutexGuard<W> {
+        self.target.lock_expect()
     }
 }
 
@@ -142,8 +136,6 @@ where
 mod tests {
     use super::*;
     use crate::test_utils::*;
-
-    use std::sync::Arc;
 
     #[test]
     fn validation() {

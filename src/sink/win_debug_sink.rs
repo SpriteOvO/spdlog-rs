@@ -1,18 +1,18 @@
-use std::{ffi::OsStr, iter::once, mem, os::windows::ffi::OsStrExt, sync::atomic::Ordering};
+use std::{ffi::OsStr, iter::once, mem, os::windows::ffi::OsStrExt};
 
-use atomic::Atomic;
 use winapi::um::debugapi::OutputDebugStringW;
 
 use crate::{
     formatter::{Formatter, FullFormatter},
     sink::Sink,
+    sync::*,
     LevelFilter, Record, Result, StringBuf,
 };
 
 /// A sink with a win32 API `OutputDebugStringW` as the target.
 pub struct WinDebugSink {
     level_filter: Atomic<LevelFilter>,
-    formatter: spin::RwLock<Box<dyn Formatter>>,
+    formatter: SpinRwLock<Box<dyn Formatter>>,
 }
 
 impl WinDebugSink {
@@ -20,7 +20,7 @@ impl WinDebugSink {
     pub fn new() -> WinDebugSink {
         WinDebugSink {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
         }
     }
 }

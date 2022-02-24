@@ -1,13 +1,11 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
     env::{self, VarError},
-    sync::RwLock,
 };
 
-use once_cell::sync::Lazy;
 use thiserror::Error;
 
-use crate::LevelFilter;
+use crate::{sync::*, LevelFilter};
 
 pub(crate) type EnvLevel = HashMap<EnvLevelLogger, LevelFilter>;
 
@@ -67,7 +65,7 @@ pub(crate) fn from_env(env_name: &str) -> Result<bool, EnvLevelError> {
 
 pub(crate) fn from_str(var: &str) -> Result<(), EnvLevelError> {
     let env_level = from_str_inner(var)?;
-    *ENV_LEVEL.write().unwrap() = Some(env_level);
+    *ENV_LEVEL.write_expect() = Some(env_level);
     Ok(())
 }
 
