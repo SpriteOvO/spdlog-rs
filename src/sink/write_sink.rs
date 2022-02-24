@@ -16,11 +16,14 @@ use crate::{
 ///
 /// # Performance Notice
 ///
-/// Since `WriteSink` can write into any `impl Write` objects, the assumptions made on the underlying `impl Write`
-/// object is very weak and this does impact performance. You should use other sinks or implement your own sinks
-/// whenever possible. `WriteSink` is your last resort if no other sinks meet your requirement.
+/// Since `WriteSink` can write into any `impl Write` objects, the assumptions
+/// made on the underlying `impl Write` object is very weak and this does impact
+/// performance. You should use other sinks or implement your own sinks whenever
+/// possible. `WriteSink` is your last resort if no other sinks meet your
+/// requirement.
 ///
-/// If you want to log into a file, use [`FileSink`] or [`RotatingFileSink`] instead.
+/// If you want to log into a file, use [`FileSink`] or [`RotatingFileSink`]
+/// instead.
 ///
 /// If you want to log into the standard streams, use [`StdStreamSink`] instead.
 ///
@@ -40,7 +43,8 @@ impl<W> WriteSink<W>
 where
     W: Write + Send,
 {
-    /// Constructs a `WriteSink` that writes log messages into the given `impl Write` object.
+    /// Constructs a `WriteSink` that writes log messages into the given `impl
+    /// Write` object.
     pub fn new(target: W) -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
@@ -53,9 +57,10 @@ where
     ///
     /// This function returns whatever the given callback function returns.
     ///
-    /// Note that this sink cannot write into the underlying `impl Write` object while the given callback function is
-    /// running. If the underlying `impl Write` object supports a relatively cheap `clone` operation, consider using the
-    /// [`clone_target`] method.
+    /// Note that this sink cannot write into the underlying `impl Write` object
+    /// while the given callback function is running. If the underlying
+    /// `impl Write` object supports a relatively cheap `clone` operation,
+    /// consider using the [`clone_target`] method.
     ///
     /// [`clone_target`]: Self::clone_target
     pub fn with_target<F, R>(&self, callback: F) -> R
@@ -66,7 +71,7 @@ where
     }
 
     fn lock_target(&self) -> sync::MutexGuard<W> {
-        const MUTEX_POISONED_MESSAGE: &'static str = "mutex is poisoned";
+        const MUTEX_POISONED_MESSAGE: &str = "mutex is poisoned";
         self.target.lock().expect(MUTEX_POISONED_MESSAGE)
     }
 }
