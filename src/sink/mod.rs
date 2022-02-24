@@ -5,12 +5,14 @@ mod rotating_file_sink;
 mod std_stream_sink;
 #[cfg(windows)]
 mod win_debug_sink;
+mod write_sink;
 
 pub use file_sink::*;
 pub use rotating_file_sink::*;
 pub use std_stream_sink::*;
 #[cfg(windows)]
 pub use win_debug_sink::*;
+pub use write_sink::*;
 
 use std::sync::Arc;
 
