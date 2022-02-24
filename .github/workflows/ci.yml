@@ -21,8 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install nightly
+      run: |
+        rustup toolchain install nightly
+        rustup component add rustfmt --toolchain nightly
     - name: Check formatting
-      run: cargo fmt --all -- --check
+      run: cargo +nightly fmt --all -- --check
 
   test:
     strategy:
