@@ -194,7 +194,7 @@ dual licensed as above, without any additional terms or conditions.
 
 [spdlog]: https://github.com/gabime/spdlog
 [log crate]: https://crates.io/crates/log
-[./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+[./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 [docs.rs]: https://docs.rs/spdlog-rs/
 [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose

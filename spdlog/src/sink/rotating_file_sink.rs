@@ -95,7 +95,7 @@ struct RotatorTimePointInner {
 ///
 /// See [./examples] directory.
 ///
-/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct RotatingFileSink {
     level_filter: Atomic<LevelFilter>,
     formatter: SpinRwLock<Box<dyn Formatter>>,

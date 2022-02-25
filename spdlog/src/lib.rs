@@ -149,7 +149,7 @@
 //! [^2]: C++ `spdlog` is also planned to remove it in v2.x.
 //!
 //! [spdlog]: https://github.com/gabime/spdlog
-//! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+//! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 //! [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 //! [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
 //! [log crate]: https://crates.io/crates/log

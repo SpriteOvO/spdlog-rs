@@ -20,7 +20,7 @@ use crate::{Record, Result, StringBuf};
 ///
 /// See the implementation of [`FullFormatter`] and [./examples] directory.
 ///
-/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub trait Formatter: Send + Sync {
     /// Format a log record.
     fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo>;
@@ -62,7 +62,7 @@ impl FmtExtraInfo {
 ///
 /// See the implementation of [`FullFormatter`] and [./examples] directory.
 ///
-/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub struct FmtExtraInfoBuilder {
     info: FmtExtraInfo,

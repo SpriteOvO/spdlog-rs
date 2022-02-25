@@ -37,7 +37,7 @@ use crate::{
 ///
 /// For more examples, see [./examples] directory.
 ///
-/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct Logger {
     name: Option<String>,
     level_filter: Atomic<LevelFilter>,
