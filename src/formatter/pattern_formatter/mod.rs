@@ -1,9 +1,10 @@
 //! This module provides a pattern-string based formatter.
 //!
-//! The [`PatternFormatter`] struct defines a formatter that formats log messages against a specific text pattern.
+//! The [`PatternFormatter`] struct defines a formatter that formats log
+//! messages against a specific text pattern.
 //!
-//! Patterns are represented by the [`Pattern`] trait. You can create your own pattern by implementing the [`Pattern`]
-//! trait.
+//! Patterns are represented by the [`Pattern`] trait. You can create your own
+//! pattern by implementing the [`Pattern`] trait.
 
 use std::{fmt::Write, ops::Range, sync::Arc};
 
@@ -20,8 +21,9 @@ pub struct PatternFormatter<P> {
 impl<P> PatternFormatter<P> {
     /// Create a new `PatternFormatter` object with the given pattern.
     ///
-    /// Manually craft a pattern object `pattern` can be tedious and error-prone. It's recommended to use the
-    /// `pattern!` macro to create a pattern object from a pattern string.
+    /// Manually craft a pattern object `pattern` can be tedious and
+    /// error-prone. It's recommended to use the `pattern!` macro to create
+    /// a pattern object from a pattern string.
     pub fn new(pattern: P) -> Self {
         Self { pattern }
     }
@@ -49,9 +51,10 @@ pub struct PatternContext {
 impl PatternContext {
     /// Set the style range of the log message written by the patterns.
     ///
-    /// This function is reserved for use by the color range pattern. Other built-in patterns should not use this
-    /// function. User-defined patterns cannot use this function due to type privacy.
-    fn set_style_range(&mut self, style_range: Range<usize>) {
+    /// This function is reserved for use by the color range pattern. Other
+    /// built-in patterns should not use this function. User-defined
+    /// patterns cannot use this function due to type privacy.
+    fn _set_style_range(&mut self, style_range: Range<usize>) {
         let builder = std::mem::take(&mut self.fmt_info_builder);
         self.fmt_info_builder = builder.style_range(style_range);
     }
@@ -59,10 +62,11 @@ impl PatternContext {
 
 /// A pattern.
 ///
-/// A pattern is like a formatter, except that multiple patterns can be combined in various ways to create a new
-/// pattern.
+/// A pattern is like a formatter, except that multiple patterns can be combined
+/// in various ways to create a new pattern.
 pub trait Pattern: Send + Sync {
-    /// Format this pattern against the given log record and write the formatted message into the output buffer.
+    /// Format this pattern against the given log record and write the formatted
+    /// message into the output buffer.
     fn format(
         &self,
         record: &Record,
@@ -85,12 +89,11 @@ impl Pattern for String {
 impl<'a> Pattern for &'a str {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        ctx: &mut PatternContext,
+        _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(*self)
-            .map_err(|err| Error::FormatRecord(err))?;
+        dest.write_str(*self).map_err(Error::FormatRecord)?;
         Ok(())
     }
 }
