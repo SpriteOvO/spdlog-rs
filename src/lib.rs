@@ -177,6 +177,7 @@ pub mod sink;
 mod source_location;
 #[doc(hidden)]
 pub mod string_buf;
+mod sync;
 pub mod terminal_style;
 #[cfg(test)]
 mod test_utils;
@@ -198,15 +199,14 @@ pub mod prelude {
     pub use super::{Level, LevelFilter, Logger, LoggerBuilder};
 }
 
-use std::{result::Result as StdResult, sync::Arc};
+use std::result::Result as StdResult;
 
-use arc_swap::ArcSwap;
 use cfg_if::cfg_if;
-use once_cell::sync::Lazy;
 
 use sink::{
     Sink, {StdStream, StdStreamSink},
 };
+use sync::*;
 use terminal_style::StyleMode;
 
 /// The statically resolved log level filter.

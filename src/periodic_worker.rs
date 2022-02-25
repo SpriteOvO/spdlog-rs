@@ -1,8 +1,6 @@
-use std::{
-    sync::{Arc, Condvar, Mutex},
-    thread,
-    time::Duration,
-};
+use std::{thread, time::Duration};
+
+use crate::sync::*;
 
 pub struct PeriodicWorker {
     thread: Option<thread::JoinHandle<()>>,
@@ -22,7 +20,7 @@ impl PeriodicWorker {
         Self {
             active: active.clone(),
             thread: Some(thread::spawn(move || loop {
-                let guard = active.0.lock().unwrap();
+                let guard = active.0.lock_expect();
                 let (_, res) = active
                     .1
                     .wait_timeout_while(guard, interval, |active| *active)
@@ -39,7 +37,7 @@ impl PeriodicWorker {
 impl Drop for PeriodicWorker {
     #[allow(clippy::mutex_atomic)]
     fn drop(&mut self) {
-        *self.active.0.lock().unwrap() = false;
+        *self.active.0.lock_expect() = false;
         self.active.1.notify_all();
         self.thread
             .take()

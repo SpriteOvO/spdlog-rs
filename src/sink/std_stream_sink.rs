@@ -3,15 +3,14 @@
 use std::{
     io::{self, Write},
     mem,
-    sync::atomic::Ordering,
 };
 
-use atomic::Atomic;
 use if_chain::if_chain;
 
 use crate::{
     formatter::{Formatter, FullFormatter},
     sink::Sink,
+    sync::*,
     terminal_style::{LevelStyleCodes, Style, StyleMode},
     Error, Level, LevelFilter, Record, Result, StringBuf,
 };
@@ -79,7 +78,7 @@ impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 /// Note that this sink always flushes the buffer once with each logging.
 pub struct StdStreamSink {
     level_filter: Atomic<LevelFilter>,
-    formatter: spin::RwLock<Box<dyn Formatter>>,
+    formatter: SpinRwLock<Box<dyn Formatter>>,
     dest: StdStreamDest<io::Stdout, io::Stderr>,
     atty_stream: atty::Stream,
     should_render_style: bool,
@@ -96,7 +95,7 @@ impl StdStreamSink {
 
         StdStreamSink {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: spin::RwLock::new(Box::new(FullFormatter::new())),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
             dest: StdStreamDest::new(std_stream),
             atty_stream,
             should_render_style: Self::should_render_style(style_mode, atty_stream),

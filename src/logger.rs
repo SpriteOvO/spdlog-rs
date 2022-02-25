@@ -1,16 +1,12 @@
 //! Provides a logger structure.
 
-use std::{
-    sync::{atomic::Ordering, Arc, Mutex},
-    time::Duration,
-};
-
-use atomic::Atomic;
+use std::time::Duration;
 
 use crate::{
     env_level,
     periodic_worker::PeriodicWorker,
     sink::{Sink, Sinks},
+    sync::*,
     Error, ErrorHandler, Level, LevelFilter, Record,
 };
 
@@ -48,7 +44,7 @@ pub struct Logger {
     sinks: Sinks,
     flush_level_filter: Atomic<LevelFilter>,
     periodic_flusher: Mutex<Option<PeriodicWorker>>,
-    error_handler: spin::RwLock<Option<ErrorHandler>>,
+    error_handler: SpinRwLock<Option<ErrorHandler>>,
 }
 
 impl Logger {
@@ -194,7 +190,7 @@ impl Logger {
     /// logger.set_flush_period(None);
     /// ```
     pub fn set_flush_period(self: &Arc<Self>, interval: Option<Duration>) {
-        let mut periodic_flusher = self.periodic_flusher.lock().unwrap();
+        let mut periodic_flusher = self.periodic_flusher.lock_expect();
 
         *periodic_flusher = None;
 
@@ -290,7 +286,7 @@ impl Clone for Logger {
     /// Panics if [`Logger::set_flush_period`] is called with `Some` value and
     /// then clones the `Logger` instead of the `Arc<Logger>`.
     fn clone(&self) -> Self {
-        if self.periodic_flusher.lock().unwrap().is_some() {
+        if self.periodic_flusher.lock_expect().is_some() {
             panic!(
                 "you can't clone a `Logger` with a `flush_period` value, \
                  clone a `Arc<Logger>` instead."
@@ -303,7 +299,7 @@ impl Clone for Logger {
             sinks: self.sinks.clone(),
             flush_level_filter: Atomic::new(self.flush_level_filter()),
             periodic_flusher: Mutex::new(None),
-            error_handler: spin::RwLock::new(*self.error_handler.read()),
+            error_handler: SpinRwLock::new(*self.error_handler.read()),
         }
     }
 }
@@ -324,7 +320,7 @@ impl LoggerBuilder {
                 sinks: vec![],
                 flush_level_filter: Atomic::new(LevelFilter::Off),
                 periodic_flusher: Mutex::new(None),
-                error_handler: spin::RwLock::new(None),
+                error_handler: SpinRwLock::new(None),
             },
         }
     }

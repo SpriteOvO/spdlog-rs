@@ -9,6 +9,7 @@ use chrono::prelude::*;
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
+    sync::*,
     Error, Record, StringBuf, EOL,
 };
 
@@ -30,14 +31,14 @@ use crate::{
 ///
 ///    `[2021-12-23 01:23:45.067] [info] [crate::mod, main.rs:2] log message`
 pub struct FullFormatter {
-    local_time_cacher: spin::Mutex<LocalTimeCacher>,
+    local_time_cacher: SpinMutex<LocalTimeCacher>,
 }
 
 impl FullFormatter {
     /// Constructs a `FullFormatter`.
     pub fn new() -> FullFormatter {
         FullFormatter {
-            local_time_cacher: spin::Mutex::new(LocalTimeCacher::new()),
+            local_time_cacher: SpinMutex::new(LocalTimeCacher::new()),
         }
     }
 
