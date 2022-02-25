@@ -5,8 +5,10 @@
 //! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 
 mod full_formatter;
+mod pattern_formatter;
 
 pub use full_formatter::*;
+pub use pattern_formatter::*;
 
 use std::ops::Range;
 
