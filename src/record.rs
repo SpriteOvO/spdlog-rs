@@ -31,10 +31,8 @@ pub struct Record<'a> {
 impl<'a> Record<'a> {
     /// Constructs a `Record`.
     ///
-    /// Typically users should only use it for testing [`Sink`].
-    ///
     /// [`Sink`]: crate::sink::Sink
-    pub fn new<S>(level: Level, payload: S) -> Record<'a>
+    pub(crate) fn new<S>(level: Level, payload: S) -> Record<'a>
     where
         S: Into<Cow<'a, str>>,
     {
@@ -49,10 +47,8 @@ impl<'a> Record<'a> {
 
     /// Constructs a [`RecordBuilder`].
     ///
-    /// Typically users should only use it for testing [`Sink`].
-    ///
     /// [`Sink`]: crate::sink::Sink
-    pub fn builder<S>(level: Level, payload: S) -> RecordBuilder<'a>
+    pub(crate) fn builder<S>(level: Level, payload: S) -> RecordBuilder<'a>
     where
         S: Into<Cow<'a, str>>,
     {
@@ -112,11 +108,9 @@ impl<'a> Record<'a> {
 
 /// The builder of [`Record`].
 ///
-/// Typically users should only use it for testing [`Sink`].
-///
 /// [`Sink`]: crate::sink::Sink
 #[derive(Clone, Debug)]
-pub struct RecordBuilder<'a> {
+pub(crate) struct RecordBuilder<'a> {
     record: Record<'a>,
 }
 
@@ -128,7 +122,7 @@ impl<'a> RecordBuilder<'a> {
     /// Typically users should only use it for testing [`Sink`].
     ///
     /// [`Sink`]: crate::sink::Sink
-    pub fn new<S>(level: Level, payload: S) -> Self
+    pub(crate) fn new<S>(level: Level, payload: S) -> Self
     where
         S: Into<Cow<'a, str>>,
     {
@@ -139,7 +133,7 @@ impl<'a> RecordBuilder<'a> {
 
     /// Sets the logger name.
     #[must_use]
-    pub fn logger_name(mut self, logger_name: &'a str) -> Self {
+    pub(crate) fn logger_name(mut self, logger_name: &'a str) -> Self {
         self.record.logger_name = Some(logger_name);
         self
     }
@@ -148,13 +142,13 @@ impl<'a> RecordBuilder<'a> {
     // `Option` in the parameter is for the convenience of passing the result of
     // the macro `source_location_current` directly.
     #[must_use]
-    pub fn source_location(mut self, srcloc: Option<SourceLocation>) -> Self {
+    pub(crate) fn source_location(mut self, srcloc: Option<SourceLocation>) -> Self {
         self.record.source_location = srcloc;
         self
     }
 
     /// Builds a [`Record`].
-    pub fn build(self) -> Record<'a> {
+    pub(crate) fn build(self) -> Record<'a> {
         self.record
     }
 }
