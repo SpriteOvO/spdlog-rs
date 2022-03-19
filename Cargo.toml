@@ -50,7 +50,7 @@ thiserror = "1.0.30"
 
 [target.'cfg(windows)'.dependencies]
 crossterm = "0.23.0"
-winapi = { version = "0.3.9", features = ["debugapi"] }
+winapi = { version = "0.3.9", features = ["debugapi"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libsystemd-sys = { version = "0.9.3", optional = true }

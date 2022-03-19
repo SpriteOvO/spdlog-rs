@@ -5,7 +5,7 @@ mod file_sink;
 mod journal_sink;
 mod rotating_file_sink;
 mod std_stream_sink;
-#[cfg(windows)]
+#[cfg(all(windows, feature = "winapi"))]
 mod win_debug_sink;
 mod write_sink;
 
@@ -14,7 +14,7 @@ pub use file_sink::*;
 pub use journal_sink::*;
 pub use rotating_file_sink::*;
 pub use std_stream_sink::*;
-#[cfg(windows)]
+#[cfg(all(windows, feature = "winapi"))]
 pub use win_debug_sink::*;
 pub use write_sink::*;
 
