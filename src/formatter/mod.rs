@@ -5,8 +5,12 @@
 //! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 
 mod full_formatter;
+#[cfg(target_os = "linux")]
+mod journal_formatter;
 
 pub use full_formatter::*;
+#[cfg(all(target_os = "linux", feature = "libsystemd"))]
+pub(crate) use journal_formatter::*;
 
 use std::ops::Range;
 

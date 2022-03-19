@@ -32,10 +32,13 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest', 'windows-latest']
-        features: ['', 'flexible-string', 'log']
+        features: ['', 'flexible-string', 'log', 'libsystemd']
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt install libsystemd-dev
     - name: Run tests with default features
       if: matrix.features == ''
       run: cargo test --verbose
@@ -47,6 +50,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt install libsystemd-dev
     - name: Install nightly
       run: |
         rustup toolchain install nightly
