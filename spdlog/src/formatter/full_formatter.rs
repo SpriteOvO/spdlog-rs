@@ -5,7 +5,7 @@ use std::fmt::{self, Write};
 use chrono::prelude::*;
 
 use crate::{
-    formatter::{utils::cache::Cacher, FmtExtraInfo, Formatter},
+    formatter::{utils::cache::FormattedDateTimeCacher, FmtExtraInfo, Formatter},
     sync::*,
     Error, Record, StringBuf, EOL,
 };
@@ -33,14 +33,14 @@ pub struct FullFormatter {
     ///
     /// The key of the cacher is the second part of the timestamp of the last
     /// formatted record.
-    local_time_cacher: SpinMutex<Cacher<i64, String>>,
+    local_time_cacher: SpinMutex<FormattedDateTimeCacher<i64>>,
 }
 
 impl FullFormatter {
     /// Constructs a `FullFormatter`.
     pub fn new() -> FullFormatter {
         FullFormatter {
-            local_time_cacher: SpinMutex::new(Cacher::new()),
+            local_time_cacher: SpinMutex::new(FormattedDateTimeCacher::new()),
         }
     }
 
@@ -53,19 +53,22 @@ impl FullFormatter {
             let utc_time = DateTime::<Utc>::from(record.time());
 
             let mut local_time_cacher = self.local_time_cacher.lock();
-            let time_str = local_time_cacher.update(utc_time.timestamp(), || {
-                let local_time = DateTime::<Local>::from(utc_time);
-                format!(
-                    // `local_time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
-                    "{}-{:02}-{:02} {:02}:{:02}:{:02}",
-                    local_time.year(),
-                    local_time.month(),
-                    local_time.day(),
-                    local_time.hour(),
-                    local_time.minute(),
-                    local_time.second(),
-                )
-            });
+            let time_str = local_time_cacher.update(
+                record,
+                |dt| dt.timestamp(),
+                |dt| {
+                    format!(
+                        // `dt.format("%Y-%m-%d %H:%M:%S")` is slower than this way
+                        "{}-{:02}-{:02} {:02}:{:02}:{:02}",
+                        dt.year(),
+                        dt.month(),
+                        dt.day(),
+                        dt.hour(),
+                        dt.minute(),
+                        dt.second(),
+                    )
+                },
+            );
 
             dest.write_str("[")?;
             dest.write_str(time_str)?;
