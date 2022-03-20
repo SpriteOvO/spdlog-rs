@@ -5,9 +5,11 @@ use crate::{
     Error, Record, StringBuf,
 };
 
-/// A pattern that writes the payload of a log record into output. Example: `log message`.
+/// A pattern that writes the payload of a log record into output. Example: `log
+/// message`.
 ///
-/// This pattern corresponds to `{v}` or `{payload}` in the pattern template string.
+/// This pattern corresponds to `{v}` or `{payload}` in the pattern template
+/// string.
 #[derive(Clone, Copy, Debug)]
 pub struct Payload;
 

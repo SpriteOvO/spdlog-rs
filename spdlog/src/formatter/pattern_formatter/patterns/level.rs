@@ -5,9 +5,11 @@ use crate::{
     Error, Record, StringBuf,
 };
 
-/// A pattern that writes the level of a log record into the output. Examples: `critical`, `error`, `warn`.
+/// A pattern that writes the level of a log record into the output. Examples:
+/// `critical`, `error`, `warn`.
 ///
-/// This pattern corresponds to `{l}` or `{level}` in the pattern template string.
+/// This pattern corresponds to `{l}` or `{level}` in the pattern template
+/// string.
 #[derive(Copy, Clone, Debug)]
 pub struct Level;
 
@@ -24,9 +26,11 @@ impl Pattern for Level {
     }
 }
 
-/// A pattern that writes the level in a shorter form of a log record into the output. Examples: `C`, `E`, `W`.
+/// A pattern that writes the level in a shorter form of a log record into the
+/// output. Examples: `C`, `E`, `W`.
 ///
-/// This pattern corresponds to `{L}` or `{short-level}` in the pattern template string.
+/// This pattern corresponds to `{L}` or `{short-level}` in the pattern template
+/// string.
 pub struct ShortLevel;
 
 impl Pattern for ShortLevel {

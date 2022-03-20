@@ -5,7 +5,8 @@ use crate::{
     Error, Record, StringBuf,
 };
 
-/// A pattern that writes the current thread's ID into the output. Example: `3132`.
+/// A pattern that writes the current thread's ID into the output. Example:
+/// `3132`.
 ///
 /// This pattern corresponds to `{t}` or `{tid}` in the pattern template string.
 ///
@@ -13,9 +14,11 @@ use crate::{
 ///
 /// On Linux, this pattern writes the return value of `gettid` to the output.
 ///
-/// On macOS, this pattern writes the return value of `pthread_self` to the output.
+/// On macOS, this pattern writes the return value of `pthread_self` to the
+/// output.
 ///
-/// On Windows, this pattern writes the return value of `GetCurrentThreadId` to the output.
+/// On Windows, this pattern writes the return value of `GetCurrentThreadId` to
+/// the output.
 #[derive(Copy, Clone, Debug)]
 pub struct ThreadId;
 

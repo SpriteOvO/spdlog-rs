@@ -6,6 +6,7 @@
 
 mod full_formatter;
 mod pattern_formatter;
+mod utils;
 
 pub use full_formatter::*;
 pub use pattern_formatter::*;

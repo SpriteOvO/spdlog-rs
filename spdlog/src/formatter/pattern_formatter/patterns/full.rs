@@ -6,11 +6,13 @@ use crate::{
     Record, StringBuf,
 };
 
-/// A pattern that writes the fully formatted text of log records into the output.
+/// A pattern that writes the fully formatted text of log records into the
+/// output.
 ///
 /// This pattern writes the same formatted text as [`FullFormatter`].
 ///
-/// This pattern corresponds to `{+}` or `{full}` in the pattern template string.
+/// This pattern corresponds to `{+}` or `{full}` in the pattern template
+/// string.
 #[derive(Default)]
 pub struct Full {
     full_formatter: FullFormatter,

@@ -1,14 +1,11 @@
 //! Provides a full info formatter.
 
-use std::{
-    fmt::{self, Write},
-    time::SystemTime,
-};
+use std::fmt::{self, Write};
 
 use chrono::prelude::*;
 
 use crate::{
-    formatter::{FmtExtraInfo, Formatter},
+    formatter::{utils::cache::Cacher, FmtExtraInfo, Formatter},
     sync::*,
     Error, Record, StringBuf, EOL,
 };
@@ -31,14 +28,19 @@ use crate::{
 ///
 ///    `[2021-12-23 01:23:45.067] [info] [crate::mod, main.rs:2] log message`
 pub struct FullFormatter {
-    local_time_cacher: SpinMutex<LocalTimeCacher>,
+    /// Cache the formatted date time of the last formatted record in second
+    /// precision.
+    ///
+    /// The key of the cacher is the second part of the timestamp of the last
+    /// formatted record.
+    local_time_cacher: SpinMutex<Cacher<i64, String>>,
 }
 
 impl FullFormatter {
     /// Constructs a `FullFormatter`.
     pub fn new() -> FullFormatter {
         FullFormatter {
-            local_time_cacher: SpinMutex::new(LocalTimeCacher::new()),
+            local_time_cacher: SpinMutex::new(Cacher::new()),
         }
     }
 
@@ -48,12 +50,31 @@ impl FullFormatter {
         dest: &mut StringBuf,
     ) -> Result<FmtExtraInfo, fmt::Error> {
         {
+            let utc_time = DateTime::<Utc>::from(record.time());
+
             let mut local_time_cacher = self.local_time_cacher.lock();
-            let time = local_time_cacher.get(record.time());
+            let time_str = local_time_cacher.update(utc_time.timestamp(), || {
+                let local_time = DateTime::<Local>::from(utc_time);
+                format!(
+                    // `local_time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
+                    "{}-{:02}-{:02} {:02}:{:02}:{:02}",
+                    local_time.year(),
+                    local_time.month(),
+                    local_time.day(),
+                    local_time.hour(),
+                    local_time.minute(),
+                    local_time.second(),
+                )
+            });
+
             dest.write_str("[")?;
-            dest.write_str(time.0)?;
+            dest.write_str(time_str)?;
             dest.write_str(".")?;
-            write!(dest, "{:03}", time.1)?;
+            write!(
+                dest,
+                "{:03}",
+                utc_time.nanosecond() % 1_000_000_000 / 1_000_000
+            )?;
             dest.write_str("] [")?;
         }
 
@@ -96,46 +117,6 @@ impl Formatter for FullFormatter {
 impl Default for FullFormatter {
     fn default() -> FullFormatter {
         FullFormatter::new()
-    }
-}
-
-#[derive(Clone, Default)]
-struct LocalTimeCacher {
-    last_secs: i64,
-    local_time_str: Option<String>,
-}
-
-impl LocalTimeCacher {
-    fn new() -> LocalTimeCacher {
-        LocalTimeCacher::default()
-    }
-
-    // Returns (local_time_in_sec, millisecond)
-    fn get(&mut self, system_time: SystemTime) -> (&str, u32) {
-        let utc_time: DateTime<Utc> = system_time.into();
-        let millisecond = utc_time.nanosecond() % 1_000_000_000 / 1_000_000;
-        (self.update(utc_time), millisecond)
-    }
-
-    fn update(&mut self, utc_time: DateTime<Utc>) -> &str {
-        let secs = utc_time.timestamp();
-
-        if self.local_time_str.is_none() || self.last_secs != secs {
-            let local_time: DateTime<Local> = utc_time.into();
-            self.local_time_str = Some(format!(
-                // `local_time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
-                "{}-{:02}-{:02} {:02}:{:02}:{:02}",
-                local_time.year(),
-                local_time.month(),
-                local_time.day(),
-                local_time.hour(),
-                local_time.minute(),
-                local_time.second(),
-            ));
-            self.last_secs = secs;
-        }
-
-        self.local_time_str.as_ref().unwrap().as_str()
     }
 }
 
