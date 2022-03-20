@@ -187,7 +187,7 @@ pub use env_level::EnvLevelError;
 pub use error::*;
 pub use level::*;
 #[cfg(feature = "log")]
-pub use log_crate_proxy::LogCrateProxy;
+pub use log_crate_proxy::*;
 pub use logger::*;
 pub use record::*;
 pub use source_location::*;
@@ -487,7 +487,7 @@ pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
 /// For more details, please read documentation of [`log::set_logger`] and
 /// [`LogCrateProxy`].
 #[cfg(feature = "log")]
-pub fn init_log_crate_proxy() -> StdResult<(), log::SetLoggerError> {
+pub fn init_log_crate_proxy() -> StdResult<(), log_crate::SetLoggerError> {
     log::set_logger(log_crate_proxy())
 }
 
