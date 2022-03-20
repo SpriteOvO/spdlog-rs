@@ -1,5 +1,6 @@
 //! This module provides all the built-in patterns.
 
+mod datetime;
 mod full;
 mod level;
 mod loc;
@@ -8,6 +9,7 @@ mod payload;
 mod process_id;
 mod thread_id;
 
+pub use datetime::*;
 pub use full::*;
 pub use level::*;
 pub use loc::*;
