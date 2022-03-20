@@ -6,6 +6,8 @@
 //! Patterns are represented by the [`Pattern`] trait. You can create your own
 //! pattern by implementing the [`Pattern`] trait.
 
+pub mod patterns;
+
 use std::{fmt::Write, ops::Range, sync::Arc};
 
 use crate::{
