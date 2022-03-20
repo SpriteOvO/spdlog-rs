@@ -19,7 +19,7 @@ impl Pattern for LoggerName {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(record.logger_name().unwrap_or(""))
-            .map_err(|err| Error::FormatRecord(err))?;
+            .map_err(Error::FormatRecord)?;
         Ok(())
     }
 }

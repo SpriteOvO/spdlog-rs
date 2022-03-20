@@ -26,7 +26,7 @@ impl Pattern for ProcessId {
     ) -> crate::Result<()> {
         let pid = get_current_process_id();
         dest.write_fmt(format_args!("{}", pid))
-            .map_err(|err| Error::FormatRecord(err))?;
+            .map_err(Error::FormatRecord)?;
         Ok(())
     }
 }

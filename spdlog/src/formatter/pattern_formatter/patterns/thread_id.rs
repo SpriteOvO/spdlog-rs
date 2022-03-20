@@ -28,7 +28,7 @@ impl Pattern for ThreadId {
     ) -> crate::Result<()> {
         let id = get_current_thread_id();
         dest.write_fmt(format_args!("{}", id))
-            .map_err(|err| Error::FormatRecord(err))?;
+            .map_err(Error::FormatRecord)?;
         Ok(())
     }
 }

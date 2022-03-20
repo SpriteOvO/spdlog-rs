@@ -19,7 +19,7 @@ impl Pattern for Payload {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(record.payload())
-            .map_err(|err| Error::FormatRecord(err))?;
+            .map_err(Error::FormatRecord)?;
         Ok(())
     }
 }

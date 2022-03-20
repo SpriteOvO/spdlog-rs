@@ -19,7 +19,7 @@ impl Pattern for Level {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(record.level().as_str())
-            .map_err(|err| Error::FormatRecord(err))?;
+            .map_err(Error::FormatRecord)?;
         Ok(())
     }
 }
@@ -36,9 +36,9 @@ impl Pattern for ShortLevel {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        const SHORT_LEVEL_NAMES: &'static [&'static str] = &["C", "E", "W", "I", "D", "T"];
+        const SHORT_LEVEL_NAMES: &[&str] = &["C", "E", "W", "I", "D", "T"];
         dest.write_str(SHORT_LEVEL_NAMES[record.level() as u16 as usize])
-            .map_err(|err| Error::FormatRecord(err))?;
+            .map_err(Error::FormatRecord)?;
         Ok(())
     }
 }
