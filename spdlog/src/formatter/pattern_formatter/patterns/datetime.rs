@@ -3,9 +3,7 @@ use std::fmt::Write;
 use chrono::Datelike;
 
 use crate::{
-    formatter::{
-        pattern_formatter::{Pattern, PatternContext},
-    },
+    formatter::pattern_formatter::{Pattern, PatternContext},
     Error, Record, StringBuf,
 };
 
