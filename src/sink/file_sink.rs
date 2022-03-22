@@ -30,7 +30,7 @@ pub struct FileSink {
 }
 
 impl FileSink {
-    /// Gets the builder of `FileSink`.
+    /// Constructs a builder of `FileSink`.
     pub fn builder() -> FileSinkBuilder<()> {
         FileSinkBuilder {
             path: (),
@@ -108,36 +108,31 @@ impl Drop for FileSink {
 
 // --------------------------------------------------
 
-/// Builder of [`FileSink`].
-///
-/// # Note
-///
-/// The generics here are designed to check for required fields at compile time,
-/// users should not specify them manually and/or depend on them. If the generic
-/// concrete types are changed in the future, it may not be considered as a
-/// breaking change.
+/// The builder of [`FileSink`].
+#[doc = include_str!("../include/doc/generic-builder-note.md")]
 ///
 /// # Examples
 ///
-/// - Build a [`FileSink`].
+/// - Building a [`FileSink`].
 ///
 ///   ```no_run
 ///   use spdlog::sink::FileSink;
 ///  
 ///   let sink: spdlog::Result<FileSink> = FileSink::builder()
 ///       .path("/path/to/log_file") // required
-///       .truncate(true) // optional, defaults `false`
+///       // .truncate(true) // optional, defaults to `false`
 ///       .build();
 ///   ```
 ///
-/// - If a required parameter is missing, a compile-time error will be raised.
+/// - If any required parameters are missing, a compile-time error will be
+///   raised.
 ///
 ///   ```compile_fail
 ///   use spdlog::sink::FileSink;
 ///   
 ///   let sink: spdlog::Result<FileSink> = FileSink::builder()
 ///       // .path("/path/to/log_file") // required
-///       .truncate(true) // optional, defaults `false`
+///       .truncate(true) // optional, defaults to `false`
 ///       .build();
 ///   ```
 pub struct FileSinkBuilder<ArgPath> {
@@ -161,12 +156,9 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
 
     /// If it is true, the existing contents of the filewill be discarded.
     ///
-    /// This parameter is optional, and defaults `false`.
+    /// This parameter is optional, and defaults to `false`.
     pub fn truncate(self, truncate: bool) -> Self {
-        FileSinkBuilder {
-            path: self.path,
-            truncate,
-        }
+        FileSinkBuilder { truncate, ..self }
     }
 }
 
@@ -180,7 +172,7 @@ impl FileSinkBuilder<()> {
 }
 
 impl FileSinkBuilder<PathBuf> {
-    /// Build a [`FileSink`].
+    /// Builds a [`FileSink`].
     ///
     /// # Errors
     ///

@@ -26,20 +26,30 @@ fn main() {
     // See the documentation for descriptions.
 
     let by_size: Arc<RotatingFileSink> = Arc::new(
-        RotatingFileSink::new(&path_by_size, RotationPolicy::FileSize(1024 * 10), 0, true).unwrap(),
+        RotatingFileSink::builder()
+            .base_path(&path_by_size)
+            .rotation_policy(RotationPolicy::FileSize(1024 * 10))
+            .rotate_on_open(true)
+            .build()
+            .unwrap(),
     );
 
-    let hourly: Arc<RotatingFileSink> =
-        Arc::new(RotatingFileSink::new(&path_hourly, RotationPolicy::Hourly, 0, true).unwrap());
+    let hourly: Arc<RotatingFileSink> = Arc::new(
+        RotatingFileSink::builder()
+            .base_path(&path_hourly)
+            .rotation_policy(RotationPolicy::Hourly)
+            .rotate_on_open(true)
+            .build()
+            .unwrap(),
+    );
 
     let daily: Arc<RotatingFileSink> = Arc::new(
-        RotatingFileSink::new(
-            &path_daily,
-            RotationPolicy::Daily { hour: 0, minute: 0 },
-            0,
-            true,
-        )
-        .unwrap(),
+        RotatingFileSink::builder()
+            .base_path(&path_daily)
+            .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
+            .rotate_on_open(true)
+            .build()
+            .unwrap(),
     );
 
     let by_size: Logger = Logger::builder().sink(by_size).build();

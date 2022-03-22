@@ -2,6 +2,7 @@
 
 use std::{
     collections::LinkedList,
+    convert::Infallible,
     ffi::OsString,
     fs::{self, File},
     hash::Hash,
@@ -102,7 +103,66 @@ pub struct RotatingFileSink {
     rotator: RotatorKind,
 }
 
+/// The builder of [`RotatingFileSink`].
+#[doc = include_str!("../include/doc/generic-builder-note.md")]
+///
+/// # Examples
+///
+/// - Building a [`RotatingFileSink`].
+///
+///   ```no_run
+///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
+///  
+///   let sink: spdlog::Result<RotatingFileSink> = RotatingFileSink::builder()
+///       .base_path("/path/to/base_log_file") // required
+///       .rotation_policy(RotationPolicy::Hourly) // required
+///       // .max_files(100) // optional, defaults to `0` for no limit
+///       // .rotate_on_open(true) // optional, defaults to `false`
+///       .build();
+///   ```
+///
+/// - If any required parameters are missing, a compile-time error will be
+///   raised.
+///
+///   ```compile_fail
+///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
+///  
+///   let sink: spdlog::Result<RotatingFileSink> = RotatingFileSink::builder()
+///       // .base_path("/path/to/base_log_file") // required
+///       .rotation_policy(RotationPolicy::Hourly) // required
+///       .max_files(100) // optional, defaults to `0` for no limit
+///       .rotate_on_open(true) // optional, defaults to `false`
+///       .build();
+///   ```
+///
+///   ```compile_fail
+///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
+///  
+///   let sink: spdlog::Result<RotatingFileSink> = RotatingFileSink::builder()
+///       .base_path("/path/to/base_log_file") // required
+///       // .rotation_policy(RotationPolicy::Hourly) // required
+///       .max_files(100) // optional, defaults to `0` for no limit
+///       .rotate_on_open(true) // optional, defaults to `false`
+///       .build();
+///   ```
+pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
+    base_path: ArgBP,
+    rotation_policy: ArgRP,
+    max_files: usize,
+    rotate_on_open: bool,
+}
+
 impl RotatingFileSink {
+    /// Constructs a builder of `RotatingFileSink`.
+    pub fn builder() -> RotatingFileSinkBuilder<(), ()> {
+        RotatingFileSinkBuilder {
+            base_path: (),
+            rotation_policy: (),
+            max_files: 0,
+            rotate_on_open: false,
+        }
+    }
+
     /// Constructs a `RotatingFileSink`.
     ///
     /// The parameter `max_files` specifies the maximum number of files. If the
@@ -124,6 +184,9 @@ impl RotatingFileSink {
     ///
     /// Panics if the parameter `rotation_policy` is invalid. See the
     /// documentation of [`RotationPolicy`] for requirements.
+    #[deprecated(
+        note = "it may be removed in the future, use `RotatingFileSink::builder()` instead"
+    )]
     pub fn new<P>(
         base_path: P,
         rotation_policy: RotationPolicy,
@@ -133,40 +196,12 @@ impl RotatingFileSink {
     where
         P: Into<PathBuf>,
     {
-        rotation_policy.validate();
-
-        let base_path = base_path.into();
-
-        let rotator = match rotation_policy {
-            RotationPolicy::FileSize(max_size) => RotatorKind::FileSize(RotatorFileSize::new(
-                base_path,
-                max_size,
-                max_files,
-                rotate_on_open,
-            )?),
-            RotationPolicy::Daily { hour, minute } => {
-                RotatorKind::TimePoint(RotatorTimePoint::new(
-                    base_path,
-                    TimePoint::Daily { hour, minute },
-                    max_files,
-                    rotate_on_open,
-                )?)
-            }
-            RotationPolicy::Hourly => RotatorKind::TimePoint(RotatorTimePoint::new(
-                base_path,
-                TimePoint::Hourly,
-                max_files,
-                rotate_on_open,
-            )?),
-        };
-
-        let res = Self {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
-            rotator,
-        };
-
-        Ok(res)
+        Self::builder()
+            .base_path(base_path)
+            .rotation_policy(rotation_policy)
+            .max_files(max_files)
+            .rotate_on_open(rotate_on_open)
+            .build()
     }
 
     #[cfg(test)]
@@ -615,6 +650,149 @@ impl TimePoint {
     }
 }
 
+impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
+    /// Specifies the base path of the log file.
+    ///
+    /// The path needs to be suffixed with an extension, if you expect the
+    /// rotated eventual file names to contain the extension.
+    ///
+    /// If there is an extension, the different rotation policies will insert
+    /// relevant information in the front of the extension. If there is not
+    /// an extension, it will be appended to the end.
+    ///
+    /// Supposes the given base path is `/path/to/base_file.log`, the eventual
+    /// file names may look like the following:
+    ///
+    /// - `/path/to/base_file_1.log`
+    /// - `/path/to/base_file_2.log`
+    /// - `/path/to/base_file_2022-03-23.log`
+    /// - `/path/to/base_file_2022-03-24.log`
+    /// - `/path/to/base_file_2022-03-23_03.log`
+    /// - `/path/to/base_file_2022-03-23_04.log`
+    ///
+    /// This parameter is required.
+    pub fn base_path<P>(self, base_path: P) -> RotatingFileSinkBuilder<PathBuf, ArgRP>
+    where
+        P: Into<PathBuf>,
+    {
+        RotatingFileSinkBuilder {
+            base_path: base_path.into(),
+            rotation_policy: self.rotation_policy,
+            max_files: self.max_files,
+            rotate_on_open: self.rotate_on_open,
+        }
+    }
+
+    /// Specifies the rotation policy.
+    ///
+    /// This parameter is required.
+    pub fn rotation_policy(
+        self,
+        rotation_policy: RotationPolicy,
+    ) -> RotatingFileSinkBuilder<ArgBP, RotationPolicy> {
+        RotatingFileSinkBuilder {
+            base_path: self.base_path,
+            rotation_policy,
+            max_files: self.max_files,
+            rotate_on_open: self.rotate_on_open,
+        }
+    }
+
+    /// Specifies the maximum number of files.
+    ///
+    /// If the number of existing files reaches this parameter, the oldest file
+    /// will be deleted on the next rotation.
+    ///
+    /// Pass `0` for no limit.
+    ///
+    /// This parameter is optional, and defaults to `0`.
+    pub fn max_files(self, max_files: usize) -> Self {
+        RotatingFileSinkBuilder { max_files, ..self }
+    }
+
+    /// Specifies whether to rotate files once when constructing
+    /// `RotatingFileSink`.
+    ///
+    /// For the [`RotationPolicy::Daily`] and [`RotationPolicy::Hourly`]
+    /// rotation policies, it may truncate the contents of the existing file if
+    /// the parameter is `true`, since the file name is a time point and not an
+    /// index.
+    ///
+    /// This parameter is optional, and defaults to `false`.
+    pub fn rotate_on_open(self, rotate_on_open: bool) -> Self {
+        RotatingFileSinkBuilder {
+            rotate_on_open,
+            ..self
+        }
+    }
+}
+
+impl<ArgRP> RotatingFileSinkBuilder<(), ArgRP> {
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required field `base_path`\n\n\
+    ")]
+    pub fn build(self, _: Infallible) {}
+}
+
+impl RotatingFileSinkBuilder<PathBuf, ()> {
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required field `rotation_policy`\n\n\
+    ")]
+    pub fn build(self, _: Infallible) {}
+}
+
+impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
+    /// Builds a [`RotatingFileSink`].
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs opening the file, [`Error::CreateDirectory`] or
+    /// [`Error::OpenFile`] will be returned.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the parameter `rotation_policy` is invalid. See the
+    /// documentation of [`RotationPolicy`] for requirements.
+    pub fn build(self) -> Result<RotatingFileSink> {
+        self.rotation_policy.validate();
+
+        let rotator = match self.rotation_policy {
+            RotationPolicy::FileSize(max_size) => RotatorKind::FileSize(RotatorFileSize::new(
+                self.base_path,
+                max_size,
+                self.max_files,
+                self.rotate_on_open,
+            )?),
+            RotationPolicy::Daily { hour, minute } => {
+                RotatorKind::TimePoint(RotatorTimePoint::new(
+                    self.base_path,
+                    TimePoint::Daily { hour, minute },
+                    self.max_files,
+                    self.rotate_on_open,
+                )?)
+            }
+            RotationPolicy::Hourly => RotatorKind::TimePoint(RotatorTimePoint::new(
+                self.base_path,
+                TimePoint::Hourly,
+                self.max_files,
+                self.rotate_on_open,
+            )?),
+        };
+
+        let res = RotatingFileSink {
+            level_filter: Atomic::new(LevelFilter::All),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            rotator,
+        };
+
+        Ok(res)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -682,13 +860,13 @@ mod tests {
                 }
 
                 let formatter = Box::new(NoModFormatter::new());
-                let sink = RotatingFileSink::new(
-                    LOGS_PATH.join(&base_path),
-                    RotationPolicy::FileSize(16),
-                    3,
-                    rotate_on_open,
-                )
-                .unwrap();
+                let sink = RotatingFileSink::builder()
+                    .base_path(LOGS_PATH.join(&base_path))
+                    .rotation_policy(RotationPolicy::FileSize(16))
+                    .max_files(3)
+                    .rotate_on_open(rotate_on_open)
+                    .build()
+                    .unwrap();
                 sink.set_formatter(formatter);
                 let sink = Arc::new(sink);
                 let logger = test_logger_builder().sink(sink.clone()).build();
@@ -901,25 +1079,23 @@ mod tests {
                 fs::remove_dir_all(LOGS_PATH.as_path()).unwrap();
                 fs::create_dir(LOGS_PATH.as_path()).unwrap();
 
-                let hourly_sink = RotatingFileSink::new(
-                    LOGS_PATH.join("hourly.log"),
-                    RotationPolicy::Hourly,
-                    0,
-                    rotate_on_open,
-                )
-                .unwrap();
+                let hourly_sink = RotatingFileSink::builder()
+                    .base_path(LOGS_PATH.join("hourly.log"))
+                    .rotation_policy(RotationPolicy::Hourly)
+                    .rotate_on_open(rotate_on_open)
+                    .build()
+                    .unwrap();
 
                 let local_time_now = Local::now();
-                let daily_sink = RotatingFileSink::new(
-                    LOGS_PATH.join("daily.log"),
-                    RotationPolicy::Daily {
+                let daily_sink = RotatingFileSink::builder()
+                    .base_path(LOGS_PATH.join("daily.log"))
+                    .rotation_policy(RotationPolicy::Daily {
                         hour: local_time_now.hour(),
                         minute: local_time_now.minute(),
-                    },
-                    0,
-                    rotate_on_open,
-                )
-                .unwrap();
+                    })
+                    .rotate_on_open(rotate_on_open)
+                    .build()
+                    .unwrap();
 
                 let sinks: [Arc<dyn Sink>; 2] = [Arc::new(hourly_sink), Arc::new(daily_sink)];
                 let logger = test_logger_builder().sinks(sinks).build();
@@ -984,5 +1160,39 @@ mod tests {
                 assert_eq!(exist_daily_files(), 2);
             }
         }
+    }
+
+    #[test]
+    fn test_builder_optional_params() {
+        // workaround for the missing `no_run` attribute
+        let _ = || {
+            let _: Result<RotatingFileSink> = RotatingFileSink::builder()
+                .base_path("/path/to/base_log_file")
+                .rotation_policy(RotationPolicy::Hourly)
+                // .max_files(100)
+                // .rotate_on_open(true)
+                .build();
+
+            let _: Result<RotatingFileSink> = RotatingFileSink::builder()
+                .base_path("/path/to/base_log_file")
+                .rotation_policy(RotationPolicy::Hourly)
+                .max_files(100)
+                // .rotate_on_open(true)
+                .build();
+
+            let _: Result<RotatingFileSink> = RotatingFileSink::builder()
+                .base_path("/path/to/base_log_file")
+                .rotation_policy(RotationPolicy::Hourly)
+                // .max_files(100)
+                .rotate_on_open(true)
+                .build();
+
+            let _: Result<RotatingFileSink> = RotatingFileSink::builder()
+                .base_path("/path/to/base_log_file")
+                .rotation_policy(RotationPolicy::Hourly)
+                .max_files(100)
+                .rotate_on_open(true)
+                .build();
+        };
     }
 }

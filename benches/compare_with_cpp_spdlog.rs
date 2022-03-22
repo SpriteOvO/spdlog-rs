@@ -49,13 +49,12 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
 
     let logger = Logger::builder()
         .sink(Arc::new(
-            RotatingFileSink::new(
-                LOGS_PATH.join("RotatingFileSink_FileSize.log"),
-                RotationPolicy::FileSize(FILE_SIZE),
-                ROTATING_FILES,
-                false,
-            )
-            .unwrap(),
+            RotatingFileSink::builder()
+                .base_path(LOGS_PATH.join("RotatingFileSink_FileSize.log"))
+                .rotation_policy(RotationPolicy::FileSize(FILE_SIZE))
+                .max_files(ROTATING_FILES)
+                .build()
+                .unwrap(),
         ))
         .name("rotating_mt")
         .build();
@@ -63,13 +62,11 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
 
     let logger = Logger::builder()
         .sink(Arc::new(
-            RotatingFileSink::new(
-                LOGS_PATH.join("RotatingFileSink_Daily.log"),
-                RotationPolicy::Daily { hour: 0, minute: 0 },
-                0,
-                false,
-            )
-            .unwrap(),
+            RotatingFileSink::builder()
+                .base_path(LOGS_PATH.join("RotatingFileSink_Daily.log"))
+                .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
+                .build()
+                .unwrap(),
         ))
         .name("daily_mt")
         .build();
