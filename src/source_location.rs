@@ -3,6 +3,9 @@
 use std::path;
 
 /// Represents a location in source code.
+///
+/// Usually users don't need to construct it manually, but if you do, use macro
+/// [`source_location_current`].
 #[derive(Clone, Hash, Debug)]
 pub struct SourceLocation {
     module_path: &'static str,
@@ -12,11 +15,10 @@ pub struct SourceLocation {
 }
 
 impl SourceLocation {
-    /// Constructs a `SourceLocation`.
-    ///
-    /// Users should usually use macro [`source_location_current`] to construct
-    /// it.
-    pub fn new(module_path: &'static str, file: &'static str, line: u32, column: u32) -> Self {
+    // Usually users don't need to construct it manually, but if you do, use macro
+    // [`source_location_current`].
+    #[doc(hidden)]
+    pub fn __new(module_path: &'static str, file: &'static str, line: u32, column: u32) -> Self {
         Self {
             module_path,
             file,
@@ -82,7 +84,7 @@ macro_rules! source_location_current {
 #[cfg(feature = "source-location")]
 macro_rules! __private_source_location_current_inner {
     () => {
-        Some($crate::SourceLocation::new(
+        Some($crate::SourceLocation::__new(
             module_path!(),
             file!(),
             line!(),
