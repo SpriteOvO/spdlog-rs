@@ -21,7 +21,13 @@ static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
 fn bench_file(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("file.log");
 
-    let sink = Arc::new(FileSink::new(path, true).unwrap());
+    let sink = Arc::new(
+        FileSink::builder()
+            .path(path)
+            .truncate(true)
+            .build()
+            .unwrap(),
+    );
     let logger = Logger::builder().sink(sink).build();
 
     bencher.iter(|| info!(logger: logger, bench_log_message!()))

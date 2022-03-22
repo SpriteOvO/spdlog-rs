@@ -1,10 +1,12 @@
 //! Provides a file sink.
 
 use std::{
+    convert::Infallible,
     fs::File,
     io::{BufWriter, Write},
     mem,
     path::Path,
+    path::PathBuf,
 };
 
 use crate::{
@@ -28,6 +30,14 @@ pub struct FileSink {
 }
 
 impl FileSink {
+    /// Gets the builder of `FileSink`.
+    pub fn builder() -> FileSinkBuilder<()> {
+        FileSinkBuilder {
+            path: (),
+            truncate: false,
+        }
+    }
+
     /// Constructs a `FileSink`.
     ///
     /// If the parameter `truncate` is `true`, the existing contents of the file
@@ -37,19 +47,16 @@ impl FileSink {
     ///
     /// If an error occurs opening the file, [`Error::CreateDirectory`] or
     /// [`Error::OpenFile`] will be returned.
+    #[deprecated(note = "it may be removed in the future, use `FileSink::builder()` instead")]
     pub fn new<P>(path: P, truncate: bool) -> Result<FileSink>
     where
-        P: AsRef<Path>,
+        P: AsRef<Path>, /* Keep the `AsRef<Path>` instead of `Into<PathBuf>` for backward
+                         * compatible */
     {
-        let file = utils::open_file(path, truncate)?;
-
-        let sink = FileSink {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
-            file: SpinMutex::new(BufWriter::new(file)),
-        };
-
-        Ok(sink)
+        Self::builder()
+            .path(path.as_ref())
+            .truncate(truncate)
+            .build()
     }
 }
 
@@ -96,5 +103,98 @@ impl Drop for FileSink {
             // themselves.
             crate::default_error_handler("FileSink", Error::FlushBuffer(err));
         }
+    }
+}
+
+// --------------------------------------------------
+
+/// Builder of [`FileSink`].
+///
+/// # Note
+///
+/// The generics here are designed to check for required fields at compile time,
+/// users should not specify them manually and/or depend on them. If the generic
+/// concrete types are changed in the future, it may not be considered as a
+/// breaking change.
+///
+/// # Examples
+///
+/// - Build a [`FileSink`].
+///
+///   ```no_run
+///   use spdlog::sink::FileSink;
+///  
+///   let sink: spdlog::Result<FileSink> = FileSink::builder()
+///       .path("/path/to/log_file") // required
+///       .truncate(true) // optional, defaults `false`
+///       .build();
+///   ```
+///
+/// - If a required parameter is missing, a compile-time error will be raised.
+///
+///   ```compile_fail
+///   use spdlog::sink::FileSink;
+///   
+///   let sink: spdlog::Result<FileSink> = FileSink::builder()
+///       // .path("/path/to/log_file") // required
+///       .truncate(true) // optional, defaults `false`
+///       .build();
+///   ```
+pub struct FileSinkBuilder<ArgPath> {
+    path: ArgPath,
+    truncate: bool,
+}
+
+impl<ArgPath> FileSinkBuilder<ArgPath> {
+    /// The path of the log file.
+    ///
+    /// This parameter is required.
+    pub fn path<P>(self, path: P) -> FileSinkBuilder<PathBuf>
+    where
+        P: Into<PathBuf>,
+    {
+        FileSinkBuilder {
+            path: path.into(),
+            truncate: self.truncate,
+        }
+    }
+
+    /// If it is true, the existing contents of the filewill be discarded.
+    ///
+    /// This parameter is optional, and defaults `false`.
+    pub fn truncate(self, truncate: bool) -> Self {
+        FileSinkBuilder {
+            path: self.path,
+            truncate,
+        }
+    }
+}
+
+impl FileSinkBuilder<()> {
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required field `path`\n\n\
+    ")]
+    pub fn build(self, _: Infallible) {}
+}
+
+impl FileSinkBuilder<PathBuf> {
+    /// Build a [`FileSink`].
+    ///
+    /// # Errors
+    ///
+    /// If an error occurs opening the file, [`Error::CreateDirectory`] or
+    /// [`Error::OpenFile`] will be returned.
+    pub fn build(self) -> Result<FileSink> {
+        let file = utils::open_file(self.path, self.truncate)?;
+
+        let sink = FileSink {
+            level_filter: Atomic::new(LevelFilter::All),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            file: SpinMutex::new(BufWriter::new(file)),
+        };
+
+        Ok(sink)
     }
 }

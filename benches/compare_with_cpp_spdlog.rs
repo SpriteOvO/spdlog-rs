@@ -37,7 +37,11 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
 
     let logger = Logger::builder()
         .sink(Arc::new(
-            FileSink::new(LOGS_PATH.join("FileSink.log"), true).unwrap(),
+            FileSink::builder()
+                .path(LOGS_PATH.join("FileSink.log"))
+                .truncate(true)
+                .build()
+                .unwrap(),
         ))
         .name("basic_mt")
         .build();
