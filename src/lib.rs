@@ -207,7 +207,6 @@ use sink::{
     Sink, {StdStream, StdStreamSink},
 };
 use sync::*;
-use terminal_style::StyleMode;
 
 /// The statically resolved log level filter.
 ///
@@ -262,10 +261,16 @@ static DEFAULT_LOGGER: OnceCell<ArcSwap<Logger>> = OnceCell::new();
 
 fn default_logger_ref() -> &'static ArcSwap<Logger> {
     DEFAULT_LOGGER.get_or_init(|| {
-        let stdout = StdStreamSink::new(StdStream::Stdout, StyleMode::Auto);
+        let stdout = StdStreamSink::builder()
+            .std_stream(StdStream::Stdout)
+            .build()
+            .unwrap();
         stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
 
-        let stderr = StdStreamSink::new(StdStream::Stderr, StyleMode::Auto);
+        let stderr = StdStreamSink::builder()
+            .std_stream(StdStream::Stderr)
+            .build()
+            .unwrap();
         stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
 
         let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
