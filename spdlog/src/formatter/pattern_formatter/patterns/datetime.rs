@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use chrono::Datelike;
+use chrono::{Datelike, Timelike};
 
 use crate::{
     formatter::pattern_formatter::{Pattern, PatternContext},
@@ -167,6 +167,88 @@ impl Pattern for MonthName {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         self.base.format(record, dest, ctx)
+    }
+}
+
+/// A pattern that writes the millisecond part within a second of the timestamp
+/// of a log record into the output. Example: `231`.
+///
+/// This pattern corresponds to `{e}` or `{milliseconds}` in the pattern
+/// template string.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Milliseconds;
+
+impl Milliseconds {
+    /// Create a new `Millisecond` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Pattern for Milliseconds {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let time = chrono::DateTime::<chrono::Local>::from(record.time());
+        dest.write_fmt(format_args!("{:03}", time.nanosecond() / 1_000_000))
+            .map_err(Error::FormatRecord)
+    }
+}
+
+/// A pattern that writes the microseconds part within a second of the timestamp
+/// of a log record into the output. Example: `372152`.
+///
+/// This pattern corresponds to `{f}` or `{microsecondss}` in the pattern
+/// template string.
+pub struct Microseconds;
+
+impl Microseconds {
+    /// Create a new `Microseconds` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Pattern for Microseconds {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let time = chrono::DateTime::<chrono::Local>::from(record.time());
+        dest.write_fmt(format_args!("{:06}", time.nanosecond() / 1_000))
+            .map_err(Error::FormatRecord)
+    }
+}
+
+/// A pattern that writes the nanoseconds part within a second of the timestamp
+/// of a log record into the output. Example: `482930154`.
+///
+/// This pattern corresponds to `{F}` or `{nanosecondss}` in the pattern
+/// template string.
+pub struct Nanoseconds;
+
+impl Nanoseconds {
+    /// Create a new `Nanoseconds` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Pattern for Nanoseconds {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let time = chrono::DateTime::<chrono::Local>::from(record.time());
+        dest.write_fmt(format_args!("{:09}", time.nanosecond()))
+            .map_err(Error::FormatRecord)
     }
 }
 
