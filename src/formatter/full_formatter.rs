@@ -2,14 +2,12 @@
 
 use std::{
     fmt::{self, Write},
-    time::SystemTime,
+    marker::PhantomData,
 };
 
-use chrono::prelude::*;
-
+use super::LOCAL_TIME_CACHER;
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
-    sync::*,
     Error, Record, StringBuf, EOL,
 };
 
@@ -31,14 +29,14 @@ use crate::{
 ///
 ///    `[2021-12-23 01:23:45.067] [info] [crate::mod, main.rs:2] log message`
 pub struct FullFormatter {
-    local_time_cacher: SpinMutex<LocalTimeCacher>,
+    _phantom: PhantomData<()>,
 }
 
 impl FullFormatter {
     /// Constructs a `FullFormatter`.
     pub fn new() -> FullFormatter {
         FullFormatter {
-            local_time_cacher: SpinMutex::new(LocalTimeCacher::new()),
+            _phantom: PhantomData,
         }
     }
 
@@ -48,12 +46,12 @@ impl FullFormatter {
         dest: &mut StringBuf,
     ) -> Result<FmtExtraInfo, fmt::Error> {
         {
-            let mut local_time_cacher = self.local_time_cacher.lock();
+            let mut local_time_cacher = LOCAL_TIME_CACHER.lock();
             let time = local_time_cacher.get(record.time());
             dest.write_str("[")?;
-            dest.write_str(time.0)?;
+            dest.write_str(&time.full_second_str())?;
             dest.write_str(".")?;
-            write!(dest, "{:03}", time.1)?;
+            write!(dest, "{:03}", time.millisecond())?;
             dest.write_str("] [")?;
         }
 
@@ -99,82 +97,9 @@ impl Default for FullFormatter {
     }
 }
 
-#[derive(Clone)]
-struct LocalTimeCacher {
-    stored_key: CacheKey,
-    local_time_str: Option<String>,
-}
-
-#[derive(Clone, Eq, PartialEq)]
-enum CacheKey {
-    NonLeap(i64),
-    Leap(i64),
-}
-
-impl LocalTimeCacher {
-    fn new() -> LocalTimeCacher {
-        LocalTimeCacher {
-            stored_key: CacheKey::NonLeap(0),
-            local_time_str: None,
-        }
-    }
-
-    // Returns (local_time_in_sec, millisecond)
-    fn get(&mut self, system_time: SystemTime) -> (&str, u32) {
-        const LEAP_BOUNDARY: u32 = 1_000_000_000;
-
-        let utc_time: DateTime<Utc> = system_time.into();
-        let nanosecond = utc_time.nanosecond();
-        let is_leap_second = nanosecond >= LEAP_BOUNDARY;
-        let reduced_nanosecond = if is_leap_second {
-            nanosecond - LEAP_BOUNDARY
-        } else {
-            nanosecond
-        };
-        let millisecond = reduced_nanosecond / 1_000_000;
-        (self.update(utc_time, is_leap_second), millisecond)
-    }
-
-    fn update(&mut self, utc_time: DateTime<Utc>, is_leap_second: bool) -> &str {
-        let key = CacheKey::new(&utc_time, is_leap_second);
-
-        if self.local_time_str.is_none() || self.stored_key != key {
-            let local_time: DateTime<Local> = utc_time.into();
-            self.local_time_str = Some(format!(
-                // `local_time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
-                "{}-{:02}-{:02} {:02}:{:02}:{:02}",
-                local_time.year(),
-                local_time.month(),
-                local_time.day(),
-                local_time.hour(),
-                local_time.minute(),
-                if !is_leap_second {
-                    local_time.second()
-                } else {
-                    // https://www.itu.int/dms_pubrec/itu-r/rec/tf/R-REC-TF.460-6-200202-I!!PDF-E.pdf
-                    60
-                },
-            ));
-            self.stored_key = key;
-        }
-
-        self.local_time_str.as_ref().unwrap().as_str()
-    }
-}
-
-impl CacheKey {
-    fn new(utc_time: &DateTime<Utc>, is_leap_second: bool) -> Self {
-        let timestamp = utc_time.timestamp();
-        if !is_leap_second {
-            Self::NonLeap(timestamp)
-        } else {
-            Self::Leap(timestamp)
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use chrono::prelude::*;
 
     use super::*;
     use crate::{Level, EOL};
