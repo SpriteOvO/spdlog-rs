@@ -1,20 +1,46 @@
 use std::time::SystemTime;
 
+/// Re-export some stuff from `log` crate for convenience.
+///
+/// Users sometimes need these stuff, re-exporting them eliminates the need to
+/// explicitly depend on `log` crate in `Cargo.toml`.
+///
+/// See the documentation of [`LogCrateProxy`].
+#[cfg(feature = "log")] // Intentionally redundant, workaround for defects in nested exports of feature
+                        // `doc_auto_cfg`.
+pub mod log_crate {
+    pub use log::{set_max_level, LevelFilter, SetLoggerError};
+}
+
 use crate::{default_logger, sync::*, Logger, Record};
 
 /// Log crate proxy.
 ///
-/// It forwards all logs from log crate to [`default_logger`] by default, and
-/// you can set a separate logger for it via [`LogCrateProxy::set_logger`].
+/// It forwards all log messages from `log` crate to [`default_logger`] by
+/// default, and you can set a separate logger for it via
+/// [`LogCrateProxy::set_logger`].
+///
+/// If upstream dependencies use `log` crate to output log messages, they may
+/// also be received by `LogCrateProxy`.
 ///
 /// Note that the `log` crate uses a different log level filter and by default
-/// it rejects all log messages. To log messages via the `log` crate, you have
-/// to call [`log::set_max_level`] manually before logging. For more
-/// information, please read the documentation of [`log::set_max_level`].
+/// it rejects all log messages. To make `LogCrateProxy` able to receive log
+/// messages from `log` crate, you may need to call [`log_crate::set_max_level`]
+/// with [`log_crate::LevelFilter`].
 ///
 /// ## Examples
 ///
-/// See [./examples] directory.
+/// ```
+/// use spdlog::log_crate as log;
+///
+/// # fn main() -> Result<(), log::SetLoggerError> {
+/// spdlog::init_log_crate_proxy()?;
+/// // Enable all log messages from `log` crate.
+/// log::set_max_level(log::LevelFilter::Trace);
+/// # Ok(()) }
+/// ```
+///
+/// For more and detailed examples, see [./examples] directory.
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 #[derive(Default)]

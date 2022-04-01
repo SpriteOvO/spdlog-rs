@@ -1,16 +1,20 @@
 //! Provides sinks to flexibly output log messages to specified targets.
 
 mod file_sink;
+#[cfg(all(target_os = "linux", feature = "libsystemd"))]
+mod journal_sink;
 mod rotating_file_sink;
 mod std_stream_sink;
-#[cfg(windows)]
+#[cfg(all(windows, feature = "winapi"))]
 mod win_debug_sink;
 mod write_sink;
 
 pub use file_sink::*;
+#[cfg(all(target_os = "linux", feature = "libsystemd"))]
+pub use journal_sink::*;
 pub use rotating_file_sink::*;
 pub use std_stream_sink::*;
-#[cfg(windows)]
+#[cfg(all(windows, feature = "winapi"))]
 pub use win_debug_sink::*;
 pub use write_sink::*;
 

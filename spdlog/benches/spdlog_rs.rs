@@ -21,7 +21,13 @@ static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
 fn bench_file(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("file.log");
 
-    let sink = Arc::new(FileSink::new(path, true).unwrap());
+    let sink = Arc::new(
+        FileSink::builder()
+            .path(path)
+            .truncate(true)
+            .build()
+            .unwrap(),
+    );
     let logger = Logger::builder().sink(sink).build();
 
     bencher.iter(|| info!(logger: logger, bench_log_message!()))
@@ -32,13 +38,13 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("rotating_file_size.log");
 
     let sink = Arc::new(
-        RotatingFileSink::new(
-            path,
-            RotationPolicy::FileSize(common::FILE_SIZE),
-            common::ROTATING_FILES,
-            true,
-        )
-        .unwrap(),
+        RotatingFileSink::builder()
+            .base_path(path)
+            .rotation_policy(RotationPolicy::FileSize(common::FILE_SIZE))
+            .max_files(common::ROTATING_FILES)
+            .rotate_on_open(true)
+            .build()
+            .unwrap(),
     );
     let logger = Logger::builder().sink(sink).build();
 
@@ -50,13 +56,13 @@ fn bench_rotating_daily(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("rotating_daily.log");
 
     let sink = Arc::new(
-        RotatingFileSink::new(
-            path,
-            RotationPolicy::Daily { hour: 0, minute: 0 },
-            common::ROTATING_FILES,
-            true,
-        )
-        .unwrap(),
+        RotatingFileSink::builder()
+            .base_path(path)
+            .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
+            .max_files(common::ROTATING_FILES)
+            .rotate_on_open(true)
+            .build()
+            .unwrap(),
     );
     let logger = Logger::builder().sink(sink).build();
 

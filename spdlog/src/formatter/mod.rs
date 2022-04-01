@@ -5,6 +5,7 @@
 //! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 
 mod full_formatter;
+mod local_time_cacher;
 mod pattern_formatter;
 mod utils;
 

@@ -7,7 +7,13 @@ fn main() {
 
     let path: PathBuf = env::current_exe().unwrap().parent().unwrap().join(LOG_FILE);
 
-    let file_sink: Arc<FileSink> = Arc::new(FileSink::new(&path, true).unwrap());
+    let file_sink: Arc<FileSink> = Arc::new(
+        FileSink::builder()
+            .path(&path)
+            .truncate(true)
+            .build()
+            .unwrap(),
+    );
 
     // Building a logger uses the `file_sink`.
     // All logs to this logger will be written to file "example_logs/file_sink.log".
