@@ -239,6 +239,37 @@ impl Nanoseconds {
     }
 }
 
+/// A pattern that writes "AM" or "PM" into the output according to the
+/// timestamp of a log record. Example: `AM`, `PM`.
+///
+/// This pattern corresponds to `{p}` or `{ampm}` in the pattern
+/// template string.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Ampm;
+
+impl Ampm {
+    /// Create a new `Ampm` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Pattern for Ampm {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let time = chrono::DateTime::<chrono::Local>::from(record.time());
+        if time.hour12().0 {
+            dest.write_str("PM").map_err(Error::FormatRecord)
+        } else {
+            dest.write_str("AM").map_err(Error::FormatRecord)
+        }
+    }
+}
+
 impl Pattern for Nanoseconds {
     fn format(
         &self,
