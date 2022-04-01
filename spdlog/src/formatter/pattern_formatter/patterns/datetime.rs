@@ -218,25 +218,29 @@ impl Pattern for FullDateTime {
         self.abbr_month.format(record, dest, ctx)?;
         dest.write_str(" ").map_err(Error::FormatRecord)?;
 
-        let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
-        let cached_time = time_cacher_lock.get(record.time());
+        let (day_str, hour_str, minute_str, second_str, year_str) = {
+            let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
+            let cached_time = time_cacher_lock.get(record.time());
+            (
+                cached_time.day_str(),
+                cached_time.hour_str(),
+                cached_time.minute_str(),
+                cached_time.second_str(),
+                cached_time.year_str(),
+            )
+        };
 
-        dest.write_str(&**cached_time.day_str())
-            .map_err(Error::FormatRecord)?;
+        dest.write_str(&**day_str).map_err(Error::FormatRecord)?;
         dest.write_str(" ").map_err(Error::FormatRecord)?;
 
-        dest.write_str(&**cached_time.hour_str())
-            .map_err(Error::FormatRecord)?;
+        dest.write_str(&**hour_str).map_err(Error::FormatRecord)?;
         dest.write_str(":").map_err(Error::FormatRecord)?;
-        dest.write_str(&**cached_time.minute_str())
-            .map_err(Error::FormatRecord)?;
+        dest.write_str(&**minute_str).map_err(Error::FormatRecord)?;
         dest.write_str(":").map_err(Error::FormatRecord)?;
-        dest.write_str(&**cached_time.second_str())
-            .map_err(Error::FormatRecord)?;
+        dest.write_str(&**second_str).map_err(Error::FormatRecord)?;
         dest.write_str(" ").map_err(Error::FormatRecord)?;
 
-        dest.write_str(&**cached_time.year_str())
-            .map_err(Error::FormatRecord)?;
+        dest.write_str(&**year_str).map_err(Error::FormatRecord)?;
 
         Ok(())
     }
@@ -270,10 +274,12 @@ impl Pattern for ShortYear {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let year_str = LOCAL_TIME_CACHER.lock().get(record.time()).year_str();
-        let year_str_bytes = year_str.as_bytes();
-        debug_assert_eq!(year_str_bytes.len(), 4);
+        let short_year_str = {
+            let year_str_bytes = year_str.as_bytes();
+            debug_assert_eq!(year_str_bytes.len(), 4);
 
-        let short_year_str = unsafe { std::str::from_utf8_unchecked(&year_str_bytes[2..4]) };
+            unsafe { std::str::from_utf8_unchecked(&year_str_bytes[2..4]) }
+        };
 
         dest.write_str(short_year_str).map_err(Error::FormatRecord)
     }
@@ -308,6 +314,146 @@ impl Pattern for Year {
     ) -> crate::Result<()> {
         let year_str = LOCAL_TIME_CACHER.lock().get(record.time()).year_str();
         dest.write_str(&**year_str).map_err(Error::FormatRecord)
+    }
+}
+
+/// A pattern that writes the short date of log records in `MM/DD/YY` format
+/// into the output. Examples: `04/01/22`, `12/31/21`.
+///
+/// This pattern corresponds to `{D}` or `{short-date}` in the pattern template
+/// string.
+#[derive(Clone, Debug, Default)]
+pub struct ShortDate {
+    _phantom: PhantomData<()>,
+}
+
+impl ShortDate {
+    /// Create a new `ShortDate` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for ShortDate {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let (month_str, day_str, year_str) = {
+            let mut local_cacher_lock = LOCAL_TIME_CACHER.lock();
+            let cached_time = local_cacher_lock.get(record.time());
+            (
+                cached_time.month_str(),
+                cached_time.day_str(),
+                cached_time.year_str(),
+            )
+        };
+
+        let short_year_str = {
+            let year_str_bytes = year_str.as_bytes();
+            debug_assert_eq!(year_str_bytes.len(), 4);
+
+            unsafe { std::str::from_utf8_unchecked(&year_str_bytes[2..4]) }
+        };
+
+        dest.write_str(&**month_str).map_err(Error::FormatRecord)?;
+        dest.write_str("/").map_err(Error::FormatRecord)?;
+        dest.write_str(&**day_str).map_err(Error::FormatRecord)?;
+        dest.write_str("/").map_err(Error::FormatRecord)?;
+        dest.write_str(short_year_str)
+            .map_err(Error::FormatRecord)?;
+
+        Ok(())
+    }
+}
+
+/// A pattern that writes the short time of log records into the output.
+/// Examples: `22:28`, `09:53`.
+///
+/// This pattern corresponds to `{R}` or `{time-short}` in the pattern template
+/// string.
+#[derive(Clone, Debug, Default)]
+pub struct ShortTime {
+    _phantom: PhantomData<()>,
+}
+
+impl ShortTime {
+    /// Create a new `ShortTime` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for ShortTime {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let (hour_str, minute_str) = {
+            let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
+            let cached_time = time_cacher_lock.get(record.time());
+            (cached_time.hour_str(), cached_time.minute_str())
+        };
+
+        dest.write_str(&**hour_str).map_err(Error::FormatRecord)?;
+        dest.write_str(":").map_err(Error::FormatRecord)?;
+        dest.write_str(&**minute_str).map_err(Error::FormatRecord)?;
+
+        Ok(())
+    }
+}
+
+/// A pattern that writes the time of log records into the output. Examples:
+/// `22:28:02`, `09:53:41`.
+///
+/// This pattern corresponds to `{T}`, `{X}` or `{time}` in the pattern template
+/// string.
+#[derive(Clone, Debug, Default)]
+pub struct Time {
+    _phantom: PhantomData<()>,
+}
+
+impl Time {
+    /// Create a new `Time` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for Time {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let (hour_str, minute_str, second_str) = {
+            let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
+            let cached_time = time_cacher_lock.get(record.time());
+            (
+                cached_time.hour_str(),
+                cached_time.minute_str(),
+                cached_time.second_str(),
+            )
+        };
+
+        dest.write_str(&**hour_str).map_err(Error::FormatRecord)?;
+        dest.write_str(":").map_err(Error::FormatRecord)?;
+        dest.write_str(&**minute_str).map_err(Error::FormatRecord)?;
+        dest.write_str(":").map_err(Error::FormatRecord)?;
+        dest.write_str(&**second_str).map_err(Error::FormatRecord)?;
+
+        Ok(())
     }
 }
 
