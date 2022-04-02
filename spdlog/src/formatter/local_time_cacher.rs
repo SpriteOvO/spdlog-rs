@@ -43,10 +43,12 @@ struct CacheValues {
     day_str: RefCell<Option<Arc<String>>>,
     hour: RefCell<Option<u32>>,
     hour_str: RefCell<Option<Arc<String>>>,
+    hour_12_str: RefCell<Option<Arc<String>>>,
     minute: RefCell<Option<u32>>,
     minute_str: RefCell<Option<Arc<String>>>,
     second: RefCell<Option<u32>>,
     second_str: RefCell<Option<Arc<String>>>,
+    tz_offset_str: RefCell<Option<Arc<String>>>,
 }
 
 impl LocalTimeCacher {
@@ -175,6 +177,40 @@ impl<'a> TimeDate<'a> {
     pub(crate) fn millisecond(&self) -> u32 {
         self.millisecond
     }
+
+    pub(crate) fn hour_12_str(&self) -> Arc<String> {
+        let hour = self.hour();
+        let hour_12 = if hour == 0 || hour == 12 {
+            12
+        } else if hour < 12 {
+            hour
+        } else {
+            hour - 12
+        };
+
+        self.cached
+            .hour_12_str
+            .borrow_mut()
+            .get_or_insert_with(|| Arc::new(format!("{:02}", hour_12)))
+            .clone()
+    }
+
+    pub(crate) fn tz_offset_str(&self) -> Arc<String> {
+        let offset_secs = self.cached.local_time.offset().local_minus_utc();
+        self.cached
+            .tz_offset_str
+            .borrow_mut()
+            .get_or_insert_with(|| {
+                let sign_str = if offset_secs >= 0 { "+" } else { "-" };
+                let offset_hours = offset_secs.abs() / 3600;
+                let offset_minutes = offset_secs.abs() % 3600 / 60;
+                Arc::new(format!(
+                    "{}{:02}:{:02}",
+                    sign_str, offset_hours, offset_minutes
+                ))
+            })
+            .clone()
+    }
 }
 
 impl CacheKey {
@@ -202,10 +238,12 @@ impl CacheValues {
             day_str: RefCell::new(None),
             hour: RefCell::new(None),
             hour_str: RefCell::new(None),
+            hour_12_str: RefCell::new(None),
             minute: RefCell::new(None),
             minute_str: RefCell::new(None),
             second: RefCell::new(None),
             second_str: RefCell::new(None),
+            tz_offset_str: RefCell::new(None),
         }
     }
 }

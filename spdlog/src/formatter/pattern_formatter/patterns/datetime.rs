@@ -230,19 +230,12 @@ impl Pattern for FullDateTime {
             )
         };
 
-        dest.write_str(&**day_str).map_err(Error::FormatRecord)?;
-        dest.write_str(" ").map_err(Error::FormatRecord)?;
-
-        dest.write_str(&**hour_str).map_err(Error::FormatRecord)?;
-        dest.write_str(":").map_err(Error::FormatRecord)?;
-        dest.write_str(&**minute_str).map_err(Error::FormatRecord)?;
-        dest.write_str(":").map_err(Error::FormatRecord)?;
-        dest.write_str(&**second_str).map_err(Error::FormatRecord)?;
-        dest.write_str(" ").map_err(Error::FormatRecord)?;
-
-        dest.write_str(&**year_str).map_err(Error::FormatRecord)?;
-
-        Ok(())
+        write!(
+            dest,
+            "{} {}:{}:{} {}",
+            day_str, hour_str, minute_str, second_str, year_str
+        )
+        .map_err(Error::FormatRecord)
     }
 }
 
@@ -360,100 +353,7 @@ impl Pattern for ShortDate {
             unsafe { std::str::from_utf8_unchecked(&year_str_bytes[2..4]) }
         };
 
-        dest.write_str(&**month_str).map_err(Error::FormatRecord)?;
-        dest.write_str("/").map_err(Error::FormatRecord)?;
-        dest.write_str(&**day_str).map_err(Error::FormatRecord)?;
-        dest.write_str("/").map_err(Error::FormatRecord)?;
-        dest.write_str(short_year_str)
-            .map_err(Error::FormatRecord)?;
-
-        Ok(())
-    }
-}
-
-/// A pattern that writes the short time of log records into the output.
-/// Examples: `22:28`, `09:53`.
-///
-/// This pattern corresponds to `{R}` or `{time-short}` in the pattern template
-/// string.
-#[derive(Clone, Debug, Default)]
-pub struct ShortTime {
-    _phantom: PhantomData<()>,
-}
-
-impl ShortTime {
-    /// Create a new `ShortTime` pattern.
-    pub fn new() -> Self {
-        Self {
-            _phantom: PhantomData::default(),
-        }
-    }
-}
-
-impl Pattern for ShortTime {
-    fn format(
-        &self,
-        record: &Record,
-        dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
-    ) -> crate::Result<()> {
-        let (hour_str, minute_str) = {
-            let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
-            let cached_time = time_cacher_lock.get(record.time());
-            (cached_time.hour_str(), cached_time.minute_str())
-        };
-
-        dest.write_str(&**hour_str).map_err(Error::FormatRecord)?;
-        dest.write_str(":").map_err(Error::FormatRecord)?;
-        dest.write_str(&**minute_str).map_err(Error::FormatRecord)?;
-
-        Ok(())
-    }
-}
-
-/// A pattern that writes the time of log records into the output. Examples:
-/// `22:28:02`, `09:53:41`.
-///
-/// This pattern corresponds to `{T}`, `{X}` or `{time}` in the pattern template
-/// string.
-#[derive(Clone, Debug, Default)]
-pub struct Time {
-    _phantom: PhantomData<()>,
-}
-
-impl Time {
-    /// Create a new `Time` pattern.
-    pub fn new() -> Self {
-        Self {
-            _phantom: PhantomData::default(),
-        }
-    }
-}
-
-impl Pattern for Time {
-    fn format(
-        &self,
-        record: &Record,
-        dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
-    ) -> crate::Result<()> {
-        let (hour_str, minute_str, second_str) = {
-            let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
-            let cached_time = time_cacher_lock.get(record.time());
-            (
-                cached_time.hour_str(),
-                cached_time.minute_str(),
-                cached_time.second_str(),
-            )
-        };
-
-        dest.write_str(&**hour_str).map_err(Error::FormatRecord)?;
-        dest.write_str(":").map_err(Error::FormatRecord)?;
-        dest.write_str(&**minute_str).map_err(Error::FormatRecord)?;
-        dest.write_str(":").map_err(Error::FormatRecord)?;
-        dest.write_str(&**second_str).map_err(Error::FormatRecord)?;
-
-        Ok(())
+        write!(dest, "{}/{}/{}", month_str, day_str, short_year_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -549,6 +449,37 @@ impl Pattern for Hour {
     ) -> crate::Result<()> {
         let hour_str = LOCAL_TIME_CACHER.lock().get(record.time()).hour_str();
         dest.write_str(&**hour_str).map_err(Error::FormatRecord)
+    }
+}
+
+/// A pattern that writes the hour in 12-hour format of log records into the
+/// output. Examples: `01`, `12`.
+///
+/// This pattern corresponds to `{I}` or `{hour-12}` in the pattern template
+/// string.
+#[derive(Clone, Debug, Default)]
+pub struct Hour12 {
+    _phantom: PhantomData<()>,
+}
+
+impl Hour12 {
+    /// Create a new `Hour12` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for Hour12 {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let hour_12_str = LOCAL_TIME_CACHER.lock().get(record.time()).hour_12_str();
+        dest.write_str(&**hour_12_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -702,6 +633,19 @@ impl Nanosecond {
     }
 }
 
+impl Pattern for Nanosecond {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let time = chrono::DateTime::<chrono::Local>::from(record.time());
+        dest.write_fmt(format_args!("{:09}", time.nanosecond()))
+            .map_err(Error::FormatRecord)
+    }
+}
+
 /// A pattern that writes "AM" or "PM" into the output according to the
 /// timestamp of a log record. Example: `AM`, `PM`.
 ///
@@ -738,15 +682,153 @@ impl Pattern for Ampm {
     }
 }
 
-impl Pattern for Nanosecond {
+/// A pattern that writes the time of log records in 12-hour format into the
+/// output. Examples: `02:55:02 PM`.
+///
+/// This pattern corresponds to `{r}` or `{time-12}` in the pattern template
+/// string.
+#[derive(Clone, Debug, Default)]
+pub struct Time12 {
+    ampm: Ampm,
+}
+
+impl Time12 {
+    /// Create a new `Time12` pattern.
+    pub fn new() -> Self {
+        Self { ampm: Ampm::new() }
+    }
+}
+
+impl Pattern for Time12 {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let (hour_str, minute_str, second_str) = {
+            let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
+            let cached_time = time_cacher_lock.get(record.time());
+            (
+                cached_time.hour_12_str(),
+                cached_time.minute_str(),
+                cached_time.second_str(),
+            )
+        };
+
+        write!(dest, "{}:{}:{}", hour_str, minute_str, second_str).map_err(Error::FormatRecord)?;
+
+        dest.write_str(" ").map_err(Error::FormatRecord)?;
+        self.ampm.format(record, dest, ctx)?;
+
+        Ok(())
+    }
+}
+
+/// A pattern that writes the short time of log records into the output.
+/// Examples: `22:28`, `09:53`.
+///
+/// This pattern corresponds to `{R}` or `{time-short}` in the pattern template
+/// string.
+#[derive(Clone, Debug, Default)]
+pub struct ShortTime {
+    _phantom: PhantomData<()>,
+}
+
+impl ShortTime {
+    /// Create a new `ShortTime` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for ShortTime {
     fn format(
         &self,
         record: &Record,
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let time = chrono::DateTime::<chrono::Local>::from(record.time());
-        dest.write_fmt(format_args!("{:09}", time.nanosecond()))
+        let (hour_str, minute_str) = {
+            let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
+            let cached_time = time_cacher_lock.get(record.time());
+            (cached_time.hour_str(), cached_time.minute_str())
+        };
+
+        write!(dest, "{}:{}", hour_str, minute_str).map_err(Error::FormatRecord)
+    }
+}
+
+/// A pattern that writes the time of log records into the output. Examples:
+/// `22:28:02`, `09:53:41`.
+///
+/// This pattern corresponds to `{T}`, `{X}` or `{time}` in the pattern template
+/// string.
+#[derive(Clone, Debug, Default)]
+pub struct Time {
+    _phantom: PhantomData<()>,
+}
+
+impl Time {
+    /// Create a new `Time` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for Time {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let (hour_str, minute_str, second_str) = {
+            let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
+            let cached_time = time_cacher_lock.get(record.time());
+            (
+                cached_time.hour_str(),
+                cached_time.minute_str(),
+                cached_time.second_str(),
+            )
+        };
+
+        write!(dest, "{}:{}:{}", hour_str, minute_str, second_str).map_err(Error::FormatRecord)
+    }
+}
+
+/// A pattern that writes the timezone offset of log records into the output.
+/// Examples: `+08:00`, `+00:00`, `-06:00`.
+///
+/// This pattern corresponds to `{z}` or `{tz-offset}` in the pattern template
+/// string.
+#[derive(Clone, Debug, Default)]
+pub struct TzOffset {
+    _phantom: PhantomData<()>,
+}
+
+impl TzOffset {
+    /// Create a new `TzOffset` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for TzOffset {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let tz_offset_str = LOCAL_TIME_CACHER.lock().get(record.time()).tz_offset_str();
+        dest.write_str(&**tz_offset_str)
             .map_err(Error::FormatRecord)
     }
 }
