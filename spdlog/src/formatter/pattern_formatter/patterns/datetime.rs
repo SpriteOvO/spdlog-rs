@@ -833,6 +833,40 @@ impl Pattern for TzOffset {
     }
 }
 
+/// A pattern that writes the unix timestamp of log records into the output.
+/// Examples: `1528834770`.
+///
+/// This pattern corresponds to `{E}` or `{unix}` in the pattern template
+/// string.
+pub struct UnixTimestamp {
+    _phantom: PhantomData<()>,
+}
+
+impl UnixTimestamp {
+    /// Create a new `UnixTimestamp` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for UnixTimestamp {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let unix_timestamp_str = LOCAL_TIME_CACHER
+            .lock()
+            .get(record.time())
+            .unix_timestamp_str();
+        dest.write_str(&**unix_timestamp_str)
+            .map_err(Error::FormatRecord)
+    }
+}
+
 #[derive(Clone, Debug)]
 struct WeekdayNameBase {
     weekday_names: [&'static str; 7],

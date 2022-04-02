@@ -49,6 +49,7 @@ struct CacheValues {
     second: RefCell<Option<u32>>,
     second_str: RefCell<Option<Arc<String>>>,
     tz_offset_str: RefCell<Option<Arc<String>>>,
+    unix_timestamp_str: RefCell<Option<Arc<String>>>,
 }
 
 impl LocalTimeCacher {
@@ -156,6 +157,7 @@ impl<'a> TimeDate<'a> {
         hour => hour_str : "{:02}",
         minute => minute_str : "{:02}",
         second => second_str : "{:02}",
+        timestamp => unix_timestamp_str : "{}",
     }
 
     pub(crate) fn second(&self) -> u32 {
@@ -244,6 +246,7 @@ impl CacheValues {
             second: RefCell::new(None),
             second_str: RefCell::new(None),
             tz_offset_str: RefCell::new(None),
+            unix_timestamp_str: RefCell::new(None),
         }
     }
 }
