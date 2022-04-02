@@ -56,7 +56,7 @@ impl PatternContext {
     /// This function is reserved for use by the color range pattern. Other
     /// built-in patterns should not use this function. User-defined
     /// patterns cannot use this function due to type privacy.
-    fn _set_style_range(&mut self, style_range: Range<usize>) {
+    fn set_style_range(&mut self, style_range: Range<usize>) {
         let builder = std::mem::take(&mut self.fmt_info_builder);
         self.fmt_info_builder = builder.style_range(style_range);
     }
