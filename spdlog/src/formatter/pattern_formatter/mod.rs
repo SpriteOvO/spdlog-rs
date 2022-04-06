@@ -36,9 +36,7 @@ where
     P: Pattern,
 {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
-        let mut ctx = PatternContext {
-            fmt_info_builder: FmtExtraInfoBuilder::default(),
-        };
+        let mut ctx = PatternContext::new(FmtExtraInfoBuilder::default());
         self.pattern.format(record, dest, &mut ctx)?;
         Ok(ctx.fmt_info_builder.build())
     }
@@ -51,6 +49,11 @@ pub struct PatternContext {
 }
 
 impl PatternContext {
+    /// Create a new `PatternContext` object.
+    fn new(fmt_info_builder: FmtExtraInfoBuilder) -> Self {
+        Self { fmt_info_builder }
+    }
+
     /// Set the style range of the log message written by the patterns.
     ///
     /// This function is reserved for use by the color range pattern. Other
@@ -231,6 +234,17 @@ macro_rules! tuple_pattern {
             }
         )+
     };
+}
+
+impl Pattern for () {
+    fn format(
+        &self,
+        _record: &Record,
+        _dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        Ok(())
+    }
 }
 
 tuple_pattern! {
@@ -825,5 +839,127 @@ tuple_pattern! {
         (29) -> T29
         (30) -> T30
         (31) -> T31
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::Level;
+    use crate::SourceLocation;
+
+    pub(super) fn get_mock_record() -> Record<'static> {
+        Record::builder(Level::Info, "record_payload")
+            .logger_name("logger_name")
+            .source_location(Some(SourceLocation::__new("module", "file", 10, 20)))
+            .build()
+    }
+
+    pub(super) fn test_pattern<P, T>(pattern: P, formatted: T, style_range: Option<Range<usize>>)
+    where
+        P: Pattern,
+        T: AsRef<str>,
+    {
+        let record = get_mock_record();
+        let mut output = StringBuf::new();
+        let mut ctx = PatternContext::new(FmtExtraInfoBuilder::default());
+
+        let format_result = pattern.format(&record, &mut output, &mut ctx);
+        assert!(format_result.is_ok());
+
+        assert_eq!(output.as_str(), formatted.as_ref());
+
+        let fmt_info = ctx.fmt_info_builder.build();
+        assert_eq!(fmt_info.style_range(), style_range);
+    }
+
+    #[test]
+    fn test_string_as_pattern() {
+        test_pattern(String::from("literal"), "literal", None);
+    }
+
+    #[test]
+    fn test_str_as_pattern() {
+        test_pattern("literal", "literal", None);
+    }
+
+    #[test]
+    fn test_pattern_ref_as_pattern() {
+        test_pattern(&String::from("literal"), "literal", None);
+    }
+
+    #[test]
+    fn test_pattern_mut_as_pattern() {
+        test_pattern(&mut String::from("literal"), "literal", None);
+    }
+
+    #[test]
+    fn test_box_as_pattern() {
+        test_pattern(Box::new(String::from("literal")), "literal", None);
+    }
+
+    #[test]
+    fn test_arc_as_pattern() {
+        test_pattern(Arc::new(String::from("literal")), "literal", None);
+    }
+
+    #[test]
+    fn test_slice_as_pattern() {
+        let pat: &[String] = &[String::from("literal1"), String::from("literal2")];
+        test_pattern(pat, "literal1literal2", None);
+    }
+
+    #[test]
+    fn test_empty_slice_as_pattern() {
+        let pat: &[String] = &[];
+        test_pattern(pat, "", None);
+    }
+
+    #[test]
+    fn test_array_as_pattern() {
+        let pat: [String; 3] = [
+            String::from("literal1"),
+            String::from("literal2"),
+            String::from("literal3"),
+        ];
+        test_pattern(pat, "literal1literal2literal3", None);
+    }
+
+    #[test]
+    fn test_empty_array_as_pattern() {
+        let pat: [String; 0] = [];
+        test_pattern(pat, "", None);
+    }
+
+    #[test]
+    fn test_vec_as_pattern() {
+        let pat = vec![
+            String::from("literal1"),
+            String::from("literal2"),
+            String::from("literal3"),
+        ];
+        test_pattern(pat, "literal1literal2literal3", None);
+    }
+
+    #[test]
+    fn test_empty_vec_as_pattern() {
+        let pat: Vec<String> = vec![];
+        test_pattern(pat, "", None);
+    }
+
+    #[test]
+    fn test_tuple_as_pattern() {
+        let pat = (
+            String::from("literal1"),
+            "literal2",
+            String::from("literal3"),
+        );
+        test_pattern(pat, "literal1literal2literal3", None);
+    }
+
+    #[test]
+    fn test_unit_as_pattern() {
+        test_pattern((), "", None);
     }
 }
