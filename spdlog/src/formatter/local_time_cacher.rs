@@ -1,5 +1,6 @@
 use std::{
     cell::{RefCell, RefMut},
+    sync::Arc,
     time::SystemTime,
 };
 
@@ -35,11 +36,20 @@ struct CacheValues {
     is_leap_second: bool,
     full_second_str: RefCell<Option<String>>,
     year: RefCell<Option<i32>>,
+    year_str: RefCell<Option<Arc<String>>>,
     month: RefCell<Option<u32>>,
+    month_str: RefCell<Option<Arc<String>>>,
     day: RefCell<Option<u32>>,
+    day_str: RefCell<Option<Arc<String>>>,
     hour: RefCell<Option<u32>>,
+    hour_str: RefCell<Option<Arc<String>>>,
+    hour_12_str: RefCell<Option<Arc<String>>>,
     minute: RefCell<Option<u32>>,
+    minute_str: RefCell<Option<Arc<String>>>,
     second: RefCell<Option<u32>>,
+    second_str: RefCell<Option<Arc<String>>>,
+    tz_offset_str: RefCell<Option<Arc<String>>>,
+    unix_timestamp_str: RefCell<Option<Arc<String>>>,
 }
 
 impl LocalTimeCacher {
@@ -89,6 +99,18 @@ macro_rules! impl_cache_fields_getter {
     };
 }
 
+macro_rules! impl_cache_fields_str_getter {
+    ( $($field:ident => $str_field:ident : $fmt:literal),* $(,)? ) => {
+        $(pub(crate) fn $str_field(&self) -> Arc<String> {
+            self.cached
+                .$str_field
+                .borrow_mut()
+                .get_or_insert_with(|| Arc::new(format!($fmt, self.cached.local_time.$field())))
+                .clone()
+        })*
+    };
+}
+
 impl<'a> TimeDate<'a> {
     fn new(cached: &'a mut CacheValues, nanosecond: u32, millisecond: u32) -> Self {
         Self {
@@ -128,6 +150,16 @@ impl<'a> TimeDate<'a> {
         minute: u32,
     }
 
+    impl_cache_fields_str_getter! {
+        year => year_str : "{:04}",
+        month => month_str : "{:02}",
+        day => day_str : "{:02}",
+        hour => hour_str : "{:02}",
+        minute => minute_str : "{:02}",
+        second => second_str : "{:02}",
+        timestamp => unix_timestamp_str : "{}",
+    }
+
     pub(crate) fn second(&self) -> u32 {
         *self.cached.second.borrow_mut().get_or_insert_with(|| {
             if !self.cached.is_leap_second {
@@ -146,6 +178,40 @@ impl<'a> TimeDate<'a> {
 
     pub(crate) fn millisecond(&self) -> u32 {
         self.millisecond
+    }
+
+    pub(crate) fn hour_12_str(&self) -> Arc<String> {
+        let hour = self.hour();
+        let hour_12 = if hour == 0 || hour == 12 {
+            12
+        } else if hour < 12 {
+            hour
+        } else {
+            hour - 12
+        };
+
+        self.cached
+            .hour_12_str
+            .borrow_mut()
+            .get_or_insert_with(|| Arc::new(format!("{:02}", hour_12)))
+            .clone()
+    }
+
+    pub(crate) fn tz_offset_str(&self) -> Arc<String> {
+        let offset_secs = self.cached.local_time.offset().local_minus_utc();
+        self.cached
+            .tz_offset_str
+            .borrow_mut()
+            .get_or_insert_with(|| {
+                let sign_str = if offset_secs >= 0 { "+" } else { "-" };
+                let offset_hours = offset_secs.abs() / 3600;
+                let offset_minutes = offset_secs.abs() % 3600 / 60;
+                Arc::new(format!(
+                    "{}{:02}:{:02}",
+                    sign_str, offset_hours, offset_minutes
+                ))
+            })
+            .clone()
     }
 }
 
@@ -167,11 +233,20 @@ impl CacheValues {
             is_leap_second,
             full_second_str: RefCell::new(None),
             year: RefCell::new(None),
+            year_str: RefCell::new(None),
             month: RefCell::new(None),
+            month_str: RefCell::new(None),
             day: RefCell::new(None),
+            day_str: RefCell::new(None),
             hour: RefCell::new(None),
+            hour_str: RefCell::new(None),
+            hour_12_str: RefCell::new(None),
             minute: RefCell::new(None),
+            minute_str: RefCell::new(None),
             second: RefCell::new(None),
+            second_str: RefCell::new(None),
+            tz_offset_str: RefCell::new(None),
+            unix_timestamp_str: RefCell::new(None),
         }
     }
 }

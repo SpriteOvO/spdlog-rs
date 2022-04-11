@@ -1,5 +1,6 @@
 //! This module provides all the built-in patterns.
 
+mod color_range;
 mod datetime;
 mod full;
 mod level;
@@ -9,6 +10,7 @@ mod payload;
 mod process_id;
 mod thread_id;
 
+pub use color_range::*;
 pub use datetime::*;
 pub use full::*;
 pub use level::*;
