@@ -9,7 +9,6 @@ mod full_formatter;
 mod journal_formatter;
 mod local_time_cacher;
 mod pattern_formatter;
-mod utils;
 
 pub use full_formatter::*;
 #[cfg(all(target_os = "linux", feature = "libsystemd"))]

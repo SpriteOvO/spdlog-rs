@@ -867,6 +867,12 @@ impl Pattern for UnixTimestamp {
     }
 }
 
+impl Default for UnixTimestamp {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone, Debug)]
 struct WeekdayNameBase {
     weekday_names: [&'static str; 7],
