@@ -187,7 +187,7 @@ pub use env_level::EnvLevelError;
 pub use error::*;
 pub use level::*;
 #[cfg(feature = "log")]
-pub use log_crate_proxy::LogCrateProxy;
+pub use log_crate_proxy::*;
 pub use logger::*;
 pub use record::*;
 pub use source_location::*;
@@ -199,7 +199,7 @@ pub mod prelude {
     pub use super::{Level, LevelFilter, Logger, LoggerBuilder};
 }
 
-use std::result::Result as StdResult;
+use std::{panic, result::Result as StdResult};
 
 use cfg_if::cfg_if;
 
@@ -207,7 +207,6 @@ use sink::{
     Sink, {StdStream, StdStreamSink},
 };
 use sync::*;
-use terminal_style::StyleMode;
 
 /// The statically resolved log level filter.
 ///
@@ -258,17 +257,30 @@ pub(crate) const EOL: &str = "\n";
 #[cfg(windows)]
 pub(crate) const EOL: &str = "\r\n";
 
-static DEFAULT_LOGGER: Lazy<ArcSwap<Logger>> = Lazy::new(|| {
-    let stdout = StdStreamSink::new(StdStream::Stdout, StyleMode::Auto);
-    stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
+static DEFAULT_LOGGER: OnceCell<ArcSwap<Logger>> = OnceCell::new();
 
-    let stderr = StdStreamSink::new(StdStream::Stderr, StyleMode::Auto);
-    stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
+fn default_logger_ref() -> &'static ArcSwap<Logger> {
+    DEFAULT_LOGGER.get_or_init(|| {
+        let stdout = StdStreamSink::builder()
+            .std_stream(StdStream::Stdout)
+            .build()
+            .unwrap();
+        stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
 
-    let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
+        let stderr = StdStreamSink::builder()
+            .std_stream(StdStream::Stderr)
+            .build()
+            .unwrap();
+        stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
 
-    ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default())
-});
+        let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
+
+        let res = ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default());
+
+        flush_default_logger_at_exit();
+        res
+    })
+}
 
 /// Returns an [`Arc`] default logger.
 ///
@@ -295,7 +307,7 @@ static DEFAULT_LOGGER: Lazy<ArcSwap<Logger>> = Lazy::new(|| {
 /// critical!("this log will be written to `stderr`");
 /// ```
 pub fn default_logger() -> Arc<Logger> {
-    DEFAULT_LOGGER.load().clone()
+    default_logger_ref().load().clone()
 }
 
 /// Sets the given logger as the default logger, and returns the old default
@@ -314,7 +326,7 @@ pub fn default_logger() -> Arc<Logger> {
 /// info!(logger: old_logger, "this log will be handled by `old_logger`");
 /// ```
 pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
-    DEFAULT_LOGGER.swap(logger)
+    default_logger_ref().swap(logger)
 }
 
 /// Sets the given logger as the default logger.
@@ -480,7 +492,7 @@ pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
 /// For more details, please read documentation of [`log::set_logger`] and
 /// [`LogCrateProxy`].
 #[cfg(feature = "log")]
-pub fn init_log_crate_proxy() -> StdResult<(), log::SetLoggerError> {
+pub fn init_log_crate_proxy() -> StdResult<(), log_crate::SetLoggerError> {
     log::set_logger(log_crate_proxy())
 }
 
@@ -489,6 +501,42 @@ pub fn init_log_crate_proxy() -> StdResult<(), log::SetLoggerError> {
 pub fn log_crate_proxy() -> &'static LogCrateProxy {
     static PROXY: Lazy<LogCrateProxy> = Lazy::new(LogCrateProxy::new);
     &PROXY
+}
+
+fn flush_default_logger_at_exit() {
+    // Rust never calls `drop` for static variables.
+    //
+    // Setting up an exit handler gives us a chance to flush the default logger
+    // once at the program exit, thus we don't lose the last logs.
+
+    extern "C" fn handler() {
+        if let Some(default_logger) = DEFAULT_LOGGER.get() {
+            default_logger.load().flush()
+        }
+    }
+
+    fn try_atexit() -> bool {
+        use std::os::raw::c_int;
+
+        extern "C" {
+            fn atexit(cb: extern "C" fn()) -> c_int;
+        }
+
+        (unsafe { atexit(handler) }) == 0
+    }
+
+    fn hook_panic() {
+        let previous_hook = panic::take_hook();
+
+        panic::set_hook(Box::new(move |info| {
+            handler();
+            previous_hook(info);
+        }));
+    }
+
+    if !try_atexit() {
+        hook_panic() // at least
+    }
 }
 
 fn default_error_handler(from: impl AsRef<str>, error: Error) {

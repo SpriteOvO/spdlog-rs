@@ -5,10 +5,16 @@
 //! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 
 mod full_formatter;
+#[cfg(target_os = "linux")]
+mod journal_formatter;
+mod local_time_cacher;
 mod pattern_formatter;
 mod utils;
 
 pub use full_formatter::*;
+#[cfg(all(target_os = "linux", feature = "libsystemd"))]
+pub(crate) use journal_formatter::*;
+pub(crate) use local_time_cacher::*;
 pub use pattern_formatter::*;
 
 use std::ops::Range;

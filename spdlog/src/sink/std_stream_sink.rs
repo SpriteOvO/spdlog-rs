@@ -1,6 +1,7 @@
 //! Provides a std stream sink.
 
 use std::{
+    convert::Infallible,
     io::{self, Write},
     mem,
 };
@@ -86,21 +87,22 @@ pub struct StdStreamSink {
 }
 
 impl StdStreamSink {
-    /// Constructs a `StdStreamSink`.
-    pub fn new(std_stream: StdStream, style_mode: StyleMode) -> StdStreamSink {
-        let atty_stream = match std_stream {
-            StdStream::Stdout => atty::Stream::Stdout,
-            StdStream::Stderr => atty::Stream::Stderr,
-        };
-
-        StdStreamSink {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
-            dest: StdStreamDest::new(std_stream),
-            atty_stream,
-            should_render_style: Self::should_render_style(style_mode, atty_stream),
-            level_style_codes: LevelStyleCodes::default(),
+    /// Constructs a builder of `StdStreamSink`.
+    pub fn builder() -> StdStreamSinkBuilder<()> {
+        StdStreamSinkBuilder {
+            std_stream: (),
+            style_mode: StyleMode::Auto,
         }
+    }
+
+    /// Constructs a `StdStreamSink`.
+    #[deprecated(note = "it may be removed in the future, use `StdStreamSink::builder()` instead")]
+    pub fn new(std_stream: StdStream, style_mode: StyleMode) -> StdStreamSink {
+        Self::builder()
+            .std_stream(std_stream)
+            .style_mode(style_mode)
+            .build()
+            .unwrap()
     }
 
     /// Sets the style of the specified log level.
@@ -181,6 +183,96 @@ impl Sink for StdStreamSink {
     }
 }
 
+// --------------------------------------------------
+
+/// The builder of [`StdStreamSink`].
+#[doc = include_str!("../include/doc/generic-builder-note.md")]
+///
+/// # Examples
+///
+/// - Building a [`StdStreamSink`].
+///
+///   ```
+///   use spdlog::{
+///       sink::{StdStreamSink, StdStream},
+///       terminal_style::StyleMode
+///   };
+///
+///   let sink: spdlog::Result<StdStreamSink> = StdStreamSink::builder()
+///       .std_stream(StdStream::Stdout) // required
+///       /* .style_mode(StyleMode::Never) // optional, defaults to
+///                                        // `StyleMode::Auto` */
+///       .build();
+///   ```
+///
+/// - If any required parameters are missing, a compile-time error will be
+///   raised.
+///
+///   ```compile_fail
+///   use spdlog::{
+///       sink::{StdStreamSink, StdStream},
+///       terminal_style::StyleMode
+///   };
+///
+///   let sink: spdlog::Result<StdStreamSink> = StdStreamSink::builder()
+///       // .std_stream(StdStream::Stdout) // required
+///       .style_mode(StyleMode::Never) /* optional, defaults to
+///                                      * `StyleMode::Auto` */
+///       .build();
+///   ```
+pub struct StdStreamSinkBuilder<ArgSS> {
+    std_stream: ArgSS,
+    style_mode: StyleMode,
+}
+
+impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
+    /// Specifies the target standard stream.
+    ///
+    /// This parameter is required.
+    pub fn std_stream(self, std_stream: StdStream) -> StdStreamSinkBuilder<StdStream> {
+        StdStreamSinkBuilder {
+            std_stream,
+            style_mode: self.style_mode,
+        }
+    }
+
+    /// Specifies the style mode.
+    ///
+    /// This parameter is optional, and defaults to [`StyleMode::Auto`].
+    pub fn style_mode(self, style_mode: StyleMode) -> Self {
+        Self { style_mode, ..self }
+    }
+}
+
+impl StdStreamSinkBuilder<()> {
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required field `std_stream`\n\n\
+    ")]
+    pub fn build(self, _: Infallible) {}
+}
+
+impl StdStreamSinkBuilder<StdStream> {
+    /// Builds a [`StdStreamSink`].
+    pub fn build(self) -> Result<StdStreamSink> {
+        let atty_stream = match self.std_stream {
+            StdStream::Stdout => atty::Stream::Stdout,
+            StdStream::Stderr => atty::Stream::Stderr,
+        };
+
+        Ok(StdStreamSink {
+            level_filter: Atomic::new(LevelFilter::All),
+            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            dest: StdStreamDest::new(self.std_stream),
+            atty_stream,
+            should_render_style: StdStreamSink::should_render_style(self.style_mode, atty_stream),
+            level_style_codes: LevelStyleCodes::default(),
+        })
+    }
+}
+
+// --------------------------------------------------
 #[cfg(windows)]
 fn enable_ansi_escape_sequences() -> bool {
     crossterm::ansi_support::supports_ansi()

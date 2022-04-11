@@ -1,12 +1,13 @@
 //! Provides a full info formatter.
 
-use std::fmt::{self, Write};
+use std::{
+    fmt::{self, Write},
+    marker::PhantomData,
+};
 
-use chrono::prelude::*;
-
+use super::LOCAL_TIME_CACHER;
 use crate::{
-    formatter::{utils::cache::FormattedDateTimeCacher, FmtExtraInfo, Formatter},
-    sync::*,
+    formatter::{FmtExtraInfo, Formatter},
     Error, Record, StringBuf, EOL,
 };
 
@@ -28,19 +29,14 @@ use crate::{
 ///
 ///    `[2021-12-23 01:23:45.067] [info] [crate::mod, main.rs:2] log message`
 pub struct FullFormatter {
-    /// Cache the formatted date time of the last formatted record in second
-    /// precision.
-    ///
-    /// The key of the cacher is the second part of the timestamp of the last
-    /// formatted record.
-    local_time_cacher: SpinMutex<FormattedDateTimeCacher<i64>>,
+    _phantom: PhantomData<()>,
 }
 
 impl FullFormatter {
     /// Constructs a `FullFormatter`.
     pub fn new() -> FullFormatter {
         FullFormatter {
-            local_time_cacher: SpinMutex::new(FormattedDateTimeCacher::new()),
+            _phantom: PhantomData,
         }
     }
 
@@ -50,34 +46,12 @@ impl FullFormatter {
         dest: &mut StringBuf,
     ) -> Result<FmtExtraInfo, fmt::Error> {
         {
-            let utc_time = DateTime::<Utc>::from(record.time());
-
-            let mut local_time_cacher = self.local_time_cacher.lock();
-            let time_str = local_time_cacher.update(
-                record,
-                |dt| dt.timestamp(),
-                |dt| {
-                    format!(
-                        // `dt.format("%Y-%m-%d %H:%M:%S")` is slower than this way
-                        "{}-{:02}-{:02} {:02}:{:02}:{:02}",
-                        dt.year(),
-                        dt.month(),
-                        dt.day(),
-                        dt.hour(),
-                        dt.minute(),
-                        dt.second(),
-                    )
-                },
-            );
-
+            let mut local_time_cacher = LOCAL_TIME_CACHER.lock();
+            let time = local_time_cacher.get(record.time());
             dest.write_str("[")?;
-            dest.write_str(time_str)?;
+            dest.write_str(&time.full_second_str())?;
             dest.write_str(".")?;
-            write!(
-                dest,
-                "{:03}",
-                utc_time.nanosecond() % 1_000_000_000 / 1_000_000
-            )?;
+            write!(dest, "{:03}", time.millisecond())?;
             dest.write_str("] [")?;
         }
 
@@ -125,6 +99,7 @@ impl Default for FullFormatter {
 
 #[cfg(test)]
 mod tests {
+    use chrono::prelude::*;
 
     use super::*;
     use crate::{Level, EOL};
