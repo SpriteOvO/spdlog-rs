@@ -63,7 +63,7 @@ crossbeam = "0.8.1"
 log = "=0.4.14"
 slog = "=2.7.0"
 sloggers = "=2.1.1"
-log4rs = "=1.0.0"
+log4rs = "=1.1.0"
 fern = "=0.6.0"
 flexi_logger = "=0.22.2"
 
