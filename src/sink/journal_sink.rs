@@ -1,4 +1,4 @@
-use std::{io, mem, os::raw::c_int};
+use std::{io, os::raw::c_int};
 
 use libsystemd_sys::{const_iovec, journal as ffi};
 
@@ -126,9 +126,8 @@ impl Sink for JournalSink {
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
     }
 }
 

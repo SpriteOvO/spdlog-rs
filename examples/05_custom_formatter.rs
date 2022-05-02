@@ -1,9 +1,8 @@
-use std::{fmt::Write, sync::Arc};
+use std::fmt::Write;
 
 use spdlog::{
     formatter::{FmtExtraInfo, Formatter},
     prelude::*,
-    sink::Sink,
     Record, StringBuf,
 };
 
@@ -40,29 +39,13 @@ impl Formatter for CustomFormatter {
 fn main() {
     info!("hello, world");
 
-    let default_logger: Arc<Logger> = spdlog::default_logger();
-
     // Building a custom formatter.
     let new_formatter: Box<CustomFormatter> = Box::new(CustomFormatter::new());
 
-    // Setting new formatter for each sink of the default logger and saving old
-    // formatters.
-    let old_formatters: Vec<Box<dyn Formatter>> = default_logger
-        .sinks()
-        .iter()
-        .map(|sink: &Arc<dyn Sink>| sink.swap_formatter(new_formatter.clone()))
-        .collect::<Vec<Box<dyn Formatter>>>();
-
-    info!("hello, world");
-
-    // Setting back old formatters.
-    default_logger
-        .sinks()
-        .iter()
-        .zip(old_formatters.into_iter())
-        .for_each(|(sink, formatter): (&Arc<dyn Sink>, Box<dyn Formatter>)| {
-            sink.set_formatter(formatter)
-        });
+    // Setting the new formatter for each sink of the default logger.
+    for sink in spdlog::default_logger().sinks() {
+        sink.set_formatter(new_formatter.clone())
+    }
 
     info!("hello, world");
 }

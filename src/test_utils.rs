@@ -1,7 +1,7 @@
-use std::{env, fmt::Write, fs, mem, path::PathBuf};
+use std::{env, fmt::Write, fs, path::PathBuf};
 
 use crate::{
-    formatter::{FmtExtraInfo, Formatter, FullFormatter},
+    formatter::{FmtExtraInfo, Formatter},
     sink::Sink,
     sync::*,
     Error, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
@@ -19,7 +19,6 @@ pub static TEST_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
 
 pub struct CounterSink {
     level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
     log_counter: AtomicUsize,
     flush_counter: AtomicUsize,
     payloads: Mutex<Vec<String>>,
@@ -33,7 +32,6 @@ impl CounterSink {
     pub fn new() -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
             log_counter: AtomicUsize::new(0),
             flush_counter: AtomicUsize::new(0),
             payloads: Mutex::new(vec![]),
@@ -83,9 +81,8 @@ impl Sink for CounterSink {
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
+    fn set_formatter(&self, _formatter: Box<dyn Formatter>) {
+        // no-op
     }
 }
 

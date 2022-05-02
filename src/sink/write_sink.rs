@@ -1,4 +1,4 @@
-use std::{io::Write, mem};
+use std::io::Write;
 
 use crate::{
     formatter::{Formatter, FullFormatter},
@@ -111,9 +111,8 @@ where
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
     }
 }
 

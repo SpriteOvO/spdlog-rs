@@ -7,7 +7,6 @@ use std::{
     fs::{self, File},
     hash::Hash,
     io::{BufWriter, Write},
-    mem,
     path::{Path, PathBuf},
     time::{Duration, SystemTime},
 };
@@ -237,9 +236,8 @@ impl Sink for RotatingFileSink {
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
     }
 }
 

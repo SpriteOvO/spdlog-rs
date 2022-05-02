@@ -3,7 +3,6 @@
 use std::{
     convert::Infallible,
     io::{self, Write},
-    mem,
 };
 
 use if_chain::if_chain;
@@ -177,9 +176,8 @@ impl Sink for StdStreamSink {
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
     }
 }
 
