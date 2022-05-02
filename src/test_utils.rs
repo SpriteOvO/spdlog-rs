@@ -26,7 +26,7 @@ pub struct CounterSink {
 }
 
 // no modifications formatter, it will write `record` to `dest` as is.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct NoModFormatter {}
 
 impl CounterSink {
@@ -107,6 +107,10 @@ impl Formatter for NoModFormatter {
             .map_err(Error::FormatRecord)?;
 
         Ok(FmtExtraInfo::new())
+    }
+
+    fn clone_box(&self) -> Box<dyn Formatter> {
+        Box::new(self.clone())
     }
 }
 

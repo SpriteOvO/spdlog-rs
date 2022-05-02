@@ -7,6 +7,7 @@ use crate::{
     Error, Record, StringBuf, EOL,
 };
 
+#[derive(Clone)]
 pub(crate) struct JournalFormatter {}
 
 impl JournalFormatter {
@@ -45,6 +46,10 @@ impl JournalFormatter {
 impl Formatter for JournalFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
         self.format_impl(record, dest).map_err(Error::FormatRecord)
+    }
+
+    fn clone_box(&self) -> Box<dyn Formatter> {
+        Box::new(self.clone())
     }
 }
 

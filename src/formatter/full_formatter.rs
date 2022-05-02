@@ -28,6 +28,7 @@ use crate::{
 ///  - If crate feature `source-location` is enabled:
 ///
 ///    `[2021-12-23 01:23:45.067] [info] [crate::mod, main.rs:2] log message`
+#[derive(Clone)]
 pub struct FullFormatter {
     _phantom: PhantomData<()>,
 }
@@ -88,6 +89,10 @@ impl FullFormatter {
 impl Formatter for FullFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
         self.format_impl(record, dest).map_err(Error::FormatRecord)
+    }
+
+    fn clone_box(&self) -> Box<dyn Formatter> {
+        Box::new(self.clone())
     }
 }
 

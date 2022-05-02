@@ -26,8 +26,11 @@ use crate::{Record, Result, StringBuf};
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 pub trait Formatter: Send + Sync {
-    /// Format a log record.
+    /// Formats a log record.
     fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo>;
+
+    /// Clones self into a boxed trait object.
+    fn clone_box(&self) -> Box<dyn Formatter>;
 }
 
 /// Extra information for formatted text.
