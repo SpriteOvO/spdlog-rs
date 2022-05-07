@@ -8,11 +8,9 @@ use std::{
 use if_chain::if_chain;
 
 use crate::{
-    formatter::{Formatter, FullFormatter},
-    sink::Sink,
-    sync::*,
+    sink::{helper, Sink},
     terminal_style::{LevelStyleCodes, Style, StyleMode},
-    Error, Level, LevelFilter, Record, Result, StringBuf,
+    Error, Level, Record, Result, StringBuf,
 };
 
 /// An enum representing the available standard streams.
@@ -77,8 +75,7 @@ impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 ///
 /// Note that this sink always flushes the buffer once with each logging.
 pub struct StdStreamSink {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
     dest: StdStreamDest<io::Stdout, io::Stderr>,
     atty_stream: atty::Stream,
     should_render_style: bool,
@@ -130,8 +127,11 @@ impl Sink for StdStreamSink {
         }
 
         let mut string_buf = StringBuf::new();
-
-        let extra_info = self.formatter.read().format(record, &mut string_buf)?;
+        let extra_info = self
+            .common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         let mut dest = self.dest.lock();
 
@@ -168,17 +168,7 @@ impl Sink for StdStreamSink {
         self.dest.lock().flush().map_err(Error::FlushBuffer)
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
 // --------------------------------------------------
@@ -260,8 +250,7 @@ impl StdStreamSinkBuilder<StdStream> {
         };
 
         Ok(StdStreamSink {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            common_impl: helper::CommonImpl::new(),
             dest: StdStreamDest::new(self.std_stream),
             atty_stream,
             should_render_style: StdStreamSink::should_render_style(self.style_mode, atty_stream),

@@ -3,24 +3,20 @@ use std::{ffi::OsStr, iter::once, os::windows::ffi::OsStrExt};
 use winapi::um::debugapi::OutputDebugStringW;
 
 use crate::{
-    formatter::{Formatter, FullFormatter},
-    sink::Sink,
-    sync::*,
-    LevelFilter, Record, Result, StringBuf,
+    sink::{helper, Sink},
+    Record, Result, StringBuf,
 };
 
 /// A sink with a win32 API `OutputDebugStringW` as the target.
 pub struct WinDebugSink {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
 }
 
 impl WinDebugSink {
     /// Constructs a `WinDebugSink`.
     pub fn new() -> WinDebugSink {
         WinDebugSink {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            common_impl: helper::CommonImpl::new(),
         }
     }
 }
@@ -32,7 +28,10 @@ impl Sink for WinDebugSink {
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        self.common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         let wide: Vec<u16> = OsStr::new(&string_buf)
             .encode_wide()
@@ -49,17 +48,7 @@ impl Sink for WinDebugSink {
         Ok(())
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
 impl Default for WinDebugSink {

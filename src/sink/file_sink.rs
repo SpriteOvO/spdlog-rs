@@ -9,10 +9,9 @@ use std::{
 };
 
 use crate::{
-    formatter::{Formatter, FullFormatter},
-    sink::Sink,
+    sink::{helper, Sink},
     sync::*,
-    utils, Error, LevelFilter, Record, Result, StringBuf,
+    utils, Error, Record, Result, StringBuf,
 };
 
 /// A sink with a file as the target.
@@ -23,8 +22,7 @@ use crate::{
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 pub struct FileSink {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
     file: SpinMutex<BufWriter<File>>,
 }
 
@@ -66,7 +64,10 @@ impl Sink for FileSink {
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        self.common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         self.file
             .lock()
@@ -80,26 +81,14 @@ impl Sink for FileSink {
         self.file.lock().flush().map_err(Error::FlushBuffer)
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
 impl Drop for FileSink {
     fn drop(&mut self) {
         if let Err(err) = self.file.lock().flush() {
-            // Sinks do not have an error handler, because it would increase complexity and
-            // the error is not common. So currently users cannot handle this error by
-            // themselves.
-            crate::default_error_handler("FileSink", Error::FlushBuffer(err));
+            self.common_impl
+                .non_throwable_error("FileSink", Error::FlushBuffer(err))
         }
     }
 }
@@ -180,8 +169,7 @@ impl FileSinkBuilder<PathBuf> {
         let file = utils::open_file(self.path, self.truncate)?;
 
         let sink = FileSink {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            common_impl: helper::CommonImpl::new(),
             file: SpinMutex::new(BufWriter::new(file)),
         };
 

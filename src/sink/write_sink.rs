@@ -1,10 +1,9 @@
 use std::io::Write;
 
 use crate::{
-    formatter::{Formatter, FullFormatter},
-    prelude::*,
+    sink::{helper, Sink},
     sync::*,
-    Error, Record, Result, Sink, StringBuf,
+    Error, Record, Result, StringBuf,
 };
 
 /// A sink that writes log messages into an arbitrary `impl Write` object.
@@ -29,8 +28,7 @@ pub struct WriteSink<W>
 where
     W: Write + Send,
 {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
     target: Mutex<W>,
 }
 
@@ -42,8 +40,7 @@ where
     /// Write` object.
     pub fn new(target: W) -> Self {
         Self {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            common_impl: helper::CommonImpl::new(),
             target: Mutex::new(target),
         }
     }
@@ -90,7 +87,10 @@ where
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        self.common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         self.lock_target()
             .write_all(string_buf.as_bytes())
@@ -103,17 +103,7 @@ where
         self.lock_target().flush().map_err(Error::FlushBuffer)
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
 impl<W> Drop for WriteSink<W>
@@ -123,10 +113,7 @@ where
     fn drop(&mut self) {
         let flush_result = self.lock_target().flush().map_err(Error::FlushBuffer);
         if let Err(err) = flush_result {
-            // Sinks do not have an error handler, because it would increase complexity and
-            // the error is not common. So currently users cannot handle this error by
-            // themselves.
-            crate::default_error_handler("WriteSink", err);
+            self.common_impl.non_throwable_error("WriteSink", err)
         }
     }
 }
@@ -134,7 +121,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::*;
+    use crate::{prelude::*, test_utils::*};
 
     #[test]
     fn validation() {

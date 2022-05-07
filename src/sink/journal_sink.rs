@@ -3,10 +3,9 @@ use std::{io, os::raw::c_int};
 use libsystemd_sys::{const_iovec, journal as ffi};
 
 use crate::{
-    formatter::{Formatter, JournalFormatter},
-    sink::Sink,
-    sync::*,
-    Error, Level, LevelFilter, Record, Result, StdResult, StringBuf,
+    formatter::JournalFormatter,
+    sink::{helper, Sink},
+    Error, Level, Record, Result, StdResult, StringBuf,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -70,8 +69,7 @@ fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io
 /// | `Debug`    | `debug`   |
 /// | `Trace`    | `debug`   |
 pub struct JournalSink {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
 }
 
 impl JournalSink {
@@ -80,8 +78,7 @@ impl JournalSink {
     /// Constructs a `JournalSink`.
     pub fn new() -> Self {
         Self {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(JournalFormatter::new())),
+            common_impl: helper::CommonImpl::with_formatter(Box::new(JournalFormatter::new())),
         }
     }
 }
@@ -93,7 +90,10 @@ impl Sink for JournalSink {
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        self.common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         let kvs = [
             format!("MESSAGE={}", string_buf),
@@ -118,17 +118,7 @@ impl Sink for JournalSink {
         Ok(())
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
 impl Default for JournalSink {

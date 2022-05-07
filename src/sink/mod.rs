@@ -1,6 +1,7 @@
 //! Provides sinks to flexibly output log messages to specified targets.
 
 mod file_sink;
+mod helper;
 #[cfg(all(target_os = "linux", feature = "libsystemd"))]
 mod journal_sink;
 mod rotating_file_sink;

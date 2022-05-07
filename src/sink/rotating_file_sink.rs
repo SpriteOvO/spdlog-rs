@@ -14,10 +14,9 @@ use std::{
 use chrono::prelude::*;
 
 use crate::{
-    formatter::{Formatter, FullFormatter},
-    sink::Sink,
+    sink::{helper, Sink},
     sync::*,
-    utils, Error, LevelFilter, Record, Result, StringBuf,
+    utils, Error, Record, Result, StringBuf,
 };
 
 /// Rotation policies for [`RotatingFileSink`].
@@ -97,8 +96,7 @@ struct RotatorTimePointInner {
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 pub struct RotatingFileSink {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
     rotator: RotatorKind,
 }
 
@@ -220,7 +218,11 @@ impl Sink for RotatingFileSink {
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        self.common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
+
         self.rotator.log(record, &string_buf)
     }
 
@@ -228,26 +230,14 @@ impl Sink for RotatingFileSink {
         self.rotator.flush()
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
 impl Drop for RotatingFileSink {
     fn drop(&mut self) {
         if let Err(err) = self.rotator.drop_flush() {
-            // Sinks do not have an error handler, because it would increase complexity and
-            // the error is not common. So currently users cannot handle this error by
-            // themselves.
-            crate::default_error_handler("RotatingFileSink", err);
+            self.common_impl
+                .non_throwable_error("RotatingFileSink", err)
         }
     }
 }
@@ -782,8 +772,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
         };
 
         let res = RotatingFileSink {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            common_impl: helper::CommonImpl::new(),
             rotator,
         };
 
