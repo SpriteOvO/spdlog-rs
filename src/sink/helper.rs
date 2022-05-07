@@ -1,13 +1,25 @@
+use cfg_if::cfg_if;
+
 use crate::{
     formatter::{Formatter, FullFormatter},
     prelude::*,
     sync::*,
-    Error,
+    Error, ErrorHandler,
 };
+
+pub(crate) type SinkErrorHandler = Atomic<Option<ErrorHandler>>;
+
+cfg_if! {
+    if #[cfg(test)] {
+        use static_assertions::const_assert;
+        const_assert!(Atomic::<SinkErrorHandler>::is_lock_free());
+    }
+}
 
 pub(crate) struct CommonImpl {
     pub(crate) level_filter: Atomic<LevelFilter>,
     pub(crate) formatter: SpinRwLock<Box<dyn Formatter>>,
+    pub(crate) error_handler: SinkErrorHandler,
 }
 
 impl CommonImpl {
@@ -15,6 +27,7 @@ impl CommonImpl {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
             formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            error_handler: Atomic::new(None),
         }
     }
 
@@ -23,14 +36,15 @@ impl CommonImpl {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
             formatter: SpinRwLock::new(formatter),
+            error_handler: Atomic::new(None),
         }
     }
 
     pub(crate) fn non_throwable_error(&self, from: impl AsRef<str>, err: Error) {
-        // Sinks do not have an error handler, because it would increase complexity and
-        // the error is not common. So currently users cannot handle this error by
-        // themselves.
-        crate::default_error_handler(from, err);
+        match self.error_handler.load(Ordering::Relaxed) {
+            Some(handler) => handler(err),
+            None => crate::default_error_handler(from, err),
+        }
     }
 }
 
@@ -48,6 +62,10 @@ macro_rules! common_impl {
 
         fn set_formatter(&self, formatter: Box<dyn $crate::formatter::Formatter>) {
             *self.$($field).+.formatter.write() = formatter;
+        }
+
+        fn set_error_handler(&self, handler: Option<$crate::ErrorHandler>) {
+            self.$($field).+.error_handler.store(handler, $crate::sync::Ordering::Relaxed);
         }
     };
 }

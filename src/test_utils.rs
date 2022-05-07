@@ -4,7 +4,7 @@ use crate::{
     formatter::{FmtExtraInfo, Formatter},
     sink::Sink,
     sync::*,
-    Error, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
+    Error, ErrorHandler, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
 };
 
 pub static TEST_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
@@ -82,6 +82,10 @@ impl Sink for CounterSink {
     }
 
     fn set_formatter(&self, _formatter: Box<dyn Formatter>) {
+        // no-op
+    }
+
+    fn set_error_handler(&self, _handler: Option<ErrorHandler>) {
         // no-op
     }
 }

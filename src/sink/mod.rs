@@ -19,7 +19,7 @@ pub use std_stream_sink::*;
 pub use win_debug_sink::*;
 pub use write_sink::*;
 
-use crate::{formatter::Formatter, sync::*, Level, LevelFilter, Record, Result};
+use crate::{formatter::Formatter, sync::*, ErrorHandler, Level, LevelFilter, Record, Result};
 
 /// A trait for sinks.
 ///
@@ -55,6 +55,18 @@ pub trait Sink: Sync + Send {
 
     /// Sets the formatter.
     fn set_formatter(&self, formatter: Box<dyn Formatter>);
+
+    /// Sets a error handler.
+    ///
+    /// Any errors that occur in `Sink` will be returned as directly as possible
+    /// (e.g. returned to [`Logger`]), but some errors that are not likely to be
+    /// returned directly will call this error handler. Most of these errors are
+    /// uncommon.
+    ///
+    /// If no handler is set, errors will be print to `stderr` and then ignored.
+    ///
+    /// [`Logger`]: crate::logger::Logger
+    fn set_error_handler(&self, handler: Option<ErrorHandler>);
 }
 
 /// A container for [`Sink`]s.
