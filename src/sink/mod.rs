@@ -1,5 +1,36 @@
 //! Provides sinks to flexibly output log messages to specified targets.
+//!
+//! # Sink
+//!
+//! Sinks are the objects that actually write logs to their targets. Each sink
+//! should be responsible for only single target (e.g file, console, database),
+//! and each sink has its own private instance of [`Formatter`] object.
+//!
+//! A sink has its own level filter that is not shared with the logger, and a
+//! [`Logger`] can combine multiple [`Sink`]s.
+//!
+//! # Combined sink
+//!
+//! A combined sink is also a sink, but instead of having its own target and
+//! formatter, it combines other sinks (as sub-sinks).
+//!
+//! Operations on a combined sink will be forwarded to its sub-sinks according
+//! to the implementation.
+//!
+//! # Asynchronous combined sink
+//!
+//! Asynchronous combined sink is a type of combined sink. Expensive operations
+//! (such as `log` and `flush`) on asynchronous sinks will be performed
+//! asynchronously on other threads.
+//!
+//! Since there is no waiting, errors that occur while performing asynchronous
+//! operations will not be returned to the upper level, and instead the error
+//! handler of the sink will be called.
+//!
+//! [`Logger`]: crate::logger::Logger
 
+#[cfg(feature = "multi-thread")]
+pub(crate) mod async_sink;
 mod file_sink;
 mod helper;
 #[cfg(all(target_os = "linux", feature = "libsystemd"))]
@@ -10,6 +41,8 @@ mod std_stream_sink;
 mod win_debug_sink;
 mod write_sink;
 
+#[cfg(feature = "multi-thread")]
+pub use async_sink::*;
 pub use file_sink::*;
 #[cfg(all(target_os = "linux", feature = "libsystemd"))]
 pub use journal_sink::*;
@@ -22,16 +55,6 @@ pub use write_sink::*;
 use crate::{formatter::Formatter, sync::*, ErrorHandler, Level, LevelFilter, Record, Result};
 
 /// A trait for sinks.
-///
-/// Sinks are the objects that actually write logs to their targets. Each sink
-/// should be responsible for only single target (e.g file, console, database),
-/// and each sink has its own private instance of [`Formatter`] object.
-///
-/// A [`Logger`] can combine multiple [`Sink`]s.
-///
-/// A sink has its own level filter that is not shared with the logger.
-///
-/// [`Logger`]: crate::logger::Logger
 pub trait Sink: Sync + Send {
     /// Determines if a log message with the specified level would be logged.
     fn should_log(&self, level: Level) -> bool {

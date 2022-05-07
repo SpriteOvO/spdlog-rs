@@ -19,6 +19,7 @@ A fast and combinable Rust logging crate, inspired by the C++ logging library [s
     - ... (more targets are implementing, PRs are welcome)
     - Extendable with custom log targets.
  - Compatible with [log crate] (optional).
+ - Asynchronous support.
  - Configured via environment variable.
  - Custom formatting.
  - Log filtering - log levels can be modified in runtime as well as in compile time.

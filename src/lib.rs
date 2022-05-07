@@ -25,7 +25,7 @@
 //! [`println!`]. All log macros and common types are already under [`prelude`]
 //! module.
 //!
-//! [`Logger`] and [`Sink`] are the most important components of `spdlog-rs`.
+//! [`Logger`] and [`sink`] are the most important components of `spdlog-rs`.
 //! Make sure to read their documentation. In short, a logger contains a
 //! combination of sinks, and sinks implement writing log messages to actual
 //! targets.
@@ -63,6 +63,10 @@
 //! ## Examples
 //!
 //! See [./examples] directory.
+//!
+//! # Asynchronous support
+//!
+//! See [Asynchronous combined sink].
 //!
 //! # Configured via environment variable
 //!
@@ -139,6 +143,9 @@
 //!    [`RotatingFileSink`] in `spdlog-rs`. They correspond to rotation policies
 //!    [`RotationPolicy::Daily`] and [`RotationPolicy::Hourly`].
 //!
+//!  - `async_logger` in C++ `spdlog` is [`AsyncPoolSink`] in `spdlog-rs`. This
+//!    allows it to be used with synchronous sinks.
+//!
 //!  - Some sinks in C++ `spdlog` are not yet implemented in `spdlog-rs`. (Yes,
 //!    PRs are welcome)
 //!
@@ -153,11 +160,13 @@
 //! [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 //! [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
 //! [log crate]: https://crates.io/crates/log
+//! [Asynchronous combined sink]: sink/index.html#asynchronous-combined-sink
 //! [`FullFormatter`]: crate::formatter::FullFormatter
 //! [`RotatingFileSink`]: crate::sink::RotatingFileSink
 //! [`Formatter`]: crate::formatter::Formatter
 //! [`RotationPolicy::Daily`]: crate::sink::RotationPolicy::Daily
 //! [`RotationPolicy::Hourly`]: crate::sink::RotationPolicy::Hourly
+//! [`AsyncPoolSink`]: crate::sink::AsyncPoolSink
 
 // Credits: https://blog.wnut.pw/2020/03/24/documentation-and-unstable-rustdoc-features/
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
@@ -181,6 +190,8 @@ mod sync;
 pub mod terminal_style;
 #[cfg(test)]
 mod test_utils;
+#[cfg(feature = "multi-thread")]
+mod thread_pool;
 mod utils;
 
 pub use env_level::EnvLevelError;
@@ -192,6 +203,8 @@ pub use logger::*;
 pub use record::*;
 pub use source_location::*;
 pub use string_buf::StringBuf;
+#[cfg(feature = "multi-thread")]
+pub use thread_pool::*;
 
 /// Contains all log macros and common types.
 pub mod prelude {

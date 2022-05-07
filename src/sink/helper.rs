@@ -16,6 +16,8 @@ cfg_if! {
     }
 }
 
+pub(crate) const SINK_DEFAULT_LEVEL_FILTER: LevelFilter = LevelFilter::All;
+
 pub(crate) struct CommonImpl {
     pub(crate) level_filter: Atomic<LevelFilter>,
     pub(crate) formatter: SpinRwLock<Box<dyn Formatter>>,
@@ -25,7 +27,7 @@ pub(crate) struct CommonImpl {
 impl CommonImpl {
     pub(crate) fn new() -> Self {
         Self {
-            level_filter: Atomic::new(LevelFilter::All),
+            level_filter: Atomic::new(SINK_DEFAULT_LEVEL_FILTER),
             formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
             error_handler: Atomic::new(None),
         }
@@ -50,22 +52,41 @@ impl CommonImpl {
 
 macro_rules! common_impl {
     ( @Sink: $($field:ident).+ ) => {
+        $crate::sink::helper::common_impl!(@SinkCustom {
+            level_filter: $($field).+.level_filter,
+            formatter: $($field).+.formatter,
+            error_handler: $($field).+.error_handler,
+        });
+    };
+    ( @SinkCustom {
+        level_filter: $($level_filter:ident).+,
+        formatter: $($formatter:ident).+,
+        error_handler: $($error_handler:ident).+$(,)?
+    } ) => {
+        $crate::sink::helper::common_impl!(@SinkCustomInner@level_filter: $($level_filter).+);
+        $crate::sink::helper::common_impl!(@SinkCustomInner@formatter: $($formatter).+);
+        $crate::sink::helper::common_impl!(@SinkCustomInner@error_handler: $($error_handler).+);
+    };
+    ( @SinkCustomInner@level_filter: None ) => {};
+    ( @SinkCustomInner@level_filter: $($field:ident).+ ) => {
         fn level_filter(&self) -> $crate::LevelFilter {
-            self.$($field).+.level_filter.load($crate::sync::Ordering::Relaxed)
+            self.$($field).+.load($crate::sync::Ordering::Relaxed)
         }
 
         fn set_level_filter(&self, level_filter: $crate::LevelFilter) {
-            self.$($field).+
-                .level_filter
-                .store(level_filter, $crate::sync::Ordering::Relaxed);
+            self.$($field).+.store(level_filter, $crate::sync::Ordering::Relaxed);
         }
-
+    };
+    ( @SinkCustomInner@formatter: None ) => {};
+    ( @SinkCustomInner@formatter: $($field:ident).+ ) => {
         fn set_formatter(&self, formatter: Box<dyn $crate::formatter::Formatter>) {
-            *self.$($field).+.formatter.write() = formatter;
+            *self.$($field).+.write() = formatter;
         }
-
+    };
+    ( @SinkCustomInner@error_handler: None ) => {};
+    ( @SinkCustomInner@error_handler: $($field:ident).+ ) => {
         fn set_error_handler(&self, handler: Option<$crate::ErrorHandler>) {
-            self.$($field).+.error_handler.store(handler, $crate::sync::Ordering::Relaxed);
+            self.$($field).+.store(handler, $crate::sync::Ordering::Relaxed);
         }
     };
 }

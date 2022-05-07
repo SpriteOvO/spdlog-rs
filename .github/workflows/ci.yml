@@ -34,7 +34,7 @@ jobs:
         os: ['ubuntu-latest', 'windows-latest']
         features: ['', 'flexible-string']
     env:
-      ADD_FEATURES: 'log winapi libsystemd'
+      ADD_FEATURES: 'log winapi libsystemd multi-thread'
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
