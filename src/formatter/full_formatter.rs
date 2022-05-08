@@ -5,6 +5,8 @@ use std::{
     marker::PhantomData,
 };
 
+use cfg_if::cfg_if;
+
 use super::LOCAL_TIME_CACHER;
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
@@ -46,6 +48,12 @@ impl FullFormatter {
         record: &Record,
         dest: &mut StringBuf,
     ) -> Result<FmtExtraInfo, fmt::Error> {
+        cfg_if! {
+            if #[cfg(not(feature = "flexible-string"))] {
+                dest.reserve(crate::string_buf::RESERVE_SIZE);
+            }
+        }
+
         {
             let mut local_time_cacher = LOCAL_TIME_CACHER.lock();
             let time = local_time_cacher.get(record.time());

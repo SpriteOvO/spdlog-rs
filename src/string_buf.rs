@@ -30,10 +30,15 @@ cfg_if! {
     if #[cfg(feature = "flexible-string")] {
         // pub for hide type alias in doc
         #[doc(hidden)]
-        pub type StringBufInner = flexible_string::FlexibleString<250>;
+        pub type StringBufInner = flexible_string::FlexibleString<STACK_SIZE>;
     } else {
         // same as above
         #[doc(hidden)]
         pub type StringBufInner = String;
     }
 }
+
+#[allow(dead_code)]
+pub(crate) const STACK_SIZE: usize = 256;
+#[allow(dead_code)]
+pub(crate) const RESERVE_SIZE: usize = STACK_SIZE / 2;
