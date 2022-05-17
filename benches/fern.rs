@@ -19,7 +19,7 @@ static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
 });
 
 #[bench]
-fn bench_file(bencher: &mut Bencher) {
+fn bench_1_file(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("file.log");
 
     Dispatch::new()
@@ -38,4 +38,11 @@ fn bench_file(bencher: &mut Bencher) {
         .unwrap();
 
     bencher.iter(|| info!(bench_log_message!()))
+}
+
+unavailable_bench! {
+    bench_2_file_async,
+    bench_3_rotating_file_size,
+    bench_4_rotating_daily,
+    bench_5_level_off
 }

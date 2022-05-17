@@ -76,6 +76,10 @@ rustc_version = "0.4.0"
 name = "compare_with_cpp_spdlog"
 harness = false
 
+[[bench]]
+name = "compare_with_cpp_spdlog_async"
+harness = false
+
 [[example]]
 name = "06_compatible_with_log_crate"
 required-features = ["log"]

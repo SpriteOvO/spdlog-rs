@@ -38,7 +38,7 @@ If you have any questions or need help while using this crate, feel free to [ope
 
 ## Benchmarks
 
-Run `cargo +nightly bench` in the root directory of this repository for benchmarking.
+Run `cargo +nightly bench --features multi-thread` in the root directory of this repository for benchmarking.
 
 The following results are generated with `Windows 10 64 bit` and `Intel i9-10900KF CPU @ 3.70GHz`.
 

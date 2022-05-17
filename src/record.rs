@@ -134,6 +134,10 @@ cfg_if! {
             inner: RecordInner,
         }
 
+        // For internal (benchmark) use only.
+        #[doc(hidden)]
+        pub const __SIZE_OF_RECORD_OWNED: usize = std::mem::size_of::<RecordOwned>();
+
         impl RecordOwned {
             pub(crate) fn as_ref(&self) -> Record<'_> {
                 Record {
