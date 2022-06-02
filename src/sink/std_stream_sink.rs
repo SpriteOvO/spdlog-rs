@@ -227,8 +227,9 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// Specifies the style mode.
     ///
     /// This parameter is optional, and defaults to [`StyleMode::Auto`].
-    pub fn style_mode(self, style_mode: StyleMode) -> Self {
-        Self { style_mode, ..self }
+    pub fn style_mode(mut self, style_mode: StyleMode) -> Self {
+        self.style_mode = style_mode;
+        self
     }
 }
 

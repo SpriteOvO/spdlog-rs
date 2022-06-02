@@ -144,8 +144,9 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
     /// If it is true, the existing contents of the filewill be discarded.
     ///
     /// This parameter is optional, and defaults to `false`.
-    pub fn truncate(self, truncate: bool) -> Self {
-        FileSinkBuilder { truncate, ..self }
+    pub fn truncate(mut self, truncate: bool) -> Self {
+        self.truncate = truncate;
+        self
     }
 }
 

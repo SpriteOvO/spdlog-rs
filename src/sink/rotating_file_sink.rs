@@ -694,8 +694,9 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// Pass `0` for no limit.
     ///
     /// This parameter is optional, and defaults to `0`.
-    pub fn max_files(self, max_files: usize) -> Self {
-        RotatingFileSinkBuilder { max_files, ..self }
+    pub fn max_files(mut self, max_files: usize) -> Self {
+        self.max_files = max_files;
+        self
     }
 
     /// Specifies whether to rotate files once when constructing
@@ -707,11 +708,9 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// index.
     ///
     /// This parameter is optional, and defaults to `false`.
-    pub fn rotate_on_open(self, rotate_on_open: bool) -> Self {
-        RotatingFileSinkBuilder {
-            rotate_on_open,
-            ..self
-        }
+    pub fn rotate_on_open(mut self, rotate_on_open: bool) -> Self {
+        self.rotate_on_open = rotate_on_open;
+        self
     }
 }
 
