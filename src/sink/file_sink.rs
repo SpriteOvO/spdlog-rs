@@ -32,6 +32,7 @@ impl FileSink {
         FileSinkBuilder {
             path: (),
             truncate: false,
+            common_builder_impl: helper::CommonBuilderImpl::new(),
         }
     }
 
@@ -123,6 +124,7 @@ impl Drop for FileSink {
 ///       .build();
 ///   ```
 pub struct FileSinkBuilder<ArgPath> {
+    common_builder_impl: helper::CommonBuilderImpl,
     path: ArgPath,
     truncate: bool,
 }
@@ -136,6 +138,7 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
         P: Into<PathBuf>,
     {
         FileSinkBuilder {
+            common_builder_impl: self.common_builder_impl,
             path: path.into(),
             truncate: self.truncate,
         }
@@ -148,6 +151,8 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
         self.truncate = truncate;
         self
     }
+
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
 }
 
 impl FileSinkBuilder<()> {
@@ -170,7 +175,7 @@ impl FileSinkBuilder<PathBuf> {
         let file = utils::open_file(self.path, self.truncate)?;
 
         let sink = FileSink {
-            common_impl: helper::CommonImpl::new(),
+            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
             file: SpinMutex::new(BufWriter::new(file)),
         };
 

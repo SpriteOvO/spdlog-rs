@@ -86,6 +86,7 @@ impl StdStreamSink {
     /// Constructs a builder of `StdStreamSink`.
     pub fn builder() -> StdStreamSinkBuilder<()> {
         StdStreamSinkBuilder {
+            common_builder_impl: helper::CommonBuilderImpl::new(),
             std_stream: (),
             style_mode: StyleMode::Auto,
         }
@@ -209,6 +210,7 @@ impl Sink for StdStreamSink {
 ///       .build();
 ///   ```
 pub struct StdStreamSinkBuilder<ArgSS> {
+    common_builder_impl: helper::CommonBuilderImpl,
     std_stream: ArgSS,
     style_mode: StyleMode,
 }
@@ -219,6 +221,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// This parameter is required.
     pub fn std_stream(self, std_stream: StdStream) -> StdStreamSinkBuilder<StdStream> {
         StdStreamSinkBuilder {
+            common_builder_impl: self.common_builder_impl,
             std_stream,
             style_mode: self.style_mode,
         }
@@ -231,6 +234,8 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
         self.style_mode = style_mode;
         self
     }
+
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
 }
 
 impl StdStreamSinkBuilder<()> {
@@ -251,7 +256,7 @@ impl StdStreamSinkBuilder<StdStream> {
         };
 
         Ok(StdStreamSink {
-            common_impl: helper::CommonImpl::new(),
+            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
             dest: StdStreamDest::new(self.std_stream),
             atty_stream,
             should_render_style: StdStreamSink::should_render_style(self.style_mode, atty_stream),

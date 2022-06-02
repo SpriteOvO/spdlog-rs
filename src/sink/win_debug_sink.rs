@@ -16,7 +16,7 @@ impl WinDebugSink {
     /// Constructs a `WinDebugSink`.
     pub fn new() -> WinDebugSink {
         WinDebugSink {
-            common_impl: helper::CommonImpl::new(),
+            common_impl: helper::CommonImpl::from_builder(helper::CommonBuilderImpl::new()),
         }
     }
 }

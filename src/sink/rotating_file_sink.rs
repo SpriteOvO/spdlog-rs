@@ -143,6 +143,7 @@ pub struct RotatingFileSink {
 ///       .build();
 ///   ```
 pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
+    common_builder_impl: helper::CommonBuilderImpl,
     base_path: ArgBP,
     rotation_policy: ArgRP,
     max_files: usize,
@@ -153,6 +154,7 @@ impl RotatingFileSink {
     /// Constructs a builder of `RotatingFileSink`.
     pub fn builder() -> RotatingFileSinkBuilder<(), ()> {
         RotatingFileSinkBuilder {
+            common_builder_impl: helper::CommonBuilderImpl::new(),
             base_path: (),
             rotation_policy: (),
             max_files: 0,
@@ -664,6 +666,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
         P: Into<PathBuf>,
     {
         RotatingFileSinkBuilder {
+            common_builder_impl: self.common_builder_impl,
             base_path: base_path.into(),
             rotation_policy: self.rotation_policy,
             max_files: self.max_files,
@@ -679,6 +682,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
         rotation_policy: RotationPolicy,
     ) -> RotatingFileSinkBuilder<ArgBP, RotationPolicy> {
         RotatingFileSinkBuilder {
+            common_builder_impl: self.common_builder_impl,
             base_path: self.base_path,
             rotation_policy,
             max_files: self.max_files,
@@ -712,6 +716,8 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
         self.rotate_on_open = rotate_on_open;
         self
     }
+
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
 }
 
 impl<ArgRP> RotatingFileSinkBuilder<(), ArgRP> {
@@ -771,7 +777,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
         };
 
         let res = RotatingFileSink {
-            common_impl: helper::CommonImpl::new(),
+            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
             rotator,
         };
 

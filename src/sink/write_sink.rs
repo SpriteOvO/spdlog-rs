@@ -40,7 +40,7 @@ where
     /// Write` object.
     pub fn new(target: W) -> Self {
         Self {
-            common_impl: helper::CommonImpl::new(),
+            common_impl: helper::CommonImpl::from_builder(helper::CommonBuilderImpl::new()),
             target: Mutex::new(target),
         }
     }
