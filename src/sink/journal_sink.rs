@@ -75,11 +75,18 @@ pub struct JournalSink {
 impl JournalSink {
     const SYSLOG_LEVELS: SyslogLevels = SyslogLevels::new();
 
-    /// Constructs a `JournalSink`.
-    pub fn new() -> Self {
-        Self {
-            common_impl: helper::CommonImpl::with_formatter(Box::new(JournalFormatter::new())),
+    /// Constructs a builder of `JournalSink`.
+    pub fn builder() -> JournalSinkBuilder {
+        JournalSinkBuilder {
+            common_builder_impl: helper::CommonBuilderImpl::new(),
         }
+    }
+
+    /// Constructs a `JournalSink`.
+    #[allow(clippy::new_without_default)]
+    #[deprecated(note = "it may be removed in the future, use `JournalSink::builder()` instead")]
+    pub fn new() -> Self {
+        JournalSink::builder().build().unwrap()
     }
 }
 
@@ -121,8 +128,34 @@ impl Sink for JournalSink {
     helper::common_impl!(@Sink: common_impl);
 }
 
-impl Default for JournalSink {
-    fn default() -> Self {
-        Self::new()
+/// The builder of [`JournalSink`].
+///
+/// # Examples
+///
+/// - Building a [`JournalSink`].
+///
+///   ```
+///   use spdlog::{prelude::*, sink::JournalSink};
+///  
+///   let sink: spdlog::Result<JournalSink> = JournalSink::builder()
+///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
+///       .build();
+///   ```
+pub struct JournalSinkBuilder {
+    common_builder_impl: helper::CommonBuilderImpl,
+}
+
+impl JournalSinkBuilder {
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
+
+    /// Builds a [`JournalSink`].
+    pub fn build(self) -> Result<JournalSink> {
+        let sink = JournalSink {
+            common_impl: helper::CommonImpl::from_builder_with_formatter(
+                self.common_builder_impl,
+                || Box::new(JournalFormatter::new()),
+            ),
+        };
+        Ok(sink)
     }
 }

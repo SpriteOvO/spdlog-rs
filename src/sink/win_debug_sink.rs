@@ -13,11 +13,18 @@ pub struct WinDebugSink {
 }
 
 impl WinDebugSink {
-    /// Constructs a `WinDebugSink`.
-    pub fn new() -> WinDebugSink {
-        WinDebugSink {
-            common_impl: helper::CommonImpl::from_builder(helper::CommonBuilderImpl::new()),
+    /// Constructs a builder of `WinDebugSink`.
+    pub fn builder() -> WinDebugSinkBuilder {
+        WinDebugSinkBuilder {
+            common_builder_impl: helper::CommonBuilderImpl::new(),
         }
+    }
+
+    /// Constructs a `WinDebugSink`.
+    #[allow(clippy::new_without_default)]
+    #[deprecated(note = "it may be removed in the future, use `WinDebugSink::builder()` instead")]
+    pub fn new() -> WinDebugSink {
+        WinDebugSink::builder().build().unwrap()
     }
 }
 
@@ -51,8 +58,31 @@ impl Sink for WinDebugSink {
     helper::common_impl!(@Sink: common_impl);
 }
 
-impl Default for WinDebugSink {
-    fn default() -> Self {
-        Self::new()
+/// The builder of [`WinDebugSink`].
+///
+/// # Examples
+///
+/// - Building a [`WinDebugSink`].
+///
+///   ```
+///   use spdlog::{prelude::*, sink::WinDebugSink};
+///  
+///   let sink: spdlog::Result<WinDebugSink> = WinDebugSink::builder()
+///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
+///       .build();
+///   ```
+pub struct WinDebugSinkBuilder {
+    common_builder_impl: helper::CommonBuilderImpl,
+}
+
+impl WinDebugSinkBuilder {
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
+
+    /// Builds a [`WinDebugSink`].
+    pub fn build(self) -> Result<WinDebugSink> {
+        let sink = WinDebugSink {
+            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+        };
+        Ok(sink)
     }
 }

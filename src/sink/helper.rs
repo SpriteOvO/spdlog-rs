@@ -26,13 +26,16 @@ pub(crate) struct CommonImpl {
 
 impl CommonImpl {
     pub(crate) fn from_builder(common_builder_impl: CommonBuilderImpl) -> Self {
+        Self::from_builder_with_formatter(common_builder_impl, || Box::new(FullFormatter::new()))
+    }
+
+    pub(crate) fn from_builder_with_formatter(
+        common_builder_impl: CommonBuilderImpl,
+        fallback: impl FnOnce() -> Box<dyn Formatter>,
+    ) -> Self {
         Self {
             level_filter: Atomic::new(SINK_DEFAULT_LEVEL_FILTER),
-            formatter: SpinRwLock::new(
-                common_builder_impl
-                    .formatter
-                    .unwrap_or_else(|| Box::new(FullFormatter::new())),
-            ),
+            formatter: SpinRwLock::new(common_builder_impl.formatter.unwrap_or_else(fallback)),
             error_handler: Atomic::new(common_builder_impl.error_handler),
         }
     }
