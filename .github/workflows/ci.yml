@@ -25,6 +25,8 @@ jobs:
       run: |
         rustup toolchain install nightly
         rustup component add rustfmt --toolchain nightly
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
     - name: Check formatting
       run: cargo +nightly fmt --all -- --check
 
@@ -41,6 +43,8 @@ jobs:
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt install libsystemd-dev
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
     - name: Run tests with additional features
       if: matrix.features == ''
       run: cargo test --features "${{ env.ADD_FEATURES }}"
@@ -62,5 +66,7 @@ jobs:
       run: |
         rustup toolchain install nightly
         rustup component add clippy --toolchain nightly
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
     - name: Run clippy
       run: cargo +nightly clippy --all-features --tests --benches -- -D warnings
