@@ -29,7 +29,7 @@ use crate::{
 ///
 ///  - If crate feature `source-location` is enabled:
 ///
-///    `[2021-12-23 01:23:45.067] [info] [crate::mod, main.rs:2] log message`
+///    `[2021-12-23 01:23:45.067] [info] [mod::path, src/main.rs:2] log message`
 #[derive(Clone)]
 pub struct FullFormatter {
     _phantom: PhantomData<()>,
@@ -79,7 +79,7 @@ impl FullFormatter {
             dest.write_str("] [")?;
             dest.write_str(srcloc.module_path())?;
             dest.write_str(", ")?;
-            dest.write_str(srcloc.file_name())?;
+            dest.write_str(srcloc.file())?;
             dest.write_str(":")?;
             write!(dest, "{}", srcloc.line())?;
         }
