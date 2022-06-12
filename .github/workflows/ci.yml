@@ -15,6 +15,11 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # When updating this, also update:
+  # - src/lib.rs
+  # - Cargo.toml
+  # - README.md
+  rust_minver: 1.56.0
 
 jobs:
   format:
@@ -70,3 +75,16 @@ jobs:
       uses: Swatinem/rust-cache@v1
     - name: Run clippy
       run: cargo +nightly clippy --all-features --tests --benches -- -D warnings
+
+  check-minver:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt install libsystemd-dev
+    - name: Install Rust ${{ env.rust_minver }}
+      run: rustup toolchain install ${{ env.rust_minver }}
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
+    - name: Run check
+      run: cargo +${{ env.rust_minver }} check --all-features --examples

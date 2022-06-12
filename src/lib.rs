@@ -122,6 +122,28 @@
 //!
 //!  - `log` see [Compatible with log crate](#compatible-with-log-crate) above.
 //!
+//! # Supported Rust Versions
+//!
+//! <!--
+//! When updating this, also update:
+//! - .github/workflows/ci.yml
+//! - Cargo.toml
+//! - README.md
+//! -->
+//!
+//! The current minimum supported Rust version is 1.56.
+//!
+//! `spdlog-rs` is built against the latest Rust stable release, it is not
+//! guaranteed to build on Rust versions earlier than the minimum supported
+//! version.
+//!
+//! `spdlog-rs` follows the compiler support policy that the latest stable
+//! version and the 3 most recent minor versions before that are always
+//! supported. For example, if the current latest Rust stable version is 1.61,
+//! the minimum supported version will not be increased past 1.58. Increasing
+//! the minimum supported version is not considered a semver breaking change as
+//! long as it complies with this policy.
+//!
 //! # Significant differences from C++ spdlog
 //!
 //! The significant differences between `spdlog-rs` and C++ `spdlog`[^1]:
