@@ -24,7 +24,7 @@ impl Formatter for CustomFormatter {
 
         let style_range_end: usize = dest.len();
 
-        write!(dest, " {}\n", record.payload()).map_err(spdlog::Error::FormatRecord)?;
+        writeln!(dest, " {}", record.payload()).map_err(spdlog::Error::FormatRecord)?;
 
         Ok(FmtExtraInfo::builder()
             .style_range(style_range_begin..style_range_end)

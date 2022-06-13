@@ -74,7 +74,7 @@ jobs:
     - name: Cache cargo directories
       uses: Swatinem/rust-cache@v1
     - name: Run clippy
-      run: cargo +nightly clippy --all-features --tests --benches -- -D warnings
+      run: cargo +nightly clippy --all-features --tests --benches --examples -- -D warnings
 
   check-minver:
     runs-on: ubuntu-latest
