@@ -108,14 +108,6 @@ pub struct AsyncPoolSinkBuilder {
 }
 
 impl AsyncPoolSinkBuilder {
-    /// Specifies a log level filter.
-    ///
-    /// Optional, defaults [`LevelFilter::All`].
-    pub fn level_filter(mut self, level_filter: LevelFilter) -> Self {
-        self.level_filter = level_filter;
-        self
-    }
-
     /// Add a [`Sink`].
     pub fn sink(mut self, sink: Arc<dyn Sink>) -> Self {
         self.sinks.push(sink);
@@ -151,15 +143,6 @@ impl AsyncPoolSinkBuilder {
         self
     }
 
-    /// Specifies a error handler.
-    ///
-    /// Optional, defaults the built-in error handler, which prints errors to
-    /// `stderr` and then ignores.
-    pub fn error_handler(mut self, handler: ErrorHandler) -> Self {
-        self.error_handler = Some(handler);
-        self
-    }
-
     /// Builds a [`AsyncPoolSink`].
     pub fn build(self) -> Result<AsyncPoolSink> {
         let backend = Arc::new(Backend {
@@ -176,6 +159,12 @@ impl AsyncPoolSinkBuilder {
             backend,
         })
     }
+
+    helper::common_impl!(@SinkBuilderCustom {
+        level_filter: level_filter,
+        formatter: None,
+        error_handler: error_handler,
+    });
 }
 
 pub(crate) struct Backend {

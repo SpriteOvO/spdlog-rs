@@ -118,22 +118,20 @@ macro_rules! common_impl {
     // SinkBuiler
 
     ( @SinkBuilder: $($field:ident).+ ) => {
-        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@level_filter: $($field).+);
-        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@formatter: $($field).+);
-        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@error_handler: $($field).+);
+        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@level_filter: $($field).+.level_filter);
+        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@formatter: $($field).+.formatter);
+        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@error_handler: $($field).+.error_handler);
     };
     ( @SinkBuilderCustom {
-        $(#[$level_filter_attr:meta])*?
         level_filter: $($level_filter:ident).+,
-        $(#[$formatter_attr:meta])*?
         formatter: $($formatter:ident).+,
-        $(#[$error_handler_attr:meta])*?
         error_handler: $($error_handler:ident).+$(,)?
     } ) => {
-        $crate::sink::helper::common_impl!($(#[$level_filter_attr])*? @SinkCustomInner@level_filter: $($level_filter).+);
-        $crate::sink::helper::common_impl!($(#[$formatter_attr])*? @SinkCustomInner@formatter: $($formatter).+);
-        $crate::sink::helper::common_impl!($(#[$error_handler_attr])*? @SinkCustomInner@error_handler: $($error_handler).+);
+        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@level_filter: $($level_filter).+);
+        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@formatter: $($formatter).+);
+        $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@error_handler: $($error_handler).+);
     };
+    ( @SinkBuilderCustomInner@level_filter: None ) => {};
     ( @SinkBuilderCustomInner@level_filter: $($field:ident).+ ) => {
         $crate::sink::helper::common_impl! {
             /// Specifies a log level filter.
@@ -147,10 +145,11 @@ macro_rules! common_impl {
     ( $(#[$attr:meta])* @SinkBuilderCustomInner@level_filter: $($field:ident).+ ) => {
         $(#[$attr])*
         pub fn level_filter(mut self, level_filter: $crate::LevelFilter) -> Self {
-            self.$($field).+.level_filter = level_filter;
+            self.$($field).+ = level_filter;
             self
         }
     };
+    ( @SinkBuilderCustomInner@formatter: None ) => {};
     ( @SinkBuilderCustomInner@formatter: $($field:ident).+ ) => {
         $crate::sink::helper::common_impl! {
             /// Specifies a formatter.
@@ -164,10 +163,11 @@ macro_rules! common_impl {
     ( $(#[$attr:meta])* @SinkBuilderCustomInner@formatter: $($field:ident).+ ) => {
         $(#[$attr])*
         pub fn formatter(mut self, formatter: Box<dyn $crate::formatter::Formatter>) -> Self {
-            self.$($field).+.formatter = Some(formatter);
+            self.$($field).+ = Some(formatter);
             self
         }
     };
+    ( @SinkBuilderCustomInner@error_handler: None ) => {};
     ( @SinkBuilderCustomInner@error_handler: $($field:ident).+ ) => {
         $crate::sink::helper::common_impl! {
             /// Specifies an error handler.
@@ -181,7 +181,7 @@ macro_rules! common_impl {
     ( $(#[$attr:meta])* @SinkBuilderCustomInner@error_handler: $($field:ident).+ ) => {
         $(#[$attr])*
         pub fn error_handler(mut self, handler: $crate::ErrorHandler) -> Self {
-            self.$($field).+.error_handler = Some(handler);
+            self.$($field).+ = Some(handler);
             self
         }
     };
