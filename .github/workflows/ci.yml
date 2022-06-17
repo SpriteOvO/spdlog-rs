@@ -77,6 +77,19 @@ jobs:
     - name: Run clippy
       run: cargo +nightly clippy --all-features --tests --benches --examples -- -D warnings
 
+  check-doc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt install libsystemd-dev
+    - name: Install nightly
+      run: rustup toolchain install nightly
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
+    - name: Run rustdoc
+      run: cargo +nightly rustdoc --all-features -- -D warnings
+
   check-minver:
     runs-on: ubuntu-latest
     steps:
