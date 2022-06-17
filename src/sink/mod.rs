@@ -33,22 +33,28 @@
 pub(crate) mod async_sink;
 mod file_sink;
 mod helper;
-#[cfg(all(target_os = "linux", feature = "libsystemd"))]
+#[cfg(any(
+    all(target_os = "linux", feature = "libsystemd"),
+    all(doc, not(doctest))
+))]
 mod journal_sink;
 mod rotating_file_sink;
 mod std_stream_sink;
-#[cfg(all(windows, feature = "winapi"))]
+#[cfg(any(all(windows, feature = "winapi"), all(doc, not(doctest))))]
 mod win_debug_sink;
 mod write_sink;
 
 #[cfg(feature = "multi-thread")]
 pub use async_sink::*;
 pub use file_sink::*;
-#[cfg(all(target_os = "linux", feature = "libsystemd"))]
+#[cfg(any(
+    all(target_os = "linux", feature = "libsystemd"),
+    all(doc, not(doctest))
+))]
 pub use journal_sink::*;
 pub use rotating_file_sink::*;
 pub use std_stream_sink::*;
-#[cfg(all(windows, feature = "winapi"))]
+#[cfg(any(all(windows, feature = "winapi"), all(doc, not(doctest))))]
 pub use win_debug_sink::*;
 pub use write_sink::*;
 

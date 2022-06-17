@@ -5,12 +5,18 @@
 //! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 
 mod full_formatter;
-#[cfg(target_os = "linux")]
+#[cfg(any(
+    all(target_os = "linux", feature = "libsystemd"),
+    all(doc, not(doctest))
+))]
 mod journal_formatter;
 mod local_time_cacher;
 
 pub use full_formatter::*;
-#[cfg(all(target_os = "linux", feature = "libsystemd"))]
+#[cfg(any(
+    all(target_os = "linux", feature = "libsystemd"),
+    all(doc, not(doctest))
+))]
 pub(crate) use journal_formatter::*;
 pub(crate) use local_time_cacher::*;
 

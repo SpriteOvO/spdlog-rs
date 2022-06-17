@@ -1,7 +1,5 @@
 use std::{io, os::raw::c_int};
 
-use libsystemd_sys::{const_iovec, journal as ffi};
-
 use crate::{
     formatter::JournalFormatter,
     sink::{helper, Sink},
@@ -47,8 +45,15 @@ impl Default for SyslogLevels {
 }
 
 fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io::Error> {
-    let iovecs: Vec<_> = args.map(|a| unsafe { const_iovec::from_str(a) }).collect();
-    let result = unsafe { ffi::sd_journal_sendv(iovecs.as_ptr(), iovecs.len() as c_int) };
+    // TODO: We can't `use` for now: https://github.com/rust-lang/rust/issues/97976
+    // use libsystemd_sys::{const_iovec, journal as ffi};
+
+    let iovecs: Vec<_> = args
+        .map(|a| unsafe { libsystemd_sys::const_iovec::from_str(a) })
+        .collect();
+    let result = unsafe {
+        libsystemd_sys::journal::sd_journal_sendv(iovecs.as_ptr(), iovecs.len() as c_int)
+    };
     if result == 0 {
         Ok(())
     } else {
