@@ -33,7 +33,7 @@ release-level-debug    = []
 release-level-trace    = []
 
 source-location = []
-libsystemd = ["libsystemd-sys"]
+native = ["winapi", "libsystemd-sys"]
 multi-thread = ["crossbeam"]
 
 [dependencies]
