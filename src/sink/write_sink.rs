@@ -178,6 +178,8 @@ where
             _phantom: PhantomData,
         }
     }
+
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
 }
 
 impl<W> WriteSinkBuilder<W, ()>
@@ -196,8 +198,6 @@ impl<W> WriteSinkBuilder<W, PhantomData<W>>
 where
     W: Write + Send,
 {
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
-
     /// Builds a [`WriteSink`].
     pub fn build(self) -> Result<WriteSink<W>> {
         let sink = WriteSink {
