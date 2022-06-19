@@ -1,6 +1,6 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
-    env::{self, VarError},
+    env::VarError,
 };
 
 use thiserror::Error;
@@ -51,16 +51,6 @@ impl EnvLevelLogger {
             Some(name) => Self::Named(name.into()),
         }
     }
-}
-
-pub(crate) fn from_env(env_name: &str) -> Result<bool, EnvLevelError> {
-    let var = match env::var(env_name) {
-        Err(VarError::NotPresent) => return Ok(false),
-        Err(err) => return Err(EnvLevelError::FetchEnvVar(err)),
-        Ok(var) => var,
-    };
-    from_str(&var)?;
-    Ok(true)
 }
 
 pub(crate) fn from_str(var: &str) -> Result<(), EnvLevelError> {

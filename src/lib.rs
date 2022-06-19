@@ -234,7 +234,12 @@ pub mod prelude {
     pub use super::{Level, LevelFilter, Logger, LoggerBuilder};
 }
 
-use std::{panic, result::Result as StdResult};
+use std::{
+    env::{self, VarError},
+    ffi::OsStr,
+    panic,
+    result::Result as StdResult,
+};
 
 use cfg_if::cfg_if;
 
@@ -381,13 +386,17 @@ pub fn set_default_logger(logger: Arc<Logger>) {
     swap_default_logger(logger);
 }
 
-/// Initialize environment variable level filters.
+/// Initialize environment variable level filters from environment variable
+/// `SPDLOG_RS_LEVEL`.
 ///
 /// Returns whether the level in the environment variable was applied if there
 /// are no errors.
 ///
 /// The default level filter of loggers built after calling this function will
 /// be configured based on the value of environment variable `SPDLOG_RS_LEVEL`.
+///
+/// If you want to read from a custom environment variable, see
+/// [`init_env_level_from`].
 ///
 /// Users should call this function early, the level filter of loggers built
 /// before calling this function will not be configured by environment variable.
@@ -508,7 +517,53 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///   }
 ///   ```
 pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
-    env_level::from_env("SPDLOG_RS_LEVEL")
+    init_env_level_from("SPDLOG_RS_LEVEL")
+}
+
+/// Initialize environment variable level filters from a specified environment
+/// variable.
+///
+/// For more information, see [`init_env_level`].
+///
+/// # Examples
+///
+/// - `MY_APP_LOG_LEVEL="TRACE,network=Warn,*=error"`:
+///
+///   ```
+///   use spdlog::prelude::*;
+///
+///   # fn main() -> Result<(), spdlog::EnvLevelError> {
+///   # std::env::set_var("MY_APP_LOG_LEVEL", "TRACE,network=Warn,*=error");
+///   assert_eq!(spdlog::init_env_level_from("MY_APP_LOG_LEVEL")?, true);
+///
+///   assert_eq!(
+///       spdlog::default_logger().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Trace)
+///   );
+///   assert_eq!(
+///       Logger::builder().build().level_filter(), // unnamed logger
+///       LevelFilter::MoreSevereEqual(Level::Error)
+///   );
+///   assert_eq!(
+///       Logger::builder().name("gui").build().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Error)
+///   );
+///   assert_eq!(
+///       Logger::builder().name("network").build().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Warn)
+///   );
+///   # Ok(()) }
+///   ```
+///
+/// For more examples, see [`init_env_level`].
+pub fn init_env_level_from<K: AsRef<OsStr>>(env_key: K) -> StdResult<bool, EnvLevelError> {
+    let var = match env::var(env_key.as_ref()) {
+        Err(VarError::NotPresent) => return Ok(false),
+        Err(err) => return Err(EnvLevelError::FetchEnvVar(err)),
+        Ok(var) => var,
+    };
+    env_level::from_str(&var)?;
+    Ok(true)
 }
 
 /// Initialize log crate proxy.
