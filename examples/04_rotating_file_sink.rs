@@ -12,7 +12,7 @@ use spdlog::{
     sink::{RotatingFileSink, RotationPolicy},
 };
 
-fn main() {
+fn main() -> Result<(), spdlog::Error> {
     let logs_path: PathBuf = env::current_exe()
         .unwrap()
         .parent()
@@ -30,8 +30,7 @@ fn main() {
             .base_path(&path_by_size)
             .rotation_policy(RotationPolicy::FileSize(1024 * 10))
             .rotate_on_open(true)
-            .build()
-            .unwrap(),
+            .build()?,
     );
 
     let hourly: Arc<RotatingFileSink> = Arc::new(
@@ -39,8 +38,7 @@ fn main() {
             .base_path(&path_hourly)
             .rotation_policy(RotationPolicy::Hourly)
             .rotate_on_open(true)
-            .build()
-            .unwrap(),
+            .build()?,
     );
 
     let daily: Arc<RotatingFileSink> = Arc::new(
@@ -48,8 +46,7 @@ fn main() {
             .base_path(&path_daily)
             .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
             .rotate_on_open(true)
-            .build()
-            .unwrap(),
+            .build()?,
     );
 
     let by_size: Logger = Logger::builder().sink(by_size).build();
@@ -69,4 +66,6 @@ fn main() {
             .map(|p| p.unwrap().file_name())
             .collect::<Vec<OsString>>()
     );
+
+    Ok(())
 }

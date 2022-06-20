@@ -187,27 +187,31 @@ impl Sink for StdStreamSink {
 ///       terminal_style::StyleMode
 ///   };
 ///
-///   let sink: spdlog::Result<StdStreamSink> = StdStreamSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: StdStreamSink = StdStreamSink::builder()
 ///       .std_stream(StdStream::Stdout) // required
 ///       /* .style_mode(StyleMode::Never) // optional, defaults to
 ///                                        // `StyleMode::Auto` */
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 ///
 /// - If any required parameters are missing, a compile-time error will be
 ///   raised.
 ///
-///   ```compile_fail
+///   ```compile_fail,E0061
 ///   use spdlog::{
 ///       sink::{StdStreamSink, StdStream},
 ///       terminal_style::StyleMode
 ///   };
 ///
-///   let sink: spdlog::Result<StdStreamSink> = StdStreamSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: StdStreamSink = StdStreamSink::builder()
 ///       // .std_stream(StdStream::Stdout) // required
 ///       .style_mode(StyleMode::Never) /* optional, defaults to
 ///                                      * `StyleMode::Auto` */
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 pub struct StdStreamSinkBuilder<ArgSS> {
     common_builder_impl: helper::CommonBuilderImpl,

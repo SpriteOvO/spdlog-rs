@@ -106,22 +106,26 @@ impl Drop for FileSink {
 ///   ```no_run
 ///   use spdlog::sink::FileSink;
 ///  
-///   let sink: spdlog::Result<FileSink> = FileSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: FileSink = FileSink::builder()
 ///       .path("/path/to/log_file") // required
 ///       // .truncate(true) // optional, defaults to `false`
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 ///
 /// - If any required parameters are missing, a compile-time error will be
 ///   raised.
 ///
-///   ```compile_fail
+///   ```compile_fail,E0061
 ///   use spdlog::sink::FileSink;
 ///   
-///   let sink: spdlog::Result<FileSink> = FileSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: FileSink = FileSink::builder()
 ///       // .path("/path/to/log_file") // required
 ///       .truncate(true) // optional, defaults to `false`
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 pub struct FileSinkBuilder<ArgPath> {
     common_builder_impl: helper::CommonBuilderImpl,

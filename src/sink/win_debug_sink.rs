@@ -69,9 +69,11 @@ impl Sink for WinDebugSink {
 ///   ```
 ///   use spdlog::{prelude::*, sink::WinDebugSink};
 ///  
-///   let sink: spdlog::Result<WinDebugSink> = WinDebugSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: WinDebugSink = WinDebugSink::builder()
 ///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 pub struct WinDebugSinkBuilder {
     common_builder_impl: helper::CommonBuilderImpl,

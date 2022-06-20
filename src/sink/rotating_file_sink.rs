@@ -110,37 +110,43 @@ pub struct RotatingFileSink {
 ///   ```no_run
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
 ///  
-///   let sink: spdlog::Result<RotatingFileSink> = RotatingFileSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       .base_path("/path/to/base_log_file") // required
 ///       .rotation_policy(RotationPolicy::Hourly) // required
 ///       // .max_files(100) // optional, defaults to `0` for no limit
 ///       // .rotate_on_open(true) // optional, defaults to `false`
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 ///
 /// - If any required parameters are missing, a compile-time error will be
 ///   raised.
 ///
-///   ```compile_fail
+///   ```compile_fail,E0061
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
 ///  
-///   let sink: spdlog::Result<RotatingFileSink> = RotatingFileSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       // .base_path("/path/to/base_log_file") // required
 ///       .rotation_policy(RotationPolicy::Hourly) // required
 ///       .max_files(100) // optional, defaults to `0` for no limit
 ///       .rotate_on_open(true) // optional, defaults to `false`
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 ///
-///   ```compile_fail
+///   ```compile_fail,E0061
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
 ///  
-///   let sink: spdlog::Result<RotatingFileSink> = RotatingFileSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       .base_path("/path/to/base_log_file") // required
 ///       // .rotation_policy(RotationPolicy::Hourly) // required
 ///       .max_files(100) // optional, defaults to `0` for no limit
 ///       .rotate_on_open(true) // optional, defaults to `false`
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
     common_builder_impl: helper::CommonBuilderImpl,

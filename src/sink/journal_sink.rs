@@ -142,9 +142,11 @@ impl Sink for JournalSink {
 ///   ```
 ///   use spdlog::{prelude::*, sink::JournalSink};
 ///  
-///   let sink: spdlog::Result<JournalSink> = JournalSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: JournalSink = JournalSink::builder()
 ///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 pub struct JournalSinkBuilder {
     common_builder_impl: helper::CommonBuilderImpl,

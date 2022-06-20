@@ -135,24 +135,27 @@ where
 ///   ```
 ///   use spdlog::{prelude::*, sink::WriteSink};
 ///  
+///   # fn main() -> Result<(), spdlog::Error> {
 ///   # let target = Vec::new();
-///   let sink: spdlog::Result<WriteSink<_>> = WriteSink::builder()
+///   let sink: WriteSink<_> = WriteSink::builder()
 ///       .target(target) // required
 ///       // .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 ///
 /// - If any required parameters are missing, a compile-time error will be
 ///   raised.
 ///
-///   ```compile_fail
+///   ```compile_fail,E0061
 ///   use spdlog::{prelude::*, sink::WriteSink};
 ///  
-///   # let target = Vec::new();
-///   let sink: spdlog::Result<WriteSink<_>> = WriteSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: WriteSink<_> = WriteSink::builder()
 ///       // .target(target) // required
 ///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 pub struct WriteSinkBuilder<W, ArgW>
 where
