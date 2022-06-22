@@ -20,7 +20,7 @@ env:
   # - Cargo.toml
   # - README.md
   rust_minver: 1.56.0
-  rust_minver_tolerant: 1.56.1 # For dev-dependencies
+  rust_minver_tolerant: 1.57.0 # For dev-dependencies
 
 jobs:
   format:
