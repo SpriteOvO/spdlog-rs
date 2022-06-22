@@ -5,8 +5,6 @@ use std::{
     time::SystemTime,
 };
 
-use cfg_if::cfg_if;
-
 use crate::{Level, SourceLocation};
 
 /// Represents a log record.
@@ -21,11 +19,13 @@ use crate::{Level, SourceLocation};
 /// [`Logger::log`]: crate::logger::Logger::log
 /// [`Sink::log`]: crate::sink::Sink::log
 /// [`log!`]: crate::log
+// TODO: `Record` still owns some data and not just a reference, I'm not sure this is necessary to
+// correct.
 #[derive(Clone, Debug)]
 pub struct Record<'a> {
     logger_name: Option<&'a str>,
     payload: Cow<'a, str>,
-    inner: RecordInner,
+    inner: Cow<'a, RecordInner>,
 }
 
 #[derive(Clone, Debug)]
@@ -46,11 +46,11 @@ impl<'a> Record<'a> {
         Record {
             logger_name: None,
             payload: payload.into(),
-            inner: RecordInner {
+            inner: Cow::Owned(RecordInner {
                 level,
                 source_location: None,
                 time: SystemTime::now(),
-            },
+            }),
         }
     }
 
@@ -64,8 +64,17 @@ impl<'a> Record<'a> {
         RecordBuilder::new(level, payload)
     }
 
+    /// Creates a [`RecordOwned`] that doesn't have lifetimes.
+    pub fn to_owned(&self) -> RecordOwned {
+        RecordOwned {
+            logger_name: self.logger_name.map(|n| n.into()),
+            payload: self.payload.to_string(),
+            inner: self.inner.clone().into_owned(),
+        }
+    }
+
     /// Gets the logger name.
-    pub fn logger_name(&self) -> Option<&'_ str> {
+    pub fn logger_name(&self) -> Option<&'a str> {
         self.logger_name
     }
 
@@ -89,6 +98,8 @@ impl<'a> Record<'a> {
         self.inner.time
     }
 
+    // When adding more getters, also add to `RecordOwned`
+
     #[cfg(feature = "log")]
     pub(crate) fn from_log_crate_record(
         logger: &'a crate::Logger,
@@ -103,70 +114,71 @@ impl<'a> Record<'a> {
                 Some(literal_str) => literal_str.into(),
                 None => args.to_string().into(),
             },
-            inner: RecordInner {
+            inner: Cow::Owned(RecordInner {
                 level: record.level().into(),
                 // `module_path` and `file` in `log::Record` are not `'static`
                 source_location: None,
                 time,
-            },
+            }),
         }
     }
 
     #[cfg(test)]
     pub(crate) fn set_time(&mut self, new: SystemTime) {
-        self.inner.time = new;
+        self.inner.to_mut().time = new;
     }
 }
 
-cfg_if! {
-    if #[cfg(feature = "multi-thread")] {
-        // The structure is not currently public because:
-        // - Users do not need to touch this structure.
-        // - There are some problems with its implementation, such as `as_ref`
-        //   is not zero overhead (although very low), traits such as `ToOwned`
-        //   and `AsRef` cannot be implemented, and `Record` still owns some
-        //   data and not just a reference. If the structure needs to be made
-        //   public in the future, these problems must be solved first.
-        #[derive(Clone, Debug)]
-        pub(crate) struct RecordOwned {
-            logger_name: Option<String>,
-            payload: String,
-            inner: RecordInner,
-        }
+/// [`Record`] without lifetimes version.
+// We do not `impl From<&Record> for RecordOwned` because it does not follow the
+// Rust naming convention. Use `record.to_owned()` instead.
+#[derive(Clone, Debug)]
+pub struct RecordOwned {
+    logger_name: Option<String>,
+    payload: String,
+    inner: RecordInner,
+}
 
-        // For internal (benchmark) use only.
-        #[doc(hidden)]
-        pub const __SIZE_OF_RECORD_OWNED: usize = std::mem::size_of::<RecordOwned>();
+impl RecordOwned {
+    // For internal (benchmark) use only.
+    #[doc(hidden)]
+    pub const __SIZE_OF: usize = std::mem::size_of::<Self>();
 
-        impl RecordOwned {
-            pub(crate) fn as_ref(&self) -> Record<'_> {
-                Record {
-                    logger_name: self.logger_name.as_deref(),
-                    payload: Cow::Borrowed(&self.payload),
-                    inner: self.inner.clone(), // a little overhead here
-                }
-            }
-        }
-
-        impl<'a, T> From<T> for RecordOwned
-        where
-            T: Borrow<Record<'a>>,
-        {
-            fn from(record: T) -> Self {
-                record.borrow().to_owned()
-            }
-        }
-
-        impl<'a> Record<'a> {
-            pub(crate) fn to_owned(&self) -> RecordOwned {
-                RecordOwned {
-                    logger_name: self.logger_name.map(|n| n.into()),
-                    payload: self.payload.to_string(),
-                    inner: self.inner.to_owned(),
-                }
-            }
+    /// References as [`Record`] cheaply.
+    pub fn as_ref(&self) -> Record {
+        Record {
+            logger_name: self.logger_name.as_deref(),
+            payload: Cow::Borrowed(&self.payload),
+            inner: Cow::Borrowed(&self.inner),
         }
     }
+
+    /// Gets the logger name.
+    pub fn logger_name(&self) -> Option<&str> {
+        self.logger_name.as_deref()
+    }
+
+    /// Gets the level.
+    pub fn level(&self) -> Level {
+        self.inner.level
+    }
+
+    /// Gets the payload.
+    pub fn payload(&self) -> &str {
+        self.payload.borrow()
+    }
+
+    /// Gets the source location.
+    pub fn source_location(&self) -> Option<&SourceLocation> {
+        self.inner.source_location.as_ref()
+    }
+
+    /// Gets the time when the record was created.
+    pub fn time(&self) -> SystemTime {
+        self.inner.time
+    }
+
+    // When adding more getters, also add to `Record`
 }
 
 /// The builder of [`Record`].
@@ -206,7 +218,7 @@ impl<'a> RecordBuilder<'a> {
     // the macro `source_location_current` directly.
     #[must_use]
     pub(crate) fn source_location(mut self, srcloc: Option<SourceLocation>) -> Self {
-        self.record.inner.source_location = srcloc;
+        self.record.inner.to_mut().source_location = srcloc;
         self
     }
 

@@ -69,7 +69,7 @@ impl Sink for AsyncPoolSink {
         if self.should_log(record.level()) {
             self.assign_task(Task::Log {
                 backend: self.clone_backend(),
-                record: record.clone().into(),
+                record: record.to_owned(),
             })?;
         }
         Ok(())

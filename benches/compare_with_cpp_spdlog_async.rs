@@ -142,7 +142,7 @@ fn main() {
         args.queue_size = Some(cmp::min(args.message_count + 2, 8192));
     }
 
-    const SLOT_SIZE: usize = spdlog::__SIZE_OF_RECORD_OWNED;
+    const SLOT_SIZE: usize = spdlog::RecordOwned::__SIZE_OF;
     let queue_size = args.queue_size.unwrap();
 
     info!("--------------------------------------------");
