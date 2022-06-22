@@ -1,4 +1,4 @@
-use std::{env, fmt::Write, fs, path::PathBuf};
+use std::{env, fmt::Write, fs, path::PathBuf, thread::sleep, time::Duration};
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
@@ -22,6 +22,7 @@ pub struct CounterSink {
     log_counter: AtomicUsize,
     flush_counter: AtomicUsize,
     payloads: Mutex<Vec<String>>,
+    delay_duration: Option<Duration>,
 }
 
 // no modifications formatter, it will write `record` to `dest` as is.
@@ -30,11 +31,16 @@ pub struct NoModFormatter {}
 
 impl CounterSink {
     pub fn new() -> Self {
+        Self::with_delay(None)
+    }
+
+    pub fn with_delay(duration: Option<Duration>) -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
             log_counter: AtomicUsize::new(0),
             flush_counter: AtomicUsize::new(0),
             payloads: Mutex::new(vec![]),
+            delay_duration: duration,
         }
     }
 
@@ -59,6 +65,10 @@ impl CounterSink {
 
 impl Sink for CounterSink {
     fn log(&self, record: &Record) -> Result<()> {
+        if let Some(delay) = self.delay_duration {
+            sleep(delay);
+        }
+
         self.log_counter.fetch_add(1, Ordering::Relaxed);
 
         self.payloads
@@ -69,6 +79,10 @@ impl Sink for CounterSink {
     }
 
     fn flush(&self) -> Result<()> {
+        if let Some(delay) = self.delay_duration {
+            sleep(delay);
+        }
+
         self.flush_counter.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }

@@ -309,4 +309,45 @@ mod tests {
         assert_eq!(counter_sink.log_count(), 3);
         assert_eq!(counter_sink.flush_count(), 1);
     }
+
+    #[test]
+    fn async_opeartions() {
+        let counter_sink = Arc::new(CounterSink::with_delay(Some(Duration::from_millis(200))));
+        // The default thread pool is not used here to avoid race when tests are run in
+        // parallel.
+        let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
+        let logger = Logger::builder()
+            .sink(Arc::new(
+                AsyncPoolSink::builder()
+                    .sink(counter_sink.clone())
+                    .thread_pool(thread_pool)
+                    .build()
+                    .unwrap(),
+            ))
+            .level_filter(LevelFilter::All)
+            .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
+            .build();
+
+        assert_eq!(counter_sink.log_count(), 0);
+        assert_eq!(counter_sink.flush_count(), 0);
+
+        info!(logger: logger, "meow");
+        sleep(Duration::from_millis(100));
+        assert_eq!(counter_sink.log_count(), 0);
+        assert_eq!(counter_sink.flush_count(), 0);
+        sleep(Duration::from_millis(150));
+        assert_eq!(counter_sink.log_count(), 1);
+        assert_eq!(counter_sink.flush_count(), 0);
+
+        warn!(logger: logger, "nya");
+        sleep(Duration::from_millis(100));
+        assert_eq!(counter_sink.log_count(), 1);
+        assert_eq!(counter_sink.flush_count(), 0);
+        sleep(Duration::from_millis(150));
+        assert_eq!(counter_sink.log_count(), 2);
+        assert_eq!(counter_sink.flush_count(), 0);
+        sleep(Duration::from_millis(250));
+        assert_eq!(counter_sink.log_count(), 2);
+        assert_eq!(counter_sink.flush_count(), 1);
+    }
 }
