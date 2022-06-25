@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 use crate::{
     sink::{OverflowPolicy, Task},
     sync::*,
-    Error, Result, SendToChannelError,
+    Error, Result,
 };
 
 /// A thread pool for processing operations asynchronously.
@@ -63,14 +63,11 @@ impl ThreadPool {
         let sender = self.sender.as_ref().unwrap();
 
         match overflow_policy {
-            OverflowPolicy::Block => sender
-                .send(task)
-                .map_err(|_| SendToChannelError::Disconnected),
+            OverflowPolicy::Block => sender.send(task).map_err(Error::from_crossbeam_send),
             OverflowPolicy::DropIncoming => sender
                 .try_send(task)
-                .map_err(SendToChannelError::from_crossbeam),
+                .map_err(Error::from_crossbeam_try_send),
         }
-        .map_err(Error::SendToChannel)
     }
 }
 

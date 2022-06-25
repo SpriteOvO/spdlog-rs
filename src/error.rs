@@ -6,6 +6,9 @@ use atomic::Atomic;
 use static_assertions::const_assert;
 use thiserror::Error;
 
+#[cfg(feature = "multi-thread")]
+use crate::{sink::Task, RecordOwned};
+
 /// The error type of this crate.
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -79,7 +82,7 @@ pub enum Error {
     /// [`Sink`]: crate::sink::Sink
     #[cfg(feature = "multi-thread")]
     #[error("failed to send message to channel: {0}")]
-    SendToChannel(SendToChannelError),
+    SendToChannel(SendToChannelError, SendToChannelErrorDropped),
 }
 
 /// The more detailed error type of sending to channel.
@@ -100,14 +103,46 @@ pub enum SendToChannelError {
     Disconnected,
 }
 
+/// Contains data that is dropped after sending to the channel failed.
+///
+/// You can handle them manually or just ignore them.
 #[cfg(feature = "multi-thread")]
-impl SendToChannelError {
-    pub(crate) fn from_crossbeam<T>(err: crossbeam::channel::TrySendError<T>) -> Self {
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum SendToChannelErrorDropped {
+    /// A `log` operation and a record are dropped.
+    Record(RecordOwned),
+    /// A `flush` operation is dropped.
+    Flush,
+}
+
+#[cfg(feature = "multi-thread")]
+impl Error {
+    pub(crate) fn from_crossbeam_send(err: crossbeam::channel::SendError<Task>) -> Self {
+        Self::SendToChannel(
+            SendToChannelError::Disconnected,
+            SendToChannelErrorDropped::from_task(err.0),
+        )
+    }
+
+    pub(crate) fn from_crossbeam_try_send(err: crossbeam::channel::TrySendError<Task>) -> Self {
         use crossbeam::channel::TrySendError;
 
-        match err {
-            TrySendError::Full(_) => Self::Full,
-            TrySendError::Disconnected(_) => Self::Disconnected,
+        let (error, dropped_task) = match err {
+            TrySendError::Full(dropped) => (SendToChannelError::Full, dropped),
+            TrySendError::Disconnected(dropped) => (SendToChannelError::Disconnected, dropped),
+        };
+
+        Self::SendToChannel(error, SendToChannelErrorDropped::from_task(dropped_task))
+    }
+}
+
+#[cfg(feature = "multi-thread")]
+impl SendToChannelErrorDropped {
+    pub(crate) fn from_task(task: Task) -> Self {
+        match task {
+            Task::Log { record, .. } => Self::Record(record),
+            Task::Flush { .. } => Self::Flush,
         }
     }
 }

@@ -57,7 +57,7 @@ impl Mode {
         match self {
             Self::Sync => PANIC_ERR,
             Self::Async => move |err| {
-                if let Error::SendToChannel(SendToChannelError::Full) = err {
+                if let Error::SendToChannel(SendToChannelError::Full, _dropped_data) = err {
                     // ignore
                 } else {
                     PANIC_ERR(err);

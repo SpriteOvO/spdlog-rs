@@ -58,7 +58,7 @@ fn bench(
             .sink(async_sink)
             .name("async_logger")
             .error_handler(|err| {
-                if let Error::SendToChannel(SendToChannelError::Full) = err {
+                if let Error::SendToChannel(SendToChannelError::Full, _dropped_data) = err {
                     // ignore
                 } else {
                     panic!("an error occurred: {err}")
