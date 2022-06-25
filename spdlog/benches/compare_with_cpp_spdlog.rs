@@ -105,7 +105,7 @@ fn bench_mt(logger: Logger, threads_count: usize, iters: usize) {
 
 /// A benchmark for comparing with the C++ logging library spdlog.
 #[derive(Parser, Debug)]
-#[clap(name = "compare_with_cpp_spdlog")]
+#[clap(name = env!("CARGO_CRATE_NAME"))]
 struct Args {
     /// Number of the benchmark threads
     #[clap(long, default_value_t = 4)]

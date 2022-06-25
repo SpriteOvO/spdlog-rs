@@ -2,11 +2,14 @@
 
 use std::fmt::{self, Write};
 
+use cfg_if::cfg_if;
+
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
     Error, Record, StringBuf, EOL,
 };
 
+#[derive(Clone)]
 pub(crate) struct JournalFormatter {}
 
 impl JournalFormatter {
@@ -19,6 +22,12 @@ impl JournalFormatter {
         record: &Record,
         dest: &mut StringBuf,
     ) -> Result<FmtExtraInfo, fmt::Error> {
+        cfg_if! {
+            if #[cfg(not(feature = "flexible-string"))] {
+                dest.reserve(crate::string_buf::RESERVE_SIZE);
+            }
+        }
+
         dest.write_str("[")?;
 
         if let Some(logger_name) = record.logger_name() {
@@ -45,6 +54,10 @@ impl JournalFormatter {
 impl Formatter for JournalFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
         self.format_impl(record, dest).map_err(Error::FormatRecord)
+    }
+
+    fn clone_box(&self) -> Box<dyn Formatter> {
+        Box::new(self.clone())
     }
 }
 

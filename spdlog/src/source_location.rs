@@ -6,6 +6,8 @@ use std::path;
 ///
 /// Usually users don't need to construct it manually, but if you do, use macro
 /// [`source_location_current`].
+///
+/// [`source_location_current`]: crate::source_location_current
 #[derive(Clone, Hash, Debug)]
 pub struct SourceLocation {
     module_path: &'static str,

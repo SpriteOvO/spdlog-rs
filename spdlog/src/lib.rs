@@ -25,7 +25,7 @@
 //! [`println!`]. All log macros and common types are already under [`prelude`]
 //! module.
 //!
-//! [`Logger`] and [`Sink`] are the most important components of `spdlog-rs`.
+//! [`Logger`] and [`sink`] are the most important components of `spdlog-rs`.
 //! Make sure to read their documentation. In short, a logger contains a
 //! combination of sinks, and sinks implement writing log messages to actual
 //! targets.
@@ -63,6 +63,10 @@
 //! ## Examples
 //!
 //! See [./examples] directory.
+//!
+//! # Asynchronous support
+//!
+//! See [Asynchronous combined sink].
 //!
 //! # Configured via environment variable
 //!
@@ -118,6 +122,28 @@
 //!
 //!  - `log` see [Compatible with log crate](#compatible-with-log-crate) above.
 //!
+//! # Supported Rust Versions
+//!
+//! <!--
+//! When updating this, also update:
+//! - .github/workflows/ci.yml
+//! - Cargo.toml
+//! - README.md
+//! -->
+//!
+//! The current minimum supported Rust version is 1.56.
+//!
+//! `spdlog-rs` is built against the latest Rust stable release, it is not
+//! guaranteed to build on Rust versions earlier than the minimum supported
+//! version.
+//!
+//! `spdlog-rs` follows the compiler support policy that the latest stable
+//! version and the 3 most recent minor versions before that are always
+//! supported. For example, if the current latest Rust stable version is 1.61,
+//! the minimum supported version will not be increased past 1.58. Increasing
+//! the minimum supported version is not considered a semver breaking change as
+//! long as it complies with this policy.
+//!
 //! # Significant differences from C++ spdlog
 //!
 //! The significant differences between `spdlog-rs` and C++ `spdlog`[^1]:
@@ -139,6 +165,9 @@
 //!    [`RotatingFileSink`] in `spdlog-rs`. They correspond to rotation policies
 //!    [`RotationPolicy::Daily`] and [`RotationPolicy::Hourly`].
 //!
+//!  - `async_logger` in C++ `spdlog` is [`AsyncPoolSink`] in `spdlog-rs`. This
+//!    allows it to be used with synchronous sinks.
+//!
 //!  - Some sinks in C++ `spdlog` are not yet implemented in `spdlog-rs`. (Yes,
 //!    PRs are welcome)
 //!
@@ -153,11 +182,13 @@
 //! [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 //! [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
 //! [log crate]: https://crates.io/crates/log
+//! [Asynchronous combined sink]: sink/index.html#asynchronous-combined-sink
 //! [`FullFormatter`]: crate::formatter::FullFormatter
 //! [`RotatingFileSink`]: crate::sink::RotatingFileSink
 //! [`Formatter`]: crate::formatter::Formatter
 //! [`RotationPolicy::Daily`]: crate::sink::RotationPolicy::Daily
 //! [`RotationPolicy::Hourly`]: crate::sink::RotationPolicy::Hourly
+//! [`AsyncPoolSink`]: crate::sink::AsyncPoolSink
 
 // Credits: https://blog.wnut.pw/2020/03/24/documentation-and-unstable-rustdoc-features/
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
@@ -181,6 +212,8 @@ mod sync;
 pub mod terminal_style;
 #[cfg(test)]
 mod test_utils;
+#[cfg(feature = "multi-thread")]
+mod thread_pool;
 mod utils;
 
 pub use env_level::EnvLevelError;
@@ -192,6 +225,8 @@ pub use logger::*;
 pub use record::*;
 pub use source_location::*;
 pub use string_buf::StringBuf;
+#[cfg(feature = "multi-thread")]
+pub use thread_pool::*;
 
 /// Contains all log macros and common types.
 pub mod prelude {
@@ -199,7 +234,12 @@ pub mod prelude {
     pub use super::{Level, LevelFilter, Logger, LoggerBuilder};
 }
 
-use std::{panic, result::Result as StdResult};
+use std::{
+    env::{self, VarError},
+    ffi::OsStr,
+    panic,
+    result::Result as StdResult,
+};
 
 use cfg_if::cfg_if;
 
@@ -346,13 +386,17 @@ pub fn set_default_logger(logger: Arc<Logger>) {
     swap_default_logger(logger);
 }
 
-/// Initialize environment variable level filters.
+/// Initialize environment variable level filters from environment variable
+/// `SPDLOG_RS_LEVEL`.
 ///
 /// Returns whether the level in the environment variable was applied if there
 /// are no errors.
 ///
 /// The default level filter of loggers built after calling this function will
 /// be configured based on the value of environment variable `SPDLOG_RS_LEVEL`.
+///
+/// If you want to read from a custom environment variable, see
+/// [`init_env_level_from`].
 ///
 /// Users should call this function early, the level filter of loggers built
 /// before calling this function will not be configured by environment variable.
@@ -473,7 +517,53 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///   }
 ///   ```
 pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
-    env_level::from_env("SPDLOG_RS_LEVEL")
+    init_env_level_from("SPDLOG_RS_LEVEL")
+}
+
+/// Initialize environment variable level filters from a specified environment
+/// variable.
+///
+/// For more information, see [`init_env_level`].
+///
+/// # Examples
+///
+/// - `MY_APP_LOG_LEVEL="TRACE,network=Warn,*=error"`:
+///
+///   ```
+///   use spdlog::prelude::*;
+///
+///   # fn main() -> Result<(), spdlog::EnvLevelError> {
+///   # std::env::set_var("MY_APP_LOG_LEVEL", "TRACE,network=Warn,*=error");
+///   assert_eq!(spdlog::init_env_level_from("MY_APP_LOG_LEVEL")?, true);
+///
+///   assert_eq!(
+///       spdlog::default_logger().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Trace)
+///   );
+///   assert_eq!(
+///       Logger::builder().build().level_filter(), // unnamed logger
+///       LevelFilter::MoreSevereEqual(Level::Error)
+///   );
+///   assert_eq!(
+///       Logger::builder().name("gui").build().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Error)
+///   );
+///   assert_eq!(
+///       Logger::builder().name("network").build().level_filter(),
+///       LevelFilter::MoreSevereEqual(Level::Warn)
+///   );
+///   # Ok(()) }
+///   ```
+///
+/// For more examples, see [`init_env_level`].
+pub fn init_env_level_from<K: AsRef<OsStr>>(env_key: K) -> StdResult<bool, EnvLevelError> {
+    let var = match env::var(env_key.as_ref()) {
+        Err(VarError::NotPresent) => return Ok(false),
+        Err(err) => return Err(EnvLevelError::FetchEnvVar(err)),
+        Ok(var) => var,
+    };
+    env_level::from_str(&var)?;
+    Ok(true)
 }
 
 /// Initialize log crate proxy.

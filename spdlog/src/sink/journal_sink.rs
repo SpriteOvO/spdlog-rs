@@ -1,12 +1,9 @@
-use std::{io, mem, os::raw::c_int};
-
-use libsystemd_sys::{const_iovec, journal as ffi};
+use std::{io, os::raw::c_int};
 
 use crate::{
-    formatter::{Formatter, JournalFormatter},
-    sink::Sink,
-    sync::*,
-    Error, Level, LevelFilter, Record, Result, StdResult, StringBuf,
+    formatter::JournalFormatter,
+    sink::{helper, Sink},
+    Error, Level, Record, Result, StdResult, StringBuf,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -48,8 +45,15 @@ impl Default for SyslogLevels {
 }
 
 fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io::Error> {
-    let iovecs: Vec<_> = args.map(|a| unsafe { const_iovec::from_str(a) }).collect();
-    let result = unsafe { ffi::sd_journal_sendv(iovecs.as_ptr(), iovecs.len() as c_int) };
+    // TODO: We can't `use` for now: https://github.com/rust-lang/rust/issues/97976
+    // use libsystemd_sys::{const_iovec, journal as ffi};
+
+    let iovecs: Vec<_> = args
+        .map(|a| unsafe { libsystemd_sys::const_iovec::from_str(a) })
+        .collect();
+    let result = unsafe {
+        libsystemd_sys::journal::sd_journal_sendv(iovecs.as_ptr(), iovecs.len() as c_int)
+    };
     if result == 0 {
         Ok(())
     } else {
@@ -70,19 +74,24 @@ fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io
 /// | `Debug`    | `debug`   |
 /// | `Trace`    | `debug`   |
 pub struct JournalSink {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
 }
 
 impl JournalSink {
     const SYSLOG_LEVELS: SyslogLevels = SyslogLevels::new();
 
-    /// Constructs a `JournalSink`.
-    pub fn new() -> Self {
-        Self {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(JournalFormatter::new())),
+    /// Constructs a builder of `JournalSink`.
+    pub fn builder() -> JournalSinkBuilder {
+        JournalSinkBuilder {
+            common_builder_impl: helper::CommonBuilderImpl::new(),
         }
+    }
+
+    /// Constructs a `JournalSink`.
+    #[allow(clippy::new_without_default)]
+    #[deprecated(note = "it may be removed in the future, use `JournalSink::builder()` instead")]
+    pub fn new() -> Self {
+        JournalSink::builder().build().unwrap()
     }
 }
 
@@ -93,7 +102,10 @@ impl Sink for JournalSink {
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        self.common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         let kvs = [
             format!("MESSAGE={}", string_buf),
@@ -118,22 +130,39 @@ impl Sink for JournalSink {
         Ok(())
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
-impl Default for JournalSink {
-    fn default() -> Self {
-        Self::new()
+/// The builder of [`JournalSink`].
+///
+/// # Examples
+///
+/// - Building a [`JournalSink`].
+///
+///   ```
+///   use spdlog::{prelude::*, sink::JournalSink};
+///  
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: JournalSink = JournalSink::builder()
+///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
+///       .build()?;
+///   # Ok(()) }
+///   ```
+pub struct JournalSinkBuilder {
+    common_builder_impl: helper::CommonBuilderImpl,
+}
+
+impl JournalSinkBuilder {
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
+
+    /// Builds a [`JournalSink`].
+    pub fn build(self) -> Result<JournalSink> {
+        let sink = JournalSink {
+            common_impl: helper::CommonImpl::from_builder_with_formatter(
+                self.common_builder_impl,
+                || Box::new(JournalFormatter::new()),
+            ),
+        };
+        Ok(sink)
     }
 }

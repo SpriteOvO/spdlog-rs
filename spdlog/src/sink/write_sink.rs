@@ -1,10 +1,9 @@
-use std::{io::Write, mem};
+use std::{convert::Infallible, io::Write, marker::PhantomData};
 
 use crate::{
-    formatter::{Formatter, FullFormatter},
-    prelude::*,
+    sink::{helper, Sink},
     sync::*,
-    Error, Record, Result, Sink, StringBuf,
+    Error, Record, Result, StringBuf,
 };
 
 /// A sink that writes log messages into an arbitrary `impl Write` object.
@@ -29,8 +28,7 @@ pub struct WriteSink<W>
 where
     W: Write + Send,
 {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
     target: Mutex<W>,
 }
 
@@ -38,14 +36,20 @@ impl<W> WriteSink<W>
 where
     W: Write + Send,
 {
+    /// Constructs a builder of `WriteSink`.
+    pub fn builder() -> WriteSinkBuilder<W, ()> {
+        WriteSinkBuilder {
+            common_builder_impl: helper::CommonBuilderImpl::new(),
+            target: None,
+            _phantom: PhantomData,
+        }
+    }
+
     /// Constructs a `WriteSink` that writes log messages into the given `impl
     /// Write` object.
+    #[deprecated(note = "it may be removed in the future, use `WriteSink::builder()` instead")]
     pub fn new(target: W) -> Self {
-        Self {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
-            target: Mutex::new(target),
-        }
+        WriteSink::builder().target(target).build().unwrap()
     }
 
     /// Invoke a callback function with the underlying `impl Write` object.
@@ -90,7 +94,10 @@ where
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        self.common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         self.lock_target()
             .write_all(string_buf.as_bytes())
@@ -103,18 +110,7 @@ where
         self.lock_target().flush().map_err(Error::FlushBuffer)
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
 impl<W> Drop for WriteSink<W>
@@ -124,22 +120,105 @@ where
     fn drop(&mut self) {
         let flush_result = self.lock_target().flush().map_err(Error::FlushBuffer);
         if let Err(err) = flush_result {
-            // Sinks do not have an error handler, because it would increase complexity and
-            // the error is not common. So currently users cannot handle this error by
-            // themselves.
-            crate::default_error_handler("WriteSink", err);
+            self.common_impl.non_throwable_error("WriteSink", err)
         }
+    }
+}
+
+/// The builder of [`WriteSink`].
+#[doc = include_str!("../include/doc/generic-builder-note.md")]
+///
+/// # Examples
+///
+/// - Building a [`WriteSink`].
+///
+///   ```
+///   use spdlog::{prelude::*, sink::WriteSink};
+///  
+///   # fn main() -> Result<(), spdlog::Error> {
+///   # let target = Vec::new();
+///   let sink: WriteSink<_> = WriteSink::builder()
+///       .target(target) // required
+///       // .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
+///       .build()?;
+///   # Ok(()) }
+///   ```
+///
+/// - If any required parameters are missing, a compile-time error will be
+///   raised.
+///
+///   ```compile_fail,E0061
+///   use spdlog::{prelude::*, sink::WriteSink};
+///  
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: WriteSink<_> = WriteSink::builder()
+///       // .target(target) // required
+///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
+///       .build()?;
+///   # Ok(()) }
+///   ```
+pub struct WriteSinkBuilder<W, ArgW>
+where
+    W: Write + Send,
+{
+    common_builder_impl: helper::CommonBuilderImpl,
+    target: Option<W>,
+    _phantom: PhantomData<ArgW>,
+}
+
+impl<W, ArgW> WriteSinkBuilder<W, ArgW>
+where
+    W: Write + Send,
+{
+    /// Specifies the target that implemented [`Write`] trait, log messages will
+    /// be written into the target.
+    ///
+    /// This parameter is required.
+    pub fn target(self, target: W) -> WriteSinkBuilder<W, PhantomData<W>> {
+        WriteSinkBuilder {
+            common_builder_impl: self.common_builder_impl,
+            target: Some(target),
+            _phantom: PhantomData,
+        }
+    }
+
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
+}
+
+impl<W> WriteSinkBuilder<W, ()>
+where
+    W: Write + Send,
+{
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required field `target`\n\n\
+    ")]
+    pub fn build(self, _: Infallible) {}
+}
+
+impl<W> WriteSinkBuilder<W, PhantomData<W>>
+where
+    W: Write + Send,
+{
+    /// Builds a [`WriteSink`].
+    pub fn build(self) -> Result<WriteSink<W>> {
+        let sink = WriteSink {
+            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+            target: Mutex::new(self.target.unwrap()),
+        };
+        Ok(sink)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::*;
+    use crate::{prelude::*, test_utils::*};
 
     #[test]
     fn validation() {
-        let sink = Arc::new(WriteSink::new(Vec::new()));
+        let sink = Arc::new(WriteSink::builder().target(Vec::new()).build().unwrap());
         sink.set_formatter(Box::new(NoModFormatter::new()));
         let logger = test_logger_builder()
             .sink(sink.clone())

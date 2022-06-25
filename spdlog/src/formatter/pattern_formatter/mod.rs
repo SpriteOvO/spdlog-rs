@@ -40,6 +40,10 @@ where
         self.pattern.format(record, dest, &mut ctx)?;
         Ok(ctx.fmt_info_builder.build())
     }
+
+    fn clone_box(&self) -> Box<dyn Formatter> {
+        unimplemented!() // TODO
+    }
 }
 
 /// Provide context for patterns.

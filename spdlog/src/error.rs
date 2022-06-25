@@ -2,6 +2,8 @@
 
 use std::{fmt, io, result};
 
+use atomic::Atomic;
+use static_assertions::const_assert;
 use thiserror::Error;
 
 /// The error type of this crate.
@@ -70,6 +72,44 @@ pub enum Error {
     /// [`from_str`]: std::str::FromStr::from_str
     #[error("attempted to convert a string that doesn't match an existing log level: {0}")]
     ParseLevel(String),
+
+    /// The variant returned by [`Sink`]s when an error occurs in sending to the
+    /// channel.
+    ///
+    /// [`Sink`]: crate::sink::Sink
+    #[cfg(feature = "multi-thread")]
+    #[error("failed to send message to channel: {0}")]
+    SendToChannel(SendToChannelError),
+}
+
+/// The more detailed error type of sending to channel.
+#[cfg(feature = "multi-thread")]
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum SendToChannelError {
+    /// The channel is full.
+    ///
+    /// The variant returned only when [`OverflowPolicy::DropIncoming`] is used.
+    ///
+    /// [`OverflowPolicy::DropIncoming`]: crate::sink::async_sink::OverflowPolicy::DropIncoming
+    #[error("the channel is full")]
+    Full,
+
+    /// The channel is disconnected.
+    #[error("the channel is disconnected")]
+    Disconnected,
+}
+
+#[cfg(feature = "multi-thread")]
+impl SendToChannelError {
+    pub(crate) fn from_crossbeam<T>(err: crossbeam::channel::TrySendError<T>) -> Self {
+        use crossbeam::channel::TrySendError;
+
+        match err {
+            TrySendError::Full(_) => Self::Full,
+            TrySendError::Disconnected(_) => Self::Disconnected,
+        }
+    }
 }
 
 /// The result type of this crate.
@@ -77,3 +117,6 @@ pub type Result<T> = result::Result<T, Error>;
 
 /// The error handler function type.
 pub type ErrorHandler = fn(Error);
+
+const_assert!(Atomic::<ErrorHandler>::is_lock_free());
+const_assert!(Atomic::<Option<ErrorHandler>>::is_lock_free());

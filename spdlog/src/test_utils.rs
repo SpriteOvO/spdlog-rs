@@ -1,10 +1,10 @@
-use std::{env, fmt::Write, fs, mem, path::PathBuf};
+use std::{env, fmt::Write, fs, path::PathBuf, thread::sleep, time::Duration};
 
 use crate::{
-    formatter::{FmtExtraInfo, Formatter, FullFormatter},
+    formatter::{FmtExtraInfo, Formatter},
     sink::Sink,
     sync::*,
-    Error, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
+    Error, ErrorHandler, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
 };
 
 pub static TEST_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
@@ -19,24 +19,28 @@ pub static TEST_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
 
 pub struct CounterSink {
     level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
     log_counter: AtomicUsize,
     flush_counter: AtomicUsize,
     payloads: Mutex<Vec<String>>,
+    delay_duration: Option<Duration>,
 }
 
 // no modifications formatter, it will write `record` to `dest` as is.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct NoModFormatter {}
 
 impl CounterSink {
     pub fn new() -> Self {
+        Self::with_delay(None)
+    }
+
+    pub fn with_delay(duration: Option<Duration>) -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
             log_counter: AtomicUsize::new(0),
             flush_counter: AtomicUsize::new(0),
             payloads: Mutex::new(vec![]),
+            delay_duration: duration,
         }
     }
 
@@ -61,6 +65,10 @@ impl CounterSink {
 
 impl Sink for CounterSink {
     fn log(&self, record: &Record) -> Result<()> {
+        if let Some(delay) = self.delay_duration {
+            sleep(delay);
+        }
+
         self.log_counter.fetch_add(1, Ordering::Relaxed);
 
         self.payloads
@@ -71,6 +79,10 @@ impl Sink for CounterSink {
     }
 
     fn flush(&self) -> Result<()> {
+        if let Some(delay) = self.delay_duration {
+            sleep(delay);
+        }
+
         self.flush_counter.fetch_add(1, Ordering::Relaxed);
         Ok(())
     }
@@ -83,9 +95,12 @@ impl Sink for CounterSink {
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
+    fn set_formatter(&self, _formatter: Box<dyn Formatter>) {
+        // no-op
+    }
+
+    fn set_error_handler(&self, _handler: Option<ErrorHandler>) {
+        // no-op
     }
 }
 
@@ -107,6 +122,10 @@ impl Formatter for NoModFormatter {
             .map_err(Error::FormatRecord)?;
 
         Ok(FmtExtraInfo::new())
+    }
+
+    fn clone_box(&self) -> Box<dyn Formatter> {
+        Box::new(self.clone())
     }
 }
 

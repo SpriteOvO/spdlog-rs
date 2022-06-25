@@ -2,18 +2,13 @@ use std::{env, fs, path::PathBuf, sync::Arc, time::Duration};
 
 use spdlog::{prelude::*, sink::FileSink};
 
-fn main() {
+fn main() -> Result<(), spdlog::Error> {
     const LOG_FILE: &str = "logs/file_sink.log";
 
     let path: PathBuf = env::current_exe().unwrap().parent().unwrap().join(LOG_FILE);
 
-    let file_sink: Arc<FileSink> = Arc::new(
-        FileSink::builder()
-            .path(&path)
-            .truncate(true)
-            .build()
-            .unwrap(),
-    );
+    let file_sink: Arc<FileSink> =
+        Arc::new(FileSink::builder().path(&path).truncate(true).build()?);
 
     // Building a logger uses the `file_sink`.
     // All logs to this logger will be written to file "example_logs/file_sink.log".
@@ -45,4 +40,6 @@ fn main() {
         LOG_FILE,
         fs::read_to_string(path).unwrap()
     );
+
+    Ok(())
 }

@@ -15,6 +15,12 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  # When updating this, also update:
+  # - src/lib.rs
+  # - Cargo.toml
+  # - README.md
+  rust_minver: 1.56.0
+  rust_minver_tolerant: 1.57.0 # For dev-dependencies
 
 jobs:
   format:
@@ -25,6 +31,8 @@ jobs:
       run: |
         rustup toolchain install nightly
         rustup component add rustfmt --toolchain nightly
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
     - name: Check formatting
       run: cargo +nightly fmt --all -- --check
 
@@ -34,13 +42,15 @@ jobs:
         os: ['ubuntu-latest', 'windows-latest']
         features: ['', 'flexible-string']
     env:
-      ADD_FEATURES: 'log libsystemd'
+      ADD_FEATURES: 'log native multi-thread'
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt install libsystemd-dev
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
     - name: Run tests with additional features
       if: matrix.features == ''
       run: cargo test --features "${{ env.ADD_FEATURES }}"
@@ -49,14 +59,54 @@ jobs:
       run: cargo test --features "${{ env.ADD_FEATURES }} ${{ matrix.features }}" --verbose
 
   clippy:
+    strategy:
+      matrix:
+        os: ['ubuntu-latest', 'windows-latest']
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt install libsystemd-dev
+    - name: Install nightly
+      run: |
+        rustup toolchain install nightly
+        rustup component add clippy --toolchain nightly
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
+    - name: Run clippy
+      run: cargo +nightly clippy --all-features --tests --benches --examples -- -D warnings
+
+  check-doc:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
       run: sudo apt install libsystemd-dev
     - name: Install nightly
+      run: rustup toolchain install nightly
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
+    - name: Run rustdoc
       run: |
-        rustup toolchain install nightly
-        rustup component add clippy --toolchain nightly
-    - name: Run clippy
-      run: cargo +nightly clippy --all-features --tests --benches -- -D warnings
+        cd spdlog
+        cargo +nightly rustdoc --all-features -- -D warnings
+        cd ../spdlog-macros
+        cargo +nightly rustdoc --all-features -- -D warnings
+
+  check-minver:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt install libsystemd-dev
+    - name: Install Rust ${{ env.rust_minver }}
+      run: rustup toolchain install ${{ env.rust_minver }}
+    - name: Install Rust ${{ env.rust_minver_tolerant }}
+      run: rustup toolchain install ${{ env.rust_minver_tolerant }}
+    - name: Cache cargo directories
+      uses: Swatinem/rust-cache@v1
+    - name: Run check for core with Rust ${{ env.rust_minver }}
+      run: cargo +${{ env.rust_minver }} check --all-features
+    - name: Run check for examples with Rust ${{ env.rust_minver_tolerant }}
+      run: cargo +${{ env.rust_minver_tolerant }} check --all-features --examples

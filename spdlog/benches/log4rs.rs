@@ -42,7 +42,7 @@ static HANDLE: Lazy<Handle> = Lazy::new(|| {
 });
 
 #[bench]
-fn bench_file(bencher: &mut Bencher) {
+fn bench_1_file(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("file.log");
 
     let appender = FileAppender::builder()
@@ -60,8 +60,10 @@ fn bench_file(bencher: &mut Bencher) {
     bencher.iter(|| info!(bench_log_message!()))
 }
 
+unavailable_bench!(bench_2_file_async);
+
 #[bench]
-fn bench_rotating_file_size(bencher: &mut Bencher) {
+fn bench_3_rotating_file_size(bencher: &mut Bencher) {
     let pattern_path = LOGS_PATH.join("rotating_file_size_{}.log");
     let path = LOGS_PATH.join("rotating_file_size.log");
 
@@ -95,8 +97,10 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
     bencher.iter(|| info!(bench_log_message!()))
 }
 
+unavailable_bench!(bench_4_rotating_daily);
+
 #[bench]
-fn bench_level_off(bencher: &mut Bencher) {
+fn bench_5_level_off(bencher: &mut Bencher) {
     let config = Config::builder()
         .build(Root::builder().build(LevelFilter::Off))
         .unwrap();

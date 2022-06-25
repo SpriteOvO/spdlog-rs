@@ -1,38 +1,46 @@
-use std::{ffi::OsStr, iter::once, mem, os::windows::ffi::OsStrExt};
-
-use winapi::um::debugapi::OutputDebugStringW;
+use std::{ffi::OsStr, iter::once};
 
 use crate::{
-    formatter::{Formatter, FullFormatter},
-    sink::Sink,
-    sync::*,
-    LevelFilter, Record, Result, StringBuf,
+    sink::{helper, Sink},
+    Record, Result, StringBuf,
 };
 
 /// A sink with a win32 API `OutputDebugStringW` as the target.
 pub struct WinDebugSink {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
 }
 
 impl WinDebugSink {
-    /// Constructs a `WinDebugSink`.
-    pub fn new() -> WinDebugSink {
-        WinDebugSink {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+    /// Constructs a builder of `WinDebugSink`.
+    pub fn builder() -> WinDebugSinkBuilder {
+        WinDebugSinkBuilder {
+            common_builder_impl: helper::CommonBuilderImpl::new(),
         }
+    }
+
+    /// Constructs a `WinDebugSink`.
+    #[allow(clippy::new_without_default)]
+    #[deprecated(note = "it may be removed in the future, use `WinDebugSink::builder()` instead")]
+    pub fn new() -> WinDebugSink {
+        WinDebugSink::builder().build().unwrap()
     }
 }
 
 impl Sink for WinDebugSink {
     fn log(&self, record: &Record) -> Result<()> {
+        // TODO: Remove this `cfg` after Rustdoc fixed https://github.com/rust-lang/rust/issues/97976
+        #[cfg(windows)]
+        use std::os::windows::ffi::OsStrExt;
+
         if !self.should_log(record.level()) {
             return Ok(());
         }
 
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        self.common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         let wide: Vec<u16> = OsStr::new(&string_buf)
             .encode_wide()
@@ -40,7 +48,7 @@ impl Sink for WinDebugSink {
             .collect();
         let wide = wide.as_ptr();
 
-        unsafe { OutputDebugStringW(wide) }
+        unsafe { winapi::um::debugapi::OutputDebugStringW(wide) }
 
         Ok(())
     }
@@ -49,22 +57,36 @@ impl Sink for WinDebugSink {
         Ok(())
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
-impl Default for WinDebugSink {
-    fn default() -> Self {
-        Self::new()
+/// The builder of [`WinDebugSink`].
+///
+/// # Examples
+///
+/// - Building a [`WinDebugSink`].
+///
+///   ```
+///   use spdlog::{prelude::*, sink::WinDebugSink};
+///  
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: WinDebugSink = WinDebugSink::builder()
+///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
+///       .build()?;
+///   # Ok(()) }
+///   ```
+pub struct WinDebugSinkBuilder {
+    common_builder_impl: helper::CommonBuilderImpl,
+}
+
+impl WinDebugSinkBuilder {
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
+
+    /// Builds a [`WinDebugSink`].
+    pub fn build(self) -> Result<WinDebugSink> {
+        let sink = WinDebugSink {
+            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+        };
+        Ok(sink)
     }
 }

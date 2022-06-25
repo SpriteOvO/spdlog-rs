@@ -5,13 +5,13 @@
 //! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
 
 mod full_formatter;
-#[cfg(target_os = "linux")]
+#[cfg(any(all(target_os = "linux", feature = "native"), all(doc, not(doctest))))]
 mod journal_formatter;
 mod local_time_cacher;
 mod pattern_formatter;
 
 pub use full_formatter::*;
-#[cfg(all(target_os = "linux", feature = "libsystemd"))]
+#[cfg(any(all(target_os = "linux", feature = "native"), all(doc, not(doctest))))]
 pub(crate) use journal_formatter::*;
 pub(crate) use local_time_cacher::*;
 pub use pattern_formatter::*;
@@ -28,8 +28,11 @@ use crate::{Record, Result, StringBuf};
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub trait Formatter: Send + Sync {
-    /// Format a log record.
+    /// Formats a log record.
     fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo>;
+
+    /// Clones self into a boxed trait object.
+    fn clone_box(&self) -> Box<dyn Formatter>;
 }
 
 /// Extra information for formatted text.

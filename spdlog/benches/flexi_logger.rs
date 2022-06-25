@@ -47,7 +47,7 @@ pub fn formatter(
 }
 
 #[bench]
-fn bench_file(bencher: &mut Bencher) {
+fn bench_1_file(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("file.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
@@ -61,8 +61,10 @@ fn bench_file(bencher: &mut Bencher) {
     bencher.iter(|| info!(bench_log_message!()))
 }
 
+unavailable_bench!(bench_2_file_async);
+
 #[bench]
-fn bench_rotating_file_size(bencher: &mut Bencher) {
+fn bench_3_rotating_file_size(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("rotating_file_size.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
@@ -82,7 +84,7 @@ fn bench_rotating_file_size(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_rotating_daily(bencher: &mut Bencher) {
+fn bench_4_rotating_daily(bencher: &mut Bencher) {
     let path = LOGS_PATH.join("rotating_daily.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
@@ -102,7 +104,7 @@ fn bench_rotating_daily(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_level_off(bencher: &mut Bencher) {
+fn bench_5_level_off(bencher: &mut Bencher) {
     HANDLE.lock().unwrap().set_new_spec(LogSpecification::off());
 
     bencher.iter(|| info!(bench_log_message!()))

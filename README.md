@@ -19,6 +19,7 @@ A fast and combinable Rust logging crate, inspired by the C++ logging library [s
     - ... (more targets are implementing, PRs are welcome)
     - Extendable with custom log targets.
  - Compatible with [log crate] (optional).
+ - Asynchronous support.
  - Configured via environment variable.
  - Custom formatting.
  - Log filtering - log levels can be modified in runtime as well as in compile time.
@@ -35,9 +36,24 @@ The documentation of this crate is hosted on [docs.rs], and you can find example
 
 If you have any questions or need help while using this crate, feel free to [open a discussion]. For feature requests or bug reports, please [open an issue].
 
+## Supported Rust Versions
+
+<!--
+When updating this, also update:
+- .github/workflows/ci.yml
+- src/lib.rs
+- Cargo.toml
+-->
+
+The current minimum supported Rust version is 1.56.
+
+`spdlog-rs` is built against the latest Rust stable release, it is not guaranteed to build on Rust versions earlier than the minimum supported version.
+
+`spdlog-rs` follows the compiler support policy that the latest stable version and the 3 most recent minor versions before that are always supported. For example, if the current latest Rust stable version is 1.61, the minimum supported version will not be increased past 1.58. Increasing the minimum supported version is not considered a semver breaking change as long as it complies with this policy.
+
 ## Benchmarks
 
-Run `cargo +nightly bench` in the root directory of this repository for benchmarking.
+Run `cargo +nightly bench --features multi-thread` in the root directory of this repository for benchmarking.
 
 The following results are generated with `Windows 10 64 bit` and `Intel i9-10900KF CPU @ 3.70GHz`.
 

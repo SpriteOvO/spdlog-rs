@@ -3,17 +3,14 @@
 use std::{
     convert::Infallible,
     io::{self, Write},
-    mem,
 };
 
 use if_chain::if_chain;
 
 use crate::{
-    formatter::{Formatter, FullFormatter},
-    sink::Sink,
-    sync::*,
+    sink::{helper, Sink},
     terminal_style::{LevelStyleCodes, Style, StyleMode},
-    Error, Level, LevelFilter, Record, Result, StringBuf,
+    Error, Level, Record, Result, StringBuf,
 };
 
 /// An enum representing the available standard streams.
@@ -78,8 +75,7 @@ impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 ///
 /// Note that this sink always flushes the buffer once with each logging.
 pub struct StdStreamSink {
-    level_filter: Atomic<LevelFilter>,
-    formatter: SpinRwLock<Box<dyn Formatter>>,
+    common_impl: helper::CommonImpl,
     dest: StdStreamDest<io::Stdout, io::Stderr>,
     atty_stream: atty::Stream,
     should_render_style: bool,
@@ -90,6 +86,7 @@ impl StdStreamSink {
     /// Constructs a builder of `StdStreamSink`.
     pub fn builder() -> StdStreamSinkBuilder<()> {
         StdStreamSinkBuilder {
+            common_builder_impl: helper::CommonBuilderImpl::new(),
             std_stream: (),
             style_mode: StyleMode::Auto,
         }
@@ -131,8 +128,11 @@ impl Sink for StdStreamSink {
         }
 
         let mut string_buf = StringBuf::new();
-
-        let extra_info = self.formatter.read().format(record, &mut string_buf)?;
+        let extra_info = self
+            .common_impl
+            .formatter
+            .read()
+            .format(record, &mut string_buf)?;
 
         let mut dest = self.dest.lock();
 
@@ -169,18 +169,7 @@ impl Sink for StdStreamSink {
         self.dest.lock().flush().map_err(Error::FlushBuffer)
     }
 
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn swap_formatter(&self, mut formatter: Box<dyn Formatter>) -> Box<dyn Formatter> {
-        mem::swap(&mut *self.formatter.write(), &mut formatter);
-        formatter
-    }
+    helper::common_impl!(@Sink: common_impl);
 }
 
 // --------------------------------------------------
@@ -198,29 +187,34 @@ impl Sink for StdStreamSink {
 ///       terminal_style::StyleMode
 ///   };
 ///
-///   let sink: spdlog::Result<StdStreamSink> = StdStreamSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: StdStreamSink = StdStreamSink::builder()
 ///       .std_stream(StdStream::Stdout) // required
 ///       /* .style_mode(StyleMode::Never) // optional, defaults to
 ///                                        // `StyleMode::Auto` */
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 ///
 /// - If any required parameters are missing, a compile-time error will be
 ///   raised.
 ///
-///   ```compile_fail
+///   ```compile_fail,E0061
 ///   use spdlog::{
 ///       sink::{StdStreamSink, StdStream},
 ///       terminal_style::StyleMode
 ///   };
 ///
-///   let sink: spdlog::Result<StdStreamSink> = StdStreamSink::builder()
+///   # fn main() -> Result<(), spdlog::Error> {
+///   let sink: StdStreamSink = StdStreamSink::builder()
 ///       // .std_stream(StdStream::Stdout) // required
 ///       .style_mode(StyleMode::Never) /* optional, defaults to
 ///                                      * `StyleMode::Auto` */
-///       .build();
+///       .build()?;
+///   # Ok(()) }
 ///   ```
 pub struct StdStreamSinkBuilder<ArgSS> {
+    common_builder_impl: helper::CommonBuilderImpl,
     std_stream: ArgSS,
     style_mode: StyleMode,
 }
@@ -231,6 +225,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// This parameter is required.
     pub fn std_stream(self, std_stream: StdStream) -> StdStreamSinkBuilder<StdStream> {
         StdStreamSinkBuilder {
+            common_builder_impl: self.common_builder_impl,
             std_stream,
             style_mode: self.style_mode,
         }
@@ -239,9 +234,12 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// Specifies the style mode.
     ///
     /// This parameter is optional, and defaults to [`StyleMode::Auto`].
-    pub fn style_mode(self, style_mode: StyleMode) -> Self {
-        Self { style_mode, ..self }
+    pub fn style_mode(mut self, style_mode: StyleMode) -> Self {
+        self.style_mode = style_mode;
+        self
     }
+
+    helper::common_impl!(@SinkBuilder: common_builder_impl);
 }
 
 impl StdStreamSinkBuilder<()> {
@@ -262,8 +260,7 @@ impl StdStreamSinkBuilder<StdStream> {
         };
 
         Ok(StdStreamSink {
-            level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(Box::new(FullFormatter::new())),
+            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
             dest: StdStreamDest::new(self.std_stream),
             atty_stream,
             should_render_style: StdStreamSink::should_render_style(self.style_mode, atty_stream),

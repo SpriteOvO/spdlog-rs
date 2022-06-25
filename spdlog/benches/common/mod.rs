@@ -27,3 +27,22 @@ pub const FILE_SIZE: u64 = 30 * 1024 * 1024;
 
 #[allow(dead_code)]
 pub const ROTATING_FILES: usize = 6;
+
+#[macro_export]
+macro_rules! unavailable_bench {
+    ( $($bench_name:ident),*$(,)? ) => {
+        $(
+            #[bench]
+            #[ignore]
+            fn $bench_name(_bencher: &mut Bencher) {}
+        )*
+    };
+}
+
+#[macro_export]
+macro_rules! required_multi_thread_feature {
+    () => {
+        #[cfg(not(feature = "multi-thread"))]
+        compile_error!("please rerun `cargo bench` with `--features multi-thread`");
+    };
+}

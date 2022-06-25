@@ -5,6 +5,8 @@ use std::{
     marker::PhantomData,
 };
 
+use cfg_if::cfg_if;
+
 use crate::{
     formatter::{FmtExtraInfo, Formatter, LOCAL_TIME_CACHER},
     Error, Record, StringBuf, EOL,
@@ -26,7 +28,8 @@ use crate::{
 ///
 ///  - If crate feature `source-location` is enabled:
 ///
-///    `[2021-12-23 01:23:45.067] [info] [crate::mod, main.rs:2] log message`
+///    `[2021-12-23 01:23:45.067] [info] [mod::path, src/main.rs:2] log message`
+#[derive(Clone)]
 pub struct FullFormatter {
     _phantom: PhantomData<()>,
 }
@@ -44,6 +47,12 @@ impl FullFormatter {
         record: &Record,
         dest: &mut StringBuf,
     ) -> Result<FmtExtraInfo, fmt::Error> {
+        cfg_if! {
+            if #[cfg(not(feature = "flexible-string"))] {
+                dest.reserve(crate::string_buf::RESERVE_SIZE);
+            }
+        }
+
         {
             let mut local_time_cacher = LOCAL_TIME_CACHER.lock();
             let time = local_time_cacher.get(record.time());
@@ -69,7 +78,7 @@ impl FullFormatter {
             dest.write_str("] [")?;
             dest.write_str(srcloc.module_path())?;
             dest.write_str(", ")?;
-            dest.write_str(srcloc.file_name())?;
+            dest.write_str(srcloc.file())?;
             dest.write_str(":")?;
             write!(dest, "{}", srcloc.line())?;
         }
@@ -87,6 +96,10 @@ impl FullFormatter {
 impl Formatter for FullFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
         self.format_impl(record, dest).map_err(Error::FormatRecord)
+    }
+
+    fn clone_box(&self) -> Box<dyn Formatter> {
+        Box::new(self.clone())
     }
 }
 
