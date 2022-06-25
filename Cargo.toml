@@ -74,12 +74,17 @@ flexi_logger = "=0.22.2"
 rustc_version = "0.4.0"
 
 [[bench]]
+name = "spdlog_rs"
+required-features = ["multi-thread"]
+
+[[bench]]
 name = "compare_with_cpp_spdlog"
 harness = false
 
 [[bench]]
 name = "compare_with_cpp_spdlog_async"
 harness = false
+required-features = ["multi-thread"]
 
 [[example]]
 name = "06_compatible_with_log_crate"
