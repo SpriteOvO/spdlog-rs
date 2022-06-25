@@ -10,6 +10,8 @@ pub mod patterns;
 
 use std::{fmt::Write, ops::Range, sync::Arc};
 
+pub use spdlog_macros::pattern;
+
 use crate::{
     formatter::{FmtExtraInfo, FmtExtraInfoBuilder, Formatter},
     Error, Record, StringBuf,

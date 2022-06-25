@@ -29,7 +29,7 @@ impl Pattern for Level {
 /// A pattern that writes the level in a shorter form of a log record into the
 /// output. Examples: `C`, `E`, `W`.
 ///
-/// This pattern corresponds to `{L}` or `{short-level}` in the pattern template
+/// This pattern corresponds to `{L}` or `{level-short}` in the pattern template
 /// string.
 pub struct ShortLevel;
 

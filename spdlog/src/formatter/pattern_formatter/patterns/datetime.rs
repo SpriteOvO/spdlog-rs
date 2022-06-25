@@ -313,7 +313,7 @@ impl Pattern for Year {
 /// A pattern that writes the short date of log records in `MM/DD/YY` format
 /// into the output. Examples: `04/01/22`, `12/31/21`.
 ///
-/// This pattern corresponds to `{D}` or `{short-date}` in the pattern template
+/// This pattern corresponds to `{D}` or `{date-short}` in the pattern template
 /// string.
 #[derive(Clone, Debug, Default)]
 pub struct ShortDate {
@@ -494,7 +494,7 @@ pub struct Minute {
 }
 
 impl Minute {
-    /// Create a new `Minutes` pattern.
+    /// Create a new `Minute` pattern.
     pub fn new() -> Self {
         Self {
             _phantom: PhantomData::default(),
