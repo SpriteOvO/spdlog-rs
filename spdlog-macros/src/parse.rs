@@ -33,6 +33,7 @@ impl Parse for Pattern {
     }
 }
 
+#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub(crate) struct PatternTemplate {
     pub(crate) tokens: Vec<PatternTemplateToken>,
 }
@@ -70,14 +71,20 @@ impl PatternTemplate {
         Ok(parsed_template)
     }
 
-    fn parser<'a>() -> Box<dyn Parser<&'a str, Self, nom::error::Error<&'a str>> + 'a> {
+    fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let token_parser = PatternTemplateToken::parser();
-        let parser = nom::combinator::complete(nom::multi::many0(token_parser))
-            .map(|tokens| Self { tokens });
-        Box::new(parser)
+        nom::combinator::complete(nom::multi::many0(token_parser).and(nom::combinator::eof))
+            .map(|(tokens, _)| Self { tokens })
+    }
+
+    fn parser_without_color_range<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
+        let token_parser = PatternTemplateToken::parser_without_color_range();
+        nom::combinator::complete(nom::multi::many0(token_parser).and(nom::combinator::eof))
+            .map(|(tokens, _)| Self { tokens })
     }
 }
 
+#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub(crate) enum PatternTemplateToken {
     Literal(PatternTemplateLiteral),
     Formatter(PatternTemplateFormatter),
@@ -86,16 +93,22 @@ pub(crate) enum PatternTemplateToken {
 
 impl PatternTemplateToken {
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
+        let color_range_parser = PatternTemplateColorRange::parser();
+        let other_parser = Self::parser_without_color_range();
+
+        nom::combinator::map(color_range_parser, Self::ColorRange).or(other_parser)
+    }
+
+    fn parser_without_color_range<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let literal_parser = PatternTemplateLiteral::parser();
         let formatter_parser = PatternTemplateFormatter::parser();
-        let color_range_parser = PatternTemplateColorRange::parser();
 
-        nom::combinator::map(color_range_parser, Self::ColorRange)
+        nom::combinator::map(literal_parser, Self::Literal)
             .or(nom::combinator::map(formatter_parser, Self::Formatter))
-            .or(nom::combinator::map(literal_parser, Self::Literal))
     }
 }
 
+#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub(crate) struct PatternTemplateLiteral {
     pub(crate) literal: String,
 }
@@ -111,6 +124,7 @@ impl PatternTemplateLiteral {
     }
 }
 
+#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub(crate) struct PatternTemplateFormatter {
     pub(crate) formatter_name: String,
 }
@@ -129,6 +143,7 @@ impl PatternTemplateFormatter {
     }
 }
 
+#[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub(crate) struct PatternTemplateColorRange {
     pub(crate) body: PatternTemplate,
 }
@@ -136,10 +151,10 @@ pub(crate) struct PatternTemplateColorRange {
 impl PatternTemplateColorRange {
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         nom::bytes::complete::tag("{^")
-            .and(nom::bytes::complete::take_until("&}"))
-            .and(nom::bytes::complete::tag("&}"))
+            .and(nom::bytes::complete::take_until("$}"))
+            .and(nom::bytes::complete::tag("$}"))
             .map(|((_, body), _)| body)
-            .and_then(PatternTemplate::parser())
+            .and_then(PatternTemplate::parser_without_color_range())
             .map(|body| Self { body })
     }
 }
@@ -200,5 +215,173 @@ impl Parse for CustomPatternMappingItem {
 
         let factory: CustomPatternFactoryFunctionId = input.parse()?;
         Ok(Self { names, factory })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod template_parsing {
+        use super::*;
+
+        fn parse_template_str(template: &str) -> nom::IResult<&str, PatternTemplate> {
+            PatternTemplate::parser().parse(template)
+        }
+
+        #[test]
+        fn test_parse_basic() {
+            assert_eq!(
+                parse_template_str(r#"hello"#),
+                Ok((
+                    "",
+                    PatternTemplate {
+                        tokens: vec![PatternTemplateToken::Literal(PatternTemplateLiteral {
+                            literal: String::from("hello"),
+                        }),],
+                    }
+                ))
+            );
+        }
+
+        #[test]
+        fn test_parse_empty() {
+            assert_eq!(
+                parse_template_str(""),
+                Ok(("", PatternTemplate { tokens: Vec::new() },))
+            );
+        }
+
+        #[test]
+        fn test_parse_escape_literal() {
+            assert_eq!(
+                parse_template_str(r#"hello {{name}}"#),
+                Ok((
+                    "",
+                    PatternTemplate {
+                        tokens: vec![PatternTemplateToken::Literal(PatternTemplateLiteral {
+                            literal: String::from("hello {name}"),
+                        }),],
+                    }
+                ))
+            );
+        }
+
+        #[test]
+        fn test_parse_escape_literal_at_beginning() {
+            assert_eq!(
+                parse_template_str(r#"{{name}}"#),
+                Ok((
+                    "",
+                    PatternTemplate {
+                        tokens: vec![PatternTemplateToken::Literal(PatternTemplateLiteral {
+                            literal: String::from("{name}"),
+                        }),],
+                    }
+                ))
+            );
+        }
+
+        #[test]
+        fn test_parse_formatter_basic() {
+            assert_eq!(
+                parse_template_str(r#"hello {name}!"#),
+                Ok((
+                    "",
+                    PatternTemplate {
+                        tokens: vec![
+                            PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                literal: String::from("hello "),
+                            }),
+                            PatternTemplateToken::Formatter(PatternTemplateFormatter {
+                                formatter_name: String::from("name"),
+                            }),
+                            PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                literal: String::from("!"),
+                            }),
+                        ],
+                    }
+                ))
+            );
+        }
+
+        #[test]
+        fn test_parse_literal_single_close_paren() {
+            assert_eq!(
+                parse_template_str(r#"hello name}"#),
+                Ok((
+                    "",
+                    PatternTemplate {
+                        tokens: vec![PatternTemplateToken::Literal(PatternTemplateLiteral {
+                            literal: String::from("hello name}"),
+                        }),],
+                    }
+                ))
+            );
+        }
+
+        #[test]
+        fn test_parse_formatter_invalid_name() {
+            assert!(parse_template_str(r#"hello {name{}!"#).is_err());
+        }
+
+        #[test]
+        fn test_parse_formatter_missing_close_paren() {
+            assert!(parse_template_str(r#"hello {name"#).is_err());
+        }
+
+        #[test]
+        fn test_parse_formatter_duplicate_close_paren() {
+            assert_eq!(
+                parse_template_str(r#"hello {name}}"#),
+                Ok((
+                    "",
+                    PatternTemplate {
+                        tokens: vec![
+                            PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                literal: String::from("hello "),
+                            }),
+                            PatternTemplateToken::Formatter(PatternTemplateFormatter {
+                                formatter_name: String::from("name"),
+                            }),
+                            PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                literal: String::from("}"),
+                            }),
+                        ],
+                    }
+                ))
+            );
+        }
+
+        #[test]
+        fn test_parse_color_range_basic() {
+            assert_eq!(
+                parse_template_str(r#"hello {^world$}"#),
+                Ok((
+                    "",
+                    PatternTemplate {
+                        tokens: vec![
+                            PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                literal: String::from("hello "),
+                            }),
+                            PatternTemplateToken::ColorRange(PatternTemplateColorRange {
+                                body: PatternTemplate {
+                                    tokens: vec![PatternTemplateToken::Literal(
+                                        PatternTemplateLiteral {
+                                            literal: String::from("world"),
+                                        }
+                                    ),],
+                                },
+                            }),
+                        ],
+                    }
+                ))
+            );
+        }
+
+        #[test]
+        fn test_parse_color_range_nested() {
+            assert!(parse_template_str(r#"hello {^ hello {^ world $} $}"#).is_err());
+        }
     }
 }
