@@ -17,8 +17,15 @@ use crate::{
 ///
 /// On Windows, this pattern writes the return value of `GetCurrentProcessId` to
 /// the output.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct ProcessId;
+
+impl ProcessId {
+    /// Create a new `ProcessId` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for ProcessId {
     fn format(

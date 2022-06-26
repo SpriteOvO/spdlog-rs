@@ -10,8 +10,15 @@ use crate::{
 ///
 /// This pattern corresponds to `{v}` or `{payload}` in the pattern template
 /// string.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Payload;
+
+impl Payload {
+    /// Create a new `Payload` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for Payload {
     fn format(

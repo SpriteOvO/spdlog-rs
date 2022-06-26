@@ -10,8 +10,15 @@ use crate::{
 ///
 /// This pattern corresponds to `{l}` or `{level}` in the pattern template
 /// string.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Level;
+
+impl Level {
+    /// Create a new `Level` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for Level {
     fn format(
@@ -31,7 +38,15 @@ impl Pattern for Level {
 ///
 /// This pattern corresponds to `{L}` or `{level-short}` in the pattern template
 /// string.
+#[derive(Copy, Clone, Debug, Default)]
 pub struct ShortLevel;
+
+impl ShortLevel {
+    /// Create a new `ShortLevel` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for ShortLevel {
     fn format(

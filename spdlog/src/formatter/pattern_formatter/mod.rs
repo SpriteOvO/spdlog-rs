@@ -849,20 +849,23 @@ tuple_pattern! {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
 
     use crate::Level;
     use crate::SourceLocation;
 
-    pub(super) fn get_mock_record() -> Record<'static> {
+    // We use `get_mock_record` and `test_pattern` in tests/pattern.rs so let's make
+    // them pub in test builds.
+
+    pub fn get_mock_record() -> Record<'static> {
         Record::builder(Level::Info, "record_payload")
             .logger_name("logger_name")
             .source_location(Some(SourceLocation::__new("module", "file", 10, 20)))
             .build()
     }
 
-    pub(super) fn test_pattern<P, T>(pattern: P, formatted: T, style_range: Option<Range<usize>>)
+    pub fn test_pattern<P, T>(pattern: P, formatted: T, style_range: Option<Range<usize>>)
     where
         P: Pattern,
         T: AsRef<str>,

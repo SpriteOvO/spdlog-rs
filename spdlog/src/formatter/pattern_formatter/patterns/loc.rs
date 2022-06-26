@@ -9,7 +9,15 @@ use crate::{
 /// the output. Example: `main.rs:30:20`.
 ///
 /// This pattern corresponds to `{@}` or `{loc}` in the pattern template string.
+#[derive(Default)]
 pub struct Loc;
+
+impl Loc {
+    /// Create a new `Loc` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for Loc {
     fn format(
@@ -36,7 +44,15 @@ impl Pattern for Loc {
 ///
 /// This pattern corresponds to `{s}` or `{source-basename}` in the pattern
 /// template string.
+#[derive(Default)]
 pub struct SourceBasename;
+
+impl SourceBasename {
+    /// Create a new `SourceBasename` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for SourceBasename {
     fn format(
@@ -58,7 +74,15 @@ impl Pattern for SourceBasename {
 ///
 /// This pattern corresponds to `{g}` or `{source}` in the pattern template
 /// string.
+#[derive(Default)]
 pub struct SourcePath;
+
+impl SourcePath {
+    /// Create a new `SourcePath` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for SourcePath {
     fn format(
@@ -78,7 +102,15 @@ impl Pattern for SourcePath {
 ///
 /// This pattern corresponds to `{#}` or `{line}` in the pattern template
 /// string.
+#[derive(Default)]
 pub struct SourceLine;
+
+impl SourceLine {
+    /// Create a new `SourceLine` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for SourceLine {
     fn format(
@@ -99,7 +131,15 @@ impl Pattern for SourceLine {
 ///
 /// This pattern corresponds to `{%}` or `{column}` in the pattern template
 /// string.
+#[derive(Default)]
 pub struct SourceColumn;
+
+impl SourceColumn {
+    /// Create a new `SourceColumn` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for SourceColumn {
     fn format(

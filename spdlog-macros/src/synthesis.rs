@@ -35,10 +35,12 @@ impl Synthesiser {
             ) => {
                 $(
                     $(
+                        // All built-in patterns implement the `Default` trait. So we use the
+                        // `default` function to create instances of the built-in patterns.
                         $synthesiser.add_formatter_mapping(
                             String::from($name),
                             syn::parse_str(
-                                stringify!(::spdlog::formatter::pattern_formatter::patterns::$formatter::new)
+                                stringify!(::spdlog::formatter::patterns::$formatter::default)
                             ).unwrap()
                         ).unwrap();
                     )+
@@ -78,6 +80,10 @@ impl Synthesiser {
             ["E", "unix"] => UnixTimestamp,
             ["+", "full"] => Full,
             ["@", "loc"] => Loc,
+            ["s", "source-basename"] => SourceBasename,
+            ["g", "source"] => SourcePath,
+            ["#", "line"] => SourceLine,
+            ["%", "column"] => SourceColumn,
         );
 
         synthesiser
@@ -164,7 +170,9 @@ impl Synthesiser {
         &self,
         color_range_token: &PatternTemplateColorRange,
     ) -> Result<Expr, SynthesisError> {
-        self.build_template_pattern_expr(&color_range_token.body, true)
+        let body_pattern_expr = self.build_template_pattern_expr(&color_range_token.body, true)?;
+        let expr = self.build_color_range_pattern_creation_expr(body_pattern_expr)?;
+        Ok(expr)
     }
 
     fn build_formatter_creation_expr(&self, formatter_name: &str) -> Result<Expr, SynthesisError> {
@@ -176,6 +184,14 @@ impl Synthesiser {
         let stream = quote::quote!( #formatter_factory_path () );
         let factory_call_expr = syn::parse2(stream).unwrap();
         Ok(Expr::Call(factory_call_expr))
+    }
+
+    fn build_color_range_pattern_creation_expr(&self, body: Expr) -> Result<Expr, SynthesisError> {
+        let color_range_pattern_new_path: Path =
+            syn::parse_str("::spdlog::formatter::patterns::ColorRange::new").unwrap();
+        let stream = quote::quote!( #color_range_pattern_new_path (#body) );
+        let expr = syn::parse2(stream).unwrap();
+        Ok(Expr::Call(expr))
     }
 }
 

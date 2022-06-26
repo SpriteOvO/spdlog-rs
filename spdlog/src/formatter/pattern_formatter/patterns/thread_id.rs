@@ -19,8 +19,15 @@ use crate::{
 ///
 /// On Windows, this pattern writes the return value of `GetCurrentThreadId` to
 /// the output.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct ThreadId;
+
+impl ThreadId {
+    /// Create a new `ThreadId` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for ThreadId {
     fn format(

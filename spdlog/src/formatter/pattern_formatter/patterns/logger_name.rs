@@ -10,8 +10,15 @@ use crate::{
 ///
 /// This pattern corresponds to `{n}` or `{logger}` in the pattern template
 /// string.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct LoggerName;
+
+impl LoggerName {
+    /// Create a new `LoggerName` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl Pattern for LoggerName {
     fn format(
