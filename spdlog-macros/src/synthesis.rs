@@ -9,7 +9,8 @@ use syn::token::Paren;
 use syn::{Expr, ExprLit, ExprTuple, Lit, LitStr, Path};
 
 use crate::parse::{
-    PatternTemplate, PatternTemplateFormatter, PatternTemplateLiteral, PatternTemplateToken,
+    PatternTemplate, PatternTemplateColorRange, PatternTemplateFormatter, PatternTemplateLiteral,
+    PatternTemplateToken,
 };
 
 pub(crate) struct Synthesiser {
@@ -124,12 +125,12 @@ impl Synthesiser {
                 PatternTemplateToken::Formatter(formatter_token) => {
                     self.build_formatter_template_pattern_expr(formatter_token)?
                 }
-                PatternTemplateToken::ColorRange(color_range_template) => {
+                PatternTemplateToken::ColorRange(color_range_token) => {
                     if color_range_seen {
                         return Err(SynthesisError::MultipleColorRange);
                     }
                     color_range_seen = true;
-                    self.build_color_range_template_pattern_expr(color_range_template)?
+                    self.build_color_range_template_pattern_expr(color_range_token)?
                 }
             };
             template_expr.elems.push(token_template_expr);
@@ -161,9 +162,9 @@ impl Synthesiser {
 
     fn build_color_range_template_pattern_expr(
         &self,
-        color_range_template: &PatternTemplate,
+        color_range_token: &PatternTemplateColorRange,
     ) -> Result<Expr, SynthesisError> {
-        self.build_template_pattern_expr(color_range_template, true)
+        self.build_template_pattern_expr(&color_range_token.body, true)
     }
 
     fn build_formatter_creation_expr(&self, formatter_name: &str) -> Result<Expr, SynthesisError> {

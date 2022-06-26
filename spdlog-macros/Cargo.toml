@@ -10,4 +10,4 @@ proc-macro = true
 nom = "7.1.1"
 proc-macro2 = "1.0.39"
 quote = "1.0.18"
-syn = "1.0.96"
+syn = { version = "1.0.96", features = ["full"] }
