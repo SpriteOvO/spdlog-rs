@@ -49,7 +49,7 @@ impl CommonImpl {
         }
     }
 
-    pub(crate) fn non_throwable_error(&self, from: impl AsRef<str>, err: Error) {
+    pub(crate) fn non_returnable_error(&self, from: impl AsRef<str>, err: Error) {
         match self.error_handler.load(Ordering::Relaxed) {
             Some(handler) => handler(err),
             None => crate::default_error_handler(from, err),

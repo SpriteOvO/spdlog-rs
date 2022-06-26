@@ -120,7 +120,7 @@ where
     fn drop(&mut self) {
         let flush_result = self.lock_target().flush().map_err(Error::FlushBuffer);
         if let Err(err) = flush_result {
-            self.common_impl.non_throwable_error("WriteSink", err)
+            self.common_impl.non_returnable_error("WriteSink", err)
         }
     }
 }

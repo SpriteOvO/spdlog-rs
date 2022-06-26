@@ -245,7 +245,7 @@ impl Drop for RotatingFileSink {
     fn drop(&mut self) {
         if let Err(err) = self.rotator.drop_flush() {
             self.common_impl
-                .non_throwable_error("RotatingFileSink", err)
+                .non_returnable_error("RotatingFileSink", err)
         }
     }
 }

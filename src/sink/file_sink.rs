@@ -89,7 +89,7 @@ impl Drop for FileSink {
     fn drop(&mut self) {
         if let Err(err) = self.file.lock().flush() {
             self.common_impl
-                .non_throwable_error("FileSink", Error::FlushBuffer(err))
+                .non_returnable_error("FileSink", Error::FlushBuffer(err))
         }
     }
 }
