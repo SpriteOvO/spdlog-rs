@@ -122,6 +122,9 @@
 //!
 //!  - `log` see [Compatible with log crate](#compatible-with-log-crate) above.
 //!
+//!  - `native` enables platform-specific components, such as
+//!    [`sink::WinDebugSink`], [`sink::JournalSink`], etc.
+//!
 //! # Supported Rust Versions
 //!
 //! <!--
