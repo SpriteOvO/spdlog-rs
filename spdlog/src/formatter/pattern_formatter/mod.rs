@@ -30,9 +30,11 @@ pub mod macros {
 /// converts it into a zero-cost pattern:
 ///
 /// ```
+/// use spdlog::pattern;
+/// use spdlog::formatter::PatternFormatter;
+///
 /// let pat = pattern!("pattern string");
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 /// ```
 ///
 /// # Using spdlog Built-in Patterns
@@ -44,9 +46,13 @@ pub mod macros {
 /// template string:
 ///
 /// ```
+/// # use spdlog::pattern;
+/// # use spdlog::formatter::PatternFormatter;
+/// #
+/// use spdlog::info;
+///
 /// let pat = pattern!("[{l}] {v}");
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 ///
 /// info!("Interesting log message");
 /// // Logs: [info] Interesting log message
@@ -57,9 +63,11 @@ pub mod macros {
 /// You can also use `{level}` and `{payload}`, if you prefer:
 ///
 /// ```
+/// # use spdlog::{info, pattern};
+/// # use spdlog::formatter::PatternFormatter;
+/// #
 /// let pat = pattern!("[{level}] {payload}");
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 ///
 /// info!("Interesting log message");
 /// // Logs: [info] Interesting log message
@@ -69,9 +77,11 @@ pub mod macros {
 /// and `}}`:
 ///
 /// ```
+/// # use spdlog::{info, pattern};
+/// # use spdlog::formatter::PatternFormatter;
+/// #
 /// let pat = pattern!("[{{level}}] {payload}");
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 ///
 /// info!("Interesting log message");
 /// // Logs: [{level}] Interesting log message
@@ -88,9 +98,11 @@ pub mod macros {
 /// in the pattern template string:
 ///
 /// ```
+/// # use spdlog::{info, pattern};
+/// # use spdlog::formatter::PatternFormatter;
+/// #
 /// let pat = pattern!("{^[{level}]$} {payload}");
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 ///
 /// info!("Interesting log message");
 /// // Logs: [info] Interesting log message
@@ -104,6 +116,7 @@ pub mod macros {
 /// [`Pattern`] trait:
 ///
 /// ```
+/// use std::fmt::Write;
 /// use spdlog::{Record, StringBuf};
 /// use spdlog::formatter::{Pattern, PatternContext};
 ///
@@ -128,11 +141,29 @@ pub mod macros {
 /// can resolve it:
 ///
 /// ```
+/// # use std::fmt::Write;
+/// # use spdlog::{info, pattern, Record, StringBuf};
+/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// #
+/// # #[derive(Default)]
+/// # struct MyPattern;
+/// #
+/// # impl Pattern for MyPattern {
+/// #     fn format(
+/// #         &self,
+/// #         record: &Record,
+/// #         dest: &mut StringBuf,
+/// #         _ctx: &mut PatternContext,
+/// #     ) -> spdlog::Result<()> {
+/// #         write!(dest, "My own pattern").unwrap();
+/// #         Ok(())
+/// #     }
+/// # }
+/// #
 /// let pat = pattern!("[{level}] {payload} - {mypat}",
 ///     {"mypat"} => MyPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 ///
 /// info!("Interesting log message");
 /// // Logs: [info] Interesting log message - My own pattern
@@ -153,6 +184,11 @@ pub mod macros {
 /// custom pattern that writes a unique ID to the output:
 ///
 /// ```
+/// # use std::fmt::Write;
+/// # use std::sync::atomic::{AtomicU32, Ordering};
+/// # use spdlog::{Record, StringBuf};
+/// # use spdlog::formatter::{Pattern, PatternContext};
+/// #
 /// static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 ///
 /// struct MyPattern {
@@ -185,11 +221,41 @@ pub mod macros {
 /// IDs:
 ///
 /// ```
+/// # use std::fmt::Write;
+/// # use std::sync::atomic::{AtomicU32, Ordering};
+/// # use spdlog::{info, pattern, Record, StringBuf};
+/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// #
+/// # static NEXT_ID: AtomicU32 = AtomicU32::new(0);
+/// #
+/// # struct MyPattern {
+/// #     id: u32,
+/// # }
+/// #
+/// # impl MyPattern {
+/// #     fn new() -> Self {
+/// #         Self {
+/// #             id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
+/// #         }
+/// #     }
+/// # }
+/// #
+/// # impl Pattern for MyPattern {
+/// #     fn format(
+/// #         &self,
+/// #         record: &Record,
+/// #         dest: &mut StringBuf,
+/// #         _ctx: &mut PatternContext,
+/// #     ) -> spdlog::Result<()> {
+/// #         write!(dest, "{}", self.id).unwrap();
+/// #         Ok(())
+/// #     }
+/// # }
+/// #
 /// let pat = pattern!("[{level}] {payload} - {mypat} {mypat} {mypat}",
-///     {"mypat"} => MyPattern::default,
+///     {"mypat"} => MyPattern::new,
 /// );
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 ///
 /// info!("Interesting log message");
 /// // Logs: [info] Interesting log message - 0 1 2
@@ -200,11 +266,29 @@ pub mod macros {
 /// You can associate multiple names with your own pattern, if you prefer:
 ///
 /// ```
+/// # use std::fmt::Write;
+/// # use spdlog::{info, pattern, Record, StringBuf};
+/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// #
+/// # #[derive(Default)]
+/// # struct MyPattern;
+/// #
+/// # impl Pattern for MyPattern {
+/// #     fn format(
+/// #         &self,
+/// #         record: &Record,
+/// #         dest: &mut StringBuf,
+/// #         _ctx: &mut PatternContext,
+/// #     ) -> spdlog::Result<()> {
+/// #         write!(dest, "My own pattern").unwrap();
+/// #         Ok(())
+/// #     }
+/// # }
+/// #
 /// let pat = pattern!("[{level}] {payload} - {mypat1} {mypat2}",
 ///     {"mypat1", "mypat2"} => MyPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 ///
 /// info!("Interesting log message");
 /// // Logs: [info] Interesting log message - My own pattern My own pattern
@@ -213,12 +297,45 @@ pub mod macros {
 /// Of course, you can have multiple custom patterns:
 ///
 /// ```
+/// # use std::fmt::Write;
+/// # use spdlog::{pattern, Record, StringBuf};
+/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// #
+/// # #[derive(Default)]
+/// # struct MyPattern;
+/// #
+/// # impl Pattern for MyPattern {
+/// #     fn format(
+/// #         &self,
+/// #         record: &Record,
+/// #         dest: &mut StringBuf,
+/// #         _ctx: &mut PatternContext,
+/// #     ) -> spdlog::Result<()> {
+/// #         write!(dest, "My own pattern").unwrap();
+/// #         Ok(())
+/// #     }
+/// # }
+/// #
+/// # #[derive(Default)]
+/// # struct MyOtherPattern;
+/// #
+/// # impl Pattern for MyOtherPattern {
+/// #     fn format(
+/// #         &self,
+/// #         record: &Record,
+/// #         dest: &mut StringBuf,
+/// #         _ctx: &mut PatternContext,
+/// #     ) -> spdlog::Result<()> {
+/// #         write!(dest, "My own pattern").unwrap();
+/// #         Ok(())
+/// #     }
+/// # }
+/// #
 /// let pat = pattern!("[{level}] {payload} - {mypat} {mypat2}",
 ///     {"mypat"} => MyPattern::default,
 ///     {"mypat2"} => MyOtherPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
-/// sink.set_formatter(Box::new(formatter));
 /// ```
 ///
 /// ## Name Conflicts are Hard Errors
@@ -227,6 +344,55 @@ pub mod macros {
 /// patterns:
 ///
 /// ```compile_fail
+/// # use std::fmt::Write;
+/// # use spdlog::{pattern, Record, StringBuf};
+/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// #
+/// # #[derive(Default)]
+/// # struct MyPattern;
+/// #
+/// # impl Pattern for MyPattern {
+/// #     fn format(
+/// #         &self,
+/// #         record: &Record,
+/// #         dest: &mut StringBuf,
+/// #         _ctx: &mut PatternContext,
+/// #     ) -> spdlog::Result<()> {
+/// #         write!(dest, "My own pattern").unwrap();
+/// #         Ok(())
+/// #     }
+/// # }
+/// #
+/// # #[derive(Default)]
+/// # struct MyOtherPattern;
+/// #
+/// # impl Pattern for MyOtherPattern {
+/// #     fn format(
+/// #         &self,
+/// #         record: &Record,
+/// #         dest: &mut StringBuf,
+/// #         _ctx: &mut PatternContext,
+/// #     ) -> spdlog::Result<()> {
+/// #         write!(dest, "My own pattern").unwrap();
+/// #         Ok(())
+/// #     }
+/// # }
+/// #
+/// # #[derive(Default)]
+/// # struct MyOtherPattern2;
+/// #
+/// # impl Pattern for MyOtherPattern2 {
+/// #     fn format(
+/// #         &self,
+/// #         record: &Record,
+/// #         dest: &mut StringBuf,
+/// #         _ctx: &mut PatternContext,
+/// #     ) -> spdlog::Result<()> {
+/// #         write!(dest, "My own pattern").unwrap();
+/// #         Ok(())
+/// #     }
+/// # }
+/// #
 /// let pat = pattern!("[{level}] {payload} - {mypat}",
 ///     {"mypat"} => MyPattern::default,
 ///
@@ -292,9 +458,10 @@ macro_rules! pattern {
 /// `pattern_formatter!(...)` is equivalent to
 /// `PatternFormatter::new(pattern!(...))`.
 ///
-/// ```ignore
+/// ```
+/// # use spdlog::pattern_formatter;
+/// #
 /// let formatter = pattern_formatter!("{n}: {^[{level}]$} {v}");
-/// sink.set_formatter(Box::new(formatter));
 /// ```
 #[macro_export]
 macro_rules! pattern_formatter {
