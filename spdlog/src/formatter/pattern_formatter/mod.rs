@@ -6,7 +6,9 @@
 //! Patterns are represented by the [`Pattern`] trait. You can create your own
 //! pattern by implementing the [`Pattern`] trait.
 //!
-//! You can also build a pattern with the [`pattern`] macro.
+//! You can also build a pattern with the [`pattern`][pattern-macro] macro.
+//!
+//! [pattern-macro]: crate::pattern
 
 pub mod patterns;
 
