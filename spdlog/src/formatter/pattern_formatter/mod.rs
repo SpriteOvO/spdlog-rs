@@ -5,19 +5,305 @@
 //!
 //! Patterns are represented by the [`Pattern`] trait. You can create your own
 //! pattern by implementing the [`Pattern`] trait.
+//!
+//! You can also build a pattern with the [`pattern`] macro.
 
 pub mod patterns;
 
 use std::{fmt::Write, ops::Range, sync::Arc};
-
-pub use spdlog_macros::pattern;
 
 use crate::{
     formatter::{FmtExtraInfo, FmtExtraInfoBuilder, Formatter},
     Error, Record, StringBuf,
 };
 
-/// A formatter that formats log records against a specified text pattern.
+#[allow(missing_docs)]
+pub mod macros {
+    pub use ::spdlog_macros::pattern as pattern_impl;
+}
+
+/// Build a pattern from a compile-time pattern template string.
+///
+/// # Basic Usage
+///
+/// In its simplest form, `pattern` receives a **literal** pattern string and
+/// converts it into a zero-cost pattern:
+///
+/// ```
+/// let pat = pattern!("pattern string");
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+/// ```
+///
+/// # Using spdlog Built-in Patterns
+///
+/// A pattern that always outputs a fixed string is boring and useless.
+/// Luckily, the pattern template string can contain placeholders that
+/// represents built-in patterns. For example, to include the log level and
+/// payload in the pattern, we can simply use `{l}` and `{v}` in the pattern
+/// template string:
+///
+/// ```
+/// let pat = pattern!("[{l}] {v}");
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+///
+/// info!("Interesting log message");
+/// // Logs: [info] Interesting log message
+/// ```
+///
+/// Here, `{l}` and `{v}` are "placeholders" that will be replaced by the
+/// output of the corresponding built-in patterns when formatting log records.
+/// You can also use `{level}` and `{payload}`, if you prefer:
+///
+/// ```
+/// let pat = pattern!("[{level}] {payload}");
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+///
+/// info!("Interesting log message");
+/// // Logs: [info] Interesting log message
+/// ```
+///
+/// What if you want to output a literal `{` or `}` character? Simply use `{{`
+/// and `}}`:
+///
+/// ```
+/// let pat = pattern!("[{{level}}] {payload}");
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+///
+/// info!("Interesting log message");
+/// // Logs: [{level}] Interesting log message
+/// ```
+///
+/// You can find a full list of all built-in patterns and their corresponding
+/// placeholders at the end of this doc page.
+///
+/// # Using Style Range
+///
+/// A specific portion of a formatted log message can be specified as "style
+/// range". Formatted text in the style range will be rendered in a different
+/// style by supported sinks. You can use `{^...$}` to mark the style range
+/// in the pattern template string:
+///
+/// ```
+/// let pat = pattern!("{^[{level}]$} {payload}");
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+///
+/// info!("Interesting log message");
+/// // Logs: [info] Interesting log message
+/// //       ^^^^^^ <- style range
+/// ```
+///
+/// # Using Your Own Patterns
+///
+/// Yes, you can refer your own implementation of [`Pattern`] in the pattern
+/// template string! Let's say you have a struct that implements the
+/// [`Pattern`] trait:
+///
+/// ```
+/// use spdlog::{Record, StringBuf};
+/// use spdlog::formatter::{Pattern, PatternContext};
+///
+/// #[derive(Default)]
+/// struct MyPattern;
+///
+/// impl Pattern for MyPattern {
+///     fn format(
+///         &self,
+///         record: &Record,
+///         dest: &mut StringBuf,
+///         _ctx: &mut PatternContext,
+///     ) -> spdlog::Result<()> {
+///         write!(dest, "My own pattern").unwrap();
+///         Ok(())
+///     }
+/// }
+/// ```
+///
+/// To refer `MyPattern` in the pattern template string, you need to use the
+/// extended syntax to associate `MyPattern` with a name so that `pattern!`
+/// can resolve it:
+///
+/// ```
+/// let pat = pattern!("[{level}] {payload} - {mypat}",
+///     {"mypat"} => MyPattern::default,
+/// );
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+///
+/// info!("Interesting log message");
+/// // Logs: [info] Interesting log message - My own pattern
+/// ```
+///
+/// Note the special `{"name"} => id` syntax given to the `pattern` macro.
+/// `name` is the name of your own pattern; placeholder `{name}` in the
+/// template string will be replaced by the output of your own pattern. `name`
+/// cannot contain `{` or `}`.`id` is a [path] that identifies a **function**
+/// that can be called with **no arguments**. Instances of your own pattern
+/// will be created by calling this function with no arguments.
+///
+/// [path]: https://doc.rust-lang.org/stable/reference/paths.html
+///
+/// ## Custom Pattern Creation
+///
+/// Each placeholder results in a new pattern instance. For example, consider a
+/// custom pattern that writes a unique ID to the output:
+///
+/// ```
+/// static NEXT_ID: AtomicU32 = AtomicU32::new(0);
+///
+/// struct MyPattern {
+///     id: u32,
+/// }
+///
+/// impl MyPattern {
+///     fn new() -> Self {
+///         Self {
+///             id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
+///         }
+///     }
+/// }
+///
+/// impl Pattern for MyPattern {
+///     fn format(
+///         &self,
+///         record: &Record,
+///         dest: &mut StringBuf,
+///         _ctx: &mut PatternContext,
+///     ) -> spdlog::Result<()> {
+///         write!(dest, "{}", self.id).unwrap();
+///         Ok(())
+///     }
+/// }
+/// ```
+///
+/// If the pattern template string contains multiple placeholders that refer
+/// to `MyPattern`, each placeholder will eventually be replaced by different
+/// IDs:
+///
+/// ```
+/// let pat = pattern!("[{level}] {payload} - {mypat} {mypat} {mypat}",
+///     {"mypat"} => MyPattern::default,
+/// );
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+///
+/// info!("Interesting log message");
+/// // Logs: [info] Interesting log message - 0 1 2
+/// ```
+///
+/// ## Multiple Names and Multiple Custom Patterns
+///
+/// You can associate multiple names with your own pattern, if you prefer:
+///
+/// ```
+/// let pat = pattern!("[{level}] {payload} - {mypat1} {mypat2}",
+///     {"mypat1", "mypat2"} => MyPattern::default,
+/// );
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+///
+/// info!("Interesting log message");
+/// // Logs: [info] Interesting log message - My own pattern My own pattern
+/// ```
+///
+/// Of course, you can have multiple custom patterns:
+///
+/// ```
+/// let pat = pattern!("[{level}] {payload} - {mypat} {mypat2}",
+///     {"mypat"} => MyPattern::default,
+///     {"mypat2"} => MyOtherPattern::default,
+/// );
+/// let formatter = PatternFormatter::new(pat);
+/// sink.set_formatter(Box::new(formatter));
+/// ```
+///
+/// ## Name Conflicts are Hard Errors
+///
+/// It's a hard error if names of your own custom pattern conflicts with other
+/// patterns:
+///
+/// ```compile_fail
+/// let pat = pattern!("[{level}] {payload} - {mypat}",
+///     {"mypat"} => MyPattern::default,
+///
+///     // Error: name conflicts with another custom pattern
+///     {"mypat"} => MyOtherPattern::default,
+///
+///     // Error: name conflicts with a built-in pattern
+///     {"n"} => MyOtherPattern2::default,
+/// );
+/// ```
+///
+/// # Appendix: A Full List of Built-in Patterns and Their Placeholders
+///
+/// | Placeholders | Description | Example |
+/// | --- | --- | --- |
+/// | `{a}`, `{weekday-name}` | Abbreviated weekday name | `Mon`, `Tue` |
+/// | `{A}`, `{weekday-name-full}` | Weekday name | `Monday`, `Tuesday` |
+/// | `{b}`, `{month-name}` | Abbreviated month name | `Jan`, `Feb` |
+/// | `{B}`, `{month-name-full}` | Month name | `January`, `February` |
+/// | `{c}`, `{datetime}` | Full date time | `Thu Aug 23 15:35:46 2014` |
+/// | `{C}`, `{year-short}` | Short year | `22`, `20` |
+/// | `{Y}`, `{year}` | Year | `2022`, `2021` |
+/// | `{D}`, `{date-short}` | Short date | `04/01/22`, `12/31/21` |
+/// | `{m}`, `{month}` | Month | `01`, `12` |
+/// | `{d}`, `{day}` | Day in month | `01`, `12`, `31`, `30` |
+/// | `{H}`, `{hour}` | Hour in 24-hour | `01`, `12`, `23` |
+/// | `{I}`, `{hour-12}` | Hour in 12-hour | `01`, `12` |
+/// | `{M}`, `{minute}` | Minute | `00`, `05`, `59` |
+/// | `{S}`, `{second}` | Second | `00`, `05`, `59` |
+/// | `{e}`, `{millisecond}` | Millisecond | `231` |
+/// | `{f}`, `{microsecond}` | Microseconds within a second | `372152` |
+/// | `{F}`, `{nanosecond}` | Nanoseconds within a second | `482930154` |
+/// | `{p}`, `{ampm}` | AM / PM | `AM`, `PM` |
+/// | `{r}`, `{time-12}` | Time in 12-hour format | `02:55:02 PM` |
+/// | `{R}`, `{time-short}` | Short time | `22:28`, `09:53` |
+/// | `{T}`, `{X}`, `{time}` | Time | `22:28:02`, `09:53:41` |
+/// | `{z}`, `{tz-offset}` | Timezone offset | `+08:00`, `+00:00`, `-06:00` |
+/// | `{E}`, `{unix-timestamp}` | Unix timestamp | `1528834770` |
+/// | `{+}`, `{full}` | Full log message | See [`FullFormatter`] |
+/// | `{l}`, `{level}` | Log level | `critical`, `error`, `warn` |
+/// | `{L}`, `{level-short}` | Short log level | `C`, `E`, `W` |
+/// | `{@}`, `{loc}` | Log location | `main.rs:30:20` |
+/// | `{s}`, `{source-basename}` | Source file basename | `main.rs` |
+/// | `{g}`, `{source}` | Path to the source file | `src/main.rs` |
+/// | `{#}`, `{line}` | Source file line | `30` |
+/// | `{%}`, `{column}` | Source file column | `20` |
+/// | `{n}`, `{logger}` | Logger name | `my-logger` |
+/// | `{v}`, `{payload}` | Log payload | `log message` |
+/// | `{P}`, `{pid}` | Process ID | `3824` |
+/// | `{t}`, `{tid}` | Thread ID | `3132` |
+///
+/// [`FullFormatter`]: crate::formatter::FullFormatter
+#[macro_export]
+macro_rules! pattern {
+    ( $($t:tt)* ) => {
+        $crate::formatter::macros::pattern_impl!($($t)*)
+    }
+}
+
+/// Build a [`PatternFormatter`] from a pattern built by the [`pattern`] macro
+/// with the given macro arguments.
+///
+/// `pattern_formatter!(...)` is equivalent to
+/// `PatternFormatter::new(pattern!(...))`.
+///
+/// ```ignore
+/// let formatter = pattern_formatter!("{n}: {^[{level}]$} {v}");
+/// sink.set_formatter(Box::new(formatter));
+/// ```
+#[macro_export]
+macro_rules! pattern_formatter {
+    ( $($t:tt)* ) => {
+        $crate::formatter::PatternFormatter::new($($t)*)
+    };
+}
+
+/// A formatter that formats log records according to a specified pattern.
 pub struct PatternFormatter<P> {
     pattern: P,
 }
@@ -26,8 +312,8 @@ impl<P> PatternFormatter<P> {
     /// Create a new `PatternFormatter` object with the given pattern.
     ///
     /// Manually craft a pattern object `pattern` can be tedious and
-    /// error-prone. It's recommended to use the `pattern!` macro to create
-    /// a pattern object from a pattern string.
+    /// error-prone. It's recommended to use the [`pattern!`] macro to create
+    /// a pattern object from a template string.
     pub fn new(pattern: P) -> Self {
         Self { pattern }
     }
@@ -74,10 +360,26 @@ impl PatternContext {
 /// A pattern.
 ///
 /// A pattern is like a formatter, except that multiple patterns can be combined
-/// in various ways to create a new pattern.
+/// in various ways to create a new pattern. The [`PatternFormatter`] struct
+/// provides a [`Formatter`] that formats log records according to a given
+/// pattern.
+///
+/// # Built-in Patterns
+///
+/// `spdlog` provides a rich set of built-in patterns. See the [`patterns`]
+/// module.
+///
+/// # Custom Patterns
+///
+/// There are 2 approaches to create your own pattern:
+/// - Define a new type and implements this trait;
+/// - Use the [`pattern`] macro to create a pattern from a template string.
 pub trait Pattern: Send + Sync {
     /// Format this pattern against the given log record and write the formatted
     /// message into the output buffer.
+    ///
+    /// **For implementors:** the `ctx` parameter is reserved for internal use.
+    /// You should not use it.
     fn format(
         &self,
         record: &Record,
@@ -97,14 +399,14 @@ impl Pattern for String {
     }
 }
 
-impl<'a> Pattern for &'a str {
+impl Pattern for str {
     fn format(
         &self,
         _record: &Record,
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(*self).map_err(Error::FormatRecord)?;
+        dest.write_str(self).map_err(Error::FormatRecord)?;
         Ok(())
     }
 }

@@ -6,7 +6,8 @@ use std::{
 
 use spdlog::{
     error,
-    formatter::{pattern, Formatter, Pattern, PatternFormatter},
+    formatter::{Formatter, Pattern, PatternFormatter},
+    pattern,
     sink::Sink,
     Logger, StringBuf,
 };
@@ -29,8 +30,8 @@ fn test_builtin_formatters() {
 fn test_custom_formatters() {
     test_pattern(
         pattern!("{n}: [{level}] hello {v} - {mock1} / {mock2}",
-            ("mock1") => MockPattern1::default,
-            ("mock2") => MockPattern2::default,
+            {"mock1"} => MockPattern1::default,
+            {"mock2"} => MockPattern2::default,
         ),
         "logger_name: [error] hello record_payload - mock_pattern_1 / mock_pattern_2",
         None,

@@ -1,6 +1,6 @@
 use nom::Parser;
 use syn::{
-    parenthesized,
+    braced,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     LitStr, Path, Token,
@@ -205,7 +205,7 @@ struct CustomPatternMappingItem {
 impl Parse for CustomPatternMappingItem {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let names_input;
-        parenthesized!(names_input in input);
+        braced!(names_input in input);
 
         let names: Punctuated<_, Token![,]> =
             names_input.parse_terminated(<LitStr as Parse>::parse)?;

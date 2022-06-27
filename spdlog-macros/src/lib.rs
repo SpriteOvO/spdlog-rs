@@ -6,16 +6,6 @@ use proc_macro::TokenStream;
 use crate::parse::Pattern;
 use crate::synthesis::Synthesiser;
 
-/// Build a pattern formatter from a compile-time pattern string.
-///
-/// # Usage
-///
-/// In it's simplest form, `pattern` receives a **literal** pattern string and
-/// converts it into a zero-cost pattern formatter:
-///
-/// ```ignore
-/// let formatter = pattern!("pattern string");
-/// ```
 #[proc_macro]
 pub fn pattern(input: TokenStream) -> TokenStream {
     let pat = syn::parse_macro_input!(input as Pattern);
