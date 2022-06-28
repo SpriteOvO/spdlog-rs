@@ -462,13 +462,14 @@ macro_rules! pattern {
 ///
 /// ```
 /// # use spdlog::pattern_formatter;
+/// # use spdlog::formatter::PatternFormatter;
 /// #
-/// let formatter = pattern_formatter!("{n}: {^[{level}]$} {v}");
+/// let formatter: PatternFormatter<_> = pattern_formatter!("{n}: {^[{level}]$} {v}");
 /// ```
 #[macro_export]
 macro_rules! pattern_formatter {
     ( $($t:tt)* ) => {
-        $crate::formatter::PatternFormatter::new($($t)*)
+        $crate::formatter::PatternFormatter::new($crate::pattern!($($t)*))
     };
 }
 
