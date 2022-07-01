@@ -1,7 +1,5 @@
 use std::{fmt::Write, marker::PhantomData};
 
-use chrono::{Datelike, Timelike};
-
 use crate::{
     formatter::{
         local_time_cacher::LOCAL_TIME_CACHER,
@@ -478,7 +476,7 @@ impl Pattern for Hour12 {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let hour_12_str = LOCAL_TIME_CACHER.lock().get(record.time()).hour_12_str();
+        let hour_12_str = LOCAL_TIME_CACHER.lock().get(record.time()).hour12_str();
         dest.write_str(&**hour_12_str).map_err(Error::FormatRecord)
     }
 }
@@ -573,9 +571,8 @@ impl Pattern for Millisecond {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let time = chrono::DateTime::<chrono::Local>::from(record.time());
-        dest.write_fmt(format_args!("{:03}", time.nanosecond() / 1_000_000))
-            .map_err(Error::FormatRecord)
+        let nanosecond = LOCAL_TIME_CACHER.lock().get(record.time()).nanosecond();
+        write!(dest, "{:03}", nanosecond / 1_000_000).map_err(Error::FormatRecord)
     }
 }
 
@@ -607,9 +604,8 @@ impl Pattern for Microsecond {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let time = chrono::DateTime::<chrono::Local>::from(record.time());
-        dest.write_fmt(format_args!("{:06}", time.nanosecond() / 1_000))
-            .map_err(Error::FormatRecord)
+        let nanosecond = LOCAL_TIME_CACHER.lock().get(record.time()).nanosecond();
+        write!(dest, "{:06}", nanosecond / 1_000).map_err(Error::FormatRecord)
     }
 }
 
@@ -640,9 +636,8 @@ impl Pattern for Nanosecond {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let time = chrono::DateTime::<chrono::Local>::from(record.time());
-        dest.write_fmt(format_args!("{:09}", time.nanosecond()))
-            .map_err(Error::FormatRecord)
+        let nanosecond = LOCAL_TIME_CACHER.lock().get(record.time()).nanosecond();
+        write!(dest, "{:09}", nanosecond).map_err(Error::FormatRecord)
     }
 }
 
@@ -673,12 +668,13 @@ impl Pattern for Ampm {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let time = chrono::DateTime::<chrono::Local>::from(record.time());
-        if time.hour12().0 {
-            dest.write_str("PM").map_err(Error::FormatRecord)
+        let hour12 = LOCAL_TIME_CACHER.lock().get(record.time()).hour12();
+        if hour12.0 {
+            dest.write_str("PM")
         } else {
-            dest.write_str("AM").map_err(Error::FormatRecord)
+            dest.write_str("AM")
         }
+        .map_err(Error::FormatRecord)
     }
 }
 
@@ -710,7 +706,7 @@ impl Pattern for Time12 {
             let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
             let cached_time = time_cacher_lock.get(record.time());
             (
-                cached_time.hour_12_str(),
+                cached_time.hour12_str(),
                 cached_time.minute_str(),
                 cached_time.second_str(),
             )
@@ -891,8 +887,11 @@ impl Pattern for WeekdayNameBase {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let local_time = chrono::DateTime::<chrono::Local>::from(record.time());
-        dest.write_str(self.weekday_names[local_time.weekday().num_days_from_monday() as usize])
+        let weekday_index = LOCAL_TIME_CACHER
+            .lock()
+            .get(record.time())
+            .weekday_from_monday_0();
+        dest.write_str(self.weekday_names[weekday_index as usize])
             .map_err(Error::FormatRecord)
     }
 }
@@ -915,8 +914,8 @@ impl Pattern for MonthNameBase {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let local_time = chrono::DateTime::<chrono::Local>::from(record.time());
-        dest.write_str(self.month_names[local_time.month0() as usize])
+        let month = LOCAL_TIME_CACHER.lock().get(record.time()).month();
+        dest.write_str(self.month_names[month as usize - 1])
             .map_err(Error::FormatRecord)
     }
 }

@@ -39,11 +39,13 @@ struct CacheValues {
     year_str: RefCell<Option<Arc<String>>>,
     month: RefCell<Option<u32>>,
     month_str: RefCell<Option<Arc<String>>>,
+    weekday_from_monday_0: RefCell<Option<u32>>,
     day: RefCell<Option<u32>>,
     day_str: RefCell<Option<Arc<String>>>,
     hour: RefCell<Option<u32>>,
     hour_str: RefCell<Option<Arc<String>>>,
-    hour_12_str: RefCell<Option<Arc<String>>>,
+    hour12: RefCell<Option<(bool, u32)>>,
+    hour12_str: RefCell<Option<Arc<String>>>,
     minute: RefCell<Option<u32>>,
     minute_str: RefCell<Option<Arc<String>>>,
     second: RefCell<Option<u32>>,
@@ -147,6 +149,7 @@ impl<'a> TimeDate<'a> {
         month: u32,
         day: u32,
         hour: u32,
+        hour12: (bool, u32),
         minute: u32,
     }
 
@@ -171,6 +174,14 @@ impl<'a> TimeDate<'a> {
         })
     }
 
+    pub(crate) fn weekday_from_monday_0(&self) -> u32 {
+        *self
+            .cached
+            .weekday_from_monday_0
+            .borrow_mut()
+            .get_or_insert_with(|| self.cached.local_time.weekday().num_days_from_monday())
+    }
+
     #[allow(dead_code)] // TODO: Remove this attr when it is used somewhere
     pub(crate) fn nanosecond(&self) -> u32 {
         self.nanosecond
@@ -180,21 +191,11 @@ impl<'a> TimeDate<'a> {
         self.millisecond
     }
 
-    pub(crate) fn hour_12_str(&self) -> Arc<String> {
+    pub(crate) fn hour12_str(&self) -> Arc<String> {
         self.cached
-            .hour_12_str
+            .hour12_str
             .borrow_mut()
-            .get_or_insert_with(|| {
-                let hour = self.hour();
-                let hour_12 = if hour == 0 || hour == 12 {
-                    12
-                } else if hour < 12 {
-                    hour
-                } else {
-                    hour - 12
-                };
-                Arc::new(format!("{:02}", hour_12))
-            })
+            .get_or_insert_with(|| Arc::new(format!("{:02}", self.hour12().1)))
             .clone()
     }
 
@@ -239,11 +240,13 @@ impl CacheValues {
             year_str: RefCell::new(None),
             month: RefCell::new(None),
             month_str: RefCell::new(None),
+            weekday_from_monday_0: RefCell::new(None),
             day: RefCell::new(None),
             day_str: RefCell::new(None),
             hour: RefCell::new(None),
             hour_str: RefCell::new(None),
-            hour_12_str: RefCell::new(None),
+            hour12: RefCell::new(None),
+            hour12_str: RefCell::new(None),
             minute: RefCell::new(None),
             minute_str: RefCell::new(None),
             second: RefCell::new(None),
