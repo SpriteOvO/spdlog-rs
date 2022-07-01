@@ -181,31 +181,34 @@ impl<'a> TimeDate<'a> {
     }
 
     pub(crate) fn hour_12_str(&self) -> Arc<String> {
-        let hour = self.hour();
-        let hour_12 = if hour == 0 || hour == 12 {
-            12
-        } else if hour < 12 {
-            hour
-        } else {
-            hour - 12
-        };
-
         self.cached
             .hour_12_str
             .borrow_mut()
-            .get_or_insert_with(|| Arc::new(format!("{:02}", hour_12)))
+            .get_or_insert_with(|| {
+                let hour = self.hour();
+                let hour_12 = if hour == 0 || hour == 12 {
+                    12
+                } else if hour < 12 {
+                    hour
+                } else {
+                    hour - 12
+                };
+                Arc::new(format!("{:02}", hour_12))
+            })
             .clone()
     }
 
     pub(crate) fn tz_offset_str(&self) -> Arc<String> {
-        let offset_secs = self.cached.local_time.offset().local_minus_utc();
         self.cached
             .tz_offset_str
             .borrow_mut()
             .get_or_insert_with(|| {
+                let offset_secs = self.cached.local_time.offset().local_minus_utc();
+                let offset_secs_abs = offset_secs.abs();
+
                 let sign_str = if offset_secs >= 0 { "+" } else { "-" };
-                let offset_hours = offset_secs.abs() / 3600;
-                let offset_minutes = offset_secs.abs() % 3600 / 60;
+                let offset_hours = offset_secs_abs / 3600;
+                let offset_minutes = offset_secs_abs % 3600 / 60;
                 Arc::new(format!(
                     "{}{:02}:{:02}",
                     sign_str, offset_hours, offset_minutes
