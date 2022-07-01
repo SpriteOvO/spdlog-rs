@@ -9,7 +9,7 @@ use syn::token::Paren;
 use syn::{Expr, ExprLit, ExprTuple, Lit, LitStr, Path};
 
 use crate::parse::{
-    PatternTemplate, PatternTemplateColorRange, PatternTemplateFormatter, PatternTemplateLiteral,
+    PatternTemplate, PatternTemplateFormatter, PatternTemplateLiteral, PatternTemplateStyleRange,
     PatternTemplateToken,
 };
 
@@ -113,7 +113,7 @@ impl Synthesiser {
     fn build_template_pattern_expr(
         &self,
         template: &PatternTemplate,
-        mut color_range_seen: bool,
+        mut style_range_seen: bool,
     ) -> Result<Expr, SynthesisError> {
         let mut template_expr = ExprTuple {
             attrs: Vec::new(),
@@ -131,12 +131,12 @@ impl Synthesiser {
                 PatternTemplateToken::Formatter(formatter_token) => {
                     self.build_formatter_template_pattern_expr(formatter_token)?
                 }
-                PatternTemplateToken::ColorRange(color_range_token) => {
-                    if color_range_seen {
-                        return Err(SynthesisError::MultipleColorRange);
+                PatternTemplateToken::StyleRange(style_range_token) => {
+                    if style_range_seen {
+                        return Err(SynthesisError::MultipleStyleRange);
                     }
-                    color_range_seen = true;
-                    self.build_color_range_template_pattern_expr(color_range_token)?
+                    style_range_seen = true;
+                    self.build_style_range_template_pattern_expr(style_range_token)?
                 }
             };
             template_expr.elems.push(token_template_expr);
@@ -166,12 +166,12 @@ impl Synthesiser {
         Ok(formatter_creation_expr)
     }
 
-    fn build_color_range_template_pattern_expr(
+    fn build_style_range_template_pattern_expr(
         &self,
-        color_range_token: &PatternTemplateColorRange,
+        style_range_token: &PatternTemplateStyleRange,
     ) -> Result<Expr, SynthesisError> {
-        let body_pattern_expr = self.build_template_pattern_expr(&color_range_token.body, true)?;
-        let expr = self.build_color_range_pattern_creation_expr(body_pattern_expr)?;
+        let body_pattern_expr = self.build_template_pattern_expr(&style_range_token.body, true)?;
+        let expr = self.build_style_range_pattern_creation_expr(body_pattern_expr)?;
         Ok(expr)
     }
 
@@ -186,10 +186,10 @@ impl Synthesiser {
         Ok(Expr::Call(factory_call_expr))
     }
 
-    fn build_color_range_pattern_creation_expr(&self, body: Expr) -> Result<Expr, SynthesisError> {
-        let color_range_pattern_new_path: Path =
-            syn::parse_str("::spdlog::formatter::patterns::ColorRange::new").unwrap();
-        let stream = quote::quote!( #color_range_pattern_new_path (#body) );
+    fn build_style_range_pattern_creation_expr(&self, body: Expr) -> Result<Expr, SynthesisError> {
+        let style_range_pattern_new_path: Path =
+            syn::parse_str("::spdlog::formatter::patterns::StyleRange::new").unwrap();
+        let stream = quote::quote!( #style_range_pattern_new_path (#body) );
         let expr = syn::parse2(stream).unwrap();
         Ok(Expr::Call(expr))
     }
@@ -217,14 +217,14 @@ impl Error for ConflictFormatterError {}
 #[derive(Debug)]
 pub(crate) enum SynthesisError {
     UnknownFormatterName(String),
-    MultipleColorRange,
+    MultipleStyleRange,
 }
 
 impl Display for SynthesisError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UnknownFormatterName(name) => write!(f, "unknown formatter name: \"{}\"", name),
-            Self::MultipleColorRange => write!(f, "more than 1 color range in the template"),
+            Self::MultipleStyleRange => write!(f, "more than 1 style range in the template"),
         }
     }
 }

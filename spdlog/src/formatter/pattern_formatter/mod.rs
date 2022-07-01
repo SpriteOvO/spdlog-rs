@@ -518,7 +518,7 @@ impl PatternContext {
 
     /// Set the style range of the log message written by the patterns.
     ///
-    /// This function is reserved for use by the color range pattern. Other
+    /// This function is reserved for use by the style range pattern. Other
     /// built-in patterns should not use this function. User-defined
     /// patterns cannot use this function due to type privacy.
     fn set_style_range(&mut self, style_range: Range<usize>) {

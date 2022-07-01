@@ -3,23 +3,23 @@ use crate::{
     Record, StringBuf,
 };
 
-/// A pattern that wraps another pattern and apply color ranges to the content
+/// A pattern that wraps another pattern and apply style ranges to the content
 /// formatted by the wrapped pattern.
 ///
 /// This pattern corresponds to `{^..$}` in the pattern template string.
 #[derive(Clone, Debug, Default)]
-pub struct ColorRange<P> {
+pub struct StyleRange<P> {
     inner: P,
 }
 
-impl<P> ColorRange<P> {
-    /// Create a new `ColorRange` pattern that wraps the given inner pattern.
+impl<P> StyleRange<P> {
+    /// Create a new `StyleRange` pattern that wraps the given inner pattern.
     pub fn new(inner: P) -> Self {
         Self { inner }
     }
 }
 
-impl<P> Pattern for ColorRange<P>
+impl<P> Pattern for StyleRange<P>
 where
     P: Pattern,
 {
@@ -29,12 +29,12 @@ where
         dest: &mut StringBuf,
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let color_range_start = dest.len();
+        let style_range_start = dest.len();
 
         self.inner.format(record, dest, ctx)?;
 
-        let color_range_end = dest.len();
-        ctx.set_style_range(color_range_start..color_range_end);
+        let style_range_end = dest.len();
+        ctx.set_style_range(style_range_start..style_range_end);
 
         Ok(())
     }

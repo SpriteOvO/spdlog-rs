@@ -77,8 +77,8 @@ impl PatternTemplate {
             .map(|(tokens, _)| Self { tokens })
     }
 
-    fn parser_without_color_range<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
-        let token_parser = PatternTemplateToken::parser_without_color_range();
+    fn parser_without_style_range<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
+        let token_parser = PatternTemplateToken::parser_without_style_range();
         nom::combinator::complete(nom::multi::many0(token_parser).and(nom::combinator::eof))
             .map(|(tokens, _)| Self { tokens })
     }
@@ -88,18 +88,18 @@ impl PatternTemplate {
 pub(crate) enum PatternTemplateToken {
     Literal(PatternTemplateLiteral),
     Formatter(PatternTemplateFormatter),
-    ColorRange(PatternTemplateColorRange),
+    StyleRange(PatternTemplateStyleRange),
 }
 
 impl PatternTemplateToken {
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
-        let color_range_parser = PatternTemplateColorRange::parser();
-        let other_parser = Self::parser_without_color_range();
+        let style_range_parser = PatternTemplateStyleRange::parser();
+        let other_parser = Self::parser_without_style_range();
 
-        nom::combinator::map(color_range_parser, Self::ColorRange).or(other_parser)
+        nom::combinator::map(style_range_parser, Self::StyleRange).or(other_parser)
     }
 
-    fn parser_without_color_range<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
+    fn parser_without_style_range<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let literal_parser = PatternTemplateLiteral::parser();
         let formatter_parser = PatternTemplateFormatter::parser();
 
@@ -144,17 +144,17 @@ impl PatternTemplateFormatter {
 }
 
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]
-pub(crate) struct PatternTemplateColorRange {
+pub(crate) struct PatternTemplateStyleRange {
     pub(crate) body: PatternTemplate,
 }
 
-impl PatternTemplateColorRange {
+impl PatternTemplateStyleRange {
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         nom::bytes::complete::tag("{^")
             .and(nom::bytes::complete::take_until("$}"))
             .and(nom::bytes::complete::tag("$}"))
             .map(|((_, body), _)| body)
-            .and_then(PatternTemplate::parser_without_color_range())
+            .and_then(PatternTemplate::parser_without_style_range())
             .map(|body| Self { body })
     }
 }
@@ -354,7 +354,7 @@ mod tests {
         }
 
         #[test]
-        fn test_parse_color_range_basic() {
+        fn test_parse_style_range_basic() {
             assert_eq!(
                 parse_template_str(r#"hello {^world$}"#),
                 Ok((
@@ -364,7 +364,7 @@ mod tests {
                             PatternTemplateToken::Literal(PatternTemplateLiteral {
                                 literal: String::from("hello "),
                             }),
-                            PatternTemplateToken::ColorRange(PatternTemplateColorRange {
+                            PatternTemplateToken::StyleRange(PatternTemplateStyleRange {
                                 body: PatternTemplate {
                                     tokens: vec![PatternTemplateToken::Literal(
                                         PatternTemplateLiteral {
@@ -380,7 +380,7 @@ mod tests {
         }
 
         #[test]
-        fn test_parse_color_range_nested() {
+        fn test_parse_style_range_nested() {
             assert!(parse_template_str(r#"hello {^ hello {^ world $} $}"#).is_err());
         }
     }

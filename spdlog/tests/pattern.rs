@@ -39,7 +39,7 @@ fn test_custom_formatters() {
 }
 
 #[test]
-fn test_color_range() {
+fn test_style_range() {
     test_pattern(
         pattern!("{n}: [{level}] {^hello$} {v}"),
         "logger_name: [error] hello record_payload",
@@ -47,7 +47,7 @@ fn test_color_range() {
     );
 }
 
-fn test_pattern<P, F>(pat: P, expect_formatted: F, expect_color_range: Option<Range<usize>>)
+fn test_pattern<P, F>(pat: P, expect_formatted: F, expect_style_range: Option<Range<usize>>)
 where
     P: Pattern + 'static,
     F: AsRef<str>,
@@ -63,9 +63,9 @@ where
         .build();
     error!(logger: logger, "record_payload");
 
-    let (msg, color_range) = sink.get_last_msg().unwrap();
+    let (msg, style_range) = sink.get_last_msg().unwrap();
     assert_eq!(msg, expect_formatted.as_ref());
-    assert_eq!(color_range, expect_color_range);
+    assert_eq!(style_range, expect_style_range);
 }
 
 struct MockSink {
