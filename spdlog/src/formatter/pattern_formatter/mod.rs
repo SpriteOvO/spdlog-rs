@@ -478,7 +478,10 @@ pub struct PatternFormatter<P> {
     pattern: P,
 }
 
-impl<P> PatternFormatter<P> {
+impl<P> PatternFormatter<P>
+where
+    P: Pattern,
+{
     /// Create a new `PatternFormatter` object with the given pattern.
     ///
     /// Manually craft a pattern object `pattern` can be tedious and

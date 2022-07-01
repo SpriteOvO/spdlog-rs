@@ -12,7 +12,10 @@ pub struct StyleRange<P> {
     inner: P,
 }
 
-impl<P> StyleRange<P> {
+impl<P> StyleRange<P>
+where
+    P: Pattern,
+{
     /// Create a new `StyleRange` pattern that wraps the given inner pattern.
     pub fn new(inner: P) -> Self {
         Self { inner }
