@@ -27,13 +27,7 @@ impl Pattern for Loc {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            dest.write_fmt(format_args!(
-                "{}:{}:{}",
-                loc.file_name(),
-                loc.line(),
-                loc.column()
-            ))
-            .map_err(Error::FormatRecord)?;
+            write!(dest, "{}:{}", loc.file_name(), loc.line()).map_err(Error::FormatRecord)?;
         }
         Ok(())
     }
