@@ -916,7 +916,7 @@ impl Pattern for MonthNameBase {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let local_time = chrono::DateTime::<chrono::Local>::from(record.time());
-        dest.write_str(self.month_names[local_time.weekday().num_days_from_monday() as usize])
+        dest.write_str(self.month_names[local_time.month0() as usize])
             .map_err(Error::FormatRecord)
     }
 }
