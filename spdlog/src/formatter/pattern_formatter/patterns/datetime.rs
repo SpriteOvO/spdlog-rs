@@ -264,15 +264,8 @@ impl Pattern for ShortYear {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let year_str = LOCAL_TIME_CACHER.lock().get(record.time()).year_str();
-        let short_year_str = {
-            let year_str_bytes = year_str.as_bytes();
-            debug_assert_eq!(year_str_bytes.len(), 4);
-
-            unsafe { std::str::from_utf8_unchecked(&year_str_bytes[2..4]) }
-        };
-
-        dest.write_str(short_year_str).map_err(Error::FormatRecord)
+        let year_short_str = LOCAL_TIME_CACHER.lock().get(record.time()).year_short_str();
+        dest.write_str(&year_short_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -334,24 +327,17 @@ impl Pattern for ShortDate {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let (month_str, day_str, year_str) = {
+        let (month_str, day_str, year_short_str) = {
             let mut local_cacher_lock = LOCAL_TIME_CACHER.lock();
             let cached_time = local_cacher_lock.get(record.time());
             (
                 cached_time.month_str(),
                 cached_time.day_str(),
-                cached_time.year_str(),
+                cached_time.year_short_str(),
             )
         };
 
-        let short_year_str = {
-            let year_str_bytes = year_str.as_bytes();
-            debug_assert_eq!(year_str_bytes.len(), 4);
-
-            unsafe { std::str::from_utf8_unchecked(&year_str_bytes[2..4]) }
-        };
-
-        write!(dest, "{}/{}/{}", month_str, day_str, short_year_str).map_err(Error::FormatRecord)
+        write!(dest, "{}/{}/{}", month_str, day_str, year_short_str).map_err(Error::FormatRecord)
     }
 }
 

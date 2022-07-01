@@ -37,6 +37,7 @@ struct CacheValues {
     full_second_str: RefCell<Option<String>>,
     year: RefCell<Option<i32>>,
     year_str: RefCell<Option<Arc<String>>>,
+    year_short_str: RefCell<Option<Arc<String>>>,
     month: RefCell<Option<u32>>,
     month_str: RefCell<Option<Arc<String>>>,
     weekday_from_monday_0: RefCell<Option<u32>>,
@@ -199,6 +200,14 @@ impl<'a> TimeDate<'a> {
             .clone()
     }
 
+    pub(crate) fn year_short_str(&self) -> Arc<String> {
+        self.cached
+            .year_short_str
+            .borrow_mut()
+            .get_or_insert_with(|| Arc::new(format!("{:02}", self.year() % 100)))
+            .clone()
+    }
+
     pub(crate) fn tz_offset_str(&self) -> Arc<String> {
         self.cached
             .tz_offset_str
@@ -238,6 +247,7 @@ impl CacheValues {
             full_second_str: RefCell::new(None),
             year: RefCell::new(None),
             year_str: RefCell::new(None),
+            year_short_str: RefCell::new(None),
             month: RefCell::new(None),
             month_str: RefCell::new(None),
             weekday_from_monday_0: RefCell::new(None),
