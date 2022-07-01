@@ -9,6 +9,8 @@ use crate::Error;
 pub(crate) const LOG_LEVEL_NAMES: [&str; Level::count()] =
     ["critical", "error", "warn", "info", "debug", "trace"];
 
+const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", "T"];
+
 /// An enum representing log levels.
 ///
 /// Typical usage includes: specifying the `Level` of [`log!`], and comparing a
@@ -108,6 +110,10 @@ impl Level {
     /// This returns the same string as the `fmt::Display` implementation.
     pub fn as_str(&self) -> &'static str {
         LOG_LEVEL_NAMES[*self as usize]
+    }
+
+    pub(crate) fn as_short_str(&self) -> &'static str {
+        LOG_LEVEL_SHORT_NAMES[*self as usize]
     }
 
     /// Iterate through all supported logging levels.
@@ -312,6 +318,20 @@ mod tests {
         }
 
         assert!(Level::from_str("notexist").is_err());
+    }
+
+    #[test]
+    fn as_short_str() {
+        for (&name, &short_name) in LOG_LEVEL_NAMES.iter().zip(LOG_LEVEL_SHORT_NAMES.iter()) {
+            assert_eq!(
+                name.chars()
+                    .next()
+                    .unwrap()
+                    .to_ascii_uppercase()
+                    .to_string(),
+                short_name
+            );
+        }
     }
 
     #[test]

@@ -55,9 +55,7 @@ impl Pattern for ShortLevel {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        const SHORT_LEVEL_NAMES: &[&str] = &["C", "E", "W", "I", "D", "T"];
-        dest.write_str(SHORT_LEVEL_NAMES[record.level() as u16 as usize])
-            .map_err(Error::FormatRecord)?;
-        Ok(())
+        dest.write_str(record.level().as_short_str())
+            .map_err(Error::FormatRecord)
     }
 }
