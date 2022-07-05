@@ -157,10 +157,7 @@ where
 ///       .build()?;
 ///   # Ok(()) }
 ///   ```
-pub struct WriteSinkBuilder<W, ArgW>
-where
-    W: Write + Send,
-{
+pub struct WriteSinkBuilder<W, ArgW> {
     common_builder_impl: helper::CommonBuilderImpl,
     target: Option<W>,
     _phantom: PhantomData<ArgW>,
