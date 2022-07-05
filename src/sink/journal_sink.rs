@@ -86,13 +86,6 @@ impl JournalSink {
             common_builder_impl: helper::CommonBuilderImpl::new(),
         }
     }
-
-    /// Constructs a `JournalSink`.
-    #[allow(clippy::new_without_default)]
-    #[deprecated(note = "it may be removed in the future, use `JournalSink::builder()` instead")]
-    pub fn new() -> Self {
-        JournalSink::builder().build().unwrap()
-    }
 }
 
 impl Sink for JournalSink {

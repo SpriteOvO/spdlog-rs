@@ -45,13 +45,6 @@ where
         }
     }
 
-    /// Constructs a `WriteSink` that writes log messages into the given `impl
-    /// Write` object.
-    #[deprecated(note = "it may be removed in the future, use `WriteSink::builder()` instead")]
-    pub fn new(target: W) -> Self {
-        WriteSink::builder().target(target).build().unwrap()
-    }
-
     /// Invoke a callback function with the underlying `impl Write` object.
     ///
     /// This function returns whatever the given callback function returns.
