@@ -297,7 +297,7 @@ impl Pattern for Year {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let year_str = LOCAL_TIME_CACHER.lock().get(record.time()).year_str();
-        dest.write_str(&**year_str).map_err(Error::FormatRecord)
+        dest.write_str(&year_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -369,7 +369,7 @@ impl Pattern for Month {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let month_str = LOCAL_TIME_CACHER.lock().get(record.time()).month_str();
-        dest.write_str(&**month_str).map_err(Error::FormatRecord)
+        dest.write_str(&month_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -401,7 +401,7 @@ impl Pattern for Day {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let day_str = LOCAL_TIME_CACHER.lock().get(record.time()).day_str();
-        dest.write_str(&**day_str).map_err(Error::FormatRecord)
+        dest.write_str(&day_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -432,7 +432,7 @@ impl Pattern for Hour {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let hour_str = LOCAL_TIME_CACHER.lock().get(record.time()).hour_str();
-        dest.write_str(&**hour_str).map_err(Error::FormatRecord)
+        dest.write_str(&hour_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -463,7 +463,7 @@ impl Pattern for Hour12 {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let hour_12_str = LOCAL_TIME_CACHER.lock().get(record.time()).hour12_str();
-        dest.write_str(&**hour_12_str).map_err(Error::FormatRecord)
+        dest.write_str(&hour_12_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -494,7 +494,7 @@ impl Pattern for Minute {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let minute_str = LOCAL_TIME_CACHER.lock().get(record.time()).minute_str();
-        dest.write_str(&**minute_str).map_err(Error::FormatRecord)
+        dest.write_str(&minute_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -525,7 +525,7 @@ impl Pattern for Second {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let second_str = LOCAL_TIME_CACHER.lock().get(record.time()).second_str();
-        dest.write_str(&**second_str).map_err(Error::FormatRecord)
+        dest.write_str(&second_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -810,8 +810,7 @@ impl Pattern for TzOffset {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let tz_offset_str = LOCAL_TIME_CACHER.lock().get(record.time()).tz_offset_str();
-        dest.write_str(&**tz_offset_str)
-            .map_err(Error::FormatRecord)
+        dest.write_str(&tz_offset_str).map_err(Error::FormatRecord)
     }
 }
 
@@ -844,7 +843,7 @@ impl Pattern for UnixTimestamp {
             .lock()
             .get(record.time())
             .unix_timestamp_str();
-        dest.write_str(&**unix_timestamp_str)
+        dest.write_str(&unix_timestamp_str)
             .map_err(Error::FormatRecord)
     }
 }
