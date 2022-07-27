@@ -10,9 +10,6 @@ use crate::{
 
 /// A pattern that writes the abbreviated weekday name of log records into the
 /// output. Example: `Mon`, `Tue`.
-///
-/// This pattern corresponds to `{a}` or `{weekday-name}` in the pattern
-/// template string.
 #[derive(Clone, Debug)]
 pub struct AbbrWeekdayName {
     base: WeekdayNameBase,
@@ -46,9 +43,6 @@ impl Pattern for AbbrWeekdayName {
 
 /// A pattern that writes the weekday name of log records into the output.
 /// Example: `Monday`, `Tuesday`.
-///
-/// This pattern corresponds to `{A}` or `{weekday-name-full}` in the pattern
-/// template string.
 #[derive(Clone, Debug)]
 pub struct WeekdayName {
     base: WeekdayNameBase,
@@ -90,9 +84,6 @@ impl Pattern for WeekdayName {
 
 /// A pattern that writes the abbreviated month name of log records into the
 /// output. Example: `Jan`, `Feb`.
-///
-/// This pattern corresponds to `{b}` or `{month-name}` in the pattern template
-/// string.
 #[derive(Clone, Debug)]
 pub struct AbbrMonthName {
     base: MonthNameBase,
@@ -128,9 +119,6 @@ impl Pattern for AbbrMonthName {
 
 /// A pattern that writes the month name of log records into the output.
 /// Example: `January`, `February`.
-///
-/// This pattern corresponds to `{B}` or `{month-name-full}` in the pattern
-/// template string.
 #[derive(Clone, Debug)]
 pub struct MonthName {
     base: MonthNameBase,
@@ -177,16 +165,6 @@ impl Pattern for MonthName {
 
 /// A pattern that writes the full date time of log records into the output.
 /// Example: `Thu Aug 23 15:35:46 2014`.
-///
-/// The full date time includes the following parts:
-/// - Abbreviated weekday name as formatted by the [`AbbrWeekdayName`] pattern;
-/// - Abbreviated month name as formatted by the [`AbbrMonthName`] pattern;
-/// - Day of month;
-/// - Time of day with second precision;
-/// - Year.
-///
-/// This pattern corresponds to `{c}` or `{datetime}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct FullDateTime {
     abbr_weekday: AbbrWeekdayName,
@@ -239,9 +217,6 @@ impl Pattern for FullDateTime {
 
 /// A pattern that writes the short year of log records into the output.
 /// Examples: `22`, `20`.
-///
-/// This pattern corresponds to `{C}` or `{year-short}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct ShortYear {
     /// This field prevents users from creating `ShortYear` objects literally.
@@ -271,9 +246,6 @@ impl Pattern for ShortYear {
 
 /// A pattern that writes the year of log records into the output.
 /// Examples: `2022`, `2021`.
-///
-/// This pattern corresponds to `{Y}` or `{year}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct Year {
     /// This field prevents users from creating `Year` objects literally.
@@ -303,9 +275,6 @@ impl Pattern for Year {
 
 /// A pattern that writes the short date of log records in `MM/DD/YY` format
 /// into the output. Examples: `04/01/22`, `12/31/21`.
-///
-/// This pattern corresponds to `{D}` or `{date-short}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct ShortDate {
     _phantom: PhantomData<()>,
@@ -343,9 +312,6 @@ impl Pattern for ShortDate {
 
 /// A pattern that writes the month of log records into the output.
 /// Examples: `01`, `12`.
-///
-/// This pattern corresponds to `{m}` or `{month}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct Month {
     /// This field prevents users from creating `Month` objects literally.
@@ -375,9 +341,6 @@ impl Pattern for Month {
 
 /// A pattern that writes the day of log records into the output.
 /// Examples: `01`, `12`, `31`, `30`.
-///
-/// This pattern corresponds to `{d}` or `{day}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct Day {
     /// This field prevents users from creating `Day` objects literally.
@@ -407,9 +370,6 @@ impl Pattern for Day {
 
 /// A pattern that writes the hour of log records into the output. Examples:
 /// `01`, `12`, `23`.
-///
-/// This pattern corresponds to `{H}` or `{hour}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct Hour {
     _phantom: PhantomData<()>,
@@ -438,9 +398,6 @@ impl Pattern for Hour {
 
 /// A pattern that writes the hour in 12-hour format of log records into the
 /// output. Examples: `01`, `12`.
-///
-/// This pattern corresponds to `{I}` or `{hour-12}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct Hour12 {
     _phantom: PhantomData<()>,
@@ -469,9 +426,6 @@ impl Pattern for Hour12 {
 
 /// A pattern that writes the minute of log records into the output. Examples:
 /// `00`, `05`, `59`.
-///
-/// This pattern corresponds to `{M}` or `{minute}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct Minute {
     _phantom: PhantomData<()>,
@@ -500,9 +454,6 @@ impl Pattern for Minute {
 
 /// A pattern that writes the second of log records into the output. Examples:
 /// `00`, `05`, `59`.
-///
-/// This pattern corresponds to `{S}` or `{second}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct Second {
     _phantom: PhantomData<()>,
@@ -531,9 +482,6 @@ impl Pattern for Second {
 
 /// A pattern that writes the millisecond part within a second of the timestamp
 /// of a log record into the output. Example: `231`.
-///
-/// This pattern corresponds to `{e}` or `{millisecond}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct Millisecond {
     /// This field prevents users from creating `Millisecond` objects
@@ -564,13 +512,9 @@ impl Pattern for Millisecond {
 
 /// A pattern that writes the microsecond part within a second of the timestamp
 /// of a log record into the output. Example: `372152`.
-///
-/// This pattern corresponds to `{f}` or `{microsecond}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct Microsecond {
-    /// This field prevents users from creating `Microsecond` objects
-    /// literally.
+    // This field prevents users from creating `Microsecond` objects literally.
     _phantom: PhantomData<()>,
 }
 
@@ -597,12 +541,9 @@ impl Pattern for Microsecond {
 
 /// A pattern that writes the nanosecond part within a second of the timestamp
 /// of a log record into the output. Example: `482930154`.
-///
-/// This pattern corresponds to `{F}` or `{nanosecond}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct Nanosecond {
-    /// This field prevents users from creating `Nanosecond` objects literally.
+    // This field prevents users from creating `Nanosecond` objects literally.
     _phantom: PhantomData<()>,
 }
 
@@ -629,12 +570,9 @@ impl Pattern for Nanosecond {
 
 /// A pattern that writes "AM" or "PM" into the output according to the
 /// timestamp of a log record. Example: `AM`, `PM`.
-///
-/// This pattern corresponds to `{p}` or `{ampm}` in the pattern
-/// template string.
 #[derive(Clone, Debug, Default)]
 pub struct Ampm {
-    /// This field prevents users from creating `Ampm` objects literally.
+    // This field prevents users from creating `Ampm` objects literally.
     _phantom: PhantomData<()>,
 }
 
@@ -666,9 +604,6 @@ impl Pattern for Ampm {
 
 /// A pattern that writes the time of log records in 12-hour format into the
 /// output. Examples: `02:55:02 PM`.
-///
-/// This pattern corresponds to `{r}` or `{time-12}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct Time12 {
     ampm: Ampm,
@@ -709,9 +644,6 @@ impl Pattern for Time12 {
 
 /// A pattern that writes the short time of log records into the output.
 /// Examples: `22:28`, `09:53`.
-///
-/// This pattern corresponds to `{R}` or `{time-short}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct ShortTime {
     _phantom: PhantomData<()>,
@@ -745,9 +677,6 @@ impl Pattern for ShortTime {
 
 /// A pattern that writes the time of log records into the output. Examples:
 /// `22:28:02`, `09:53:41`.
-///
-/// This pattern corresponds to `{T}`, `{X}` or `{time}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct Time {
     _phantom: PhantomData<()>,
@@ -785,9 +714,6 @@ impl Pattern for Time {
 
 /// A pattern that writes the timezone offset of log records into the output.
 /// Examples: `+08:00`, `+00:00`, `-06:00`.
-///
-/// This pattern corresponds to `{z}` or `{tz-offset}` in the pattern template
-/// string.
 #[derive(Clone, Debug, Default)]
 pub struct TzOffset {
     _phantom: PhantomData<()>,
@@ -816,9 +742,6 @@ impl Pattern for TzOffset {
 
 /// A pattern that writes the unix timestamp of log records into the output.
 /// Examples: `1528834770`.
-///
-/// This pattern corresponds to `{E}` or `{unix}` in the pattern template
-/// string.
 pub struct UnixTimestamp {
     _phantom: PhantomData<()>,
 }

@@ -5,29 +5,26 @@ use crate::{
     Error, Record, StringBuf,
 };
 
-/// A pattern that writes the payload of a log record into output. Example: `log
-/// message`.
-///
-/// This pattern corresponds to `{v}` or `{payload}` in the pattern template
-/// string.
-#[derive(Clone, Copy, Debug, Default)]
-pub struct Payload;
+/// A pattern that writes the logger's name into the output. Example:
+/// `my-logger`.
+#[derive(Copy, Clone, Debug, Default)]
+pub struct LoggerName;
 
-impl Payload {
-    /// Create a new `Payload` pattern.
+impl LoggerName {
+    /// Create a new `LoggerName` pattern.
     pub fn new() -> Self {
         Self
     }
 }
 
-impl Pattern for Payload {
+impl Pattern for LoggerName {
     fn format(
         &self,
         record: &Record,
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(record.payload())
+        dest.write_str(record.logger_name().unwrap_or(""))
             .map_err(Error::FormatRecord)?;
         Ok(())
     }

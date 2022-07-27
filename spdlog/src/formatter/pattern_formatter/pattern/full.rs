@@ -10,9 +10,6 @@ use crate::{
 /// output.
 ///
 /// This pattern writes the same formatted text as [`FullFormatter`].
-///
-/// This pattern corresponds to `{+}` or `{full}` in the pattern template
-/// string.
 #[derive(Default)]
 pub struct Full {
     full_formatter: FullFormatter,

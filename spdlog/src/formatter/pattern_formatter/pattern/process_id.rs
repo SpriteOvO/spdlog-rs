@@ -8,8 +8,6 @@ use crate::{
 /// A pattern that writes the current thread's ID into the output. Example:
 /// `3824`.
 ///
-/// This pattern corresponds to `{P}` or `{pid}` in the pattern template string.
-///
 /// # Implementation
 ///
 /// On unix-like systems such as Linux and macOS, this pattern writes the return

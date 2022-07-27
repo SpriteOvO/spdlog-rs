@@ -10,7 +10,9 @@
 //!
 //! [pattern-macro]: crate::pattern
 
-pub mod patterns;
+#[doc(hidden)]
+#[path = "pattern/mod.rs"]
+pub mod __pattern;
 
 use std::{fmt::Write, ops::Range, sync::Arc};
 
@@ -539,8 +541,8 @@ impl PatternContext {
 ///
 /// # Built-in Patterns
 ///
-/// `spdlog` provides a rich set of built-in patterns. See the [`patterns`]
-/// module.
+/// `spdlog` provides a rich set of built-in patterns. See the [`pattern`]
+/// macro.
 ///
 /// # Custom Patterns
 ///

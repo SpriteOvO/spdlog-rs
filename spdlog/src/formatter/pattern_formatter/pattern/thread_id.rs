@@ -8,8 +8,6 @@ use crate::{
 /// A pattern that writes the current thread's ID into the output. Example:
 /// `3132`.
 ///
-/// This pattern corresponds to `{t}` or `{tid}` in the pattern template string.
-///
 /// # Implementation
 ///
 /// On Linux, this pattern writes the return value of `gettid` to the output.

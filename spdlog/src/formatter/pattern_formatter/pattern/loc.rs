@@ -7,8 +7,6 @@ use crate::{
 
 /// A pattern that writes the source file, line and column of a log record into
 /// the output. Example: `main.rs:30:20`.
-///
-/// This pattern corresponds to `{@}` or `{loc}` in the pattern template string.
 #[derive(Default)]
 pub struct Loc;
 
@@ -35,9 +33,6 @@ impl Pattern for Loc {
 
 /// A pattern that writes the source file basename into the output. Example:
 /// `main.rs`.
-///
-/// This pattern corresponds to `{s}` or `{source-basename}` in the pattern
-/// template string.
 #[derive(Default)]
 pub struct SourceBasename;
 
@@ -65,9 +60,6 @@ impl Pattern for SourceBasename {
 
 /// A pattern that writes the source file path into the output. Example:
 /// `src/main.rs`.
-///
-/// This pattern corresponds to `{g}` or `{source}` in the pattern template
-/// string.
 #[derive(Default)]
 pub struct SourcePath;
 
@@ -93,9 +85,6 @@ impl Pattern for SourcePath {
 }
 
 /// A pattern that writes the source line into the output. Example: `20`.
-///
-/// This pattern corresponds to `{#}` or `{line}` in the pattern template
-/// string.
 #[derive(Default)]
 pub struct SourceLine;
 
@@ -122,9 +111,6 @@ impl Pattern for SourceLine {
 }
 
 /// A pattern that writes the source column into the output. Example: `20`.
-///
-/// This pattern corresponds to `{%}` or `{column}` in the pattern template
-/// string.
 #[derive(Default)]
 pub struct SourceColumn;
 

@@ -5,8 +5,6 @@ use crate::{
 
 /// A pattern that wraps another pattern and apply style ranges to the content
 /// formatted by the wrapped pattern.
-///
-/// This pattern corresponds to `{^..$}` in the pattern template string.
 #[derive(Clone, Debug, Default)]
 pub struct StyleRange<P> {
     inner: P,

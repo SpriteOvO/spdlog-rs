@@ -40,7 +40,7 @@ impl Synthesiser {
                         $synthesiser.add_formatter_mapping(
                             String::from($name),
                             syn::parse_str(
-                                stringify!(::spdlog::formatter::patterns::$formatter::default)
+                                stringify!(::spdlog::formatter::__pattern::$formatter::default)
                             ).unwrap()
                         ).unwrap();
                     )+
@@ -188,7 +188,7 @@ impl Synthesiser {
 
     fn build_style_range_pattern_creation_expr(&self, body: Expr) -> Result<Expr, SynthesisError> {
         let style_range_pattern_new_path: Path =
-            syn::parse_str("::spdlog::formatter::patterns::StyleRange::new").unwrap();
+            syn::parse_str("::spdlog::formatter::__pattern::StyleRange::new").unwrap();
         let stream = quote::quote!( #style_range_pattern_new_path (#body) );
         let expr = syn::parse2(stream).unwrap();
         Ok(Expr::Call(expr))
