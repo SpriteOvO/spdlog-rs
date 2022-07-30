@@ -74,8 +74,10 @@ jobs:
         rustup component add clippy --toolchain nightly
     - name: Cache cargo directories
       uses: Swatinem/rust-cache@v1
-    - name: Run clippy
-      run: cargo +nightly clippy --all-features --tests --benches --examples -- -D warnings
+    - name: Run clippy 
+      run: cargo clippy --all-features --tests --examples -- -D warnings
+    - name: Run clippy nightly for benches
+      run: cargo +nightly clippy --all-features --benches
 
   check-doc:
     runs-on: ubuntu-latest
