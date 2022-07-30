@@ -34,16 +34,16 @@ impl Pattern for Loc {
 /// A pattern that writes the source file basename into the output. Example:
 /// `main.rs`.
 #[derive(Default)]
-pub struct SourceBasename;
+pub struct SourceFilename;
 
-impl SourceBasename {
-    /// Create a new `SourceBasename` pattern.
+impl SourceFilename {
+    /// Create a new `SourceFilename` pattern.
     pub fn new() -> Self {
         Self
     }
 }
 
-impl Pattern for SourceBasename {
+impl Pattern for SourceFilename {
     fn format(
         &self,
         record: &Record,
@@ -61,16 +61,16 @@ impl Pattern for SourceBasename {
 /// A pattern that writes the source file path into the output. Example:
 /// `src/main.rs`.
 #[derive(Default)]
-pub struct SourcePath;
+pub struct SourceFile;
 
-impl SourcePath {
-    /// Create a new `SourcePath` pattern.
+impl SourceFile {
+    /// Create a new `SourceFile` pattern.
     pub fn new() -> Self {
         Self
     }
 }
 
-impl Pattern for SourcePath {
+impl Pattern for SourceFile {
     fn format(
         &self,
         record: &Record,

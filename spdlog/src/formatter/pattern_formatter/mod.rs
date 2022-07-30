@@ -55,7 +55,7 @@ pub mod macros {
 /// #
 /// use spdlog::info;
 ///
-/// let pat = pattern!("[{l}] {v}");
+/// let pat = pattern!("[{level}] {payload}");
 /// let formatter = PatternFormatter::new(pat);
 ///
 /// info!("Interesting log message");
@@ -412,41 +412,41 @@ pub mod macros {
 ///
 /// | Placeholders | Description | Example |
 /// | --- | --- | --- |
-/// | `{a}`, `{weekday-name}` | Abbreviated weekday name | `Mon`, `Tue` |
-/// | `{A}`, `{weekday-name-full}` | Weekday name | `Monday`, `Tuesday` |
-/// | `{b}`, `{month-name}` | Abbreviated month name | `Jan`, `Feb` |
-/// | `{B}`, `{month-name-full}` | Month name | `January`, `February` |
-/// | `{c}`, `{datetime}` | Full date time | `Thu Aug 23 15:35:46 2014` |
-/// | `{C}`, `{year-short}` | Short year | `22`, `20` |
-/// | `{Y}`, `{year}` | Year | `2022`, `2021` |
-/// | `{D}`, `{date-short}` | Short date | `04/01/22`, `12/31/21` |
-/// | `{m}`, `{month}` | Month | `01`, `12` |
-/// | `{d}`, `{day}` | Day in month | `01`, `12`, `31`, `30` |
-/// | `{H}`, `{hour}` | Hour in 24-hour | `01`, `12`, `23` |
-/// | `{I}`, `{hour-12}` | Hour in 12-hour | `01`, `12` |
-/// | `{M}`, `{minute}` | Minute | `00`, `05`, `59` |
-/// | `{S}`, `{second}` | Second | `00`, `05`, `59` |
-/// | `{e}`, `{millisecond}` | Millisecond | `231` |
-/// | `{f}`, `{microsecond}` | Microseconds within a second | `372152` |
-/// | `{F}`, `{nanosecond}` | Nanoseconds within a second | `482930154` |
-/// | `{p}`, `{ampm}` | AM / PM | `AM`, `PM` |
-/// | `{r}`, `{time-12}` | Time in 12-hour format | `02:55:02 PM` |
-/// | `{R}`, `{time-short}` | Short time | `22:28`, `09:53` |
-/// | `{T}`, `{X}`, `{time}` | Time | `22:28:02`, `09:53:41` |
-/// | `{z}`, `{tz-offset}` | Timezone offset | `+08:00`, `+00:00`, `-06:00` |
-/// | `{E}`, `{unix-timestamp}` | Unix timestamp | `1528834770` |
-/// | `{+}`, `{full}` | Full log message | See [`FullFormatter`] |
-/// | `{l}`, `{level}` | Log level | `critical`, `error`, `warn` |
-/// | `{L}`, `{level-short}` | Short log level | `C`, `E`, `W` |
-/// | `{@}`, `{loc}` | Log location | `main.rs:30:20` |
-/// | `{s}`, `{source-basename}` | Source file basename | `main.rs` |
-/// | `{g}`, `{source}` | Path to the source file | `src/main.rs` |
-/// | `{#}`, `{line}` | Source file line | `30` |
-/// | `{%}`, `{column}` | Source file column | `20` |
-/// | `{n}`, `{logger}` | Logger name | `my-logger` |
-/// | `{v}`, `{payload}` | Log payload | `log message` |
-/// | `{P}`, `{pid}` | Process ID | `3824` |
-/// | `{t}`, `{tid}` | Thread ID | `3132` |
+/// | `{weekday_name}` | Abbreviated weekday name | `Mon`, `Tue` |
+/// | `{weekday_name_full}` | Weekday name | `Monday`, `Tuesday` |
+/// | `{month_name}` | Abbreviated month name | `Jan`, `Feb` |
+/// | `{month_name_full}` | Month name | `January`, `February` |
+/// | `{datetime}` | Full date time | `Thu Aug 23 15:35:46 2014` |
+/// | `{year_short}` | Short year | `22`, `20` |
+/// | `{year}` | Year | `2022`, `2021` |
+/// | `{date_short}` | Short date | `04/01/22`, `12/31/21` |
+/// | `{month}` | Month | `01`, `12` |
+/// | `{day}` | Day in month | `01`, `12`, `31`, `30` |
+/// | `{hour}` | Hour in 24-hour | `01`, `12`, `23` |
+/// | `{hour_12}` | Hour in 12-hour | `01`, `12` |
+/// | `{minute}` | Minute | `00`, `05`, `59` |
+/// | `{second}` | Second | `00`, `05`, `59` |
+/// | `{millisecond}` | Millisecond | `231` |
+/// | `{microsecond}` | Microseconds within a second | `372152` |
+/// | `{nanosecond}` | Nanoseconds within a second | `482930154` |
+/// | `{am_pm}` | AM / PM | `AM`, `PM` |
+/// | `{time_12}` | Time in 12-hour format | `02:55:02 PM` |
+/// | `{time_short}` | Short time | `22:28`, `09:53` |
+/// | `{time}` | Time | `22:28:02`, `09:53:41` |
+/// | `{tz_offset}` | Timezone offset | `+08:00`, `+00:00`, `-06:00` |
+/// | `{unix_timestamp}` | Unix timestamp | `1528834770` |
+/// | `{full}` | Full log message | See [`FullFormatter`] |
+/// | `{level}` | Log level | `critical`, `error`, `warn` |
+/// | `{level_short}` | Short log level | `C`, `E`, `W` |
+/// | `{loc}` | Log location | `main.rs:30:20` |
+/// | `{file_name}` | Source file basename | `main.rs` |
+/// | `{file}` | Path to the source file | `src/main.rs` |
+/// | `{line}` | Source file line | `30` |
+/// | `{column}` | Source file column | `20` |
+/// | `{logger}` | Logger name | `my-logger` |
+/// | `{payload}` | Log payload | `log message` |
+/// | `{pid}` | Process ID | `3824` |
+/// | `{tid}` | Thread ID | `3132` |
 ///
 /// [`FullFormatter`]: crate::formatter::FullFormatter
 #[macro_export]
@@ -466,7 +466,7 @@ macro_rules! pattern {
 /// # use spdlog::pattern_formatter;
 /// # use spdlog::formatter::PatternFormatter;
 /// #
-/// let formatter: PatternFormatter<_> = pattern_formatter!("{n}: {^[{level}]$} {v}");
+/// let formatter: PatternFormatter<_> = pattern_formatter!("{logger}: {^[{level}]$} {payload}");
 /// ```
 #[macro_export]
 macro_rules! pattern_formatter {

@@ -20,7 +20,7 @@ fn test_basic() {
 #[test]
 fn test_builtin_formatters() {
     test_pattern(
-        pattern!("{n}: [{level}] hello {v}"),
+        pattern!("{logger}: [{level}] hello {payload}"),
         "logger_name: [error] hello record_payload",
         None,
     );
@@ -29,7 +29,7 @@ fn test_builtin_formatters() {
 #[test]
 fn test_custom_formatters() {
     test_pattern(
-        pattern!("{n}: [{level}] hello {v} - {mock1} / {mock2}",
+        pattern!("{logger}: [{level}] hello {payload} - {mock1} / {mock2}",
             {"mock1"} => MockPattern1::default,
             {"mock2"} => MockPattern2::default,
         ),
@@ -41,7 +41,7 @@ fn test_custom_formatters() {
 #[test]
 fn test_style_range() {
     test_pattern(
-        pattern!("{n}: [{level}] {^hello$} {v}"),
+        pattern!("{logger}: [{level}] {^hello$} {payload}"),
         "logger_name: [error] hello record_payload",
         Some(21..26),
     );

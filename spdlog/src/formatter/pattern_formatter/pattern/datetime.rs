@@ -571,13 +571,13 @@ impl Pattern for Nanosecond {
 /// A pattern that writes "AM" or "PM" into the output according to the
 /// timestamp of a log record. Example: `AM`, `PM`.
 #[derive(Clone, Debug, Default)]
-pub struct Ampm {
-    // This field prevents users from creating `Ampm` objects literally.
+pub struct AmPm {
+    // This field prevents users from creating `AmPm` objects literally.
     _phantom: PhantomData<()>,
 }
 
-impl Ampm {
-    /// Create a new `Ampm` pattern.
+impl AmPm {
+    /// Create a new `AmPm` pattern.
     pub fn new() -> Self {
         Self {
             _phantom: PhantomData::default(),
@@ -585,7 +585,7 @@ impl Ampm {
     }
 }
 
-impl Pattern for Ampm {
+impl Pattern for AmPm {
     fn format(
         &self,
         record: &Record,
@@ -606,13 +606,13 @@ impl Pattern for Ampm {
 /// output. Examples: `02:55:02 PM`.
 #[derive(Clone, Debug, Default)]
 pub struct Time12 {
-    ampm: Ampm,
+    am_pm: AmPm,
 }
 
 impl Time12 {
     /// Create a new `Time12` pattern.
     pub fn new() -> Self {
-        Self { ampm: Ampm::new() }
+        Self { am_pm: AmPm::new() }
     }
 }
 
@@ -636,7 +636,7 @@ impl Pattern for Time12 {
         write!(dest, "{}:{}:{}", hour_str, minute_str, second_str).map_err(Error::FormatRecord)?;
 
         dest.write_str(" ").map_err(Error::FormatRecord)?;
-        self.ampm.format(record, dest, ctx)?;
+        self.am_pm.format(record, dest, ctx)?;
 
         Ok(())
     }
