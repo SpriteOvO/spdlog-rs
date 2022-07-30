@@ -420,6 +420,7 @@ pub mod macros {
 /// | `{year_short}` | Short year | `22`, `20` |
 /// | `{year}` | Year | `2022`, `2021` |
 /// | `{date_short}` | Short date | `04/01/22`, `12/31/21` |
+/// | `{date}` | Date (ISO 8601) | `2022-04-01`, `2021-12-31` |
 /// | `{month}` | Month | `01`, `12` |
 /// | `{day}` | Day in month | `01`, `12`, `31`, `30` |
 /// | `{hour}` | Hour in 24-hour | `01`, `12`, `23` |

@@ -273,6 +273,43 @@ impl Pattern for Year {
     }
 }
 
+/// A pattern that writes the date of log records in `YYYY-MM-DD` format (ISO
+/// 8601) into the output. Examples: `2022-04-01`, `2021-12-31`.
+#[derive(Clone, Debug, Default)]
+pub struct Date {
+    _phantom: PhantomData<()>,
+}
+
+impl Date {
+    /// Create a new `Date` pattern.
+    pub fn new() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+impl Pattern for Date {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        let (month_str, day_str, year_str) = {
+            let mut local_cacher_lock = LOCAL_TIME_CACHER.lock();
+            let cached_time = local_cacher_lock.get(record.time());
+            (
+                cached_time.month_str(),
+                cached_time.day_str(),
+                cached_time.year_str(),
+            )
+        };
+
+        write!(dest, "{}-{}-{}", year_str, month_str, day_str).map_err(Error::FormatRecord)
+    }
+}
+
 /// A pattern that writes the short date of log records in `MM/DD/YY` format
 /// into the output. Examples: `04/01/22`, `12/31/21`.
 #[derive(Clone, Debug, Default)]

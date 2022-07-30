@@ -57,6 +57,7 @@ impl Synthesiser {
             ["year_short"] => ShortYear,
             ["year"] => Year,
             ["date_short"] => ShortDate,
+            ["date"] => Date,
             ["month"] => Month,
             ["day"] => Day,
             ["hour"] => Hour,
