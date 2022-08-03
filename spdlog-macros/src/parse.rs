@@ -169,12 +169,10 @@ impl Parse for CustomPatternMapping {
         let items: Punctuated<_, Token![,]> =
             input.parse_terminated(CustomPatternMappingItem::parse)?;
 
-        let mut mapping_pairs = Vec::new();
-        for i in items {
-            for name in i.names {
-                mapping_pairs.push((name, i.factory.clone()));
-            }
-        }
+        let mapping_pairs = items.into_iter().fold(vec![], |mut prev, item| {
+            prev.push((item.name, item.factory));
+            prev
+        });
 
         Ok(Self { mapping_pairs })
     }
@@ -198,23 +196,20 @@ impl Parse for CustomPatternFactoryFunctionId {
 }
 
 struct CustomPatternMappingItem {
-    names: Vec<LitStr>,
+    name: LitStr,
     factory: CustomPatternFactoryFunctionId,
 }
 
 impl Parse for CustomPatternMappingItem {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let names_input;
-        braced!(names_input in input);
+        let name_input;
+        braced!(name_input in input);
 
-        let names: Punctuated<_, Token![,]> =
-            names_input.parse_terminated(<LitStr as Parse>::parse)?;
-        let names = names.into_iter().collect();
-
+        let name = name_input.parse()?;
         input.parse::<Token![=>]>()?;
-
         let factory: CustomPatternFactoryFunctionId = input.parse()?;
-        Ok(Self { names, factory })
+
+        Ok(Self { name, factory })
     }
 }
 

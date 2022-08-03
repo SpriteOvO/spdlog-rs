@@ -265,39 +265,6 @@ pub mod macros {
 /// // Logs: [info] Interesting log message - 0 1 2
 /// ```
 ///
-/// ## Multiple Names and Multiple Custom Patterns
-///
-/// You can associate multiple names with your own pattern, if you prefer:
-///
-/// ```
-/// # use std::fmt::Write;
-/// # use spdlog::{info, pattern, Record, StringBuf};
-/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
-/// #
-/// # #[derive(Default)]
-/// # struct MyPattern;
-/// #
-/// # impl Pattern for MyPattern {
-/// #     fn format(
-/// #         &self,
-/// #         record: &Record,
-/// #         dest: &mut StringBuf,
-/// #         _ctx: &mut PatternContext,
-/// #     ) -> spdlog::Result<()> {
-/// #         write!(dest, "My own pattern").unwrap();
-/// #         Ok(())
-/// #     }
-/// # }
-/// #
-/// let pat = pattern!("[{level}] {payload} - {mypat1} {mypat2}",
-///     {"mypat1", "mypat2"} => MyPattern::default,
-/// );
-/// let formatter = PatternFormatter::new(pat);
-///
-/// info!("Interesting log message");
-/// // Logs: [info] Interesting log message - My own pattern My own pattern
-/// ```
-///
 /// Of course, you can have multiple custom patterns:
 ///
 /// ```
