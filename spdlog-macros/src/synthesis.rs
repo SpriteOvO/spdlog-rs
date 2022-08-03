@@ -14,7 +14,7 @@ use crate::parse::{
 };
 
 pub(crate) struct Synthesiser {
-    formatters: HashMap<String, Path>,
+    formatters: HashMap<String, PatternFormatter>,
 }
 
 impl Synthesiser {
@@ -27,7 +27,7 @@ impl Synthesiser {
     pub(crate) fn with_builtin_formatters() -> Self {
         let mut synthesiser = Self::new();
 
-        macro_rules! add_formatter_mappings {
+        macro_rules! map_builtin_formatters {
             (
                 $synthesiser:expr,
                 $( [ $($name:literal),+ $(,)? ] => $formatter:ident ),+
@@ -39,16 +39,19 @@ impl Synthesiser {
                         // `default` function to create instances of the built-in patterns.
                         $synthesiser.add_formatter_mapping(
                             String::from($name),
-                            syn::parse_str(
-                                stringify!(::spdlog::formatter::__pattern::$formatter::default)
-                            ).unwrap()
+                            PatternFormatter {
+                                factory_path: syn::parse_str(
+                                    stringify!(::spdlog::formatter::__pattern::$formatter::default)
+                                ).unwrap(),
+                                kind: PatternFormatterKind::BuiltIn,
+                            }
                         ).unwrap();
                     )+
                 )+
             };
         }
 
-        add_formatter_mappings!(synthesiser,
+        map_builtin_formatters! {synthesiser,
             ["weekday_name"] => AbbrWeekdayName,
             ["weekday_name_full"] => WeekdayName,
             ["month_name"] => AbbrMonthName,
@@ -85,7 +88,7 @@ impl Synthesiser {
             ["payload"] => Payload,
             ["pid"] => ProcessId,
             ["tid"] => ThreadId,
-        );
+        }
 
         synthesiser
     }
@@ -93,13 +96,13 @@ impl Synthesiser {
     pub(crate) fn add_formatter_mapping(
         &mut self,
         name: String,
-        formatter_factory_path: Path,
+        formatter: PatternFormatter,
     ) -> Result<(), ConflictFormatterError> {
         if self.formatters.contains_key(&name) {
             return Err(ConflictFormatterError::new(name));
         }
 
-        self.formatters.insert(name, formatter_factory_path);
+        self.formatters.insert(name, formatter);
         Ok(())
     }
 
@@ -162,8 +165,7 @@ impl Synthesiser {
         &self,
         formatter_token: &PatternTemplateFormatter,
     ) -> Result<Expr, SynthesisError> {
-        let formatter_creation_expr =
-            self.build_formatter_creation_expr(&formatter_token.formatter_name)?;
+        let formatter_creation_expr = self.build_formatter_creation_expr(formatter_token)?;
         Ok(formatter_creation_expr)
     }
 
@@ -176,11 +178,16 @@ impl Synthesiser {
         Ok(expr)
     }
 
-    fn build_formatter_creation_expr(&self, formatter_name: &str) -> Result<Expr, SynthesisError> {
-        let formatter_factory_path = self
+    fn build_formatter_creation_expr(
+        &self,
+        formatter_token: &PatternTemplateFormatter,
+    ) -> Result<Expr, SynthesisError> {
+        let formatter_factory_path = &self
             .formatters
-            .get(formatter_name)
-            .ok_or_else(|| SynthesisError::UnknownFormatterName(String::from(formatter_name)))?;
+            .get(&formatter_token.name)
+            .filter(|formatter| formatter_token.kind == formatter.kind)
+            .ok_or_else(|| SynthesisError::UnknownFormatterName(formatter_token.name.clone()))?
+            .factory_path;
 
         let stream = quote::quote!( #formatter_factory_path () );
         let factory_call_expr = syn::parse2(stream).unwrap();
@@ -194,6 +201,17 @@ impl Synthesiser {
         let expr = syn::parse2(stream).unwrap();
         Ok(Expr::Call(expr))
     }
+}
+
+pub(crate) struct PatternFormatter {
+    pub(crate) factory_path: Path,
+    pub(crate) kind: PatternFormatterKind,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) enum PatternFormatterKind {
+    Custom,
+    BuiltIn,
 }
 
 #[derive(Debug)]

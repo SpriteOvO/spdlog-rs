@@ -164,8 +164,8 @@ pub mod macros {
 /// #     }
 /// # }
 /// #
-/// let pat = pattern!("[{level}] {payload} - {mypat}",
-///     {"mypat"} => MyPattern::default,
+/// let pat = pattern!("[{level}] {payload} - {$mypat}",
+///     {$mypat} => MyPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
 ///
@@ -173,10 +173,10 @@ pub mod macros {
 /// // Logs: [info] Interesting log message - My own pattern
 /// ```
 ///
-/// Note the special `{"name"} => id` syntax given to the `pattern` macro.
-/// `name` is the name of your own pattern; placeholder `{name}` in the
+/// Note the special `{$name} => id` syntax given to the `pattern` macro.
+/// `name` is the name of your own pattern; placeholder `{$name}` in the
 /// template string will be replaced by the output of your own pattern. `name`
-/// cannot contain `{` or `}`.`id` is a [path] that identifies a **function**
+/// can only be an identifier. `id` is a [path] that identifies a **function**
 /// that can be called with **no arguments**. Instances of your own pattern
 /// will be created by calling this function with no arguments.
 ///
@@ -256,8 +256,8 @@ pub mod macros {
 /// #     }
 /// # }
 /// #
-/// let pat = pattern!("[{level}] {payload} - {mypat} {mypat} {mypat}",
-///     {"mypat"} => MyPattern::new,
+/// let pat = pattern!("[{level}] {payload} - {$mypat} {$mypat} {$mypat}",
+///     {$mypat} => MyPattern::new,
 /// );
 /// let formatter = PatternFormatter::new(pat);
 ///
@@ -302,9 +302,9 @@ pub mod macros {
 /// #     }
 /// # }
 /// #
-/// let pat = pattern!("[{level}] {payload} - {mypat} {mypat2}",
-///     {"mypat"} => MyPattern::default,
-///     {"mypat2"} => MyOtherPattern::default,
+/// let pat = pattern!("[{level}] {payload} - {$mypat} {$mypat2}",
+///     {$mypat} => MyPattern::default,
+///     {$mypat2} => MyOtherPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
 /// ```
@@ -315,63 +315,29 @@ pub mod macros {
 /// patterns:
 ///
 /// ```compile_fail
-/// # use std::fmt::Write;
-/// # use spdlog::{pattern, Record, StringBuf};
-/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// # use spdlog::{formatter::Pattern, pattern};
+/// #
+/// # #[derive(Default)]
+/// # struct MyPattern;
+/// # #[derive(Default)]
+/// # struct MyOtherPattern;
+/// #
+/// let pattern = pattern!("[{level}] {payload} - {$mypat}",
+///     {$mypat} => MyPattern::new,
+///     // Error: name conflicts with another custom pattern
+///     {$mypat} => MyOtherPattern::new,
+/// );
+/// ```
+///
+/// ```compile_fail
+/// # use spdlog::{formatter::Pattern, pattern};
 /// #
 /// # #[derive(Default)]
 /// # struct MyPattern;
 /// #
-/// # impl Pattern for MyPattern {
-/// #     fn format(
-/// #         &self,
-/// #         record: &Record,
-/// #         dest: &mut StringBuf,
-/// #         _ctx: &mut PatternContext,
-/// #     ) -> spdlog::Result<()> {
-/// #         write!(dest, "My own pattern").unwrap();
-/// #         Ok(())
-/// #     }
-/// # }
-/// #
-/// # #[derive(Default)]
-/// # struct MyOtherPattern;
-/// #
-/// # impl Pattern for MyOtherPattern {
-/// #     fn format(
-/// #         &self,
-/// #         record: &Record,
-/// #         dest: &mut StringBuf,
-/// #         _ctx: &mut PatternContext,
-/// #     ) -> spdlog::Result<()> {
-/// #         write!(dest, "My own pattern").unwrap();
-/// #         Ok(())
-/// #     }
-/// # }
-/// #
-/// # #[derive(Default)]
-/// # struct MyOtherPattern2;
-/// #
-/// # impl Pattern for MyOtherPattern2 {
-/// #     fn format(
-/// #         &self,
-/// #         record: &Record,
-/// #         dest: &mut StringBuf,
-/// #         _ctx: &mut PatternContext,
-/// #     ) -> spdlog::Result<()> {
-/// #         write!(dest, "My own pattern").unwrap();
-/// #         Ok(())
-/// #     }
-/// # }
-/// #
-/// let pat = pattern!("[{level}] {payload} - {mypat}",
-///     {"mypat"} => MyPattern::default,
-///
-///     // Error: name conflicts with another custom pattern
-///     {"mypat"} => MyOtherPattern::default,
-///
+/// let pattern = pattern!("[{level}] {payload} - {$day}",
 ///     // Error: name conflicts with a built-in pattern
-///     {"n"} => MyOtherPattern2::default,
+///     {$day} => MyPattern::new,
 /// );
 /// ```
 ///

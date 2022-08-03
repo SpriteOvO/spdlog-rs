@@ -29,9 +29,9 @@ fn test_builtin_formatters() {
 #[test]
 fn test_custom_formatters() {
     test_pattern(
-        pattern!("{logger}: [{level}] hello {payload} - {mock1} / {mock2}",
-            {"mock1"} => MockPattern1::default,
-            {"mock2"} => MockPattern2::default,
+        pattern!("{logger}: [{level}] hello {payload} - {$mock1} / {$mock2}",
+            {$mock1} => MockPattern1::default,
+            {$mock2} => MockPattern2::default,
         ),
         "logger_name: [error] hello record_payload - mock_pattern_1 / mock_pattern_2",
         None,

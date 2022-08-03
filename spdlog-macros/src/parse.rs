@@ -3,8 +3,10 @@ use syn::{
     braced,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    LitStr, Path, Token,
+    Ident, LitStr, Path, Token,
 };
+
+use crate::synthesis::PatternFormatterKind;
 
 /// A parsed pattern.
 ///
@@ -126,18 +128,37 @@ impl PatternTemplateLiteral {
 
 #[cfg_attr(test, derive(Debug, Eq, PartialEq))]
 pub(crate) struct PatternTemplateFormatter {
-    pub(crate) formatter_name: String,
+    pub(crate) name: String,
+    pub(crate) kind: PatternFormatterKind,
 }
 
 impl PatternTemplateFormatter {
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let open_paren_parser = nom::character::complete::char('{');
         let close_paren_parser = nom::character::complete::char('}');
-        let formatter_name_parser = nom::multi::many1(nom::character::complete::none_of("{}"));
+        let formatter_prefix_parser = nom::character::complete::char('$');
+        let formatter_name_parser = nom::combinator::recognize(nom::sequence::tuple((
+            nom::combinator::opt(formatter_prefix_parser),
+            nom::branch::alt((
+                nom::character::complete::alpha1,
+                nom::bytes::complete::tag("_"),
+            )),
+            nom::multi::many0_count(nom::branch::alt((
+                nom::character::complete::alphanumeric1,
+                nom::bytes::complete::tag("_"),
+            ))),
+        )));
 
         nom::sequence::delimited(open_paren_parser, formatter_name_parser, close_paren_parser).map(
-            |name_chars| Self {
-                formatter_name: name_chars.into_iter().collect(),
+            |name: &str| match name.strip_prefix('$') {
+                Some(custom_name) => Self {
+                    name: custom_name.to_owned(),
+                    kind: PatternFormatterKind::Custom,
+                },
+                None => Self {
+                    name: name.to_owned(),
+                    kind: PatternFormatterKind::BuiltIn,
+                },
             },
         )
     }
@@ -161,7 +182,7 @@ impl PatternTemplateStyleRange {
 
 /// Mapping from user-provided patterns to formatters.
 pub(crate) struct CustomPatternMapping {
-    pub(crate) mapping_pairs: Vec<(LitStr, CustomPatternFactoryFunctionId)>,
+    pub(crate) mapping_pairs: Vec<(Ident, CustomPatternFactoryFunctionId)>,
 }
 
 impl Parse for CustomPatternMapping {
@@ -196,7 +217,7 @@ impl Parse for CustomPatternFactoryFunctionId {
 }
 
 struct CustomPatternMappingItem {
-    name: LitStr,
+    name: Ident,
     factory: CustomPatternFactoryFunctionId,
 }
 
@@ -204,6 +225,8 @@ impl Parse for CustomPatternMappingItem {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let name_input;
         braced!(name_input in input);
+
+        name_input.parse::<Token![$]>()?;
 
         let name = name_input.parse()?;
         input.parse::<Token![=>]>()?;
@@ -280,7 +303,7 @@ mod tests {
         #[test]
         fn test_parse_formatter_basic() {
             assert_eq!(
-                parse_template_str(r#"hello {name}!"#),
+                parse_template_str(r#"hello {name}!{$custom}"#),
                 Ok((
                     "",
                     PatternTemplate {
@@ -289,10 +312,15 @@ mod tests {
                                 literal: String::from("hello "),
                             }),
                             PatternTemplateToken::Formatter(PatternTemplateFormatter {
-                                formatter_name: String::from("name"),
+                                name: String::from("name"),
+                                kind: PatternFormatterKind::BuiltIn
                             }),
                             PatternTemplateToken::Literal(PatternTemplateLiteral {
                                 literal: String::from("!"),
+                            }),
+                            PatternTemplateToken::Formatter(PatternTemplateFormatter {
+                                name: String::from("custom"),
+                                kind: PatternFormatterKind::Custom
                             }),
                         ],
                     }
@@ -337,7 +365,8 @@ mod tests {
                                 literal: String::from("hello "),
                             }),
                             PatternTemplateToken::Formatter(PatternTemplateFormatter {
-                                formatter_name: String::from("name"),
+                                name: String::from("name"),
+                                kind: PatternFormatterKind::BuiltIn
                             }),
                             PatternTemplateToken::Literal(PatternTemplateLiteral {
                                 literal: String::from("}"),
