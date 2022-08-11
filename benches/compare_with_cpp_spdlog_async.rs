@@ -4,7 +4,7 @@ extern crate test;
 
 mod common;
 
-use std::{cmp, env, fs, path::PathBuf, sync::Arc, time::Instant};
+use std::{cmp, env, fs, path::PathBuf, sync::Arc, thread, time::Instant};
 use test::black_box;
 
 use clap::Parser;
@@ -76,7 +76,7 @@ fn bench_mt(logger: Logger, message_count: usize, threads: usize) {
 
     let start = Instant::now();
 
-    crossbeam::thread::scope(|scope| {
+    thread::scope(|scope| {
         for t in 0..threads {
             let logger = &logger;
             let message_count = if t == 0 && msgs_per_thread_mod != 0 {
@@ -84,14 +84,13 @@ fn bench_mt(logger: Logger, message_count: usize, threads: usize) {
             } else {
                 msgs_per_thread
             };
-            scope.spawn(move |_| {
+            scope.spawn(move || {
                 for i in 0..message_count {
                     info!(logger: logger, "Hello logger: msg number {}", black_box(i));
                 }
             });
         }
-    })
-    .unwrap();
+    });
 
     let elapsed = start.elapsed().as_secs_f64();
 
