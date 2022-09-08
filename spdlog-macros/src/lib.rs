@@ -1,3 +1,4 @@
+mod helper;
 mod parse;
 mod synthesis;
 

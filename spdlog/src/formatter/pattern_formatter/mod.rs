@@ -98,14 +98,14 @@ pub mod macros {
 ///
 /// A specific portion of a formatted log message can be specified as "style
 /// range". Formatted text in the style range will be rendered in a different
-/// style by supported sinks. You can use `{^...$}` to mark the style range
-/// in the pattern template string:
+/// style by supported sinks. You can use `{^...}` to mark the style range in
+/// the pattern template string:
 ///
 /// ```
 /// # use spdlog::{info, pattern};
 /// # use spdlog::formatter::PatternFormatter;
 /// #
-/// let pat = pattern!("{^[{level}]$} {payload}");
+/// let pat = pattern!("{^[{level}]} {payload}");
 /// let formatter = PatternFormatter::new(pat);
 ///
 /// info!("Interesting log message");
@@ -400,7 +400,7 @@ macro_rules! pattern {
 /// # use spdlog::pattern_formatter;
 /// # use spdlog::formatter::PatternFormatter;
 /// #
-/// let formatter: PatternFormatter<_> = pattern_formatter!("{logger}: {^[{level}]$} {payload}");
+/// let formatter: PatternFormatter<_> = pattern_formatter!("{logger}: {^[{level}]} {payload}");
 /// ```
 #[macro_export]
 macro_rules! pattern_formatter {

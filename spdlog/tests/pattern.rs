@@ -41,12 +41,13 @@ fn test_custom_formatters() {
 #[test]
 fn test_style_range() {
     test_pattern(
-        pattern!("{logger}: [{level}] {^hello$} {payload}"),
+        pattern!("{logger}: [{level}] {^hello} {payload}"),
         "logger_name: [error] hello record_payload",
         Some(21..26),
     );
 }
 
+#[track_caller]
 fn test_pattern<P, F>(pat: P, expect_formatted: F, expect_style_range: Option<Range<usize>>)
 where
     P: Pattern + 'static,

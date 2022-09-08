@@ -6,7 +6,7 @@ use syn::{
     Ident, LitStr, Path, Token,
 };
 
-use crate::synthesis::PatternFormatterKind;
+use crate::{helper, synthesis::PatternFormatterKind};
 
 /// A parsed pattern.
 ///
@@ -172,8 +172,8 @@ pub(crate) struct PatternTemplateStyleRange {
 impl PatternTemplateStyleRange {
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         nom::bytes::complete::tag("{^")
-            .and(nom::bytes::complete::take_until("$}"))
-            .and(nom::bytes::complete::tag("$}"))
+            .and(helper::take_until_unbalanced('{', '}'))
+            .and(nom::bytes::complete::tag("}"))
             .map(|((_, body), _)| body)
             .and_then(PatternTemplate::parser_without_style_range())
             .map(|body| Self { body })
@@ -380,7 +380,7 @@ mod tests {
         #[test]
         fn test_parse_style_range_basic() {
             assert_eq!(
-                parse_template_str(r#"hello {^world$}"#),
+                parse_template_str(r#"hello {^world}"#),
                 Ok((
                     "",
                     PatternTemplate {
@@ -401,11 +401,48 @@ mod tests {
                     }
                 ))
             );
+
+            assert_eq!(
+                parse_template_str(r#"hello {^world {b_pat} {$c_pat} {{escape}}}"#),
+                Ok((
+                    "",
+                    PatternTemplate {
+                        tokens: vec![
+                            PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                literal: String::from("hello "),
+                            }),
+                            PatternTemplateToken::StyleRange(PatternTemplateStyleRange {
+                                body: PatternTemplate {
+                                    tokens: vec![
+                                        PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                            literal: String::from("world "),
+                                        }),
+                                        PatternTemplateToken::Formatter(PatternTemplateFormatter {
+                                            name: String::from("b_pat"),
+                                            kind: PatternFormatterKind::BuiltIn
+                                        }),
+                                        PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                            literal: String::from(" "),
+                                        }),
+                                        PatternTemplateToken::Formatter(PatternTemplateFormatter {
+                                            name: String::from("c_pat"),
+                                            kind: PatternFormatterKind::Custom
+                                        }),
+                                        PatternTemplateToken::Literal(PatternTemplateLiteral {
+                                            literal: String::from(" {escape}"),
+                                        }),
+                                    ],
+                                },
+                            }),
+                        ],
+                    }
+                ))
+            );
         }
 
         #[test]
         fn test_parse_style_range_nested() {
-            assert!(parse_template_str(r#"hello {^ hello {^ world $} $}"#).is_err());
+            assert!(parse_template_str(r#"hello {^ hello {^ world } }"#).is_err());
         }
     }
 }
