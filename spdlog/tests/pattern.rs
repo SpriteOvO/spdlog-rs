@@ -6,8 +6,7 @@ use std::{
 
 use spdlog::{
     error,
-    formatter::{Formatter, Pattern, PatternFormatter},
-    pattern,
+    formatter::{pattern, Formatter, Pattern, PatternFormatter},
     sink::Sink,
     Logger, StringBuf,
 };

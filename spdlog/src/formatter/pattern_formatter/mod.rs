@@ -8,7 +8,7 @@
 //!
 //! You can also build a pattern with the [`pattern`][pattern-macro] macro.
 //!
-//! [pattern-macro]: crate::pattern
+//! [pattern-macro]: crate::formatter::pattern
 
 #[doc(hidden)]
 #[path = "pattern/mod.rs"]
@@ -21,21 +21,35 @@ use crate::{
     Error, Record, StringBuf,
 };
 
-#[allow(missing_docs)]
-pub mod macros {
-    pub use ::spdlog_macros::pattern as pattern_impl;
-}
-
 /// Build a pattern from a compile-time pattern template string.
+///
+/// It accepts input of the similar form:
+///
+/// ```ignore
+/// // This is not exactly a valid declarative macro, just for intuition.
+/// macro_rules! pattern {
+///     ( $template:literal $(,)? ) => {};
+///     ( $template:literal, $( {$$custom:ident} => $ctor:expr ),+ $(,)? ) => {};
+/// }
+/// ```
+///
+/// Examples of valid inputs:
+///
+/// ```
+/// # use spdlog::formatter::pattern;
+/// # #[derive(Default)]
+/// # struct MyPattern;
+/// pattern!("text");
+/// pattern!("current line: {line}");
+/// pattern!("custom: {$my_pattern}", {$my_pattern} => MyPattern::default);
+/// ```
 ///
 /// # Basic Usage
 ///
 /// In its simplest form, `pattern` receives a **literal** pattern string and
 /// converts it into a zero-cost pattern:
-///
 /// ```
-/// use spdlog::pattern;
-/// use spdlog::formatter::PatternFormatter;
+/// use spdlog::formatter::{pattern, PatternFormatter};
 ///
 /// let pat = pattern!("pattern string");
 /// let formatter = PatternFormatter::new(pat);
@@ -48,11 +62,8 @@ pub mod macros {
 /// represents built-in patterns. For example, to include the log level and
 /// payload in the pattern, we can simply use `{l}` and `{v}` in the pattern
 /// template string:
-///
 /// ```
-/// # use spdlog::pattern;
-/// # use spdlog::formatter::PatternFormatter;
-/// #
+/// # use spdlog::formatter::{pattern, PatternFormatter};
 /// use spdlog::info;
 ///
 /// let pat = pattern!("[{level}] {payload}");
@@ -65,11 +76,11 @@ pub mod macros {
 /// Here, `{l}` and `{v}` are "placeholders" that will be replaced by the
 /// output of the corresponding built-in patterns when formatting log records.
 /// You can also use `{level}` and `{payload}`, if you prefer:
-///
 /// ```
-/// # use spdlog::{info, pattern};
-/// # use spdlog::formatter::PatternFormatter;
-/// #
+/// # use spdlog::{
+/// #     formatter::{pattern, PatternFormatter},
+/// #     info,
+/// # };
 /// let pat = pattern!("[{level}] {payload}");
 /// let formatter = PatternFormatter::new(pat);
 ///
@@ -79,11 +90,11 @@ pub mod macros {
 ///
 /// What if you want to output a literal `{` or `}` character? Simply use `{{`
 /// and `}}`:
-///
 /// ```
-/// # use spdlog::{info, pattern};
-/// # use spdlog::formatter::PatternFormatter;
-/// #
+/// # use spdlog::{
+/// #     formatter::{pattern, PatternFormatter},
+/// #     info,
+/// # };
 /// let pat = pattern!("[{{level}}] {payload}");
 /// let formatter = PatternFormatter::new(pat);
 ///
@@ -100,11 +111,11 @@ pub mod macros {
 /// range". Formatted text in the style range will be rendered in a different
 /// style by supported sinks. You can use `{^...}` to mark the style range in
 /// the pattern template string:
-///
 /// ```
-/// # use spdlog::{info, pattern};
-/// # use spdlog::formatter::PatternFormatter;
-/// #
+/// # use spdlog::{
+/// #     formatter::{pattern, PatternFormatter},
+/// #     info,
+/// # };
 /// let pat = pattern!("{^[{level}]} {payload}");
 /// let formatter = PatternFormatter::new(pat);
 ///
@@ -118,7 +129,6 @@ pub mod macros {
 /// Yes, you can refer your own implementation of [`Pattern`] in the pattern
 /// template string! Let's say you have a struct that implements the
 /// [`Pattern`] trait:
-///
 /// ```
 /// use std::fmt::Write;
 /// use spdlog::{Record, StringBuf};
@@ -143,11 +153,10 @@ pub mod macros {
 /// To refer `MyPattern` in the pattern template string, you need to use the
 /// extended syntax to associate `MyPattern` with a name so that `pattern!`
 /// can resolve it:
-///
 /// ```
 /// # use std::fmt::Write;
-/// # use spdlog::{info, pattern, Record, StringBuf};
-/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// # use spdlog::{info, Record, StringBuf};
+/// # use spdlog::formatter::{pattern, Pattern, PatternContext, PatternFormatter};
 /// #
 /// # #[derive(Default)]
 /// # struct MyPattern;
@@ -186,7 +195,6 @@ pub mod macros {
 ///
 /// Each placeholder results in a new pattern instance. For example, consider a
 /// custom pattern that writes a unique ID to the output:
-///
 /// ```
 /// # use std::fmt::Write;
 /// # use std::sync::atomic::{AtomicU32, Ordering};
@@ -223,12 +231,11 @@ pub mod macros {
 /// If the pattern template string contains multiple placeholders that refer
 /// to `MyPattern`, each placeholder will eventually be replaced by different
 /// IDs:
-///
 /// ```
 /// # use std::fmt::Write;
 /// # use std::sync::atomic::{AtomicU32, Ordering};
-/// # use spdlog::{info, pattern, Record, StringBuf};
-/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// # use spdlog::{info, Record, StringBuf};
+/// # use spdlog::formatter::{pattern, Pattern, PatternContext, PatternFormatter};
 /// #
 /// # static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 /// #
@@ -266,11 +273,10 @@ pub mod macros {
 /// ```
 ///
 /// Of course, you can have multiple custom patterns:
-///
 /// ```
 /// # use std::fmt::Write;
-/// # use spdlog::{pattern, Record, StringBuf};
-/// # use spdlog::formatter::{Pattern, PatternContext, PatternFormatter};
+/// # use spdlog::{Record, StringBuf};
+/// # use spdlog::formatter::{pattern, Pattern, PatternContext, PatternFormatter};
 /// #
 /// # #[derive(Default)]
 /// # struct MyPattern;
@@ -313,7 +319,6 @@ pub mod macros {
 ///
 /// It's a hard error if names of your own custom pattern conflicts with other
 /// patterns:
-///
 /// ```compile_fail
 /// # use spdlog::{formatter::Pattern, pattern};
 /// #
@@ -328,7 +333,6 @@ pub mod macros {
 ///     {$mypat} => MyOtherPattern::new,
 /// );
 /// ```
-///
 /// ```compile_fail
 /// # use spdlog::{formatter::Pattern, pattern};
 /// #
@@ -383,12 +387,7 @@ pub mod macros {
 /// | `{tid}` | Thread ID | `3132` |
 ///
 /// [`FullFormatter`]: crate::formatter::FullFormatter
-#[macro_export]
-macro_rules! pattern {
-    ( $($t:tt)* ) => {
-        $crate::formatter::macros::pattern_impl!($($t)*)
-    }
-}
+pub use ::spdlog_macros::pattern;
 
 /// Build a [`PatternFormatter`] from a pattern built by the [`pattern`] macro
 /// with the given macro arguments.
@@ -405,7 +404,7 @@ macro_rules! pattern {
 #[macro_export]
 macro_rules! pattern_formatter {
     ( $($t:tt)* ) => {
-        $crate::formatter::PatternFormatter::new($crate::pattern!($($t)*))
+        $crate::formatter::PatternFormatter::new($crate::formatter::pattern!($($t)*))
     };
 }
 
