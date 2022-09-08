@@ -20,7 +20,6 @@ env:
   # - Cargo.toml
   # - README.md
   rust_minver: 1.56.0
-  rust_minver_tolerant: 1.57.0 # For dev-dependencies
 
 jobs:
   format:
@@ -104,11 +103,7 @@ jobs:
       run: sudo apt install libsystemd-dev
     - name: Install Rust ${{ env.rust_minver }}
       run: rustup toolchain install ${{ env.rust_minver }}
-    - name: Install Rust ${{ env.rust_minver_tolerant }}
-      run: rustup toolchain install ${{ env.rust_minver_tolerant }}
     - name: Cache cargo directories
       uses: Swatinem/rust-cache@v1
     - name: Run check for core with Rust ${{ env.rust_minver }}
       run: cargo +${{ env.rust_minver }} check --all-features
-    - name: Run check for examples with Rust ${{ env.rust_minver_tolerant }}
-      run: cargo +${{ env.rust_minver_tolerant }} check --all-features --examples
