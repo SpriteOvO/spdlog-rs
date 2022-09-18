@@ -389,25 +389,6 @@ use crate::{
 /// [`FullFormatter`]: crate::formatter::FullFormatter
 pub use ::spdlog_macros::pattern;
 
-/// Build a [`PatternFormatter`] from a pattern built by the [`pattern`] macro
-/// with the given macro arguments.
-///
-/// `pattern_formatter!(...)` is equivalent to
-/// `PatternFormatter::new(pattern!(...))`.
-///
-/// ```
-/// # use spdlog::pattern_formatter;
-/// # use spdlog::formatter::PatternFormatter;
-/// #
-/// let formatter: PatternFormatter<_> = pattern_formatter!("{logger}: {^[{level}]} {payload}");
-/// ```
-#[macro_export]
-macro_rules! pattern_formatter {
-    ( $($t:tt)* ) => {
-        $crate::formatter::PatternFormatter::new($crate::formatter::pattern!($($t)*))
-    };
-}
-
 /// A formatter that formats log records according to a specified pattern.
 #[derive(Clone)]
 pub struct PatternFormatter<P> {
