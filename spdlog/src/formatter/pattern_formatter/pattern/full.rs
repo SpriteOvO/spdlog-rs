@@ -10,7 +10,7 @@ use crate::{
 /// output.
 ///
 /// This pattern writes the same formatted text as [`FullFormatter`].
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Full {
     full_formatter: FullFormatter,
 }

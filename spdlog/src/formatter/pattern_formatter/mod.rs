@@ -409,6 +409,7 @@ macro_rules! pattern_formatter {
 }
 
 /// A formatter that formats log records according to a specified pattern.
+#[derive(Clone)]
 pub struct PatternFormatter<P> {
     pattern: P,
 }
@@ -429,7 +430,7 @@ where
 
 impl<P> Formatter for PatternFormatter<P>
 where
-    P: Pattern,
+    P: 'static + Clone + Pattern,
 {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
         let mut ctx = PatternContext::new(FmtExtraInfoBuilder::default());
@@ -438,7 +439,7 @@ where
     }
 
     fn clone_box(&self) -> Box<dyn Formatter> {
-        unimplemented!() // TODO
+        Box::new(self.clone())
     }
 }
 

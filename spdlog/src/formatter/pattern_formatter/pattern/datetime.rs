@@ -779,6 +779,7 @@ impl Pattern for TzOffset {
 
 /// A pattern that writes the unix timestamp of log records into the output.
 /// Examples: `1528834770`.
+#[derive(Clone)]
 pub struct UnixTimestamp {
     _phantom: PhantomData<()>,
 }

@@ -49,7 +49,7 @@ fn test_style_range() {
 #[track_caller]
 fn test_pattern<P, F>(pat: P, expect_formatted: F, expect_style_range: Option<Range<usize>>)
 where
-    P: Pattern + 'static,
+    P: Pattern + 'static + Clone,
     F: AsRef<str>,
 {
     let sink = MockSink::new();
@@ -117,7 +117,7 @@ impl Sink for MockSink {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct MockPattern1;
 
 impl Pattern for MockPattern1 {
@@ -132,7 +132,7 @@ impl Pattern for MockPattern1 {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 struct MockPattern2;
 
 impl Pattern for MockPattern2 {
