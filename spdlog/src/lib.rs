@@ -152,10 +152,6 @@
 //!
 //!  - `spdlog-rs` does not have `backtrace`[^2].
 //!
-//!  - `spdlog-rs` currently does not have `pattern_formatter`. The solution for
-//!    custom formatting log messages is to implement your own [`Formatter`]
-//!    structure and then call [`Sink::set_formatter`].
-//!
 //!  - In `spdlog-rs`, [`LevelFilter`] is a more flexible and readable enum with
 //!    logical conditions.
 //!

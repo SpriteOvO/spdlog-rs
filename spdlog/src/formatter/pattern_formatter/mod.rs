@@ -21,9 +21,9 @@ use crate::{
     Error, Record, StringBuf,
 };
 
-/// Build a pattern from a compile-time pattern template string.
+/// Build a pattern from a template string at compile-time.
 ///
-/// It accepts input of the similar form:
+/// It accepts inputs in the form:
 ///
 /// ```ignore
 /// // This is not exactly a valid declarative macro, just for intuition.
@@ -44,6 +44,12 @@ use crate::{
 /// pattern!("custom: {$my_pattern}", {$my_pattern} => MyPattern::default);
 /// ```
 ///
+/// # Note
+///
+/// The value returned by this macro is implementation details and users should
+/// not access them. If these details are changed in the future, it may not be
+/// considered as a breaking change.
+///
 /// # Basic Usage
 ///
 /// In its simplest form, `pattern` receives a **literal** pattern string and
@@ -51,42 +57,29 @@ use crate::{
 /// ```
 /// use spdlog::formatter::{pattern, PatternFormatter};
 ///
-/// let pat = pattern!("pattern string");
-/// let formatter = PatternFormatter::new(pat);
+/// let formatter = PatternFormatter::new(pattern!("pattern string"));
 /// ```
 ///
-/// # Using spdlog Built-in Patterns
+/// # Using Built-in Patterns
 ///
 /// A pattern that always outputs a fixed string is boring and useless.
 /// Luckily, the pattern template string can contain placeholders that
 /// represents built-in patterns. For example, to include the log level and
-/// payload in the pattern, we can simply use `{l}` and `{v}` in the pattern
-/// template string:
+/// payload in the pattern, we can simply use `{level}` and `{payload}` in the
+/// pattern template string:
 /// ```
 /// # use spdlog::formatter::{pattern, PatternFormatter};
 /// use spdlog::info;
 ///
-/// let pat = pattern!("[{level}] {payload}");
-/// let formatter = PatternFormatter::new(pat);
+/// let formatter = PatternFormatter::new(pattern!("[{level}] {payload}"));
 ///
 /// info!("Interesting log message");
 /// // Logs: [info] Interesting log message
 /// ```
 ///
-/// Here, `{l}` and `{v}` are "placeholders" that will be replaced by the
-/// output of the corresponding built-in patterns when formatting log records.
-/// You can also use `{level}` and `{payload}`, if you prefer:
-/// ```
-/// # use spdlog::{
-/// #     formatter::{pattern, PatternFormatter},
-/// #     info,
-/// # };
-/// let pat = pattern!("[{level}] {payload}");
-/// let formatter = PatternFormatter::new(pat);
-///
-/// info!("Interesting log message");
-/// // Logs: [info] Interesting log message
-/// ```
+/// Here, `{level}` and `{payload}` are "placeholders" that will be replaced by
+/// the output of the corresponding built-in patterns when formatting log
+/// records.
 ///
 /// What if you want to output a literal `{` or `}` character? Simply use `{{`
 /// and `}}`:
@@ -95,15 +88,15 @@ use crate::{
 /// #     formatter::{pattern, PatternFormatter},
 /// #     info,
 /// # };
-/// let pat = pattern!("[{{level}}] {payload}");
-/// let formatter = PatternFormatter::new(pat);
+/// let formatter = PatternFormatter::new(pattern!("[{{escaped}}] {payload}"));
 ///
 /// info!("Interesting log message");
-/// // Logs: [{level}] Interesting log message
+/// // Logs: [{escaped}] Interesting log message
 /// ```
 ///
 /// You can find a full list of all built-in patterns and their corresponding
-/// placeholders at the end of this doc page.
+/// placeholders at [Appendix](#appendix-a-full-list-of-built-in-patterns)
+/// below.
 ///
 /// # Using Style Range
 ///
@@ -116,8 +109,7 @@ use crate::{
 /// #     formatter::{pattern, PatternFormatter},
 /// #     info,
 /// # };
-/// let pat = pattern!("{^[{level}]} {payload}");
-/// let formatter = PatternFormatter::new(pat);
+/// let formatter = PatternFormatter::new(pattern!("{^[{level}]} {payload}"));
 ///
 /// info!("Interesting log message");
 /// // Logs: [info] Interesting log message
@@ -131,8 +123,11 @@ use crate::{
 /// [`Pattern`] trait:
 /// ```
 /// use std::fmt::Write;
-/// use spdlog::{Record, StringBuf};
-/// use spdlog::formatter::{Pattern, PatternContext};
+///
+/// use spdlog::{
+///     formatter::{Pattern, PatternContext},
+///     Record, StringBuf,
+/// };
 ///
 /// #[derive(Default)]
 /// struct MyPattern;
@@ -155,8 +150,11 @@ use crate::{
 /// can resolve it:
 /// ```
 /// # use std::fmt::Write;
-/// # use spdlog::{info, Record, StringBuf};
-/// # use spdlog::formatter::{pattern, Pattern, PatternContext, PatternFormatter};
+/// # use spdlog::{
+/// #     formatter::{pattern, Pattern, PatternContext, PatternFormatter},
+/// #     prelude::*,
+/// #     Record, StringBuf,
+/// # };
 /// #
 /// # #[derive(Default)]
 /// # struct MyPattern;
@@ -194,12 +192,20 @@ use crate::{
 /// ## Custom Pattern Creation
 ///
 /// Each placeholder results in a new pattern instance. For example, consider a
-/// custom pattern that writes a unique ID to the output:
+/// custom pattern that writes a unique ID to the output. If the pattern
+/// template string contains multiple placeholders that refer to `MyPattern`,
+/// each placeholder will eventually be replaced by different IDs.
+///
 /// ```
-/// # use std::fmt::Write;
-/// # use std::sync::atomic::{AtomicU32, Ordering};
-/// # use spdlog::{Record, StringBuf};
-/// # use spdlog::formatter::{Pattern, PatternContext};
+/// # use std::{
+/// #     fmt::Write,
+/// #     sync::atomic::{AtomicU32, Ordering},
+/// # };
+/// # use spdlog::{
+/// #     formatter::{pattern, Pattern, PatternContext, PatternFormatter},
+/// #     prelude::*,
+/// #     Record, StringBuf,
+/// # };
 /// #
 /// static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 ///
@@ -226,43 +232,7 @@ use crate::{
 ///         Ok(())
 ///     }
 /// }
-/// ```
 ///
-/// If the pattern template string contains multiple placeholders that refer
-/// to `MyPattern`, each placeholder will eventually be replaced by different
-/// IDs:
-/// ```
-/// # use std::fmt::Write;
-/// # use std::sync::atomic::{AtomicU32, Ordering};
-/// # use spdlog::{info, Record, StringBuf};
-/// # use spdlog::formatter::{pattern, Pattern, PatternContext, PatternFormatter};
-/// #
-/// # static NEXT_ID: AtomicU32 = AtomicU32::new(0);
-/// #
-/// # struct MyPattern {
-/// #     id: u32,
-/// # }
-/// #
-/// # impl MyPattern {
-/// #     fn new() -> Self {
-/// #         Self {
-/// #             id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
-/// #         }
-/// #     }
-/// # }
-/// #
-/// # impl Pattern for MyPattern {
-/// #     fn format(
-/// #         &self,
-/// #         record: &Record,
-/// #         dest: &mut StringBuf,
-/// #         _ctx: &mut PatternContext,
-/// #     ) -> spdlog::Result<()> {
-/// #         write!(dest, "{}", self.id).unwrap();
-/// #         Ok(())
-/// #     }
-/// # }
-/// #
 /// let pat = pattern!("[{level}] {payload} - {$mypat} {$mypat} {$mypat}",
 ///     {$mypat} => MyPattern::new,
 /// );
@@ -274,53 +244,26 @@ use crate::{
 ///
 /// Of course, you can have multiple custom patterns:
 /// ```
-/// # use std::fmt::Write;
-/// # use spdlog::{Record, StringBuf};
-/// # use spdlog::formatter::{pattern, Pattern, PatternContext, PatternFormatter};
+/// # use spdlog::formatter::pattern;
 /// #
 /// # #[derive(Default)]
 /// # struct MyPattern;
-/// #
-/// # impl Pattern for MyPattern {
-/// #     fn format(
-/// #         &self,
-/// #         record: &Record,
-/// #         dest: &mut StringBuf,
-/// #         _ctx: &mut PatternContext,
-/// #     ) -> spdlog::Result<()> {
-/// #         write!(dest, "My own pattern").unwrap();
-/// #         Ok(())
-/// #     }
-/// # }
-/// #
 /// # #[derive(Default)]
 /// # struct MyOtherPattern;
 /// #
-/// # impl Pattern for MyOtherPattern {
-/// #     fn format(
-/// #         &self,
-/// #         record: &Record,
-/// #         dest: &mut StringBuf,
-/// #         _ctx: &mut PatternContext,
-/// #     ) -> spdlog::Result<()> {
-/// #         write!(dest, "My own pattern").unwrap();
-/// #         Ok(())
-/// #     }
-/// # }
-/// #
-/// let pat = pattern!("[{level}] {payload} - {$mypat} {$mypat2}",
+/// let pat = pattern!("[{level}] {payload} - {$mypat} {$myotherpat}",
 ///     {$mypat} => MyPattern::default,
-///     {$mypat2} => MyOtherPattern::default,
+///     {$myotherpat} => MyOtherPattern::default,
 /// );
-/// let formatter = PatternFormatter::new(pat);
 /// ```
 ///
 /// ## Name Conflicts are Hard Errors
 ///
 /// It's a hard error if names of your own custom pattern conflicts with other
 /// patterns:
+///
 /// ```compile_fail
-/// # use spdlog::{formatter::Pattern, pattern};
+/// # use spdlog::formatter::pattern;
 /// #
 /// # #[derive(Default)]
 /// # struct MyPattern;
@@ -333,8 +276,9 @@ use crate::{
 ///     {$mypat} => MyOtherPattern::new,
 /// );
 /// ```
+///
 /// ```compile_fail
-/// # use spdlog::{formatter::Pattern, pattern};
+/// # use spdlog::formatter::pattern;
 /// #
 /// # #[derive(Default)]
 /// # struct MyPattern;
@@ -345,7 +289,7 @@ use crate::{
 /// );
 /// ```
 ///
-/// # Appendix: A Full List of Built-in Patterns and Their Placeholders
+/// # Appendix: A Full List of Built-in Patterns
 ///
 /// | Placeholders | Description | Example |
 /// | --- | --- | --- |
@@ -376,7 +320,7 @@ use crate::{
 /// | `{full}` | Full log message | See [`FullFormatter`] |
 /// | `{level}` | Log level | `critical`, `error`, `warn` |
 /// | `{level_short}` | Short log level | `C`, `E`, `W` |
-/// | `{loc}` | Log location | `main.rs:30:20` |
+/// | `{loc}` | Log location | `main.rs:30` |
 /// | `{file_name}` | Source file basename | `main.rs` |
 /// | `{file}` | Path to the source file | `src/main.rs` |
 /// | `{line}` | Source file line | `30` |
@@ -468,8 +412,8 @@ pub trait Pattern: Send + Sync {
     /// Format this pattern against the given log record and write the formatted
     /// message into the output buffer.
     ///
-    /// **For implementors:** the `ctx` parameter is reserved for internal use.
-    /// You should not use it.
+    /// **For implementors:** the `ctx` parameter is reserved for future use.
+    /// For now, please ignore it.
     fn format(
         &self,
         record: &Record,
