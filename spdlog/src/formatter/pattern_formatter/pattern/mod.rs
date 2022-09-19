@@ -1,6 +1,7 @@
 //! This module provides all the built-in patterns.
 
 mod datetime;
+mod eol;
 mod full;
 mod level;
 mod loc;
@@ -11,6 +12,7 @@ mod style_range;
 mod thread_id;
 
 pub use datetime::*;
+pub use eol::*;
 pub use full::*;
 pub use level::*;
 pub use loc::*;

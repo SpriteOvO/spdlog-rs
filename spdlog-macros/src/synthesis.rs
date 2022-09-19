@@ -88,6 +88,7 @@ impl Synthesiser {
             ["payload"] => Payload,
             ["pid"] => ProcessId,
             ["tid"] => ThreadId,
+            ["eol"] => Eol,
         }
 
         synthesiser

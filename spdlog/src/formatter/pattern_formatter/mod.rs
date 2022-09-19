@@ -329,6 +329,7 @@ use crate::{
 /// | `{payload}` | Log payload | `log message` |
 /// | `{pid}` | Process ID | `3824` |
 /// | `{tid}` | Thread ID | `3132` |
+/// | `{eol}` | End of line | `\n` (on non-Windows) or `\r\n` (on Windows) |
 ///
 /// [`FullFormatter`]: crate::formatter::FullFormatter
 pub use ::spdlog_macros::pattern;
