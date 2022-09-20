@@ -84,6 +84,7 @@ impl Synthesiser {
             ["file"] => SourceFile,
             ["line"] => SourceLine,
             ["column"] => SourceColumn,
+            ["module_path"] => SourceModulePath,
             ["logger"] => LoggerName,
             ["payload"] => Payload,
             ["pid"] => ProcessId,

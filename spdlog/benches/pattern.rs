@@ -271,6 +271,11 @@ fn bench_column(bencher: &mut Bencher) {
 }
 
 #[bench]
+fn bench_module_path(bencher: &mut Bencher) {
+    bench_pattern(bencher, pattern!("{module_path}"))
+}
+
+#[bench]
 fn bench_logger(bencher: &mut Bencher) {
     bench_pattern(bencher, pattern!("{logger}"))
 }

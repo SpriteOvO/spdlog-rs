@@ -339,6 +339,7 @@ use crate::{
 /// | `{file}` | Path to the source file | `src/main.rs` |
 /// | `{line}` | Source file line | `30` |
 /// | `{column}` | Source file column | `20` |
+/// | `{module_path}` | Source module path | `mod::module` |
 /// | `{logger}` | Logger name | `my-logger` |
 /// | `{payload}` | Log payload | `log message` |
 /// | `{pid}` | Process ID | `3824` |

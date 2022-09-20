@@ -138,3 +138,30 @@ impl Pattern for SourceColumn {
         Ok(())
     }
 }
+
+/// A pattern that writes the source module path into the output. Example:
+/// `mod::path`
+#[derive(Default, Clone)]
+pub struct SourceModulePath;
+
+impl SourceModulePath {
+    /// Create a new `SourceModulePath` pattern.
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl Pattern for SourceModulePath {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        if let Some(loc) = record.source_location() {
+            dest.write_str(loc.module_path())
+                .map_err(Error::FormatRecord)?;
+        }
+        Ok(())
+    }
+}

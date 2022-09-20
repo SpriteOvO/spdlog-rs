@@ -411,12 +411,14 @@ fn test_builtin_patterns() {
             check(pattern!("{file}"), Some(file!()), vec![]);
             check(pattern!("{line}"), Some("000"), vec![SOURCE_RANGE]);
             check(pattern!("{column}"), Some("0"), vec![SOURCE_RANGE]);
+            check(pattern!("{module_path}"), Some(module_path!()), vec![]);
         } else {
             check(pattern!("{loc}"), Some(""), vec![]);
             check(pattern!("{file_name}"), Some(""), vec![]);
             check(pattern!("{file}"), Some(""), vec![]);
             check(pattern!("{line}"), Some(""), vec![]);
             check(pattern!("{column}"), Some(""), vec![]);
+            check(pattern!("{module_path}"), Some(""), vec![]);
         }
     }
     check(pattern!("{logger}"), Some("logger-name"), vec![]);
