@@ -39,7 +39,7 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest', 'windows-latest']
-        features: ['', 'flexible-string']
+        features: ['', 'flexible-string', 'source-location']
     env:
       ADD_FEATURES: 'log native multi-thread'
     runs-on: ${{ matrix.os }}

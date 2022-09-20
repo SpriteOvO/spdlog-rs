@@ -21,6 +21,7 @@ use crate::{
     Error, Record, StringBuf,
 };
 
+#[rustfmt::skip] // rustfmt currently breaks some empty lines if `#[doc = include_str!("xxx")]` exists
 /// Build a pattern from a template string at compile-time.
 ///
 /// It accepts inputs in the form:
@@ -70,11 +71,19 @@ use crate::{
 /// ```
 /// # use spdlog::formatter::{pattern, PatternFormatter};
 /// use spdlog::info;
+#[doc = include_str!("../../include/doc/test_utils.rs")]
 ///
 /// let formatter = PatternFormatter::new(pattern!("[{level}] {payload}"));
+/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// #     Box::new(formatter),
+/// #     None
+/// # );
 ///
-/// info!("Interesting log message");
-/// // Logs: [info] Interesting log message
+/// info!(logger: doctest, "Interesting log message");
+/// # assert_eq!(
+/// #     String::from_utf8(sink.clone_target()).unwrap(),
+/// /* Output */ "[info] Interesting log message"
+/// # );
 /// ```
 ///
 /// Here, `{level}` and `{payload}` are "placeholders" that will be replaced by
@@ -88,10 +97,18 @@ use crate::{
 /// #     formatter::{pattern, PatternFormatter},
 /// #     info,
 /// # };
+#[doc = include_str!("../../include/doc/test_utils.rs")]
 /// let formatter = PatternFormatter::new(pattern!("[{{escaped}}] {payload}"));
+/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// #     Box::new(formatter),
+/// #     None
+/// # );
 ///
-/// info!("Interesting log message");
-/// // Logs: [{escaped}] Interesting log message
+/// info!(logger: doctest, "Interesting log message");
+/// # assert_eq!(
+/// #     String::from_utf8(sink.clone_target()).unwrap(),
+/// /* Output */ "[{escaped}] Interesting log message"
+/// # );
 /// ```
 ///
 /// You can find a full list of all built-in patterns and their corresponding
@@ -109,27 +126,38 @@ use crate::{
 /// #     formatter::{pattern, PatternFormatter},
 /// #     info,
 /// # };
+#[doc = include_str!("../../include/doc/test_utils.rs")]
 /// let formatter = PatternFormatter::new(pattern!("{^[{level}]} {payload}"));
+/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// #     Box::new(formatter),
+/// #     None
+/// # );
 ///
-/// info!("Interesting log message");
-/// // Logs: [info] Interesting log message
-/// //       ^^^^^^ <- style range
+/// info!(logger: doctest, "Interesting log message");
+/// # assert_eq!(
+/// #     String::from_utf8(sink.clone_target()).unwrap(),
+/// /* Output */ "[info] Interesting log message"
+/// //            ^^^^^^ <- style range
+/// # );
 /// ```
-///
+/// 
 /// # Using Your Own Patterns
 ///
 /// Yes, you can refer your own implementation of [`Pattern`] in the pattern
 /// template string! Let's say you have a struct that implements the
-/// [`Pattern`] trait:
+/// [`Pattern`] trait. To refer `MyPattern` in the pattern template string, you
+/// need to use the extended syntax to associate `MyPattern` with a name so
+/// that `pattern!` can resolve it:
 /// ```
 /// use std::fmt::Write;
 ///
 /// use spdlog::{
-///     formatter::{Pattern, PatternContext},
-///     Record, StringBuf,
+///     formatter::{pattern, Pattern, PatternContext, PatternFormatter},
+///     Record, StringBuf, info
 /// };
+#[doc = include_str!("../../include/doc/test_utils.rs")]
 ///
-/// #[derive(Default)]
+/// #[derive(Default, Clone)]
 /// struct MyPattern;
 ///
 /// impl Pattern for MyPattern {
@@ -139,45 +167,24 @@ use crate::{
 ///         dest: &mut StringBuf,
 ///         _ctx: &mut PatternContext,
 ///     ) -> spdlog::Result<()> {
-///         write!(dest, "My own pattern").unwrap();
-///         Ok(())
+///         write!(dest, "My own pattern").map_err(spdlog::Error::FormatRecord)
 ///     }
 /// }
-/// ```
 ///
-/// To refer `MyPattern` in the pattern template string, you need to use the
-/// extended syntax to associate `MyPattern` with a name so that `pattern!`
-/// can resolve it:
-/// ```
-/// # use std::fmt::Write;
-/// # use spdlog::{
-/// #     formatter::{pattern, Pattern, PatternContext, PatternFormatter},
-/// #     prelude::*,
-/// #     Record, StringBuf,
-/// # };
-/// #
-/// # #[derive(Default)]
-/// # struct MyPattern;
-/// #
-/// # impl Pattern for MyPattern {
-/// #     fn format(
-/// #         &self,
-/// #         record: &Record,
-/// #         dest: &mut StringBuf,
-/// #         _ctx: &mut PatternContext,
-/// #     ) -> spdlog::Result<()> {
-/// #         write!(dest, "My own pattern").unwrap();
-/// #         Ok(())
-/// #     }
-/// # }
-/// #
 /// let pat = pattern!("[{level}] {payload} - {$mypat}",
 ///     {$mypat} => MyPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
+/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// #     Box::new(formatter),
+/// #     None
+/// # );
 ///
-/// info!("Interesting log message");
-/// // Logs: [info] Interesting log message - My own pattern
+/// info!(logger: doctest, "Interesting log message");
+/// # assert_eq!(
+/// #   String::from_utf8(sink.clone_target()).unwrap(),
+/// /* Output */ "[info] Interesting log message - My own pattern"
+/// # );
 /// ```
 ///
 /// Note the special `{$name} => id` syntax given to the `pattern` macro.
@@ -206,9 +213,10 @@ use crate::{
 /// #     prelude::*,
 /// #     Record, StringBuf,
 /// # };
-/// #
+#[doc = include_str!("../../include/doc/test_utils.rs")]
 /// static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 ///
+/// #[derive(Clone)]
 /// struct MyPattern {
 ///     id: u32,
 /// }
@@ -228,8 +236,7 @@ use crate::{
 ///         dest: &mut StringBuf,
 ///         _ctx: &mut PatternContext,
 ///     ) -> spdlog::Result<()> {
-///         write!(dest, "{}", self.id).unwrap();
-///         Ok(())
+///         write!(dest, "{}", self.id).map_err(spdlog::Error::FormatRecord)
 ///     }
 /// }
 ///
@@ -237,9 +244,16 @@ use crate::{
 ///     {$mypat} => MyPattern::new,
 /// );
 /// let formatter = PatternFormatter::new(pat);
+/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// #     Box::new(formatter),
+/// #     None
+/// # );
 ///
-/// info!("Interesting log message");
-/// // Logs: [info] Interesting log message - 0 1 2
+/// info!(logger: doctest, "Interesting log message");
+/// # assert_eq!(
+/// #   String::from_utf8(sink.clone_target()).unwrap(),
+/// /* Output */ "[info] Interesting log message - 0 1 2"
+/// # );
 /// ```
 ///
 /// Of course, you can have multiple custom patterns:

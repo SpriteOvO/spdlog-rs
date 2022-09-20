@@ -63,6 +63,7 @@ libsystemd-sys = { version = "0.9.3", optional = true }
 [dev-dependencies]
 clap = { version = "3.0.13", features = ["derive"] }
 crossbeam = "0.8.1"
+regex = "1.6.0"
 
 # The following dependencies are used for benchmarks
 log = "=0.4.14"
