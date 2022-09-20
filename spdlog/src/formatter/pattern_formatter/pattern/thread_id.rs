@@ -34,10 +34,8 @@ impl Pattern for ThreadId {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let id = get_current_thread_id();
-        dest.write_fmt(format_args!("{}", id))
-            .map_err(Error::FormatRecord)?;
-        Ok(())
+        let tid = get_current_thread_id();
+        write!(dest, "{}", tid).map_err(Error::FormatRecord)
     }
 }
 

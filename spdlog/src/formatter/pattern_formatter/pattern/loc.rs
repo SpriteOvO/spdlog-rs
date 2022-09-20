@@ -25,7 +25,12 @@ impl Pattern for Loc {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            write!(dest, "{}:{}", loc.file_name(), loc.line()).map_err(Error::FormatRecord)?;
+            (|| {
+                dest.write_str(loc.file_name())?;
+                dest.write_char(':')?;
+                write!(dest, "{}", loc.line())
+            })()
+            .map_err(Error::FormatRecord)?;
         }
         Ok(())
     }
@@ -103,8 +108,7 @@ impl Pattern for SourceLine {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            dest.write_fmt(format_args!("{}", loc.line()))
-                .map_err(Error::FormatRecord)?;
+            write!(dest, "{}", loc.line()).map_err(Error::FormatRecord)?;
         }
         Ok(())
     }
@@ -129,8 +133,7 @@ impl Pattern for SourceColumn {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            dest.write_fmt(format_args!("{}", loc.column()))
-                .map_err(Error::FormatRecord)?;
+            write!(dest, "{}", loc.column()).map_err(Error::FormatRecord)?;
         }
         Ok(())
     }

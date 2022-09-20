@@ -40,19 +40,27 @@ struct CacheValues {
     year_short_str: RefCell<Option<Arc<String>>>,
     month: RefCell<Option<u32>>,
     month_str: RefCell<Option<Arc<String>>>,
-    weekday_from_monday_0: RefCell<Option<u32>>,
+    month_name: RefCell<Option<MultiName<&'static str>>>,
+    weekday_name: RefCell<Option<MultiName<&'static str>>>,
     day: RefCell<Option<u32>>,
     day_str: RefCell<Option<Arc<String>>>,
     hour: RefCell<Option<u32>>,
     hour_str: RefCell<Option<Arc<String>>>,
     hour12: RefCell<Option<(bool, u32)>>,
     hour12_str: RefCell<Option<Arc<String>>>,
+    am_pm_str: RefCell<Option<&'static str>>,
     minute: RefCell<Option<u32>>,
     minute_str: RefCell<Option<Arc<String>>>,
     second: RefCell<Option<u32>>,
     second_str: RefCell<Option<Arc<String>>>,
     tz_offset_str: RefCell<Option<Arc<String>>>,
     unix_timestamp_str: RefCell<Option<Arc<String>>>,
+}
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(crate) struct MultiName<T> {
+    pub(crate) short: T,
+    pub(crate) full: T,
 }
 
 impl LocalTimeCacher {
@@ -175,12 +183,60 @@ impl<'a> TimeDate<'a> {
         })
     }
 
-    pub(crate) fn weekday_from_monday_0(&self) -> u32 {
+    pub(crate) fn weekday_name(&self) -> MultiName<&'static str> {
         *self
             .cached
-            .weekday_from_monday_0
+            .weekday_name
             .borrow_mut()
-            .get_or_insert_with(|| self.cached.local_time.weekday().num_days_from_monday())
+            .get_or_insert_with(|| {
+                const SHORT: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+                const FULL: [&str; 7] = [
+                    "Monday",
+                    "Tuesday",
+                    "Wednesday",
+                    "Thursday",
+                    "Friday",
+                    "Saturday",
+                    "Sunday",
+                ];
+
+                let weekday_from_monday_0 =
+                    self.cached.local_time.weekday().num_days_from_monday() as usize;
+
+                MultiName {
+                    short: SHORT[weekday_from_monday_0],
+                    full: FULL[weekday_from_monday_0],
+                }
+            })
+    }
+
+    pub(crate) fn month_name(&self) -> MultiName<&'static str> {
+        *self.cached.month_name.borrow_mut().get_or_insert_with(|| {
+            const SHORT: [&str; 12] = [
+                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+            ];
+            const FULL: [&str; 12] = [
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+            ];
+
+            let month = self.cached.local_time.month() as usize;
+
+            MultiName {
+                short: SHORT[month],
+                full: FULL[month],
+            }
+        })
     }
 
     #[allow(dead_code)] // TODO: Remove this attr when it is used somewhere
@@ -198,6 +254,16 @@ impl<'a> TimeDate<'a> {
             .borrow_mut()
             .get_or_insert_with(|| Arc::new(format!("{:02}", self.hour12().1)))
             .clone()
+    }
+
+    pub(crate) fn am_pm_str(&self) -> &'static str {
+        self.cached.am_pm_str.borrow_mut().get_or_insert_with(|| {
+            if !self.hour12().0 {
+                "AM"
+            } else {
+                "PM"
+            }
+        })
     }
 
     pub(crate) fn year_short_str(&self) -> Arc<String> {
@@ -250,13 +316,15 @@ impl CacheValues {
             year_short_str: RefCell::new(None),
             month: RefCell::new(None),
             month_str: RefCell::new(None),
-            weekday_from_monday_0: RefCell::new(None),
+            month_name: RefCell::new(None),
+            weekday_name: RefCell::new(None),
             day: RefCell::new(None),
             day_str: RefCell::new(None),
             hour: RefCell::new(None),
             hour_str: RefCell::new(None),
             hour12: RefCell::new(None),
             hour12_str: RefCell::new(None),
+            am_pm_str: RefCell::new(None),
             minute: RefCell::new(None),
             minute_str: RefCell::new(None),
             second: RefCell::new(None),

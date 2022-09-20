@@ -24,8 +24,9 @@ impl Pattern for LoggerName {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(record.logger_name().unwrap_or(""))
-            .map_err(Error::FormatRecord)?;
+        if let Some(logger_name) = record.logger_name() {
+            dest.write_str(logger_name).map_err(Error::FormatRecord)?;
+        }
         Ok(())
     }
 }

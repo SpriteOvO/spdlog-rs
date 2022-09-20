@@ -11,16 +11,12 @@ use crate::{
 /// A pattern that writes the abbreviated weekday name of log records into the
 /// output. Example: `Mon`, `Tue`.
 #[derive(Clone, Debug)]
-pub struct AbbrWeekdayName {
-    base: WeekdayNameBase,
-}
+pub struct AbbrWeekdayName;
 
 impl AbbrWeekdayName {
-    /// Create a new `AbbrWeekday` pattern.
+    /// Create a new `AbbrWeekdayName` pattern.
     pub fn new() -> Self {
-        Self {
-            base: WeekdayNameBase::new(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]),
-        }
+        Self
     }
 }
 
@@ -35,39 +31,27 @@ impl Pattern for AbbrWeekdayName {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-        ctx: &mut PatternContext,
+        _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        self.base.format(record, dest, ctx)
+        let name = LOCAL_TIME_CACHER
+            .lock()
+            .get(record.time())
+            .weekday_name()
+            .short;
+
+        dest.write_str(name).map_err(Error::FormatRecord)
     }
 }
 
 /// A pattern that writes the weekday name of log records into the output.
 /// Example: `Monday`, `Tuesday`.
-#[derive(Clone, Debug)]
-pub struct WeekdayName {
-    base: WeekdayNameBase,
-}
+#[derive(Default, Clone, Debug)]
+pub struct WeekdayName;
 
 impl WeekdayName {
-    /// Create a new `Weekday` pattern.
+    /// Create a new `WeekdayName` pattern.
     pub fn new() -> Self {
-        Self {
-            base: WeekdayNameBase::new([
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday",
-            ]),
-        }
-    }
-}
-
-impl Default for WeekdayName {
-    fn default() -> Self {
-        Self::new()
+        Self
     }
 }
 
@@ -76,33 +60,27 @@ impl Pattern for WeekdayName {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-        ctx: &mut PatternContext,
+        _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        self.base.format(record, dest, ctx)
+        let name = LOCAL_TIME_CACHER
+            .lock()
+            .get(record.time())
+            .weekday_name()
+            .full;
+
+        dest.write_str(name).map_err(Error::FormatRecord)
     }
 }
 
 /// A pattern that writes the abbreviated month name of log records into the
 /// output. Example: `Jan`, `Feb`.
-#[derive(Clone, Debug)]
-pub struct AbbrMonthName {
-    base: MonthNameBase,
-}
+#[derive(Default, Clone, Debug)]
+pub struct AbbrMonthName;
 
 impl AbbrMonthName {
     /// Create a new `AbbrMonthName` pattern.
     pub fn new() -> Self {
-        Self {
-            base: MonthNameBase::new([
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-            ]),
-        }
-    }
-}
-
-impl Default for AbbrMonthName {
-    fn default() -> Self {
-        Self::new()
+        Self
     }
 }
 
@@ -111,44 +89,27 @@ impl Pattern for AbbrMonthName {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-        ctx: &mut PatternContext,
+        _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        self.base.format(record, dest, ctx)
+        let name = LOCAL_TIME_CACHER
+            .lock()
+            .get(record.time())
+            .month_name()
+            .short;
+
+        dest.write_str(name).map_err(Error::FormatRecord)
     }
 }
 
 /// A pattern that writes the month name of log records into the output.
 /// Example: `January`, `February`.
-#[derive(Clone, Debug)]
-pub struct MonthName {
-    base: MonthNameBase,
-}
+#[derive(Default, Clone, Debug)]
+pub struct MonthName;
 
 impl MonthName {
     /// Create a new `MonthName` pattern.
     pub fn new() -> Self {
-        Self {
-            base: MonthNameBase::new([
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December",
-            ]),
-        }
-    }
-}
-
-impl Default for MonthName {
-    fn default() -> Self {
-        Self::new()
+        Self
     }
 }
 
@@ -157,27 +118,27 @@ impl Pattern for MonthName {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-        ctx: &mut PatternContext,
+        _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        self.base.format(record, dest, ctx)
+        let name = LOCAL_TIME_CACHER
+            .lock()
+            .get(record.time())
+            .month_name()
+            .full;
+
+        dest.write_str(name).map_err(Error::FormatRecord)
     }
 }
 
 /// A pattern that writes the full date time of log records into the output.
 /// Example: `Thu Aug 23 15:35:46 2014`.
 #[derive(Clone, Debug, Default)]
-pub struct FullDateTime {
-    abbr_weekday: AbbrWeekdayName,
-    abbr_month: AbbrMonthName,
-}
+pub struct FullDateTime;
 
 impl FullDateTime {
     /// Create a new `FullDateTime` pattern.
     pub fn new() -> Self {
-        Self {
-            abbr_weekday: AbbrWeekdayName::new(),
-            abbr_month: AbbrMonthName::new(),
-        }
+        Self
     }
 }
 
@@ -186,18 +147,22 @@ impl Pattern for FullDateTime {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-        ctx: &mut PatternContext,
+        _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        self.abbr_weekday.format(record, dest, ctx)?;
-        dest.write_str(" ").map_err(Error::FormatRecord)?;
-
-        self.abbr_month.format(record, dest, ctx)?;
-        dest.write_str(" ").map_err(Error::FormatRecord)?;
-
-        let (day_str, hour_str, minute_str, second_str, year_str) = {
+        let (
+            abbr_weekday_name,
+            abbr_month_name,
+            day_str,
+            hour_str,
+            minute_str,
+            second_str,
+            year_str,
+        ) = {
             let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
             let cached_time = time_cacher_lock.get(record.time());
             (
+                cached_time.weekday_name().short,
+                cached_time.month_name().short,
                 cached_time.day_str(),
                 cached_time.hour_str(),
                 cached_time.minute_str(),
@@ -206,11 +171,21 @@ impl Pattern for FullDateTime {
             )
         };
 
-        write!(
-            dest,
-            "{} {}:{}:{} {}",
-            day_str, hour_str, minute_str, second_str, year_str
-        )
+        (|| {
+            dest.write_str(abbr_weekday_name)?;
+            dest.write_char(' ')?;
+            dest.write_str(abbr_month_name)?;
+            dest.write_char(' ')?;
+            dest.write_str(&day_str)?;
+            dest.write_char(' ')?;
+            dest.write_str(&hour_str)?;
+            dest.write_char(':')?;
+            dest.write_str(&minute_str)?;
+            dest.write_char(':')?;
+            dest.write_str(&second_str)?;
+            dest.write_char(' ')?;
+            dest.write_str(&year_str)
+        })()
         .map_err(Error::FormatRecord)
     }
 }
@@ -306,7 +281,14 @@ impl Pattern for Date {
             )
         };
 
-        write!(dest, "{}-{}-{}", year_str, month_str, day_str).map_err(Error::FormatRecord)
+        (|| {
+            dest.write_str(&year_str)?;
+            dest.write_char('-')?;
+            dest.write_str(&month_str)?;
+            dest.write_char('-')?;
+            dest.write_str(&day_str)
+        })()
+        .map_err(Error::FormatRecord)
     }
 }
 
@@ -343,7 +325,14 @@ impl Pattern for ShortDate {
             )
         };
 
-        write!(dest, "{}/{}/{}", month_str, day_str, year_short_str).map_err(Error::FormatRecord)
+        (|| {
+            dest.write_str(&month_str)?;
+            dest.write_char('/')?;
+            dest.write_str(&day_str)?;
+            dest.write_char('/')?;
+            dest.write_str(&year_short_str)
+        })()
+        .map_err(Error::FormatRecord)
     }
 }
 
@@ -542,8 +531,8 @@ impl Pattern for Millisecond {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let nanosecond = LOCAL_TIME_CACHER.lock().get(record.time()).nanosecond();
-        write!(dest, "{:03}", nanosecond / 1_000_000).map_err(Error::FormatRecord)
+        let millisecond = LOCAL_TIME_CACHER.lock().get(record.time()).millisecond();
+        write!(dest, "{:03}", millisecond).map_err(Error::FormatRecord)
     }
 }
 
@@ -629,27 +618,20 @@ impl Pattern for AmPm {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let hour12 = LOCAL_TIME_CACHER.lock().get(record.time()).hour12();
-        if hour12.0 {
-            dest.write_str("PM")
-        } else {
-            dest.write_str("AM")
-        }
-        .map_err(Error::FormatRecord)
+        let am_pm_str = LOCAL_TIME_CACHER.lock().get(record.time()).am_pm_str();
+        dest.write_str(am_pm_str).map_err(Error::FormatRecord)
     }
 }
 
 /// A pattern that writes the time of log records in 12-hour format into the
 /// output. Examples: `02:55:02 PM`.
 #[derive(Clone, Debug, Default)]
-pub struct Time12 {
-    am_pm: AmPm,
-}
+pub struct Time12;
 
 impl Time12 {
     /// Create a new `Time12` pattern.
     pub fn new() -> Self {
-        Self { am_pm: AmPm::new() }
+        Self
     }
 }
 
@@ -658,24 +640,29 @@ impl Pattern for Time12 {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-        ctx: &mut PatternContext,
+        _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let (hour_str, minute_str, second_str) = {
+        let (hour_str, minute_str, second_str, am_pm_str) = {
             let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
             let cached_time = time_cacher_lock.get(record.time());
             (
                 cached_time.hour12_str(),
                 cached_time.minute_str(),
                 cached_time.second_str(),
+                cached_time.am_pm_str(),
             )
         };
 
-        write!(dest, "{}:{}:{}", hour_str, minute_str, second_str).map_err(Error::FormatRecord)?;
-
-        dest.write_str(" ").map_err(Error::FormatRecord)?;
-        self.am_pm.format(record, dest, ctx)?;
-
-        Ok(())
+        (|| {
+            dest.write_str(&hour_str)?;
+            dest.write_char(':')?;
+            dest.write_str(&minute_str)?;
+            dest.write_char(':')?;
+            dest.write_str(&second_str)?;
+            dest.write_str(" ")?;
+            dest.write_str(am_pm_str)
+        })()
+        .map_err(Error::FormatRecord)
     }
 }
 
@@ -708,7 +695,12 @@ impl Pattern for ShortTime {
             (cached_time.hour_str(), cached_time.minute_str())
         };
 
-        write!(dest, "{}:{}", hour_str, minute_str).map_err(Error::FormatRecord)
+        (|| {
+            dest.write_str(&hour_str)?;
+            dest.write_char(':')?;
+            dest.write_str(&minute_str)
+        })()
+        .map_err(Error::FormatRecord)
     }
 }
 
@@ -745,7 +737,14 @@ impl Pattern for Time {
             )
         };
 
-        write!(dest, "{}:{}:{}", hour_str, minute_str, second_str).map_err(Error::FormatRecord)
+        (|| {
+            dest.write_str(&hour_str)?;
+            dest.write_char(':')?;
+            dest.write_str(&minute_str)?;
+            dest.write_char(':')?;
+            dest.write_str(&second_str)
+        })()
+        .map_err(Error::FormatRecord)
     }
 }
 
@@ -812,56 +811,5 @@ impl Pattern for UnixTimestamp {
 impl Default for UnixTimestamp {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[derive(Clone, Debug)]
-struct WeekdayNameBase {
-    weekday_names: [&'static str; 7],
-}
-
-impl WeekdayNameBase {
-    fn new(weekday_names: [&'static str; 7]) -> Self {
-        Self { weekday_names }
-    }
-}
-
-impl Pattern for WeekdayNameBase {
-    fn format(
-        &self,
-        record: &Record,
-        dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
-    ) -> crate::Result<()> {
-        let weekday_index = LOCAL_TIME_CACHER
-            .lock()
-            .get(record.time())
-            .weekday_from_monday_0();
-        dest.write_str(self.weekday_names[weekday_index as usize])
-            .map_err(Error::FormatRecord)
-    }
-}
-
-#[derive(Clone, Debug)]
-struct MonthNameBase {
-    month_names: [&'static str; 12],
-}
-
-impl MonthNameBase {
-    fn new(month_names: [&'static str; 12]) -> Self {
-        Self { month_names }
-    }
-}
-
-impl Pattern for MonthNameBase {
-    fn format(
-        &self,
-        record: &Record,
-        dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
-    ) -> crate::Result<()> {
-        let month = LOCAL_TIME_CACHER.lock().get(record.time()).month();
-        dest.write_str(self.month_names[month as usize - 1])
-            .map_err(Error::FormatRecord)
     }
 }

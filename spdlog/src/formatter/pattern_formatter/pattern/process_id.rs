@@ -33,9 +33,7 @@ impl Pattern for ProcessId {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let pid = get_current_process_id();
-        dest.write_fmt(format_args!("{}", pid))
-            .map_err(Error::FormatRecord)?;
-        Ok(())
+        write!(dest, "{}", pid).map_err(Error::FormatRecord)
     }
 }
 
