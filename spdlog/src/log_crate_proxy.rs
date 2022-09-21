@@ -42,7 +42,7 @@ use crate::{default_logger, sync::*, Logger, Record};
 ///
 /// For more and detailed examples, see [./examples] directory.
 ///
-/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 #[derive(Default)]
 pub struct LogCrateProxy {
     logger: ArcSwapOption<Logger>,

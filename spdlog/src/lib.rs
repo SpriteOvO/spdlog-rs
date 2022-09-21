@@ -155,10 +155,6 @@
 //!
 //!  - `spdlog-rs` does not have `backtrace`[^2].
 //!
-//!  - `spdlog-rs` currently does not have `pattern_formatter`. The solution for
-//!    custom formatting log messages is to implement your own [`Formatter`]
-//!    structure and then call [`Sink::set_formatter`].
-//!
 //!  - In `spdlog-rs`, [`LevelFilter`] is a more flexible and readable enum with
 //!    logical conditions.
 //!
@@ -181,7 +177,7 @@
 //! [^2]: C++ `spdlog` is also planned to remove it in v2.x.
 //!
 //! [spdlog]: https://github.com/gabime/spdlog
-//! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+//! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 //! [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 //! [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
 //! [log crate]: https://crates.io/crates/log

@@ -20,7 +20,7 @@ use crate::{
 ///
 /// See [./examples] directory.
 ///
-/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct FileSink {
     common_impl: helper::CommonImpl,
     file: SpinMutex<BufWriter<File>>,

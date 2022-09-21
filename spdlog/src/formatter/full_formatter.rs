@@ -7,9 +7,8 @@ use std::{
 
 use cfg_if::cfg_if;
 
-use super::LOCAL_TIME_CACHER;
 use crate::{
-    formatter::{FmtExtraInfo, Formatter},
+    formatter::{FmtExtraInfo, Formatter, LOCAL_TIME_CACHER},
     Error, Record, StringBuf, EOL,
 };
 
