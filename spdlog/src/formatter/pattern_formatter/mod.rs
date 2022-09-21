@@ -305,46 +305,49 @@ use crate::{
 ///
 /// # Appendix: A Full List of Built-in Patterns
 ///
-/// | Placeholders | Description | Example |
-/// | --- | --- | --- |
-/// | `{weekday_name}` | Abbreviated weekday name | `Mon`, `Tue` |
-/// | `{weekday_name_full}` | Weekday name | `Monday`, `Tuesday` |
-/// | `{month_name}` | Abbreviated month name | `Jan`, `Feb` |
-/// | `{month_name_full}` | Month name | `January`, `February` |
-/// | `{datetime}` | Full date time | `Thu Aug 23 15:35:46 2014` |
-/// | `{year_short}` | Short year | `22`, `20` |
-/// | `{year}` | Year | `2022`, `2021` |
-/// | `{date_short}` | Short date | `04/01/22`, `12/31/21` |
-/// | `{date}` | Date (ISO 8601) | `2022-04-01`, `2021-12-31` |
-/// | `{month}` | Month | `01`, `12` |
-/// | `{day}` | Day in month | `01`, `12`, `31`, `30` |
-/// | `{hour}` | Hour in 24-hour | `01`, `12`, `23` |
-/// | `{hour_12}` | Hour in 12-hour | `01`, `12` |
-/// | `{minute}` | Minute | `00`, `05`, `59` |
-/// | `{second}` | Second | `00`, `05`, `59` |
-/// | `{millisecond}` | Millisecond | `231` |
-/// | `{microsecond}` | Microseconds within a second | `372152` |
-/// | `{nanosecond}` | Nanoseconds within a second | `482930154` |
-/// | `{am_pm}` | AM / PM | `AM`, `PM` |
-/// | `{time_12}` | Time in 12-hour format | `02:55:02 PM` |
-/// | `{time_short}` | Short time | `22:28`, `09:53` |
-/// | `{time}` | Time | `22:28:02`, `09:53:41` |
-/// | `{tz_offset}` | Timezone offset | `+08:00`, `+00:00`, `-06:00` |
-/// | `{unix_timestamp}` | Unix timestamp | `1528834770` |
-/// | `{full}` | Full log message | See [`FullFormatter`] |
-/// | `{level}` | Log level | `critical`, `error`, `warn` |
-/// | `{level_short}` | Short log level | `C`, `E`, `W` |
-/// | `{loc}` | Log location | `main.rs:30` |
-/// | `{file_name}` | Source file basename | `main.rs` |
-/// | `{file}` | Path to the source file | `src/main.rs` |
-/// | `{line}` | Source file line | `30` |
-/// | `{column}` | Source file column | `20` |
-/// | `{module_path}` | Source module path | `mod::module` |
-/// | `{logger}` | Logger name | `my-logger` |
-/// | `{payload}` | Log payload | `log message` |
-/// | `{pid}` | Process ID | `3824` |
-/// | `{tid}` | Thread ID | `3132` |
-/// | `{eol}` | End of line | `\n` (on non-Windows) or `\r\n` (on Windows) |
+/// | Placeholders          | Description                  | Example                                      |
+/// | --------------------- | ---------------------------- | -------------------------------------------- |
+/// | `{weekday_name}`      | Abbreviated weekday name     | `Mon`, `Tue`                                 |
+/// | `{weekday_name_full}` | Weekday name                 | `Monday`, `Tuesday`                          |
+/// | `{month_name}`        | Abbreviated month name       | `Jan`, `Feb`                                 |
+/// | `{month_name_full}`   | Month name                   | `January`, `February`                        |
+/// | `{datetime}`          | Full date time               | `Thu Aug 23 15:35:46 2014`                   |
+/// | `{year_short}`        | Short year                   | `22`, `20`                                   |
+/// | `{year}`              | Year                         | `2022`, `2021`                               |
+/// | `{date_short}`        | Short date                   | `04/01/22`, `12/31/21`                       |
+/// | `{date}`              | Date (ISO 8601)              | `2022-04-01`, `2021-12-31`                   |
+/// | `{month}`             | Month                        | `01`, `12`                                   |
+/// | `{day}`               | Day in month                 | `01`, `12`, `31`, `30`                       |
+/// | `{hour}`              | Hour in 24-hour              | `01`, `12`, `23`                             |
+/// | `{hour_12}`           | Hour in 12-hour              | `01`, `12`                                   |
+/// | `{minute}`            | Minute                       | `00`, `05`, `59`                             |
+/// | `{second}`            | Second                       | `00`, `05`, `59`                             |
+/// | `{millisecond}`       | Millisecond                  | `231`                                        |
+/// | `{microsecond}`       | Microseconds within a second | `372152`                                     |
+/// | `{nanosecond}`        | Nanoseconds within a second  | `482930154`                                  |
+/// | `{am_pm}`             | AM / PM                      | `AM`, `PM`                                   |
+/// | `{time_12}`           | Time in 12-hour format       | `02:55:02 PM`                                |
+/// | `{time_short}`        | Short time                   | `22:28`, `09:53`                             |
+/// | `{time}`              | Time                         | `22:28:02`, `09:53:41`                       |
+/// | `{tz_offset}`         | Timezone offset              | `+08:00`, `+00:00`, `-06:00`                 |
+/// | `{unix_timestamp}`    | Unix timestamp               | `1528834770`                                 |
+/// | `{full}`              | Full log message             | See [`FullFormatter`]                        |
+/// | `{level}`             | Log level                    | `critical`, `error`, `warn`                  |
+/// | `{level_short}`       | Short log level              | `C`, `E`, `W`                                |
+/// | `{loc}`               | Log location                 | `main.rs:30` [^1]                            |
+/// | `{file_name}`         | Source file basename         | `main.rs` [^1]                               |
+/// | `{file}`              | Path to the source file      | `src/main.rs` [^1]                           |
+/// | `{line}`              | Source file line             | `30` [^1]                                    |
+/// | `{column}`            | Source file column           | `20` [^1]                                    |
+/// | `{module_path}`       | Source module path           | `mod::module` [^1]                           |
+/// | `{logger}`            | Logger name                  | `my-logger`                                  |
+/// | `{payload}`           | Log payload                  | `log message`                                |
+/// | `{pid}`               | Process ID                   | `3824`                                       |
+/// | `{tid}`               | Thread ID                    | `3132`                                       |
+/// | `{eol}`               | End of line                  | `\n` (on non-Windows) or `\r\n` (on Windows) |
+/// 
+/// [^1]: Patterns related to source location require that feature
+///       `source-location` is enabled, otherwise the output is empty.
 ///
 /// [`FullFormatter`]: crate::formatter::FullFormatter
 pub use ::spdlog_macros::pattern;
@@ -359,11 +362,10 @@ impl<P> PatternFormatter<P>
 where
     P: Pattern,
 {
-    /// Create a new `PatternFormatter` object with the given pattern.
+    /// Creates a new `PatternFormatter` object with the given pattern.
     ///
-    /// Manually craft a pattern object `pattern` can be tedious and
-    /// error-prone. It's recommended to use the [`pattern!`] macro to create
-    /// a pattern object from a template string.
+    /// Currently users can only create a `pattern` object at compile-time by
+    /// calling [`pattern!`] macro.
     pub fn new(pattern: P) -> Self {
         Self { pattern }
     }
