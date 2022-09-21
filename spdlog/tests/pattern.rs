@@ -406,7 +406,7 @@ fn test_builtin_patterns() {
     check(pattern!("{level_short}"), Some("I"), vec![]);
     cfg_if! {
         if #[cfg(feature = "source-location")] {
-            check(pattern!("{source}"), Some("pattern.rs:000"), vec![SOURCE_RANGE]);
+            check(pattern!("{source}"), Some(format!("{}:000", file!())), vec![SOURCE_RANGE]);
             check(pattern!("{file_name}"), Some("pattern.rs"), vec![]);
             check(pattern!("{file}"), Some(file!()), vec![]);
             check(pattern!("{line}"), Some("000"), vec![SOURCE_RANGE]);

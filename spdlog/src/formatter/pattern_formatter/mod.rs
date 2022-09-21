@@ -334,9 +334,9 @@ use crate::{
 /// | `{full}`              | Full log message             | See [`FullFormatter`]                        |
 /// | `{level}`             | Log level                    | `critical`, `error`, `warn`                  |
 /// | `{level_short}`       | Short log level              | `C`, `E`, `W`                                |
-/// | `{source}`            | Log location                 | `main.rs:30` [^1]                            |
-/// | `{file_name}`         | Source file basename         | `main.rs` [^1]                               |
-/// | `{file}`              | Path to the source file      | `src/main.rs` [^1]                           |
+/// | `{source}`            | Source file and line         | `path/to/main.rs:30` [^1]                    |
+/// | `{file_name}`         | Source file name             | `main.rs` [^1]                               |
+/// | `{file}`              | Source file path             | `path/to/main.rs` [^1]                       |
 /// | `{line}`              | Source file line             | `30` [^1]                                    |
 /// | `{column}`            | Source file column           | `20` [^1]                                    |
 /// | `{module_path}`       | Source module path           | `mod::module` [^1]                           |

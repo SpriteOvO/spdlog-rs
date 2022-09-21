@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// A pattern that writes the source file, line and column of a log record into
-/// the output. Example: `main.rs:30:20`.
+/// the output. Example: `path/to/main.rs:30`.
 #[derive(Clone, Default)]
 pub struct Source;
 
@@ -19,7 +19,7 @@ impl Pattern for Source {
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
             (|| {
-                dest.write_str(loc.file_name())?;
+                dest.write_str(loc.file())?;
                 dest.write_char(':')?;
                 write!(dest, "{}", loc.line())
             })()
