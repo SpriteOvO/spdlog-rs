@@ -246,8 +246,8 @@ fn bench_level_short(bencher: &mut Bencher) {
 }
 
 #[bench]
-fn bench_loc(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{loc}"))
+fn bench_source(bencher: &mut Bencher) {
+    bench_pattern(bencher, pattern!("{source}"))
 }
 
 #[bench]

@@ -8,9 +8,9 @@ use crate::{
 /// A pattern that writes the source file, line and column of a log record into
 /// the output. Example: `main.rs:30:20`.
 #[derive(Clone, Default)]
-pub struct Loc;
+pub struct Source;
 
-impl Pattern for Loc {
+impl Pattern for Source {
     fn format(
         &self,
         record: &Record,

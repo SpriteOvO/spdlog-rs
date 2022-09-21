@@ -79,7 +79,7 @@ impl Synthesiser {
             ["full"] => Full,
             ["level"] => Level,
             ["level_short"] => ShortLevel,
-            ["loc"] => Loc,
+            ["source"] => Source,
             ["file_name"] => SourceFilename,
             ["file"] => SourceFile,
             ["line"] => SourceLine,
