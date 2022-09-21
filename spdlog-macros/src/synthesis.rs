@@ -100,8 +100,11 @@ impl Synthesiser {
         name: String,
         formatter: PatternFormatter,
     ) -> Result<(), ConflictFormatterError> {
-        if self.formatters.contains_key(&name) {
-            return Err(ConflictFormatterError::new(name));
+        if let Some(conflicted) = self.formatters.get(&name) {
+            return Err(ConflictFormatterError {
+                name,
+                with: (formatter.kind, conflicted.kind),
+            });
         }
 
         self.formatters.insert(name, formatter);
@@ -184,12 +187,22 @@ impl Synthesiser {
         &self,
         formatter_token: &PatternTemplateFormatter,
     ) -> Result<Expr, SynthesisError> {
-        let formatter_factory_path = &self
-            .formatters
-            .get(&formatter_token.name)
-            .filter(|formatter| formatter_token.kind == formatter.kind)
-            .ok_or_else(|| SynthesisError::UnknownFormatterName(formatter_token.name.clone()))?
-            .factory_path;
+        let formatter = match self.formatters.get(&formatter_token.name) {
+            Some(formatter) => {
+                if formatter_token.kind == formatter.kind {
+                    Ok(formatter)
+                } else {
+                    Err(SynthesisError::BuiltinPatternUsedAsCustomPattern(
+                        formatter_token.name.clone(),
+                    ))
+                }
+            }
+            None => Err(SynthesisError::UnknownFormatterName(
+                formatter_token.name.clone(),
+                formatter_token.kind,
+            )),
+        }?;
+        let formatter_factory_path = &formatter.factory_path;
 
         let stream = quote::quote!( #formatter_factory_path () );
         let factory_call_expr = syn::parse2(stream).unwrap();
@@ -210,7 +223,7 @@ pub(crate) struct PatternFormatter {
     pub(crate) kind: PatternFormatterKind,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum PatternFormatterKind {
     Custom,
     BuiltIn,
@@ -218,18 +231,37 @@ pub(crate) enum PatternFormatterKind {
 
 #[derive(Debug)]
 pub(crate) struct ConflictFormatterError {
-    conflict_name: String,
-}
-
-impl ConflictFormatterError {
-    fn new(conflict_name: String) -> Self {
-        Self { conflict_name }
-    }
+    name: String,
+    with: (PatternFormatterKind, PatternFormatterKind),
 }
 
 impl Display for ConflictFormatterError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "formatter name \"{}\" conflicts", self.conflict_name)
+        use PatternFormatterKind as Kind;
+
+        match self.with {
+            (Kind::Custom, Kind::BuiltIn) => {
+                write!(
+                    f,
+                    "'{}' is already a built-in pattern, please try another name",
+                    self.name
+                )
+            }
+            (Kind::Custom, Kind::Custom) => {
+                write!(
+                    f,
+                    "the constructor of custom pattern '{}' is specified more than once",
+                    self.name
+                )
+            }
+            (Kind::BuiltIn, _) => {
+                write!(
+                    f,
+                    "this should not happen, please open an issue on 'spdlog-rs' Bug Tracker. debug: {:?}",
+                    self
+                )
+            }
+        }
     }
 }
 
@@ -237,15 +269,34 @@ impl Error for ConflictFormatterError {}
 
 #[derive(Debug)]
 pub(crate) enum SynthesisError {
-    UnknownFormatterName(String),
+    BuiltinPatternUsedAsCustomPattern(String),
+    UnknownFormatterName(String, PatternFormatterKind),
     MultipleStyleRange,
 }
 
 impl Display for SynthesisError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use PatternFormatterKind as Kind;
+
         match self {
-            Self::UnknownFormatterName(name) => write!(f, "unknown formatter name: \"{}\"", name),
-            Self::MultipleStyleRange => write!(f, "more than 1 style range in the template"),
+            Self::BuiltinPatternUsedAsCustomPattern(name) => {
+                write!(
+                    f,
+                    "'{}' is a built-in pattern, it cannot be used as a custom pattern. try to replace it with `{{{}}}`",
+                    name, name
+                )
+            }
+            Self::UnknownFormatterName(name, kind) => match kind {
+                Kind::BuiltIn => write!(f, "no built-in pattern named '{}'", name),
+                Kind::Custom => write!(
+                    f,
+                    "the constructor of custom pattern '{}' is not specified",
+                    name
+                ),
+            },
+            Self::MultipleStyleRange => {
+                write!(f, "multiple style ranges are not currently supported")
+            }
         }
     }
 }
