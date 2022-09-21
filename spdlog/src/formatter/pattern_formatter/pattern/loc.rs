@@ -7,15 +7,8 @@ use crate::{
 
 /// A pattern that writes the source file, line and column of a log record into
 /// the output. Example: `main.rs:30:20`.
-#[derive(Default, Clone)]
+#[derive(Clone, Default)]
 pub struct Loc;
-
-impl Loc {
-    /// Create a new `Loc` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for Loc {
     fn format(
@@ -38,15 +31,8 @@ impl Pattern for Loc {
 
 /// A pattern that writes the source file basename into the output. Example:
 /// `main.rs`.
-#[derive(Default, Clone)]
+#[derive(Clone, Default)]
 pub struct SourceFilename;
-
-impl SourceFilename {
-    /// Create a new `SourceFilename` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for SourceFilename {
     fn format(
@@ -65,15 +51,8 @@ impl Pattern for SourceFilename {
 
 /// A pattern that writes the source file path into the output. Example:
 /// `src/main.rs`.
-#[derive(Default, Clone)]
+#[derive(Clone, Default)]
 pub struct SourceFile;
-
-impl SourceFile {
-    /// Create a new `SourceFile` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for SourceFile {
     fn format(
@@ -90,15 +69,8 @@ impl Pattern for SourceFile {
 }
 
 /// A pattern that writes the source line into the output. Example: `20`.
-#[derive(Default, Clone)]
+#[derive(Clone, Default)]
 pub struct SourceLine;
-
-impl SourceLine {
-    /// Create a new `SourceLine` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for SourceLine {
     fn format(
@@ -115,15 +87,8 @@ impl Pattern for SourceLine {
 }
 
 /// A pattern that writes the source column into the output. Example: `20`.
-#[derive(Default, Clone)]
+#[derive(Clone, Default)]
 pub struct SourceColumn;
-
-impl SourceColumn {
-    /// Create a new `SourceColumn` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for SourceColumn {
     fn format(
@@ -141,15 +106,8 @@ impl Pattern for SourceColumn {
 
 /// A pattern that writes the source module path into the output. Example:
 /// `mod::path`
-#[derive(Default, Clone)]
+#[derive(Clone, Default)]
 pub struct SourceModulePath;
-
-impl SourceModulePath {
-    /// Create a new `SourceModulePath` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for SourceModulePath {
     fn format(

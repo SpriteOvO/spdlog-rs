@@ -7,15 +7,8 @@ use crate::{
 
 /// A pattern that writes the level of a log record into the output. Examples:
 /// `critical`, `error`, `warn`.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct Level;
-
-impl Level {
-    /// Create a new `Level` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for Level {
     fn format(
@@ -25,22 +18,14 @@ impl Pattern for Level {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(record.level().as_str())
-            .map_err(Error::FormatRecord)?;
-        Ok(())
+            .map_err(Error::FormatRecord)
     }
 }
 
 /// A pattern that writes the level in a shorter form of a log record into the
 /// output. Examples: `C`, `E`, `W`.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct ShortLevel;
-
-impl ShortLevel {
-    /// Create a new `ShortLevel` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for ShortLevel {
     fn format(

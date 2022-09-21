@@ -7,15 +7,8 @@ use crate::{
 
 /// A pattern that writes the logger's name into the output. Example:
 /// `my-logger`.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct LoggerName;
-
-impl LoggerName {
-    /// Create a new `LoggerName` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for LoggerName {
     fn format(
@@ -24,9 +17,7 @@ impl Pattern for LoggerName {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        if let Some(logger_name) = record.logger_name() {
-            dest.write_str(logger_name).map_err(Error::FormatRecord)?;
-        }
-        Ok(())
+        dest.write_str(record.logger_name().unwrap_or(""))
+            .map_err(Error::FormatRecord)
     }
 }

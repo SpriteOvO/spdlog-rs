@@ -7,15 +7,8 @@ use crate::{
 
 /// A pattern that writes the payload of a log record into output. Example: `log
 /// message`.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct Payload;
-
-impl Payload {
-    /// Create a new `Payload` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for Payload {
     fn format(
@@ -25,7 +18,6 @@ impl Pattern for Payload {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(record.payload())
-            .map_err(Error::FormatRecord)?;
-        Ok(())
+            .map_err(Error::FormatRecord)
     }
 }

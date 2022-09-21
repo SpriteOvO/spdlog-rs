@@ -12,15 +12,8 @@ use crate::{
 /// On non-Windows systems, this pattern writes a `\n` to the output.
 ///
 /// On Windows, this pattern writes a `\r\n` to the output.
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct Eol;
-
-impl Eol {
-    /// Create a new `Eol` pattern.
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Pattern for Eol {
     fn format(

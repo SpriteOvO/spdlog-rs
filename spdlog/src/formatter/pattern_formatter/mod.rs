@@ -456,8 +456,7 @@ impl Pattern for str {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(self).map_err(Error::FormatRecord)?;
-        Ok(())
+        dest.write_str(self).map_err(Error::FormatRecord)
     }
 }
 
