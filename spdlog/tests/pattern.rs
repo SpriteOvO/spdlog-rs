@@ -373,7 +373,7 @@ fn test_builtin_patterns() {
         if #[cfg(feature = "source-location")] {
             check(
                 pattern!("{full}"),
-                Some(format!("[0000-00-00 00:00:00.000] [logger-name] [info] [pattern, {}:000] test payload{{eol}}", file!())),
+                Some(format!("[0000-00-00 00:00:00.000] [logger-name] [info] [pattern, {}:000] test payload", file!())),
                 vec![
                     YEAR_RANGE,
                     MONTH_RANGE,
@@ -388,7 +388,7 @@ fn test_builtin_patterns() {
         } else {
             check(
                 pattern!("{full}"),
-                Some("[0000-00-00 00:00:00.000] [logger-name] [info] test payload{eol}"),
+                Some("[0000-00-00 00:00:00.000] [logger-name] [info] test payload"),
                 vec![
                     YEAR_RANGE,
                     MONTH_RANGE,

@@ -10,9 +10,17 @@ use crate::{
 /// output.
 ///
 /// This pattern writes the same formatted text as [`FullFormatter`].
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Full {
     full_formatter: FullFormatter,
+}
+
+impl Default for Full {
+    fn default() -> Self {
+        Full {
+            full_formatter: FullFormatter::without_eol(),
+        }
+    }
 }
 
 impl Pattern for Full {

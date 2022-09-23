@@ -32,6 +32,7 @@ use crate::{
 #[derive(Clone)]
 pub struct FullFormatter {
     _phantom: PhantomData<()>,
+    with_eol: bool,
 }
 
 impl FullFormatter {
@@ -39,6 +40,14 @@ impl FullFormatter {
     pub fn new() -> FullFormatter {
         FullFormatter {
             _phantom: PhantomData,
+            with_eol: true,
+        }
+    }
+
+    pub(crate) fn without_eol() -> Self {
+        Self {
+            _phantom: PhantomData,
+            with_eol: false,
         }
     }
 
@@ -85,7 +94,10 @@ impl FullFormatter {
 
         dest.write_str("] ")?;
         dest.write_str(record.payload())?;
-        dest.write_str(EOL)?;
+
+        if self.with_eol {
+            dest.write_str(EOL)?;
+        }
 
         Ok(FmtExtraInfo {
             style_range: Some(style_range_begin..style_range_end),
