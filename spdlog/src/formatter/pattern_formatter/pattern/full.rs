@@ -28,9 +28,16 @@ impl Pattern for Full {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        self.full_formatter.format(record, dest)?;
+        let extra_info = self.full_formatter.format(record, dest)?;
+        if let Some(style_range) = extra_info.style_range {
+            // Before we support multiple style ranges, if there is already a style range
+            // set, we don't override it.
+            if ctx.fmt_info_builder.info.style_range.is_none() {
+                ctx.set_style_range(style_range)
+            }
+        }
         Ok(())
     }
 }
