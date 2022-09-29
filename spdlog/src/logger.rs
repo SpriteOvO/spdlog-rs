@@ -328,7 +328,7 @@ impl LoggerBuilder {
 
     /// Sets the name of the logger.
     ///
-    /// A literal constant string is usually set.
+    /// Optional, defaults to `None`.
     ///
     /// # Requirements
     ///
@@ -346,6 +346,8 @@ impl LoggerBuilder {
     }
 
     /// Sets the log filter level.
+    ///
+    /// Optional, defaults to `LevelFilter::MoreSevereEqual(Level::Info)`.
     pub fn level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
         self.level_filter = level_filter;
         self
@@ -367,12 +369,22 @@ impl LoggerBuilder {
     }
 
     /// Sets the flush level filter.
+    ///
+    /// Optional, defaults to [`LevelFilter::Off`].
+    ///
+    /// See the documentation of [`Logger::set_flush_level_filter`] for the
+    /// description of this parameter.
     pub fn flush_level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
         self.flush_level_filter = level_filter;
         self
     }
 
     /// Sets the error handler.
+    ///
+    /// Optional, defaults to `None`.
+    ///
+    /// See the documentation of [`Logger::set_error_handler`] for the
+    /// description of this parameter.
     pub fn error_handler(&mut self, handler: ErrorHandler) -> &mut Self {
         self.error_handler = Some(handler);
         self

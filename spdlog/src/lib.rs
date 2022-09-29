@@ -323,9 +323,28 @@ fn default_logger_ref() -> &'static ArcSwap<Logger> {
 
 /// Returns an [`Arc`] default logger.
 ///
-/// Default logger contains two [`StdStreamSink`]s, writing logs on `info` level
-/// and more verbose levels to `stdout`, and writing logs on `warn` level and
-/// more severe levels to `stderr`.
+/// This default logger will be used by logging macros, if the `logger`
+/// parameter is not specified when logging macros are called.
+///
+/// If the default logger has not been replaced, the default:
+///
+///  - Contains a sink [`StdStreamSink`], writing logs on [`Level::Info`] and
+///    more verbose levels to `stdout`.
+///
+///  - Contains a sink [`StdStreamSink`], writing logs on [`Level::Warn`] level
+///    and more severe levels to `stderr`.
+///
+///  - Level filter ignores logs on [`Level::Debug`] and more verbose levels.
+///
+///    However, if you want to enable logging for all levels:
+///    ```
+///    use spdlog::prelude::*;
+///
+///    spdlog::default_logger().set_level_filter(LevelFilter::All);
+///    ```
+///
+/// Users can replace the default logger with [`set_default_logger`] or
+/// [`swap_default_logger`].
 ///
 /// # Examples
 ///
