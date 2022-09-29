@@ -302,15 +302,15 @@ fn default_logger_ref() -> &'static ArcSwap<Logger> {
     DEFAULT_LOGGER.get_or_init(|| {
         let stdout = StdStreamSink::builder()
             .std_stream(StdStream::Stdout)
+            .level_filter(LevelFilter::MoreVerbose(Level::Warn))
             .build()
             .unwrap();
-        stdout.set_level_filter(LevelFilter::MoreVerbose(Level::Warn));
 
         let stderr = StdStreamSink::builder()
             .std_stream(StdStream::Stderr)
+            .level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
             .build()
             .unwrap();
-        stderr.set_level_filter(LevelFilter::MoreSevereEqual(Level::Warn));
 
         let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
 

@@ -34,7 +34,7 @@ impl CommonImpl {
         fallback: impl FnOnce() -> Box<dyn Formatter>,
     ) -> Self {
         Self {
-            level_filter: Atomic::new(SINK_DEFAULT_LEVEL_FILTER),
+            level_filter: Atomic::new(common_builder_impl.level_filter),
             formatter: SpinRwLock::new(common_builder_impl.formatter.unwrap_or_else(fallback)),
             error_handler: Atomic::new(common_builder_impl.error_handler),
         }
