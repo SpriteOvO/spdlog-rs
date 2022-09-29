@@ -102,7 +102,7 @@ mod tests {
 
         let sink = Arc::new(CounterSink::new());
         crate::log_crate_proxy().set_logger(Some(Arc::new(
-            test_logger_builder().sink(sink.clone()).build(),
+            test_logger_builder().sink(sink.clone()).build().unwrap(),
         )));
 
         assert_eq!(sink.log_count(), 0);

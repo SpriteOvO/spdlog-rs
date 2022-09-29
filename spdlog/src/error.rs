@@ -76,6 +76,13 @@ pub enum Error {
     #[error("attempted to convert a string that doesn't match an existing log level: {0}")]
     ParseLevel(String),
 
+    /// The variant returned by [`LoggerBuilder::build`] when an error occurs in
+    /// building a logger.
+    ///
+    /// [`LoggerBuilder::build`]: crate::LoggerBuilder::build
+    #[error("failed to build a logger: {0}")]
+    BuildLogger(BuildLoggerError),
+
     /// The variant returned by [`Sink`]s when an error occurs in sending to the
     /// channel.
     ///
@@ -83,6 +90,20 @@ pub enum Error {
     #[cfg(feature = "multi-thread")]
     #[error("failed to send message to channel: {0}")]
     SendToChannel(SendToChannelError, SendToChannelErrorDropped),
+}
+
+/// The more detailed error type of building a logger.
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum BuildLoggerError {
+    /// The name of the logger is invalid.
+    ///
+    /// See the documentation of [`LoggerBuilder::name`] for the name
+    /// requirements.
+    ///
+    /// [`LoggerBuilder::name`]: crate::LoggerBuilder::name
+    #[error("invalid logger name: {0}")]
+    InvalidName(String),
 }
 
 /// The more detailed error type of sending to channel.

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use spdlog::{prelude::*, sink::Sink};
 
-fn main() {
+fn main() -> Result<(), spdlog::Error> {
     // Building loggers
     //
     // A logger can combine multiple sinks, we'll explain how to build sinks in
@@ -13,9 +13,9 @@ fn main() {
     let mut builder: LoggerBuilder = Logger::builder();
     let builder: &mut LoggerBuilder = builder.sinks(sinks).level_filter(LevelFilter::All);
 
-    let gui: Logger = builder.name("gui").build();
-    let network: Logger = builder.name("network").build();
-    let settings: Logger = builder.name("settings").build();
+    let gui: Logger = builder.name("gui").build()?;
+    let network: Logger = builder.name("network").build()?;
+    let settings: Logger = builder.name("settings").build()?;
 
     // Logging with our loggers instead of the default logger.
 
@@ -54,4 +54,6 @@ fn main() {
         24 * 60 * 60
     );
     info!(logger: settings, "settings saved");
+
+    Ok(())
 }

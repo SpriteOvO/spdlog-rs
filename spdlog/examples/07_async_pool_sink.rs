@@ -17,7 +17,7 @@ fn main() -> Result<(), spdlog::Error> {
     let async_pool_sink: Arc<AsyncPoolSink> =
         Arc::new(AsyncPoolSink::builder().sink(file_sink).build().unwrap());
 
-    let logger: Arc<Logger> = Arc::new(Logger::builder().sink(async_pool_sink).build());
+    let logger: Arc<Logger> = Arc::new(Logger::builder().sink(async_pool_sink).build()?);
 
     info!(logger: logger, "hello async_pool_sink");
 

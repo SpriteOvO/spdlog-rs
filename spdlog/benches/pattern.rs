@@ -61,7 +61,7 @@ impl<F: Formatter> Sink for BenchSink<F> {
 
 fn bench_formatter(bencher: &mut Bencher, formatter: impl Formatter + 'static) {
     let bench_sink = Arc::new(BenchSink::new(formatter));
-    let logger = Logger::builder().sink(bench_sink).build();
+    let logger = Logger::builder().sink(bench_sink).build().unwrap();
 
     bencher.iter(|| info!(logger: logger, "payload"));
 }
@@ -98,7 +98,8 @@ fn bench_2_full_pattern(bencher: &mut Bencher) {
     let combination = Logger::builder()
         .sink(full_formatter.clone())
         .sink(full_pattern.clone())
-        .build();
+        .build()
+        .unwrap();
 
     info!(logger: combination, "test payload");
 

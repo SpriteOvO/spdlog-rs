@@ -241,6 +241,7 @@ mod tests {
                 .level_filter(LevelFilter::All)
                 .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Error))
                 .build()
+                .unwrap()
         };
 
         assert_eq!(counter_sink.log_count(), 0);
@@ -289,7 +290,8 @@ mod tests {
             ))
             .level_filter(LevelFilter::All)
             .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Error))
-            .build();
+            .build()
+            .unwrap();
 
         assert_eq!(counter_sink.log_count(), 0);
         assert_eq!(counter_sink.flush_count(), 0);
@@ -326,7 +328,8 @@ mod tests {
             ))
             .level_filter(LevelFilter::All)
             .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
-            .build();
+            .build()
+            .unwrap();
 
         assert_eq!(counter_sink.log_count(), 0);
         assert_eq!(counter_sink.flush_count(), 0);

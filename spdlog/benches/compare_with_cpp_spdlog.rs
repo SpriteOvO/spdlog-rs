@@ -44,7 +44,8 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
                 .unwrap(),
         ))
         .name("basic_mt")
-        .build();
+        .build()
+        .unwrap();
     bench_mt(logger, threads, iters);
 
     let logger = Logger::builder()
@@ -57,7 +58,8 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
                 .unwrap(),
         ))
         .name("rotating_mt")
-        .build();
+        .build()
+        .unwrap();
     bench_mt(logger, threads, iters);
 
     let logger = Logger::builder()
@@ -69,13 +71,15 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
                 .unwrap(),
         ))
         .name("daily_mt")
-        .build();
+        .build()
+        .unwrap();
     bench_mt(logger, threads, iters);
 
     let logger = Logger::builder()
         .name("level-off")
         .level_filter(LevelFilter::Off)
-        .build();
+        .build()
+        .unwrap();
     bench_mt(logger, threads, iters);
 }
 

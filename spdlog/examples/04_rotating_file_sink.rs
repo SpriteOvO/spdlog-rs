@@ -49,9 +49,9 @@ fn main() -> Result<(), spdlog::Error> {
             .build()?,
     );
 
-    let by_size: Logger = Logger::builder().sink(by_size).build();
-    let hourly: Logger = Logger::builder().sink(hourly).build();
-    let daily: Logger = Logger::builder().sink(daily).build();
+    let by_size: Logger = Logger::builder().sink(by_size).build()?;
+    let hourly: Logger = Logger::builder().sink(hourly).build()?;
+    let daily: Logger = Logger::builder().sink(daily).build()?;
 
     info!(logger: by_size, "hello, world");
     info!(logger: hourly, "hello, world");

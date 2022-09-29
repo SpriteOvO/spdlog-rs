@@ -34,6 +34,6 @@
 #             builder.name(name);
 #         }
 # 
-#         (builder.build(), sink)
+#         (builder.build().unwrap(), sink)
 #     }
 # }

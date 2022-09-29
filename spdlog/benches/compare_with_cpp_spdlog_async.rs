@@ -64,7 +64,8 @@ fn bench(
                     panic!("an error occurred: {err}")
                 }
             })
-            .build();
+            .build()
+            .unwrap();
 
         bench_mt(logger, message_count, threads);
     }

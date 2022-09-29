@@ -314,7 +314,7 @@ fn default_logger_ref() -> &'static ArcSwap<Logger> {
 
         let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
 
-        let res = ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default());
+        let res = ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default().unwrap());
 
         flush_default_logger_at_exit();
         res
@@ -449,7 +449,7 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///   ```
 ///   use spdlog::prelude::*;
 ///
-///   # fn main() -> Result<(), spdlog::EnvLevelError> {
+///   # fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   assert_eq!(spdlog::init_env_level()?, false);
 ///
 ///   assert_eq!(
@@ -457,15 +457,15 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
 ///   );
 ///   assert_eq!(
-///       Logger::builder().build().level_filter(), // unnamed logger
+///       Logger::builder().build()?.level_filter(), // unnamed logger
 ///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
 ///   );
 ///   assert_eq!(
-///       Logger::builder().name("gui").build().level_filter(),
+///       Logger::builder().name("gui").build()?.level_filter(),
 ///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
 ///   );
 ///   assert_eq!(
-///       Logger::builder().name("network").build().level_filter(),
+///       Logger::builder().name("network").build()?.level_filter(),
 ///       LevelFilter::MoreSevereEqual(Level::Info) // default level filter
 ///   );
 ///   # Ok(()) }
@@ -476,7 +476,7 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///   ```
 ///   use spdlog::prelude::*;
 ///
-///   # fn main() -> Result<(), spdlog::EnvLevelError> {
+///   # fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   # std::env::set_var("SPDLOG_RS_LEVEL", "TRACE,network=Warn,*=error");
 ///   assert_eq!(spdlog::init_env_level()?, true);
 ///
@@ -485,15 +485,15 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///       LevelFilter::MoreSevereEqual(Level::Trace)
 ///   );
 ///   assert_eq!(
-///       Logger::builder().build().level_filter(), // unnamed logger
+///       Logger::builder().build()?.level_filter(), // unnamed logger
 ///       LevelFilter::MoreSevereEqual(Level::Error)
 ///   );
 ///   assert_eq!(
-///       Logger::builder().name("gui").build().level_filter(),
+///       Logger::builder().name("gui").build()?.level_filter(),
 ///       LevelFilter::MoreSevereEqual(Level::Error)
 ///   );
 ///   assert_eq!(
-///       Logger::builder().name("network").build().level_filter(),
+///       Logger::builder().name("network").build()?.level_filter(),
 ///       LevelFilter::MoreSevereEqual(Level::Warn)
 ///   );
 ///   # Ok(()) }
@@ -531,7 +531,7 @@ pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
 ///   ```
 ///   use spdlog::prelude::*;
 ///
-///   # fn main() -> Result<(), spdlog::EnvLevelError> {
+///   # fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///   # std::env::set_var("MY_APP_LOG_LEVEL", "TRACE,network=Warn,*=error");
 ///   assert_eq!(spdlog::init_env_level_from("MY_APP_LOG_LEVEL")?, true);
 ///
@@ -540,15 +540,15 @@ pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
 ///       LevelFilter::MoreSevereEqual(Level::Trace)
 ///   );
 ///   assert_eq!(
-///       Logger::builder().build().level_filter(), // unnamed logger
+///       Logger::builder().build()?.level_filter(), // unnamed logger
 ///       LevelFilter::MoreSevereEqual(Level::Error)
 ///   );
 ///   assert_eq!(
-///       Logger::builder().name("gui").build().level_filter(),
+///       Logger::builder().name("gui").build()?.level_filter(),
 ///       LevelFilter::MoreSevereEqual(Level::Error)
 ///   );
 ///   assert_eq!(
-///       Logger::builder().name("network").build().level_filter(),
+///       Logger::builder().name("network").build()?.level_filter(),
 ///       LevelFilter::MoreSevereEqual(Level::Warn)
 ///   );
 ///   # Ok(()) }
@@ -672,8 +672,13 @@ mod tests {
     fn test_default_logger() {
         let test_sink = Arc::new(CounterSink::new());
 
-        let test_logger = Arc::new(test_logger_builder().sink(test_sink.clone()).build());
-        let empty_logger = Arc::new(Logger::builder().build());
+        let test_logger = Arc::new(
+            test_logger_builder()
+                .sink(test_sink.clone())
+                .build()
+                .unwrap(),
+        );
+        let empty_logger = Arc::new(Logger::builder().build().unwrap());
 
         set_default_logger(empty_logger.clone());
         info!("hello");

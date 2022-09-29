@@ -7,7 +7,7 @@ use crate::{
     periodic_worker::PeriodicWorker,
     sink::{Sink, Sinks},
     sync::*,
-    Error, ErrorHandler, Level, LevelFilter, Record,
+    BuildLoggerError, Error, ErrorHandler, Level, LevelFilter, Record, Result,
 };
 
 /// A logger structure.
@@ -43,8 +43,8 @@ pub struct Logger {
     level_filter: Atomic<LevelFilter>,
     sinks: Sinks,
     flush_level_filter: Atomic<LevelFilter>,
-    periodic_flusher: Mutex<Option<PeriodicWorker>>,
     error_handler: SpinRwLock<Option<ErrorHandler>>,
+    periodic_flusher: Mutex<Option<PeriodicWorker>>,
 }
 
 impl Logger {
@@ -307,21 +307,22 @@ impl Clone for Logger {
 /// The builder of [`Logger`].
 #[derive(Clone)]
 pub struct LoggerBuilder {
-    logger: Logger,
+    name: Option<String>,
+    level_filter: LevelFilter,
+    sinks: Sinks,
+    flush_level_filter: LevelFilter,
+    error_handler: Option<ErrorHandler>,
 }
 
 impl LoggerBuilder {
     /// Constructs a `LoggerBuilder`.
     pub fn new() -> Self {
         Self {
-            logger: Logger {
-                name: None,
-                level_filter: Atomic::new(LevelFilter::MoreSevereEqual(Level::Info)),
-                sinks: vec![],
-                flush_level_filter: Atomic::new(LevelFilter::Off),
-                periodic_flusher: Mutex::new(None),
-                error_handler: SpinRwLock::new(None),
-            },
+            name: None,
+            level_filter: LevelFilter::MoreSevereEqual(Level::Info),
+            sinks: vec![],
+            flush_level_filter: LevelFilter::Off,
+            error_handler: None,
         }
     }
 
@@ -329,49 +330,30 @@ impl LoggerBuilder {
     ///
     /// A literal constant string is usually set.
     ///
-    /// # Panics
+    /// # Requirements
     ///
     /// A logger name should not contain any of these characters:
     /// `,` `=` `*` `?` `$` `{` `}` `"` `'` `;`,
     /// and cannot start or end with a whitespace.
+    ///
+    /// Otherwise, [`LoggerBuilder::build`] will return an error.
     pub fn name<S>(&mut self, name: S) -> &mut Self
     where
         S: Into<String>,
     {
-        let name = name.into();
-
-        if name.chars().any(|ch| {
-            ch == ','
-                || ch == '='
-                || ch == '*'
-                || ch == '?'
-                || ch == '$'
-                || ch == '{'
-                || ch == '}'
-                || ch == '"'
-                || ch == '\''
-                || ch == ';'
-        }) {
-            panic!("logger name contains disallowed character");
-        }
-        if name.starts_with(' ') || name.ends_with(' ') {
-            panic!("logger name cannot start or end with a whitespace");
-        }
-
-        self.logger.name = Some(name);
+        self.name = Some(name.into());
         self
     }
 
     /// Sets the log filter level.
-    #[allow(unused_mut)]
     pub fn level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
-        self.logger.set_level_filter(level_filter);
+        self.level_filter = level_filter;
         self
     }
 
     /// Add a [`Sink`].
     pub fn sink(&mut self, sink: Arc<dyn Sink>) -> &mut Self {
-        self.logger.sinks.push(sink);
+        self.sinks.push(sink);
         self
     }
 
@@ -380,50 +362,80 @@ impl LoggerBuilder {
     where
         I: IntoIterator<Item = Arc<dyn Sink>>,
     {
-        self.logger.sinks.append(&mut sinks.into_iter().collect());
+        self.sinks.append(&mut sinks.into_iter().collect());
         self
     }
 
     /// Sets the flush level filter.
-    #[allow(unused_mut)]
     pub fn flush_level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
-        self.logger.set_flush_level_filter(level_filter);
+        self.flush_level_filter = level_filter;
         self
     }
 
     /// Sets the error handler.
-    #[allow(unused_mut)]
     pub fn error_handler(&mut self, handler: ErrorHandler) -> &mut Self {
-        self.logger.set_error_handler(Some(handler));
+        self.error_handler = Some(handler);
         self
     }
 
     /// Builds a [`Logger`].
-    pub fn build(&mut self) -> Logger {
-        self.build_inner(false)
+    pub fn build(&mut self) -> Result<Logger> {
+        self.build_inner(self.preset_level(false))
     }
 
-    pub(crate) fn build_default(&mut self) -> Logger {
-        self.build_inner(true)
+    pub(crate) fn build_default(&mut self) -> Result<Logger> {
+        self.build_inner(self.preset_level(true))
     }
 
-    fn build_inner(&mut self, is_default: bool) -> Logger {
-        let res = self.logger.clone();
-        let level = if is_default {
+    fn preset_level(&self, is_default: bool) -> Option<LevelFilter> {
+        if is_default {
             env_level::logger_level(env_level::LoggerKind::Default)
         } else {
-            env_level::logger_level(env_level::LoggerKind::Other(res.name()))
-        };
-        if let Some(level) = level {
-            res.set_level_filter(level);
+            env_level::logger_level(env_level::LoggerKind::Other(self.name.as_deref()))
         }
-        res
+    }
+
+    fn build_inner(&mut self, preset_level: Option<LevelFilter>) -> Result<Logger> {
+        if let Some(name) = &self.name {
+            if name.chars().any(|ch| {
+                ch == ','
+                    || ch == '='
+                    || ch == '*'
+                    || ch == '?'
+                    || ch == '$'
+                    || ch == '{'
+                    || ch == '}'
+                    || ch == '"'
+                    || ch == '\''
+                    || ch == ';'
+            }) || name.starts_with(' ')
+                || name.ends_with(' ')
+            {
+                return Err(Error::BuildLogger(BuildLoggerError::InvalidName(
+                    name.into(),
+                )));
+            }
+        }
+
+        let logger = Logger {
+            name: self.name.clone(),
+            level_filter: Atomic::new(self.level_filter),
+            sinks: self.sinks.clone(),
+            flush_level_filter: Atomic::new(self.flush_level_filter),
+            error_handler: SpinRwLock::new(self.error_handler),
+            periodic_flusher: Mutex::new(None),
+        };
+
+        if let Some(preset_level) = preset_level {
+            logger.set_level_filter(preset_level);
+        }
+
+        Ok(logger)
     }
 
     #[cfg(test)]
     fn build_inner_for_test(&mut self, env_level: &str, is_default: bool) -> Logger {
-        let res = self.logger.clone();
-        let level = if is_default {
+        let preset_level = if is_default {
             env_level::logger_level_inner(
                 &env_level::from_str_inner(env_level).unwrap(),
                 env_level::LoggerKind::Default,
@@ -431,13 +443,11 @@ impl LoggerBuilder {
         } else {
             env_level::logger_level_inner(
                 &env_level::from_str_inner(env_level).unwrap(),
-                env_level::LoggerKind::Other(res.name()),
+                env_level::LoggerKind::Other(self.name.as_deref()),
             )
         };
-        if let Some(level) = level {
-            res.set_level_filter(level);
-        }
-        res
+
+        self.build_inner(preset_level).unwrap()
     }
 }
 
@@ -463,7 +473,7 @@ mod tests {
     #[test]
     fn flush_level() {
         let test_sink = Arc::new(CounterSink::new());
-        let test_logger = Logger::builder().sink(test_sink.clone()).build();
+        let test_logger = Logger::builder().sink(test_sink.clone()).build().unwrap();
 
         trace!(logger: test_logger, "");
         error!(logger: test_logger, "");
@@ -492,7 +502,7 @@ mod tests {
     #[test]
     fn periodic_flush() {
         let test_sink = Arc::new(CounterSink::new());
-        let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build());
+        let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build().unwrap());
 
         test_logger.set_flush_period(Some(Duration::from_secs(1)));
 
@@ -518,78 +528,23 @@ mod tests {
     #[test]
     fn builder_name() {
         LoggerBuilder::new().name("hello-world");
-    }
 
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_whitespace_start() {
-        LoggerBuilder::new().name(" hello");
-    }
+        macro_rules! assert_name_err {
+            ( $($name:literal),+ $(,)? ) => {
+                $(match LoggerBuilder::new().name($name).build() {
+                    Err(Error::BuildLogger(BuildLoggerError::InvalidName(name))) => {
+                        assert_eq!(name, $name)
+                    }
+                    _ => panic!("test case '{}' failed", $name),
+                })+
+            };
+        }
 
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_whitespace_end() {
-        LoggerBuilder::new().name("hello ");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_comma() {
-        LoggerBuilder::new().name("hello,world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_eq() {
-        LoggerBuilder::new().name("hello=world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_asterisk() {
-        LoggerBuilder::new().name("hello*world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_question_mark() {
-        LoggerBuilder::new().name("hello?world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_dollar_sign() {
-        LoggerBuilder::new().name("hello$world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_curly_bracket_left() {
-        LoggerBuilder::new().name("hello{world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_curly_bracket_right() {
-        LoggerBuilder::new().name("hello}world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_quotation() {
-        LoggerBuilder::new().name("hello\"world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_apostrophe() {
-        LoggerBuilder::new().name("hello'world");
-    }
-
-    #[test]
-    #[should_panic]
-    fn builder_name_panic_semicolon() {
-        LoggerBuilder::new().name("hello;world");
+        assert_name_err! {
+            " hello", "hello ",
+            "hello,world", "hello=world", "hello*world", "hello?world", "hello$world",
+            "hello{world", "hello}world", r#"hello"world"#, "hello'world", "hello;world",
+        };
     }
 
     #[test]
@@ -617,9 +572,19 @@ mod tests {
                 );
             };
             (_, DEFAULT => $default:expr, UNNAMED => $unnamed:expr, NAMED($name:literal) => $named:expr $(,)?) => {
-                assert_eq!(Logger::builder().build_default().level_filter(), $default);
-                assert_eq!(Logger::builder().build().level_filter(), $unnamed);
-                assert_eq!(Logger::builder().name($name).build().level_filter(), $named);
+                assert_eq!(
+                    Logger::builder().build_default().unwrap().level_filter(),
+                    $default
+                );
+                assert_eq!(Logger::builder().build().unwrap().level_filter(), $unnamed);
+                assert_eq!(
+                    Logger::builder()
+                        .name($name)
+                        .build()
+                        .unwrap()
+                        .level_filter(),
+                    $named
+                );
             };
         }
 

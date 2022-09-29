@@ -64,7 +64,8 @@ where
     let logger = Logger::builder()
         .name("logger_name")
         .sink(sink.clone())
-        .build();
+        .build()
+        .unwrap();
     error!(logger: logger, "record_payload");
 
     let (msg, style_range) = sink.get_last_msg().unwrap();
@@ -166,7 +167,8 @@ fn test_builtin_patterns() {
         let logger = Logger::builder()
             .sink(sink.clone())
             .name("logger-name")
-            .build();
+            .build()
+            .unwrap();
 
         info!(logger: logger, "test payload");
 

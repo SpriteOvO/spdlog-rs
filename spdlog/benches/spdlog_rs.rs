@@ -74,7 +74,7 @@ fn bench_any(bencher: &mut Bencher, mode: Mode, sink: Arc<dyn Sink>) {
     logger_builder
         .error_handler(mode.error_handler())
         .sink(mode.final_sink(sink));
-    let logger = logger_builder.build();
+    let logger = logger_builder.build().unwrap();
 
     bencher.iter(|| info!(logger: logger, bench_log_message!()))
 }
@@ -129,7 +129,10 @@ fn bench_4_rotating_daily(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_5_level_off(bencher: &mut Bencher) {
-    let logger = Logger::builder().level_filter(LevelFilter::Off).build();
+    let logger = Logger::builder()
+        .level_filter(LevelFilter::Off)
+        .build()
+        .unwrap();
 
     bencher.iter(|| info!(logger: logger, bench_log_message!()))
 }

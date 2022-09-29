@@ -12,7 +12,7 @@ fn main() -> Result<(), spdlog::Error> {
 
     // Building a logger uses the `file_sink`.
     // All logs to this logger will be written to file "example_logs/file_sink.log".
-    let logger: Arc<Logger> = Arc::new(Logger::builder().sink(file_sink).build());
+    let logger: Arc<Logger> = Arc::new(Logger::builder().sink(file_sink).build()?);
 
     // Usually, if flush is relatively expensive for sinks, they do not
     // automatically flush on verbose levels by default, or even never,

@@ -213,7 +213,8 @@ mod tests {
         let logger = test_logger_builder()
             .sink(sink.clone())
             .level_filter(LevelFilter::All)
-            .build();
+            .build()
+            .unwrap();
 
         info!(logger: logger, "hello WriteSink");
 
