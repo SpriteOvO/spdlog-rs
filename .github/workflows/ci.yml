@@ -25,34 +25,36 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
     - name: Install nightly
       run: |
         rustup toolchain install nightly
         rustup component add rustfmt --toolchain nightly
-    - name: Cache cargo directories
+    - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
     - name: Check formatting
-      run: cargo +nightly fmt --all -- --check
+      run: cargo +nightly fmt --all --verbose -- --check
 
   test:
     strategy:
       matrix:
-        os: ['ubuntu-latest', 'windows-latest']
+        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
         features: ['', 'flexible-string', 'source-location']
     env:
       ADD_FEATURES: 'log native multi-thread'
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt install libsystemd-dev
-    - name: Cache cargo directories
+    - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
     - name: Run tests with additional features
       if: matrix.features == ''
-      run: cargo test --features "${{ env.ADD_FEATURES }}"
+      run: cargo test --features "${{ env.ADD_FEATURES }}" --verbose
     - name: Run tests with additional and specified features
       if: matrix.features != ''
       run: cargo test --features "${{ env.ADD_FEATURES }} ${{ matrix.features }}" --verbose
@@ -60,10 +62,11 @@ jobs:
   clippy:
     strategy:
       matrix:
-        os: ['ubuntu-latest', 'windows-latest']
+        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt install libsystemd-dev
@@ -71,7 +74,7 @@ jobs:
       run: |
         rustup toolchain install nightly
         rustup component add clippy --toolchain nightly
-    - name: Cache cargo directories
+    - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
     - name: Run clippy 
       run: cargo clippy --all-features --tests --examples -- -D warnings
@@ -81,29 +84,31 @@ jobs:
   check-doc:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
     - name: Install dependencies
       run: sudo apt install libsystemd-dev
     - name: Install nightly
       run: rustup toolchain install nightly
-    - name: Cache cargo directories
+    - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
     - name: Run rustdoc
       run: |
         cd spdlog
-        cargo +nightly rustdoc --all-features -- -D warnings
+        cargo +nightly rustdoc --all-features --verbose -- -D warnings
         cd ../spdlog-macros
-        cargo +nightly rustdoc --all-features -- -D warnings
+        cargo +nightly rustdoc --all-features --verbose -- -D warnings
 
   check-minver:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
     - name: Install dependencies
       run: sudo apt install libsystemd-dev
     - name: Install Rust ${{ env.rust_minver }}
       run: rustup toolchain install ${{ env.rust_minver }}
-    - name: Cache cargo directories
+    - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
     - name: Run check for core with Rust ${{ env.rust_minver }}
-      run: cargo +${{ env.rust_minver }} check --all-features
+      run: cargo +${{ env.rust_minver }} check --all-features --verbose
