@@ -68,7 +68,7 @@ pub struct Logger {
     sinks: Sinks,
     flush_level_filter: Atomic<LevelFilter>,
     error_handler: SpinRwLock<Option<ErrorHandler>>,
-    periodic_flusher: Mutex<Option<PeriodicWorker>>,
+    periodic_flusher: Mutex<Option<(Duration, PeriodicWorker)>>,
 }
 
 impl Logger {
@@ -245,7 +245,7 @@ impl Logger {
                           // worker thread.
                 }
             };
-            *periodic_flusher = Some(PeriodicWorker::new(callback, interval));
+            *periodic_flusher = Some((interval, PeriodicWorker::new(callback, interval)));
         }
     }
 
@@ -276,6 +276,100 @@ impl Logger {
     /// ```
     pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
         *self.error_handler.write() = handler;
+    }
+
+    /// Fork and configure a separate new logger.
+    ///
+    /// This function creates a new logger object that inherits logger
+    /// properties from `Arc<Self>`. Then this function calls the given
+    /// `modifier` function which configures the properties on the new
+    /// logger object. The created new logger object will be a separate
+    /// object from `Arc<Self>`. (No ownership sharing)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::sync::Arc;
+    /// # use spdlog::{prelude::*, sink::WriteSink};
+    /// #
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let test_sink = Arc::new(WriteSink::builder().target(vec![]).build().unwrap());
+    /// let old: Arc<Logger> = /* ... */
+    /// # Arc::new(Logger::builder().build().unwrap());
+    /// // Fork from an existing logger and add a new sink.
+    /// # let new_sink = test_sink.clone();
+    /// let new: Arc<Logger> = old.fork_with(|new: &mut Logger| {
+    ///     new.sinks_mut().push(new_sink);
+    ///     Ok(())
+    /// })?;
+    ///
+    /// # info!(logger: new, "first line");
+    /// info!(logger: new, "this record will be written to `new_sink`");
+    /// # assert_eq!(String::from_utf8(test_sink.clone_target()).unwrap().lines().count(), 2);
+    /// info!(logger: old, "this record will not be written to `new_sink`");
+    /// # assert_eq!(String::from_utf8(test_sink.clone_target()).unwrap().lines().count(), 2);
+    /// # Ok(()) }
+    /// ```
+    pub fn fork_with<F>(self: &Arc<Self>, modifier: F) -> Result<Arc<Self>>
+    where
+        F: FnOnce(&mut Logger) -> Result<()>,
+    {
+        let flush_period = self.periodic_flusher.lock_expect().as_ref().map(|v| v.0);
+
+        let mut new_logger = self.clone_lossy();
+        modifier(&mut new_logger)?;
+
+        let new_logger = Arc::new(new_logger);
+        if let Some(interval) = flush_period {
+            new_logger.set_flush_period(Some(interval));
+        }
+
+        Ok(new_logger)
+    }
+
+    /// Fork a separate new logger with a new name.
+    ///
+    /// This function creates a new logger object that inherits logger
+    /// properties from `Arc<Self>` and rename the new logger object to the
+    /// given name. The created new logger object will be a separate object
+    /// from `Arc<Self>`. (No ownership sharing)
+    ///
+    /// This is a shorthand wrapper for [`Logger::fork_with`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use std::sync::Arc;
+    /// # use spdlog::prelude::*;
+    /// #
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let old: Arc<Logger> = Arc::new(Logger::builder().name("dog").build()?);
+    /// let new: Arc<Logger> = old.fork_with_name(Some("cat"))?;
+    ///
+    /// assert_eq!(old.name(), Some("dog"));
+    /// assert_eq!(new.name(), Some("cat"));
+    /// # Ok(()) }
+    /// ```
+    pub fn fork_with_name<S>(self: &Arc<Self>, new_name: Option<S>) -> Result<Arc<Self>>
+    where
+        S: Into<String>,
+    {
+        self.fork_with(|new| {
+            new.set_name(new_name)?;
+            Ok(())
+        })
+    }
+
+    // This will lose the periodic flush property, if any.
+    fn clone_lossy(&self) -> Self {
+        Logger {
+            name: self.name.clone(),
+            level_filter: Atomic::new(self.level_filter()),
+            sinks: self.sinks.clone(),
+            flush_level_filter: Atomic::new(self.flush_level_filter()),
+            periodic_flusher: Mutex::new(None),
+            error_handler: SpinRwLock::new(*self.error_handler.read()),
+        }
     }
 
     fn sink_record(&self, record: &Record) {
@@ -331,15 +425,7 @@ impl Clone for Logger {
                  clone a `Arc<Logger>` instead."
             );
         }
-
-        Logger {
-            name: self.name.clone(),
-            level_filter: Atomic::new(self.level_filter()),
-            sinks: self.sinks.clone(),
-            flush_level_filter: Atomic::new(self.flush_level_filter()),
-            periodic_flusher: Mutex::new(None),
-            error_handler: SpinRwLock::new(*self.error_handler.read()),
-        }
+        self.clone_lossy()
     }
 }
 
@@ -686,5 +772,90 @@ mod tests {
             UNNAMED => LevelFilter::All,
             NAMED("name") => LevelFilter::All,
         );
+    }
+
+    #[test]
+    fn fork_logger() {
+        let test_sink = (Arc::new(CounterSink::new()), Arc::new(CounterSink::new()));
+        let logger = Arc::new(
+            test_logger_builder()
+                .sink(test_sink.0.clone())
+                .build()
+                .unwrap(),
+        );
+
+        assert!(logger.name().is_none());
+        assert_eq!(test_sink.0.log_count(), 0);
+        assert_eq!(test_sink.0.flush_count(), 0);
+        assert_eq!(test_sink.1.log_count(), 0);
+        assert_eq!(test_sink.1.flush_count(), 0);
+
+        info!(logger: logger, "qwq");
+        assert!(logger.name().is_none());
+        assert_eq!(test_sink.0.log_count(), 1);
+        assert_eq!(test_sink.0.flush_count(), 0);
+        assert_eq!(test_sink.1.log_count(), 0);
+        assert_eq!(test_sink.1.flush_count(), 0);
+
+        let old = logger;
+        let new = old.fork_with_name(Some("cat")).unwrap();
+        info!(logger: new, "meow");
+        assert!(old.name().is_none());
+        assert_eq!(new.name(), Some("cat"));
+        assert_eq!(test_sink.0.log_count(), 2);
+        assert_eq!(test_sink.0.flush_count(), 0);
+        assert_eq!(test_sink.1.log_count(), 0);
+        assert_eq!(test_sink.1.flush_count(), 0);
+
+        let old = new;
+        let new = old
+            .fork_with(|new| {
+                new.set_name(Some("dog")).unwrap();
+                new.sinks_mut().push(test_sink.1.clone());
+                Ok(())
+            })
+            .unwrap();
+        info!(logger: new, "woof");
+        assert_eq!(old.name(), Some("cat"));
+        assert_eq!(new.name(), Some("dog"));
+        assert_eq!(test_sink.0.log_count(), 3);
+        assert_eq!(test_sink.0.flush_count(), 0);
+        assert_eq!(test_sink.1.log_count(), 1);
+        assert_eq!(test_sink.1.flush_count(), 0);
+
+        assert!(matches!(
+            new.fork_with_name(Some("invalid,name")),
+            Err(Error::SetLoggerName(_))
+        ));
+
+        assert!(new
+            .fork_with_name(None as Option<&str>)
+            .unwrap()
+            .name()
+            .is_none());
+
+        let test_sink = (Arc::new(CounterSink::new()), Arc::new(CounterSink::new()));
+        let old = Arc::new(
+            test_logger_builder()
+                .sink(test_sink.0.clone())
+                .build()
+                .unwrap(),
+        );
+        old.set_flush_period(Some(Duration::from_secs(1)));
+        std::thread::sleep(Duration::from_millis(1250));
+
+        let _new = old
+            .fork_with(|new| {
+                new.sinks_mut().clear();
+                new.sinks_mut().push(test_sink.1.clone());
+                Ok(())
+            })
+            .unwrap();
+        std::thread::sleep(Duration::from_millis(1250));
+
+        assert_eq!(test_sink.0.log_count(), 0);
+        assert_eq!(test_sink.0.flush_count(), 2);
+        assert_eq!(test_sink.1.log_count(), 0);
+        assert_eq!(test_sink.1.flush_count(), 1);
     }
 }
