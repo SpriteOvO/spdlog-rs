@@ -10,7 +10,12 @@ use test::black_box;
 use clap::Parser;
 use once_cell::sync::Lazy;
 
-use spdlog::{prelude::*, sink::*, Error, SendToChannelError, ThreadPool};
+use spdlog::{
+    error::{Error, SendToChannelError},
+    prelude::*,
+    sink::*,
+    ThreadPool,
+};
 
 required_multi_thread_feature!();
 

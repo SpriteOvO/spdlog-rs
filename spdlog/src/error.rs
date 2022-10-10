@@ -9,6 +9,8 @@ use thiserror::Error;
 #[cfg(feature = "multi-thread")]
 use crate::{sink::Task, RecordOwned};
 
+pub use crate::env_level::EnvLevelError;
+
 /// The error type of this crate.
 #[derive(Error, Debug)]
 #[non_exhaustive]

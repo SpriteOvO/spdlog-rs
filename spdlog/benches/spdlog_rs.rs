@@ -9,7 +9,12 @@ use test::Bencher;
 
 use once_cell::sync::Lazy;
 
-use spdlog::{prelude::*, sink::*, Error, ErrorHandler, SendToChannelError, ThreadPool};
+use spdlog::{
+    error::{Error, ErrorHandler, SendToChannelError},
+    prelude::*,
+    sink::*,
+    ThreadPool,
+};
 
 required_multi_thread_feature!();
 

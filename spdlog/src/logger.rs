@@ -4,10 +4,11 @@ use std::time::Duration;
 
 use crate::{
     env_level,
+    error::{BuildLoggerError, Error, ErrorHandler},
     periodic_worker::PeriodicWorker,
     sink::{Sink, Sinks},
     sync::*,
-    BuildLoggerError, Error, ErrorHandler, Level, LevelFilter, Record, Result,
+    Level, LevelFilter, Record, Result,
 };
 
 /// A logger structure.
