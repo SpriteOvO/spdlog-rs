@@ -21,6 +21,9 @@ use crate::{
 
 /// Rotation policies for [`RotatingFileSink`].
 ///
+/// For more information about rotating file sink and rotation policies, please
+/// refer to the documentation of [`RotatingFileSink`].
+///
 /// # Panics
 ///
 /// Note that some parameters have range requirements, functions that receive it
@@ -88,7 +91,53 @@ struct RotatorTimePointInner {
     file_paths: Option<LinkedList<PathBuf>>,
 }
 
-/// A sink with a file as the target, rotating according to the rotation policy.
+/// A sink with a collection of files as the target, rotating according to the
+/// rotation policy.
+///
+/// # Overview
+///
+/// A service program that runs for a long time in an environment with limited
+/// hard disk space may continue to write messages to the log file and
+/// eventually run out of hard disk space. `RotatingFileSink` is designed for
+/// such a usage scenario. It periodically removes old log messages and files
+/// from disk to make sure the hard disk won't be filled up by log files.
+///
+/// Each rotating file sink is created with a **base path** that points to a
+/// directory where log files will be managed. You can set the base path with
+/// [`RotatingFileSinkBuilder::base_path`] when building a rotating file sink.
+/// The rotating file sink automatically creates new log files and deletes old
+/// log files under the base path. The operation that creates new log files and
+/// (optionally) deletes old log files is called a **rotation**. When and how to
+/// rotate is determined by two parameters: the maximum number of log files
+/// allowed under the base path and the **rotation policy**.
+///
+/// # Maximum Number of Log Files
+///
+/// This parameter defines the maximum number of log files allowed under the
+/// base path. You can set this parameter with
+/// [`RotatingFileSinkBuilder::max_files`] when building a rotating file sink.
+/// During a rotation, the sink won't delete old log files unless the number of
+/// log files under the base path exceeds this limit. Furthermore, setting this
+/// parameter to 0 indicates that no limits are applied and effectively prevents
+/// the sink from deleting any old log files.
+///
+/// # Rotation Policy
+///
+/// [`RotationPolicy`] defines the different available rotation policies. You
+/// can set the rotation policy with
+/// [`RotatingFileSinkBuilder::rotation_policy`] when building a rotating file
+/// sink. Currently `spdlog` provides 3 different rotation policies:
+///
+/// - Rotate by file size, which is represented by the
+///   `RotationPolicy::FileSize` variant. Under this rotation policy, the sink
+///   won't rotate log files unless the size of the current log file exceeds a
+///   limit.
+/// - Rotate daily, which is represented by the `RotationPolicy::Daily` variant.
+///   Under this rotation policy, the sink automatically rotates log files at a
+///   specified time point within each consecutive day.
+/// - Rotate hourly, which is represented by the `RotationPolicy::Hourly`
+///   variant. Under this rotation policy, the sink automatically rotates log
+///   files at a specified time point within each consecutive hour.
 ///
 /// # Examples
 ///
@@ -109,7 +158,7 @@ pub struct RotatingFileSink {
 ///
 ///   ```no_run
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///  
+///
 ///   # fn main() -> Result<(), spdlog::Error> {
 ///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       .base_path("/path/to/base_log_file") // required
@@ -125,7 +174,7 @@ pub struct RotatingFileSink {
 ///
 ///   ```compile_fail,E0061
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///  
+///
 ///   # fn main() -> Result<(), spdlog::Error> {
 ///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       // .base_path("/path/to/base_log_file") // required
@@ -138,7 +187,7 @@ pub struct RotatingFileSink {
 ///
 ///   ```compile_fail,E0061
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///  
+///
 ///   # fn main() -> Result<(), spdlog::Error> {
 ///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       .base_path("/path/to/base_log_file") // required
