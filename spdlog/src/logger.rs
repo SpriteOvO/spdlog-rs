@@ -1,15 +1,38 @@
 //! Provides a logger structure.
 
-use std::time::Duration;
+use std::{result::Result as StdResult, time::Duration};
 
 use crate::{
     env_level,
-    error::{BuildLoggerError, Error, ErrorHandler},
+    error::{Error, ErrorHandler, SetLoggerNameError},
     periodic_worker::PeriodicWorker,
     sink::{Sink, Sinks},
     sync::*,
     Level, LevelFilter, Record, Result,
 };
+
+fn check_logger_name(name: impl AsRef<str>) -> StdResult<(), SetLoggerNameError> {
+    let name = name.as_ref();
+
+    if name.chars().any(|ch| {
+        ch == ','
+            || ch == '='
+            || ch == '*'
+            || ch == '?'
+            || ch == '$'
+            || ch == '{'
+            || ch == '}'
+            || ch == '"'
+            || ch == '\''
+            || ch == ';'
+    }) || name.starts_with(' ')
+        || name.ends_with(' ')
+    {
+        Err(SetLoggerNameError::new(name))
+    } else {
+        Ok(())
+    }
+}
 
 /// A logger structure.
 ///
@@ -59,6 +82,21 @@ impl Logger {
     /// Returns `None` if the logger does not have a name.
     pub fn name(&self) -> Option<&str> {
         self.name.as_ref().map(|s| s.as_ref())
+    }
+
+    /// Sets the logger name.
+    pub fn set_name<S>(&mut self, name: Option<S>) -> StdResult<(), SetLoggerNameError>
+    where
+        S: Into<String>,
+    {
+        if let Some(name) = name {
+            let name = name.into();
+            check_logger_name(&name)?;
+            self.name = Some(name);
+        } else {
+            self.name = None;
+        }
+        Ok(())
     }
 
     /// Determines if a log message with the specified level would be
@@ -410,24 +448,7 @@ impl LoggerBuilder {
 
     fn build_inner(&mut self, preset_level: Option<LevelFilter>) -> Result<Logger> {
         if let Some(name) = &self.name {
-            if name.chars().any(|ch| {
-                ch == ','
-                    || ch == '='
-                    || ch == '*'
-                    || ch == '?'
-                    || ch == '$'
-                    || ch == '{'
-                    || ch == '}'
-                    || ch == '"'
-                    || ch == '\''
-                    || ch == ';'
-            }) || name.starts_with(' ')
-                || name.ends_with(' ')
-            {
-                return Err(Error::BuildLogger(BuildLoggerError::InvalidName(
-                    name.into(),
-                )));
-            }
+            check_logger_name(name)?;
         }
 
         let logger = Logger {
@@ -545,8 +566,8 @@ mod tests {
         macro_rules! assert_name_err {
             ( $($name:literal),+ $(,)? ) => {
                 $(match LoggerBuilder::new().name($name).build() {
-                    Err(Error::BuildLogger(BuildLoggerError::InvalidName(name))) => {
-                        assert_eq!(name, $name)
+                    Err(Error::SetLoggerName(err)) => {
+                        assert_eq!(err.name(), $name)
                     }
                     _ => panic!("test case '{}' failed", $name),
                 })+

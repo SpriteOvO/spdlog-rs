@@ -1,6 +1,9 @@
 //! Provides error types.
 
-use std::{fmt, io, result};
+use std::{
+    fmt::{self, Display},
+    io, result,
+};
 
 use atomic::Atomic;
 use static_assertions::const_assert;
@@ -78,12 +81,15 @@ pub enum Error {
     #[error("attempted to convert a string that doesn't match an existing log level: {0}")]
     ParseLevel(String),
 
-    /// The variant returned by [`LoggerBuilder::build`] when an error occurs in
-    /// building a logger.
+    /// The variant returned if an error occurs in setting a invalid logger
+    /// name.
     ///
-    /// [`LoggerBuilder::build`]: crate::LoggerBuilder::build
-    #[error("failed to build a logger: {0}")]
-    BuildLogger(BuildLoggerError),
+    /// See the documentation of [`LoggerBuilder::name`] for the name
+    /// requirements.
+    ///
+    /// [`LoggerBuilder::name`]: crate::LoggerBuilder::name
+    #[error("failed to set logger name: {0}")]
+    SetLoggerName(#[from] SetLoggerNameError),
 
     /// The variant returned by [`Sink`]s when an error occurs in sending to the
     /// channel.
@@ -94,18 +100,31 @@ pub enum Error {
     SendToChannel(SendToChannelError, SendToChannelErrorDropped),
 }
 
-/// The more detailed error type of building a logger.
+/// This error indicates that an invalid logger name was set.
+///
+/// See the documentation of [`LoggerBuilder::name`] for the name requirements.
+///
+/// [`LoggerBuilder::name`]: crate::LoggerBuilder::name
 #[derive(Error, Debug)]
-#[non_exhaustive]
-pub enum BuildLoggerError {
-    /// The name of the logger is invalid.
-    ///
-    /// See the documentation of [`LoggerBuilder::name`] for the name
-    /// requirements.
-    ///
-    /// [`LoggerBuilder::name`]: crate::LoggerBuilder::name
-    #[error("invalid logger name: {0}")]
-    InvalidName(String),
+pub struct SetLoggerNameError {
+    name: String,
+}
+
+impl SetLoggerNameError {
+    pub(crate) fn new(name: impl Into<String>) -> Self {
+        Self { name: name.into() }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn name(&self) -> &str {
+        &self.name
+    }
+}
+
+impl Display for SetLoggerNameError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "name '{}' contains disallowed characters", self.name)
+    }
 }
 
 /// The more detailed error type of sending to channel.
