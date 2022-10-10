@@ -314,7 +314,7 @@ mod tests {
 
     #[test]
     fn async_opeartions() {
-        let counter_sink = Arc::new(CounterSink::with_delay(Some(Duration::from_millis(200))));
+        let counter_sink = Arc::new(CounterSink::with_delay(Some(Duration::from_millis(300))));
         // The default thread pool is not used here to avoid race when tests are run in
         // parallel.
         let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
@@ -338,7 +338,7 @@ mod tests {
         sleep(Duration::from_millis(100));
         assert_eq!(counter_sink.log_count(), 0);
         assert_eq!(counter_sink.flush_count(), 0);
-        sleep(Duration::from_millis(150));
+        sleep(Duration::from_millis(300));
         assert_eq!(counter_sink.log_count(), 1);
         assert_eq!(counter_sink.flush_count(), 0);
 
@@ -346,10 +346,10 @@ mod tests {
         sleep(Duration::from_millis(100));
         assert_eq!(counter_sink.log_count(), 1);
         assert_eq!(counter_sink.flush_count(), 0);
-        sleep(Duration::from_millis(150));
+        sleep(Duration::from_millis(300));
         assert_eq!(counter_sink.log_count(), 2);
         assert_eq!(counter_sink.flush_count(), 0);
-        sleep(Duration::from_millis(250));
+        sleep(Duration::from_millis(300));
         assert_eq!(counter_sink.log_count(), 2);
         assert_eq!(counter_sink.flush_count(), 1);
     }
