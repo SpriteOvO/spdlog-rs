@@ -21,6 +21,25 @@ use crate::{
 
 /// Rotation policies for [`RotatingFileSink`].
 ///
+/// Rotation policy defines when and how to split log messages into log files,
+/// during which new log files may be created and old log files may be deleted.
+/// Currently `spdlog` provides 3 different rotation policies:
+///
+/// - Rotate by file size, which is represented by the
+///   `RotationPolicy::FileSize` variant. Under this rotation policy, the sink
+///   rotates log messages when the size of the current log file exceeds a
+///   limit. The sink will then create a new log file for further log messages
+///   and may optionally delete the oldest log files depending on the maximum
+///   number of files allowed.
+/// - Rotate daily, which is represented by the `RotationPolicy::Daily` variant.
+///   Under this rotation policy, the sink automatically creates a new log file
+///   at a specified time point within a day. The oldest log files may be
+///   deleted, depending on the maximum number of allowed log files.
+/// - Rotate hourly, which is represented by the `RotationPolicy::Hourly`
+///   variant. Under this rotation policy, the sink automatically creates a new
+///   log file at a specified time point within each hour. The oldest log files
+///   may be deleted, depending on the maximum number of allowed log files.
+///
 /// # Panics
 ///
 /// Note that some parameters have range requirements, functions that receive it
@@ -88,7 +107,49 @@ struct RotatorTimePointInner {
     file_paths: Option<LinkedList<PathBuf>>,
 }
 
-/// A sink with a file as the target, rotating according to the rotation policy.
+/// A sink with a collection of files as the target, rotating according to the
+/// rotation policy.
+///
+/// A service program that runs for a long time in an environment with limited
+/// hard disk space may continue to write messages to the log file and
+/// eventually run out of hard disk space. `RotatingFileSink` is designed for
+/// such a usage scenario. It splits log messages into one or more log files
+/// and may be configured to delete old log files automatically to save disk
+/// space. The operation that splits log messages into multiple log files and
+/// optionally creates and deletes log files is called a **rotation**. The
+/// **rotation policy** determines when and how log files are created or
+/// deleted, and how log messages are written to different log files.
+///
+/// # Parameters
+///
+/// A rotating file sink can be created with 3 parameters: the **base path**,
+/// the **maximum number of log files**, and the **rotation policy**.
+///
+/// ## The Base Path
+///
+/// Each rotating file sink requires a **base path** which serves as a template
+/// to form log file paths. You can set the base path with
+/// [`RotatingFileSinkBuilder::base_path`] when building a rotating file sink.
+/// Different rotation policy may use different file name patterns based on the
+/// base path. For more information about the base path, see the documentation
+/// of [`RotatingFileSinkBuilder::base_path`].
+///
+/// # Maximum Number of Log Files
+///
+/// This parameter defines the maximum number of log files allowed on the disk.
+/// You can set this parameter with [`RotatingFileSinkBuilder::max_files`] when
+/// building a rotating file sink. During a rotation, the sink won't delete old
+/// log files unless the number of log files on the disk exceeds this
+/// limit. Furthermore, setting this parameter to 0 indicates that no limits are
+/// applied and effectively prevents the sink from deleting any old log files.
+///
+/// # Rotation Policy
+///
+/// [`RotationPolicy`] defines the different available rotation policies. You
+/// can set the rotation policy with
+/// [`RotatingFileSinkBuilder::rotation_policy`] when building a rotating file
+/// sink. For more information about different rotation policies, please refer
+/// to the documentation of [`RotationPolicy`].
 ///
 /// # Examples
 ///
@@ -109,7 +170,7 @@ pub struct RotatingFileSink {
 ///
 ///   ```no_run
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///  
+///
 ///   # fn main() -> Result<(), spdlog::Error> {
 ///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       .base_path("/path/to/base_log_file") // required
@@ -125,7 +186,7 @@ pub struct RotatingFileSink {
 ///
 ///   ```compile_fail,E0061
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///  
+///
 ///   # fn main() -> Result<(), spdlog::Error> {
 ///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       // .base_path("/path/to/base_log_file") // required
@@ -138,7 +199,7 @@ pub struct RotatingFileSink {
 ///
 ///   ```compile_fail,E0061
 ///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///  
+///
 ///   # fn main() -> Result<(), spdlog::Error> {
 ///   let sink: RotatingFileSink = RotatingFileSink::builder()
 ///       .base_path("/path/to/base_log_file") // required
