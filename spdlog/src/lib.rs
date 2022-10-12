@@ -194,7 +194,7 @@
 #![warn(missing_docs)]
 
 mod env_level;
-mod error;
+pub mod error;
 pub mod formatter;
 mod level;
 #[cfg(feature = "log")]
@@ -215,8 +215,7 @@ mod test_utils;
 mod thread_pool;
 mod utils;
 
-pub use env_level::EnvLevelError;
-pub use error::*;
+pub use error::{Error, ErrorHandler, Result};
 pub use level::*;
 #[cfg(feature = "log")]
 pub use log_crate_proxy::*;
@@ -242,6 +241,7 @@ use std::{
 
 use cfg_if::cfg_if;
 
+use error::EnvLevelError;
 use sink::{
     Sink, {StdStream, StdStreamSink},
 };
@@ -523,16 +523,10 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///
 ///   ```
 ///   # std::env::set_var("SPDLOG_RS_LEVEL", "network=Warn,network=Warn");
-///   let result = spdlog::init_env_level();
-///   # // TODO: commented out since `assert_matches` is currently unstable.
-///   # //       change to use `assert_matches` when it is stable.
-///   # // assert_matches!(result, Err(spdlog::EnvLevelError::ParseEnvVar(_)));
-///   if let Err(spdlog::EnvLevelError::ParseEnvVar(_)) = result {
-///       // expected
-///   } else {
-///       // unexpected
-///       assert!(false);
-///   }
+///   assert!(matches!(
+///       spdlog::init_env_level(),
+///       Err(spdlog::error::EnvLevelError::ParseEnvVar(_))
+///   ));
 ///   ```
 pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
     init_env_level_from("SPDLOG_RS_LEVEL")
