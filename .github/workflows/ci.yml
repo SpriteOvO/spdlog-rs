@@ -40,9 +40,8 @@ jobs:
     strategy:
       matrix:
         os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        features: ['', 'flexible-string', 'source-location']
-    env:
-      ADD_FEATURES: 'log native multi-thread'
+        fn_features: ['', 'log native multi-thread']
+        cfg_feature: ['', 'flexible-string', 'source-location']
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
@@ -52,12 +51,8 @@ jobs:
       run: sudo apt install libsystemd-dev
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
-    - name: Run tests with additional features
-      if: matrix.features == ''
-      run: cargo test --features "${{ env.ADD_FEATURES }}" --verbose
-    - name: Run tests with additional and specified features
-      if: matrix.features != ''
-      run: cargo test --features "${{ env.ADD_FEATURES }} ${{ matrix.features }}" --verbose
+    - name: Run tests
+      run: cargo test --features "${{ env.fn_features }} ${{ matrix.cfg_feature }}" --verbose
 
   clippy:
     strategy:

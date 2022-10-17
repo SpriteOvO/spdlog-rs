@@ -92,3 +92,7 @@ harness = false
 [[example]]
 name = "06_compatible_with_log_crate"
 required-features = ["log"]
+
+[[example]]
+name = "07_async_pool_sink"
+required-features = ["multi-thread"]
