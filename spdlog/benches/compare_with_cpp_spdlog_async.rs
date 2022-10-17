@@ -12,6 +12,7 @@ use once_cell::sync::Lazy;
 
 use spdlog::{
     error::{Error, SendToChannelError},
+    formatter::{pattern, PatternFormatter},
     prelude::*,
     sink::*,
     ThreadPool,
@@ -146,6 +147,14 @@ fn main() {
     if args.queue_size.is_none() {
         args.queue_size = Some(cmp::min(args.message_count + 2, 8192));
     }
+
+    let formatter = Box::new(PatternFormatter::new(pattern!(
+        "[{^{level}}] {payload}{eol}"
+    )));
+    spdlog::default_logger()
+        .sinks()
+        .iter()
+        .for_each(|sink| sink.set_formatter(formatter.clone()));
 
     const SLOT_SIZE: usize = spdlog::RecordOwned::__SIZE_OF;
     let queue_size = args.queue_size.unwrap();

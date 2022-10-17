@@ -11,6 +11,7 @@ use clap::Parser;
 use once_cell::sync::Lazy;
 
 use spdlog::{
+    formatter::{pattern, PatternFormatter},
     info,
     sink::{RotationPolicy, *},
     LevelFilter, Logger,
@@ -121,6 +122,14 @@ struct Args {
 
 fn main() {
     let args = Args::parse_from(env::args().filter(|arg| arg != "--bench"));
+
+    let formatter = Box::new(PatternFormatter::new(pattern!(
+        "[{^{level}}] {payload}{eol}"
+    )));
+    spdlog::default_logger()
+        .sinks()
+        .iter()
+        .for_each(|sink| sink.set_formatter(formatter.clone()));
 
     bench_threaded_logging(1, args.iters);
     bench_threaded_logging(args.threads, args.iters);
