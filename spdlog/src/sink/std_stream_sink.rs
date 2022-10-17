@@ -272,7 +272,34 @@ impl StdStreamSinkBuilder<StdStream> {
 // --------------------------------------------------
 #[cfg(windows)]
 fn enable_ansi_escape_sequences() -> bool {
-    crossterm::ansi_support::supports_ansi()
+    fn enable() -> bool {
+        use winapi::um::{
+            consoleapi::{GetConsoleMode, SetConsoleMode},
+            handleapi::INVALID_HANDLE_VALUE,
+            processenv::GetStdHandle,
+            winbase::STD_OUTPUT_HANDLE,
+            wincon::ENABLE_VIRTUAL_TERMINAL_PROCESSING,
+        };
+
+        let stdout_handle = unsafe { GetStdHandle(STD_OUTPUT_HANDLE) };
+        if stdout_handle == INVALID_HANDLE_VALUE {
+            return false;
+        }
+
+        let mut original_mode = 0;
+        if unsafe { GetConsoleMode(stdout_handle, &mut original_mode) } == 0 {
+            return false;
+        }
+
+        let new_mode = original_mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+        (unsafe { SetConsoleMode(stdout_handle, new_mode) }) != 0
+    }
+
+    use once_cell::sync::OnceCell;
+
+    static INIT: OnceCell<bool> = OnceCell::new();
+
+    *INIT.get_or_init(enable)
 }
 
 #[cfg(not(windows))]

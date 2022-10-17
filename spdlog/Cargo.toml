@@ -53,7 +53,6 @@ static_assertions = "1.1.0"
 thiserror = "1.0.30"
 
 [target.'cfg(windows)'.dependencies]
-crossterm = "0.23.0"
 winapi = { version = "0.3.9", features = ["debugapi", "processthreadsapi"] }
 
 [target.'cfg(unix)'.dependencies]
