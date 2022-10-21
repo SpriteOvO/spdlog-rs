@@ -73,6 +73,22 @@ fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io
 /// | `Info`     | `info`    |
 /// | `Debug`    | `debug`   |
 /// | `Trace`    | `debug`   |
+///
+/// # Note
+///
+/// It requires an additional system dependency `libsystemd`.
+///
+/// ## Install on Ubuntu / Debian
+///
+/// ```
+/// apt install libsystemd-dev
+/// ```
+///
+/// ## Install on ArchLinux
+///
+/// ```
+/// pacman -S systemd
+/// ```
 pub struct JournalSink {
     common_impl: helper::CommonImpl,
 }
