@@ -1,7 +1,7 @@
 use std::{io, os::raw::c_int};
 
 use crate::{
-    formatter::JournalFormatter,
+    formatter::JournaldFormatter,
     sink::{helper, Sink},
     Error, Level, Record, Result, StdResult, StringBuf,
 };
@@ -61,11 +61,11 @@ fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io
     }
 }
 
-/// A sink with systemd journal as the target.
+/// A sink with systemd-journal as the target.
 ///
 /// # Log Level Mapping
 ///
-/// | spdlog-rs  |  journal  |
+/// | spdlog-rs  | journald  |
 /// |------------|-----------|
 /// | `Critical` | `crit`    |
 /// | `Error`    | `err`     |
@@ -89,22 +89,22 @@ fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io
 /// ```
 /// pacman -S systemd
 /// ```
-pub struct JournalSink {
+pub struct JournaldSink {
     common_impl: helper::CommonImpl,
 }
 
-impl JournalSink {
+impl JournaldSink {
     const SYSLOG_LEVELS: SyslogLevels = SyslogLevels::new();
 
-    /// Constructs a builder of `JournalSink`.
-    pub fn builder() -> JournalSinkBuilder {
-        JournalSinkBuilder {
+    /// Constructs a builder of `JournaldSink`.
+    pub fn builder() -> JournaldSinkBuilder {
+        JournaldSinkBuilder {
             common_builder_impl: helper::CommonBuilderImpl::new(),
         }
     }
 }
 
-impl Sink for JournalSink {
+impl Sink for JournaldSink {
     fn log(&self, record: &Record) -> Result<()> {
         if !self.should_log(record.level()) {
             return Ok(());
@@ -120,7 +120,7 @@ impl Sink for JournalSink {
             format!("MESSAGE={}", string_buf),
             format!(
                 "PRIORITY={}",
-                JournalSink::SYSLOG_LEVELS.level(record.level()) as u32
+                JournaldSink::SYSLOG_LEVELS.level(record.level()) as u32
             ),
         ];
 
@@ -142,34 +142,34 @@ impl Sink for JournalSink {
     helper::common_impl!(@Sink: common_impl);
 }
 
-/// The builder of [`JournalSink`].
+/// The builder of [`JournaldSink`].
 ///
 /// # Examples
 ///
-/// - Building a [`JournalSink`].
+/// - Building a [`JournaldSink`].
 ///
 ///   ```
-///   use spdlog::{prelude::*, sink::JournalSink};
+///   use spdlog::{prelude::*, sink::JournaldSink};
 ///  
 ///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: JournalSink = JournalSink::builder()
+///   let sink: JournaldSink = JournaldSink::builder()
 ///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
 ///       .build()?;
 ///   # Ok(()) }
 ///   ```
-pub struct JournalSinkBuilder {
+pub struct JournaldSinkBuilder {
     common_builder_impl: helper::CommonBuilderImpl,
 }
 
-impl JournalSinkBuilder {
+impl JournaldSinkBuilder {
     helper::common_impl!(@SinkBuilder: common_builder_impl);
 
-    /// Builds a [`JournalSink`].
-    pub fn build(self) -> Result<JournalSink> {
-        let sink = JournalSink {
+    /// Builds a [`JournaldSink`].
+    pub fn build(self) -> Result<JournaldSink> {
+        let sink = JournaldSink {
             common_impl: helper::CommonImpl::from_builder_with_formatter(
                 self.common_builder_impl,
-                || Box::new(JournalFormatter::new()),
+                || Box::new(JournaldFormatter::new()),
             ),
         };
         Ok(sink)

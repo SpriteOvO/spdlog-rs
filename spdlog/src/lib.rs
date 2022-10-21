@@ -123,10 +123,10 @@
 //!  - `log` see [Compatible with log crate](#compatible-with-log-crate) above.
 //!
 //!  - `native` enables platform-specific components, such as
-//!    [`sink::WinDebugSink`], [`sink::JournalSink`], etc. Note If the component
-//!    requires additional system dependencies, then more granular features need
-//!    to be enabled as well. See the documentation of the component for these
-//!    details.
+//!    [`sink::WinDebugSink`], [`sink::JournaldSink`], etc. Note If the
+//!    component requires additional system dependencies, then more granular
+//!    features need to be enabled as well. See the documentation of the
+//!    component for these details.
 //!
 //! # Supported Rust Versions
 //!

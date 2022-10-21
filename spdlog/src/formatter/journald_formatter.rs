@@ -10,9 +10,9 @@ use crate::{
 };
 
 #[derive(Clone)]
-pub(crate) struct JournalFormatter {}
+pub(crate) struct JournaldFormatter {}
 
-impl JournalFormatter {
+impl JournaldFormatter {
     pub(crate) fn new() -> Self {
         Self {}
     }
@@ -51,7 +51,7 @@ impl JournalFormatter {
     }
 }
 
-impl Formatter for JournalFormatter {
+impl Formatter for JournaldFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
         self.format_impl(record, dest).map_err(Error::FormatRecord)
     }
@@ -61,7 +61,7 @@ impl Formatter for JournalFormatter {
     }
 }
 
-impl Default for JournalFormatter {
+impl Default for JournaldFormatter {
     fn default() -> Self {
         Self::new()
     }

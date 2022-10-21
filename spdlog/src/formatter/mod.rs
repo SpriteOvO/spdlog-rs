@@ -9,7 +9,7 @@ mod full_formatter;
     all(target_os = "linux", feature = "native", feature = "libsystemd"),
     all(doc, not(doctest))
 ))]
-mod journal_formatter;
+mod journald_formatter;
 mod local_time_cacher;
 mod pattern_formatter;
 
@@ -18,7 +18,7 @@ pub use full_formatter::*;
     all(target_os = "linux", feature = "native", feature = "libsystemd"),
     all(doc, not(doctest))
 ))]
-pub(crate) use journal_formatter::*;
+pub(crate) use journald_formatter::*;
 pub(crate) use local_time_cacher::*;
 pub use pattern_formatter::*;
 
