@@ -1,4 +1,7 @@
 // TODO: Remove this file, use `PatternFormatter` instead
+//
+// Need to keep waiting for conditional space and brackets to be supported in
+// pattern template strings (optional fields require these, e.g. `logger_name`)
 
 use std::fmt::{self, Write};
 

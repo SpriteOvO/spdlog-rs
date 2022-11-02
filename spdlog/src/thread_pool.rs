@@ -149,9 +149,6 @@ pub(crate) fn default_thread_pool() -> Arc<ThreadPool> {
 
     let mut pool_weak = POOL_WEAK.lock_expect();
 
-    // False positive in cargo clippy nightly.
-    // Issue: https://github.com/rust-lang/rust-clippy/issues/8963
-    #[allow(unknown_lints, clippy::significant_drop_in_scrutinee)]
     match pool_weak.upgrade() {
         Some(pool) => pool,
         None => {

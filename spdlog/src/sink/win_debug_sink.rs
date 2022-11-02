@@ -28,8 +28,7 @@ impl WinDebugSink {
 
 impl Sink for WinDebugSink {
     fn log(&self, record: &Record) -> Result<()> {
-        // TODO: Remove this `cfg` after Rustdoc fixed https://github.com/rust-lang/rust/issues/97976
-        #[cfg(windows)]
+        #[cfg(windows)] // https://github.com/rust-lang/rust/issues/97976
         use std::os::windows::ffi::OsStrExt;
 
         if !self.should_log(record.level()) {

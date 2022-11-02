@@ -27,7 +27,7 @@ fn main() -> Result<(), spdlog::Error> {
 
     let by_size: Arc<RotatingFileSink> = Arc::new(
         RotatingFileSink::builder()
-            .base_path(&path_by_size)
+            .base_path(path_by_size)
             .rotation_policy(RotationPolicy::FileSize(1024 * 10))
             .rotate_on_open(true)
             .build()?,
@@ -35,7 +35,7 @@ fn main() -> Result<(), spdlog::Error> {
 
     let hourly: Arc<RotatingFileSink> = Arc::new(
         RotatingFileSink::builder()
-            .base_path(&path_hourly)
+            .base_path(path_hourly)
             .rotation_policy(RotationPolicy::Hourly)
             .rotate_on_open(true)
             .build()?,
@@ -43,7 +43,7 @@ fn main() -> Result<(), spdlog::Error> {
 
     let daily: Arc<RotatingFileSink> = Arc::new(
         RotatingFileSink::builder()
-            .base_path(&path_daily)
+            .base_path(path_daily)
             .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
             .rotate_on_open(true)
             .build()?,

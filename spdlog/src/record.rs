@@ -19,8 +19,9 @@ use crate::{Level, SourceLocation};
 /// [`Logger::log`]: crate::logger::Logger::log
 /// [`Sink::log`]: crate::sink::Sink::log
 /// [`log!`]: crate::log
-// TODO: `Record` still owns some data and not just a reference, I'm not sure this is necessary to
-// correct.
+//
+// FIXME: `Record` still owns some data and not just a reference, I'm not sure this is necessary and
+// possible to correct.
 #[derive(Clone, Debug)]
 pub struct Record<'a> {
     logger_name: Option<&'a str>,

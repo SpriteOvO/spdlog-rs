@@ -1,9 +1,6 @@
 //! Provides a full info formatter.
 
-use std::{
-    fmt::{self, Write},
-    marker::PhantomData,
-};
+use std::fmt::{self, Write};
 
 use cfg_if::cfg_if;
 
@@ -31,24 +28,17 @@ use crate::{
 ///    `[2021-12-23 01:23:45.067] [info] [mod::path, src/main.rs:2] log message`
 #[derive(Clone)]
 pub struct FullFormatter {
-    _phantom: PhantomData<()>,
     with_eol: bool,
 }
 
 impl FullFormatter {
     /// Constructs a `FullFormatter`.
     pub fn new() -> FullFormatter {
-        FullFormatter {
-            _phantom: PhantomData,
-            with_eol: true,
-        }
+        FullFormatter { with_eol: true }
     }
 
     pub(crate) fn without_eol() -> Self {
-        Self {
-            _phantom: PhantomData,
-            with_eol: false,
-        }
+        Self { with_eol: false }
     }
 
     fn format_impl(

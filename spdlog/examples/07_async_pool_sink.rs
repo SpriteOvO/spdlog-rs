@@ -9,8 +9,7 @@ fn main() -> Result<(), spdlog::Error> {
     const LOG_FILE: &str = "logs/async_file_sink.log";
 
     let path: PathBuf = env::current_exe().unwrap().parent().unwrap().join(LOG_FILE);
-    let file_sink: Arc<FileSink> =
-        Arc::new(FileSink::builder().path(&path).truncate(true).build()?);
+    let file_sink: Arc<FileSink> = Arc::new(FileSink::builder().path(path).truncate(true).build()?);
 
     // Building a `AsyncPoolSink`.
     // Log and flush operations with this sink will be processed asynchronously.

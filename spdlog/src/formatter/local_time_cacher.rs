@@ -239,7 +239,6 @@ impl<'a> TimeDate<'a> {
         })
     }
 
-    #[allow(dead_code)] // TODO: Remove this attr when it is used somewhere
     pub(crate) fn nanosecond(&self) -> u32 {
         self.nanosecond
     }
