@@ -8,6 +8,7 @@ use std::{
     hash::Hash,
     io::{BufWriter, Write},
     path::{Path, PathBuf},
+    result::Result as StdResult,
     time::{Duration, SystemTime},
 };
 
@@ -40,10 +41,10 @@ use crate::{
 ///   log file at a specified time point within each hour. The oldest log files
 ///   may be deleted, depending on the maximum number of allowed log files.
 ///
-/// # Panics
+/// # Errors
 ///
 /// Note that some parameters have range requirements, functions that receive it
-/// will panic if the requirements are not met.
+/// will return an error if the requirements are not met.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RotationPolicy {
     /// Rotates when the log file reaches the given max file size.
@@ -314,28 +315,29 @@ impl Drop for RotatingFileSink {
 }
 
 impl RotationPolicy {
-    fn validate(&self) {
+    fn validate(&self) -> StdResult<(), String> {
         match self {
             Self::FileSize(max_size) => {
                 if *max_size == 0 {
-                    panic!(
+                    return Err(format!(
                         "invalid rotation policy. (FileSize) \
                          expect `max_size` to be (0, u64::MAX] but {}",
                         *max_size
-                    );
+                    ));
                 }
             }
             Self::Daily { hour, minute } => {
                 if *hour > 23 || *minute > 59 {
-                    panic!(
+                    return Err(format!(
                         "invalid rotation policy. (Daily) \
                          expect (`hour`, `minute`) to be ([0, 23], [0, 59]) but ({}, {})",
                         *hour, *minute
-                    );
+                    ));
                 }
             }
             Self::Hourly => {}
         }
+        Ok(())
     }
 }
 
@@ -822,15 +824,13 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
     ///
     /// # Errors
     ///
-    /// If an error occurs opening the file, [`Error::CreateDirectory`] or
-    /// [`Error::OpenFile`] will be returned.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the parameter `rotation_policy` is invalid. See the
-    /// documentation of [`RotationPolicy`] for requirements.
+    /// If the argument `rotation_policy` is invalid, or an error occurs opening
+    /// the file, [`Error::CreateDirectory`] or [`Error::OpenFile`] will be
+    /// returned.
     pub fn build(self) -> Result<RotatingFileSink> {
-        self.rotation_policy.validate();
+        self.rotation_policy
+            .validate()
+            .map_err(Error::SetRotationPolicy)?;
 
         let rotator = match self.rotation_policy {
             RotationPolicy::FileSize(max_size) => RotatorKind::FileSize(RotatorFileSize::new(
@@ -1265,5 +1265,26 @@ mod tests {
                 .rotate_on_open(true)
                 .build();
         };
+    }
+
+    #[test]
+    fn test_invalid_rotation_policy() {
+        use RotationPolicy::*;
+
+        fn daily(hour: u32, minute: u32) -> RotationPolicy {
+            Daily { hour, minute }
+        }
+
+        assert!(FileSize(1).validate().is_ok());
+        assert!(FileSize(1024).validate().is_ok());
+        assert!(FileSize(u64::MAX).validate().is_ok());
+        assert!(FileSize(0).validate().is_err());
+
+        assert!(daily(0, 0).validate().is_ok());
+        assert!(daily(15, 30).validate().is_ok());
+        assert!(daily(23, 59).validate().is_ok());
+        assert!(daily(24, 59).validate().is_err());
+        assert!(daily(23, 60).validate().is_err());
+        assert!(daily(24, 60).validate().is_err());
     }
 }

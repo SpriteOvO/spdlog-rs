@@ -91,6 +91,15 @@ pub enum Error {
     #[error("failed to set logger name: {0}")]
     SetLoggerName(#[from] SetLoggerNameError),
 
+    /// The variant returned if an error occurs in setting an invalid
+    /// [`RotationPolicy`].
+    ///
+    /// See the documentation of [`RotationPolicy`] for the input requirements.
+    ///
+    /// [`RotationPolicy`]: crate::sink::RotationPolicy
+    #[error("failed to set rotation policy: {0}")]
+    SetRotationPolicy(String),
+
     /// The variant returned by [`Sink`]s when an error occurs in sending to the
     /// channel.
     ///
