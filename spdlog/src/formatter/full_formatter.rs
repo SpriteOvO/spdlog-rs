@@ -9,6 +9,7 @@ use crate::{
     Error, Record, StringBuf, EOL,
 };
 
+#[rustfmt::skip]
 /// A full info log records formatter.
 ///
 /// It is the default formatter for sinks.
@@ -17,15 +18,21 @@ use crate::{
 ///
 ///  - Default:
 ///
-///    `[2021-12-23 01:23:45.067] [info] log message`
+///    <pre>
+///    [2022-11-02 09:23:12.263] [<font color="#11D116">info</font>] hello, world!
+///    </pre>
 ///
 ///  - If the logger has a name:
 ///
-///    `[2021-12-23 01:23:45.067] [logger-name] [info] log message`
-///
+///    <pre>
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#11D116">info</font>] hello, world!
+///    </pre>
+/// 
 ///  - If crate feature `source-location` is enabled:
 ///
-///    `[2021-12-23 01:23:45.067] [info] [mod::path, src/main.rs:2] log message`
+///    <pre>
+///    [2022-11-02 09:23:12.263] [<font color="#11D116">info</font>] [mod::path, src/main.rs:4] hello, world!
+///    </pre>
 #[derive(Clone)]
 pub struct FullFormatter {
     with_eol: bool,

@@ -262,8 +262,8 @@ impl Logger {
     /// Sets a error handler.
     ///
     /// If an error occurs while logging or flushing, this handler will be
-    /// called. If no handler is set, the error will be output to the terminal
-    /// and then ignored.
+    /// called. If no handler is set, the error will be print to `stderr` and
+    /// then ignored.
     ///
     /// # Examples
     ///
@@ -453,7 +453,7 @@ impl LoggerBuilder {
 
     /// Sets the name of the logger.
     ///
-    /// Optional, defaults to `None`.
+    /// This parameter is **optional**, and defaults to `None`.
     ///
     /// # Requirements
     ///
@@ -472,7 +472,8 @@ impl LoggerBuilder {
 
     /// Sets the log filter level.
     ///
-    /// Optional, defaults to `LevelFilter::MoreSevereEqual(Level::Info)`.
+    /// This parameter is **optional**, and defaults to
+    /// `LevelFilter::MoreSevereEqual(Level::Info)`.
     pub fn level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
         self.level_filter = level_filter;
         self
@@ -495,7 +496,7 @@ impl LoggerBuilder {
 
     /// Sets the flush level filter.
     ///
-    /// Optional, defaults to [`LevelFilter::Off`].
+    /// This paramter is **optional**, and defaults to [`LevelFilter::Off`].
     ///
     /// See the documentation of [`Logger::set_flush_level_filter`] for the
     /// description of this parameter.
@@ -506,7 +507,7 @@ impl LoggerBuilder {
 
     /// Sets the error handler.
     ///
-    /// Optional, defaults to `None`.
+    /// This parameter is **optional**, and defaults to `None`.
     ///
     /// See the documentation of [`Logger::set_error_handler`] for the
     /// description of this parameter.

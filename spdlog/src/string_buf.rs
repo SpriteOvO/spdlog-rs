@@ -15,8 +15,7 @@
 /// # Warnings
 ///
 /// `FlexibleString` can improve performance as it avoids memory allocation when
-/// formatting records (most log messages do not exceed 250 bytes), however it
-/// contains unsafe code.
+/// formatting records as much as possible, however it contains unsafe code.
 ///
 /// [`Sink`]: crate::sink::Sink
 /// [`Formatter`]: crate::formatter::Formatter

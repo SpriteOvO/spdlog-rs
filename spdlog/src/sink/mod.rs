@@ -27,7 +27,23 @@
 //! operations will not be returned to the upper level, and instead the error
 //! handler of the sink will be called.
 //!
+//! Users should only use asynchronous combined sinks to wrap actual sinks that
+//! require a long time for operations (e.g. involving UDP sends), otherwise
+//! they will not get a performance boost or even worse.
+//!
+//! Since the thread pool has a capacity limit, the queue may be full in some
+//! cases. When users encounter this situation, they have the following options:
+//!
+//!  - Adjust to a larger capacity via [`ThreadPoolBuilder::capacity`].
+//!
+//!  - Adjust the overflow policy via [`AsyncPoolSinkBuilder::overflow_policy`].
+//!
+//!  - Set up an error handler on asynchronous combined sinks via
+//!    [`AsyncPoolSinkBuilder::error_handler`]. The handler will be called when
+//!    a record is dropped or an operation has failed.
+//!
 //! [`Logger`]: crate::logger::Logger
+//! [`ThreadPoolBuilder::capacity`]: crate::ThreadPoolBuilder::capacity
 
 #[cfg(feature = "multi-thread")]
 pub(crate) mod async_sink;

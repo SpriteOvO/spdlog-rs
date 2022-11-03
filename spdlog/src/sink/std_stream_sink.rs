@@ -222,7 +222,7 @@ pub struct StdStreamSinkBuilder<ArgSS> {
 impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// Specifies the target standard stream.
     ///
-    /// This parameter is required.
+    /// This parameter is **required**.
     pub fn std_stream(self, std_stream: StdStream) -> StdStreamSinkBuilder<StdStream> {
         StdStreamSinkBuilder {
             common_builder_impl: self.common_builder_impl,
@@ -233,7 +233,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
 
     /// Specifies the style mode.
     ///
-    /// This parameter is optional, and defaults to [`StyleMode::Auto`].
+    /// This parameter is **optional**, and defaults to [`StyleMode::Auto`].
     pub fn style_mode(mut self, style_mode: StyleMode) -> Self {
         self.style_mode = style_mode;
         self

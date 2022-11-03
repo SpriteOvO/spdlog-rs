@@ -35,10 +35,22 @@
 //! ```
 //! use spdlog::prelude::*;
 //!
-//! info!("hello, {}", "world");
+//! info!("hello world!");
+//! warn!("3 + 2 = {}", 5);
+//! error!("oops!");
 //! ```
 //!
-//! For more examples, see [./examples] directory.
+//! Output:
+//!
+//! <pre>
+//! [2022-11-02 09:23:12.263] [<font color="#11D116">info</font>] hello, world!
+//! [2022-11-02 09:23:12.263] [<font color="#FDBC4B">warn</font>] 3 + 2 = 5
+//! [2022-11-02 09:23:12.263] [<font color="#C0392B">error</font>] oops!
+//! </pre>
+//!
+//! If you want to learn more advanced features such as *asynchronous sink*,
+//! *compile-time pattern formatter*, etc., please see [./examples]
+//! directory.
 //!
 //! ## Help
 //!
@@ -60,9 +72,7 @@
 //! by default, you can call [`log_crate_proxy()`] to get a reference to this
 //! proxy to configure it.
 //!
-//! ## Examples
-//!
-//! See [./examples] directory.
+//! See [./examples] directory for examples.
 //!
 //! # Asynchronous support
 //!
@@ -112,7 +122,8 @@
 //!
 //!  - `source-location` allows recording the source location of each log. When
 //!    it is enabled the default formatter [`FullFormatter`] will always format
-//!    the source location information. If you do not want the source location
+//!    the source location information, and some formatting patterns related to
+//!    source location will be available. If you do not want the source location
 //!    information to appear in your binary file, you may prefer not to enable
 //!    it.
 //!
@@ -422,45 +433,66 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 /// Users should call this function early, the level filter of loggers built
 /// before calling this function will not be configured by environment variable.
 ///
-/// Format of the environment variable value:
+/// ## Formats of the environment variable value
 ///
-/// - `all`
+/// The levels contained in the environment variable mean
+/// `LevelFilter::MoreSevereEqual(level)`.
 ///
-///   Specifies the level filter of the default logger as `LevelFilter::All`.
+/// ---
 ///
-/// - `=trace`
+/// - Specifies the level filter for ***the default logger***.
 ///
-///   Specifies the level filter of unnamed loggers as
-/// `LevelFilter::MoreSevereEqual(Level::Trace)`.
+///   Possible inputs: `off`, `trace`, `warn`, `all`, etc.
 ///
-/// - `example=off`
+/// ---
 ///
-///   Specifies the level filter of loggers with name "example" as
-/// `LevelFilter::Off`.
+/// - Specifies the level filter for ***unnamed loggers***.
 ///
-/// - `*=error`
+///   Possible inputs: `=off`, `=info`, `=error`, `=all`, etc.
 ///
-///   Specifies the level filter of all loggers (except the default logger) as
-/// `LevelFilter::MoreSevereEqual(Level::Error)` (respect the above rules if
-/// they are matched).
+/// ---
 ///
-/// The level filter is not case-sensitive, and these rules are combinable,
-/// separated by commas. For example, these are legal:
+/// - Specifies the level filter for ***loggers with the specified name***.
+///
+///   Possible inputs: `logger-name=info`, `network=warn`, `core=info`,
+/// `gui=critical`, etc.
+///
+/// ---
+///
+/// - Specifies the level filter for ***all loggers except the default logger***
+///   (respect the above rules first if they are matched).
+///
+///   Possible inputs: `*=error`, `*=off`, `*=critical`, etc.
+///
+/// ---
+///
+/// The levels are not case-sensitive, and these rules are combinable, separated
+/// by commas.
+///
+/// For example, these are legal:
+///
+/// ---
 ///
 /// - `ALL,*=ALL`
 ///
-///   Specifies the level filter of all loggers as `LevelFilter::All`.
+///   Specifies the level filter for all loggers as `LevelFilter::All`.
+///
+/// ---
 ///
 /// - `off,*=ERROR`
 ///
-///   Specifies the level filter of the default logger as `LevelFilter::Off`,
+///   Specifies the level filter for the default logger as `LevelFilter::Off`,
 /// the rest of loggers as `LevelFilter::MoreSevereEqual(Level::Error)`.
+///
+/// ---
 ///
 /// - `gui=warn,network=trace`
 ///
-///   Specifies the level filter of loggers with name "gui" as
+///   Specifies the level filter for loggers with name "gui" as
 /// `LevelFilter::MoreSevereEqual(Level::Warn)`, loggers with name "network" as
 /// `LevelFilter::MoreSevereEqual(Level::Trace)`.
+///
+/// ---
 ///
 /// However, the same rule cannot be specified more than once.
 ///
@@ -493,6 +525,8 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///   # Ok(()) }
 ///   ```
 ///
+/// ---
+///
 /// - `SPDLOG_RS_LEVEL="TRACE,network=Warn,*=error"`:
 ///
 ///   ```
@@ -521,7 +555,9 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 ///   # Ok(()) }
 ///   ```
 ///
-/// - `SPDLOG_RS_LEVEL="network=Warn,network=Warn` will fail, as the same rule
+/// ---
+///
+/// - `SPDLOG_RS_LEVEL="network=Warn,network=Warn"` will fail, as the same rule
 ///   is specified multiple times.
 ///
 ///   ```

@@ -125,7 +125,8 @@ impl AsyncPoolSinkBuilder {
 
     /// Specifies a overflow policy.
     ///
-    /// Optional, defaults [`OverflowPolicy::Block`].
+    /// This parameter is **optional**, and defaults to
+    /// [`OverflowPolicy::Block`].
     ///
     /// For more details, see the documentation of [`OverflowPolicy`].
     pub fn overflow_policy(mut self, overflow_policy: OverflowPolicy) -> Self {
@@ -135,7 +136,8 @@ impl AsyncPoolSinkBuilder {
 
     /// Specifies a custom thread pool.
     ///
-    /// Optional, defaults the built-in thread pool.
+    /// This parameter is **optional**, and defaults to the built-in thread
+    /// pool.
     ///
     /// For more details, see the documentation of [`AsyncPoolSinkBuilder`].
     pub fn thread_pool(mut self, thread_pool: Arc<ThreadPool>) -> Self {

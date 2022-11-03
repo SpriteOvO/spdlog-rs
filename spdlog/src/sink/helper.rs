@@ -136,7 +136,7 @@ macro_rules! common_impl {
         $crate::sink::helper::common_impl! {
             /// Specifies a log level filter.
             ///
-            /// Optional, defaults [`LevelFilter::All`].
+            /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
             ///
             /// [`LevelFilter::All`]: crate::LevelFilter::All
             @SinkBuilderCustomInner@level_filter: $($field).+
@@ -154,7 +154,7 @@ macro_rules! common_impl {
         $crate::sink::helper::common_impl! {
             /// Specifies a formatter.
             ///
-            /// Optional, defaults [`FullFormatter`].
+            /// This parameter is **optional**, and defaults to [`FullFormatter`].
             ///
             /// [`FullFormatter`]: crate::formatter::FullFormatter
             @SinkBuilderCustomInner@formatter: $($field).+
@@ -172,7 +172,7 @@ macro_rules! common_impl {
         $crate::sink::helper::common_impl! {
             /// Specifies an error handler.
             ///
-            /// Optional, defaults no handler, see [`Sink::set_error_handler`] for details.
+            /// This parameter is **optional**, and defaults no handler, see [`Sink::set_error_handler`] for details.
             ///
             /// [`Sink::set_error_handler`]: crate::Sink::set_error_handler
             @SinkBuilderCustomInner@error_handler: $($field).+

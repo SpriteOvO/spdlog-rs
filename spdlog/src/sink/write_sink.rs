@@ -163,7 +163,7 @@ where
     /// Specifies the target that implemented [`Write`] trait, log messages will
     /// be written into the target.
     ///
-    /// This parameter is required.
+    /// This parameter is **required**.
     pub fn target(self, target: W) -> WriteSinkBuilder<W, PhantomData<W>> {
         WriteSinkBuilder {
             common_builder_impl: self.common_builder_impl,

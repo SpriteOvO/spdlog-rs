@@ -65,7 +65,7 @@ impl SourceLocation {
 
 /// Constructs a [`SourceLocation`] with current source location.
 ///
-/// Returns `None` if the feature `source_location` is not enabled.
+/// Returns `None` if the feature `source-location` is not enabled.
 ///
 /// # Examples
 ///

@@ -16,7 +16,7 @@ const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", 
 /// Typical usage includes: specifying the `Level` of [`log!`], and comparing a
 /// `Level` to a [`LevelFilter`] through [`LevelFilter::compare`].
 ///
-/// # Warnings
+/// # Note
 ///
 /// Users should never convert variants of this enum to integers for persistent
 /// storage (e.g., configuration files), using [`Level::as_str`] instead,
@@ -25,17 +25,23 @@ const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", 
 /// Do **not** do this:
 /// ```
 /// # use spdlog::prelude::*;
-/// # fn save_config(_: usize) {}
-/// let level: usize = Level::Info as usize;
-/// save_config(level);
+/// # fn save_to_config_file(_: usize) {}
+/// let level: Level = /* ... */
+/// # Level::Info;
+/// let value: usize = level as usize;
+///
+/// save_to_config_file(value);
 /// ```
 ///
 /// Instead:
 /// ```
 /// # use spdlog::prelude::*;
-/// # fn save_config(_: &str) {}
-/// let level: &'static str = Level::Info.as_str();
-/// save_config(level);
+/// # fn save_to_config_file(_: &str) {}
+/// let level: Level = /* ... */
+/// # Level::Info;
+/// let value: &'static str = level.as_str();
+///
+/// save_to_config_file(value);
 /// ```
 ///
 /// # Examples

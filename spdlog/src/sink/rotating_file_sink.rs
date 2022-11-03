@@ -727,7 +727,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// - `/path/to/base_file_2022-03-23_03.log`
     /// - `/path/to/base_file_2022-03-23_04.log`
     ///
-    /// This parameter is required.
+    /// This parameter is **required**.
     pub fn base_path<P>(self, base_path: P) -> RotatingFileSinkBuilder<PathBuf, ArgRP>
     where
         P: Into<PathBuf>,
@@ -743,7 +743,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
 
     /// Specifies the rotation policy.
     ///
-    /// This parameter is required.
+    /// This parameter is **required**.
     pub fn rotation_policy(
         self,
         rotation_policy: RotationPolicy,
@@ -764,7 +764,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     ///
     /// Pass `0` for no limit.
     ///
-    /// This parameter is optional, and defaults to `0`.
+    /// This parameter is **optional**, and defaults to `0`.
     pub fn max_files(mut self, max_files: usize) -> Self {
         self.max_files = max_files;
         self
@@ -778,7 +778,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// the parameter is `true`, since the file name is a time point and not an
     /// index.
     ///
-    /// This parameter is optional, and defaults to `false`.
+    /// This parameter is **optional**, and defaults to `false`.
     pub fn rotate_on_open(mut self, rotate_on_open: bool) -> Self {
         self.rotate_on_open = rotate_on_open;
         self
