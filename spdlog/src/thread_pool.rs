@@ -47,6 +47,7 @@ struct Worker {
 
 impl ThreadPool {
     /// Constructs a builder of `ThreadPool`.
+    #[must_use]
     pub fn builder() -> ThreadPoolBuilder {
         ThreadPoolBuilder {
             capacity: 8192,
@@ -145,6 +146,7 @@ impl Worker {
     }
 }
 
+#[must_use]
 pub(crate) fn default_thread_pool() -> Arc<ThreadPool> {
     static POOL_WEAK: Lazy<Mutex<Weak<ThreadPool>>> = Lazy::new(|| Mutex::new(Weak::new()));
 

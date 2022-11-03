@@ -22,6 +22,7 @@ pub enum Color {
 
 impl Color {
     // Gets foreground color terminal escape code.
+    #[must_use]
     pub(crate) fn fg_code(&self) -> &'static str {
         match self {
             Color::Black => "\x1b[30m",
@@ -36,6 +37,7 @@ impl Color {
     }
 
     // Gets background color terminal escape code.
+    #[must_use]
     pub(crate) fn bg_code(&self) -> &'static str {
         match self {
             Color::Black => "\x1b[40m",
@@ -71,15 +73,18 @@ pub struct Style {
 
 impl Style {
     /// Constructs a `Style` with no styles.
+    #[must_use]
     pub fn new() -> Style {
         Style::default()
     }
 
     /// Constructs a [`StyleBuilder`].
+    #[must_use]
     pub fn builder() -> StyleBuilder {
         StyleBuilder::new()
     }
 
+    #[must_use]
     pub(crate) fn code(&self) -> StyleCode {
         if self.reset {
             return StyleCode {
@@ -126,6 +131,7 @@ impl Style {
         }
     }
 
+    #[must_use]
     fn reset_code() -> String {
         "\x1b[m".to_string()
     }
@@ -142,7 +148,6 @@ pub(crate) mod macros {
         ($builder_type:ident =>) => {};
         ($builder_type:ident => $visibility:vis $field_name:ident: Option<$field_type:ty>, $($tail:tt)*) => {
             #[allow(missing_docs)]
-            #[must_use]
             $visibility fn $field_name(&mut self, $field_name: $field_type) -> &mut $builder_type {
                 self.style.$field_name = Some($field_name);
                 self
@@ -151,7 +156,6 @@ pub(crate) mod macros {
         };
         ($builder_type:ident => $visibility:vis $field_name:ident: bool, $($tail:tt)*) => {
             #[allow(missing_docs)]
-            #[must_use]
             $visibility fn $field_name(&mut self) -> &mut $builder_type {
                 self.style.$field_name = true;
                 self
@@ -164,6 +168,7 @@ pub(crate) mod macros {
 
 impl StyleBuilder {
     /// Constructs a `StyleBuilder`.
+    #[must_use]
     pub fn new() -> StyleBuilder {
         StyleBuilder::default()
     }
@@ -185,6 +190,7 @@ impl StyleBuilder {
     }
 
     /// Builds a [`Style`].
+    #[must_use]
     pub fn build(&mut self) -> Style {
         self.style.clone()
     }
@@ -207,6 +213,7 @@ pub(crate) struct LevelStyles([Style; Level::count()]);
 
 impl LevelStyles {
     #[allow(dead_code)]
+    #[must_use]
     pub(crate) fn style(&self, level: Level) -> &Style {
         &self.0[level as usize]
     }
@@ -248,6 +255,7 @@ pub(crate) struct StyleCode {
 pub(crate) struct LevelStyleCodes([StyleCode; Level::count()]);
 
 impl LevelStyleCodes {
+    #[must_use]
     pub(crate) fn code(&self, level: Level) -> &StyleCode {
         &self.0[level as usize]
     }

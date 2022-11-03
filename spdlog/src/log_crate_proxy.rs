@@ -49,6 +49,7 @@ pub struct LogCrateProxy {
 }
 
 impl LogCrateProxy {
+    #[must_use]
     pub(crate) fn new() -> Self {
         Self::default()
     }
@@ -69,6 +70,7 @@ impl LogCrateProxy {
         self.swap_logger(logger);
     }
 
+    #[must_use]
     fn logger(&self) -> Arc<Logger> {
         self.logger.load_full().unwrap_or_else(default_logger)
     }

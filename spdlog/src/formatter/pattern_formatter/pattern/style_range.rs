@@ -15,6 +15,7 @@ where
     P: Pattern,
 {
     /// Create a new `StyleRange` pattern that wraps the given inner pattern.
+    #[must_use]
     pub fn new(inner: P) -> Self {
         Self { inner }
     }

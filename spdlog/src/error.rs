@@ -111,11 +111,13 @@ pub struct SetLoggerNameError {
 }
 
 impl SetLoggerNameError {
+    #[must_use]
     pub(crate) fn new(name: impl Into<String>) -> Self {
         Self { name: name.into() }
     }
 
     #[cfg(test)]
+    #[must_use]
     pub(crate) fn name(&self) -> &str {
         &self.name
     }
@@ -160,6 +162,7 @@ pub enum SendToChannelErrorDropped {
 
 #[cfg(feature = "multi-thread")]
 impl Error {
+    #[must_use]
     pub(crate) fn from_crossbeam_send(err: crossbeam::channel::SendError<Task>) -> Self {
         Self::SendToChannel(
             SendToChannelError::Disconnected,
@@ -167,6 +170,7 @@ impl Error {
         )
     }
 
+    #[must_use]
     pub(crate) fn from_crossbeam_try_send(err: crossbeam::channel::TrySendError<Task>) -> Self {
         use crossbeam::channel::TrySendError;
 
@@ -181,6 +185,7 @@ impl Error {
 
 #[cfg(feature = "multi-thread")]
 impl SendToChannelErrorDropped {
+    #[must_use]
     pub(crate) fn from_task(task: Task) -> Self {
         match task {
             Task::Log { record, .. } => Self::Record(record),

@@ -20,6 +20,7 @@ impl SourceLocation {
     // Usually users don't need to construct it manually, but if you do, use macro
     // [`source_location_current`].
     #[doc(hidden)]
+    #[must_use]
     pub fn __new(module_path: &'static str, file: &'static str, line: u32, column: u32) -> Self {
         Self {
             module_path,
@@ -30,6 +31,7 @@ impl SourceLocation {
     }
 
     /// Gets the module path.
+    #[must_use]
     pub fn module_path(&self) -> &'static str {
         self.module_path
     }
@@ -37,6 +39,7 @@ impl SourceLocation {
     /// Gets the source file.
     ///
     /// It returns a string slice like this: `src/main.rs`
+    #[must_use]
     pub fn file(&self) -> &'static str {
         self.file
     }
@@ -44,6 +47,7 @@ impl SourceLocation {
     /// Gets the source file name.
     ///
     /// It returns a string slice like this: `main.rs`
+    #[must_use]
     pub fn file_name(&self) -> &'static str {
         if let Some(index) = self.file.rfind(path::MAIN_SEPARATOR) {
             &self.file[index + 1..]
@@ -53,11 +57,13 @@ impl SourceLocation {
     }
 
     /// Gets the line number in the source file.
+    #[must_use]
     pub fn line(&self) -> u32 {
         self.line
     }
 
     /// Gets the column number in the source file.
+    #[must_use]
     pub fn column(&self) -> u32 {
         self.column
     }

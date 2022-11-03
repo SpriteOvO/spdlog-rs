@@ -8,6 +8,7 @@
 #         sink::WriteSink,
 #     };
 # 
+#     #[must_use]
 #     pub fn echo_logger_from_pattern(
 #         pattern: impl Pattern + Clone + 'static,
 #         name: Option<&'static str>,
@@ -15,6 +16,7 @@
 #         echo_logger_from_formatter(Box::new(PatternFormatter::new(pattern)), name)
 #     }
 # 
+#     #[must_use]
 #     pub fn echo_logger_from_formatter(
 #         formatter: Box<dyn Formatter>,
 #         name: Option<&'static str>,

@@ -22,6 +22,7 @@ enum SyslogLevel {
 struct SyslogLevels([SyslogLevel; Level::count()]);
 
 impl SyslogLevels {
+    #[must_use]
     const fn new() -> Self {
         Self([
             SyslogLevel::Crit,    // Critical
@@ -33,6 +34,7 @@ impl SyslogLevels {
         ])
     }
 
+    #[must_use]
     fn level(&self, level: Level) -> SyslogLevel {
         self.0[level as usize]
     }
@@ -93,6 +95,7 @@ impl JournaldSink {
     const SYSLOG_LEVELS: SyslogLevels = SyslogLevels::new();
 
     /// Constructs a builder of `JournaldSink`.
+    #[must_use]
     pub fn builder() -> JournaldSinkBuilder {
         JournaldSinkBuilder {
             common_builder_impl: helper::CommonBuilderImpl::new(),

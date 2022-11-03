@@ -37,6 +37,7 @@ where
     W: Write + Send,
 {
     /// Constructs a builder of `WriteSink`.
+    #[must_use]
     pub fn builder() -> WriteSinkBuilder<W, ()> {
         WriteSinkBuilder {
             common_builder_impl: helper::CommonBuilderImpl::new(),
@@ -55,6 +56,7 @@ where
     /// consider using the [`clone_target`] method.
     ///
     /// [`clone_target`]: Self::clone_target
+    #[must_use]
     pub fn with_target<F, R>(&self, callback: F) -> R
     where
         F: FnOnce(&mut W) -> R,
@@ -72,6 +74,7 @@ where
     W: Write + Send + Clone,
 {
     /// Clone the underlying `impl Write` object.
+    #[must_use]
     pub fn clone_target(&self) -> W {
         self.lock_target().clone()
     }
@@ -164,6 +167,7 @@ where
     /// be written into the target.
     ///
     /// This parameter is **required**.
+    #[must_use]
     pub fn target(self, target: W) -> WriteSinkBuilder<W, PhantomData<W>> {
         WriteSinkBuilder {
             common_builder_impl: self.common_builder_impl,

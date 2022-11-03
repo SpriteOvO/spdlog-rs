@@ -312,6 +312,7 @@ pub(crate) const EOL: &str = "\r\n";
 
 static DEFAULT_LOGGER: OnceCell<ArcSwap<Logger>> = OnceCell::new();
 
+#[must_use]
 fn default_logger_ref() -> &'static ArcSwap<Logger> {
     DEFAULT_LOGGER.get_or_init(|| {
         let stdout = StdStreamSink::builder()
@@ -378,6 +379,7 @@ fn default_logger_ref() -> &'static ArcSwap<Logger> {
 /// error!("this log will be written to `stderr`");
 /// critical!("this log will be written to `stderr`");
 /// ```
+#[must_use]
 pub fn default_logger() -> Arc<Logger> {
     default_logger_ref().load().clone()
 }
@@ -639,6 +641,7 @@ pub fn init_log_crate_proxy() -> StdResult<(), log_crate::SetLoggerError> {
 
 /// Returns a [`LogCrateProxy`].
 #[cfg(feature = "log")]
+#[must_use]
 pub fn log_crate_proxy() -> &'static LogCrateProxy {
     static PROXY: Lazy<LogCrateProxy> = Lazy::new(LogCrateProxy::new);
     &PROXY
@@ -656,6 +659,7 @@ fn flush_default_logger_at_exit() {
         }
     }
 
+    #[must_use]
     fn try_atexit() -> bool {
         use std::os::raw::c_int;
 

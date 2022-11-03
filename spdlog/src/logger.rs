@@ -73,6 +73,7 @@ pub struct Logger {
 
 impl Logger {
     /// Constructs a [`LoggerBuilder`].
+    #[must_use]
     pub fn builder() -> LoggerBuilder {
         LoggerBuilder::new()
     }
@@ -80,6 +81,7 @@ impl Logger {
     /// Gets the logger name.
     ///
     /// Returns `None` if the logger does not have a name.
+    #[must_use]
     pub fn name(&self) -> Option<&str> {
         self.name.as_ref().map(|s| s.as_ref())
     }
@@ -125,6 +127,7 @@ impl Logger {
     /// assert_eq!(logger.should_log(Level::Warn), true);
     /// assert_eq!(logger.should_log(Level::Error), true);
     /// ```
+    #[must_use]
     pub fn should_log(&self, level: Level) -> bool {
         self.level_filter().compare(level)
     }
@@ -152,6 +155,7 @@ impl Logger {
     }
 
     /// Gets the flush level filter.
+    #[must_use]
     pub fn flush_level_filter(&self) -> LevelFilter {
         self.flush_level_filter.load(Ordering::Relaxed)
     }
@@ -186,6 +190,7 @@ impl Logger {
     }
 
     /// Gets the log filter level.
+    #[must_use]
     pub fn level_filter(&self) -> LevelFilter {
         self.level_filter.load(Ordering::Relaxed)
     }
@@ -250,11 +255,13 @@ impl Logger {
     }
 
     /// Gets a reference to sinks in the logger.
+    #[must_use]
     pub fn sinks(&self) -> &[Arc<dyn Sink>] {
         &self.sinks
     }
 
     /// Gets a mutable reference to sinks in the logger.
+    #[must_use]
     pub fn sinks_mut(&mut self) -> &mut Sinks {
         &mut self.sinks
     }
@@ -361,6 +368,7 @@ impl Logger {
     }
 
     // This will lose the periodic flush property, if any.
+    #[must_use]
     fn clone_lossy(&self) -> Self {
         Logger {
             name: self.name.clone(),
@@ -406,6 +414,7 @@ impl Logger {
         }
     }
 
+    #[must_use]
     fn should_flush(&self, record: &Record) -> bool {
         self.flush_level_filter().compare(record.level())
     }
@@ -441,6 +450,7 @@ pub struct LoggerBuilder {
 
 impl LoggerBuilder {
     /// Constructs a `LoggerBuilder`.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             name: None,
@@ -525,6 +535,7 @@ impl LoggerBuilder {
         self.build_inner(self.preset_level(true))
     }
 
+    #[must_use]
     fn preset_level(&self, is_default: bool) -> Option<LevelFilter> {
         if is_default {
             env_level::logger_level(env_level::LoggerKind::Default)
@@ -555,6 +566,7 @@ impl LoggerBuilder {
     }
 
     #[cfg(test)]
+    #[must_use]
     fn build_inner_for_test(&mut self, env_level: &str, is_default: bool) -> Logger {
         let preset_level = if is_default {
             env_level::logger_level_inner(

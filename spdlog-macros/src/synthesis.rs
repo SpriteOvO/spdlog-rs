@@ -18,12 +18,14 @@ pub(crate) struct Synthesiser {
 }
 
 impl Synthesiser {
+    #[must_use]
     pub(crate) fn new() -> Self {
         Self {
             formatters: HashMap::new(),
         }
     }
 
+    #[must_use]
     pub(crate) fn with_builtin_formatters() -> Self {
         let mut synthesiser = Self::new();
 

@@ -40,10 +40,12 @@ pub struct FullFormatter {
 
 impl FullFormatter {
     /// Constructs a `FullFormatter`.
+    #[must_use]
     pub fn new() -> FullFormatter {
         FullFormatter { with_eol: true }
     }
 
+    #[must_use]
     pub(crate) fn without_eol() -> Self {
         Self { with_eol: false }
     }

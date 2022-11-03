@@ -16,6 +16,7 @@ use crate::{
 pub(crate) struct JournaldFormatter {}
 
 impl JournaldFormatter {
+    #[must_use]
     pub(crate) fn new() -> Self {
         Self {}
     }

@@ -366,6 +366,7 @@ where
     ///
     /// Currently users can only create a `pattern` object at compile-time by
     /// calling [`pattern!`] macro.
+    #[must_use]
     pub fn new(pattern: P) -> Self {
         Self { pattern }
     }
@@ -394,6 +395,7 @@ pub struct PatternContext {
 
 impl PatternContext {
     /// Create a new `PatternContext` object.
+    #[must_use]
     fn new(fmt_info_builder: FmtExtraInfoBuilder) -> Self {
         Self { fmt_info_builder }
     }
@@ -1211,6 +1213,7 @@ pub mod tests {
     // We use `get_mock_record` and `test_pattern` in tests/pattern.rs so let's make
     // them pub in test builds.
 
+    #[must_use]
     pub fn get_mock_record() -> Record<'static> {
         Record::builder(Level::Info, "record_payload")
             .logger_name("logger_name")

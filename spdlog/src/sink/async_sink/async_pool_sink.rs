@@ -35,6 +35,7 @@ pub struct AsyncPoolSink {
 
 impl AsyncPoolSink {
     /// Constructs a builder of `AsyncPoolSink`.
+    #[must_use]
     pub fn builder() -> AsyncPoolSinkBuilder {
         AsyncPoolSinkBuilder {
             level_filter: helper::SINK_DEFAULT_LEVEL_FILTER,
@@ -46,6 +47,7 @@ impl AsyncPoolSink {
     }
 
     /// Gets a reference to internal sinks in the combined sink.
+    #[must_use]
     pub fn sinks(&self) -> &[Arc<dyn Sink>] {
         &self.backend.sinks
     }
@@ -59,6 +61,7 @@ impl AsyncPoolSink {
         self.thread_pool.assign_task(task, self.overflow_policy)
     }
 
+    #[must_use]
     fn clone_backend(&self) -> Arc<Backend> {
         Arc::clone(&self.backend)
     }
@@ -109,12 +112,14 @@ pub struct AsyncPoolSinkBuilder {
 
 impl AsyncPoolSinkBuilder {
     /// Add a [`Sink`].
+    #[must_use]
     pub fn sink(mut self, sink: Arc<dyn Sink>) -> Self {
         self.sinks.push(sink);
         self
     }
 
     /// Add multiple [`Sink`]s.
+    #[must_use]
     pub fn sinks<I>(mut self, sinks: I) -> Self
     where
         I: IntoIterator<Item = Arc<dyn Sink>>,
@@ -129,6 +134,7 @@ impl AsyncPoolSinkBuilder {
     /// [`OverflowPolicy::Block`].
     ///
     /// For more details, see the documentation of [`OverflowPolicy`].
+    #[must_use]
     pub fn overflow_policy(mut self, overflow_policy: OverflowPolicy) -> Self {
         self.overflow_policy = overflow_policy;
         self
@@ -140,6 +146,7 @@ impl AsyncPoolSinkBuilder {
     /// pool.
     ///
     /// For more details, see the documentation of [`AsyncPoolSinkBuilder`].
+    #[must_use]
     pub fn thread_pool(mut self, thread_pool: Arc<ThreadPool>) -> Self {
         self.thread_pool = Some(thread_pool);
         self

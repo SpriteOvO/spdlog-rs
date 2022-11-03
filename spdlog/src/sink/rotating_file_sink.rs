@@ -219,6 +219,7 @@ pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
 
 impl RotatingFileSink {
     /// Constructs a builder of `RotatingFileSink`.
+    #[must_use]
     pub fn builder() -> RotatingFileSinkBuilder<(), ()> {
         RotatingFileSinkBuilder {
             common_builder_impl: helper::CommonBuilderImpl::new(),
@@ -271,6 +272,7 @@ impl RotatingFileSink {
     }
 
     #[cfg(test)]
+    #[must_use]
     fn _current_size(&self) -> u64 {
         if let RotatorKind::FileSize(rotator) = &self.rotator {
             rotator.inner.lock().current_size
@@ -420,6 +422,7 @@ impl RotatorFileSize {
         res
     }
 
+    #[must_use]
     fn calc_file_path(base_path: impl AsRef<Path>, index: usize) -> PathBuf {
         let base_path = base_path.as_ref();
 
@@ -494,6 +497,7 @@ impl Rotator for RotatorFileSize {
 }
 
 impl RotatorFileSizeInner {
+    #[must_use]
     fn new(file: File, current_size: u64) -> Self {
         Self {
             file: Some(BufWriter::new(file)),
@@ -552,6 +556,7 @@ impl RotatorTimePoint {
 
     // a little expensive, should only be called when rotation is needed or in
     // constructor.
+    #[must_use]
     fn next_rotation_time_point(time_point: TimePoint, now: SystemTime) -> SystemTime {
         let now: DateTime<Utc> = now.into();
         let mut rotation_time: DateTime<Utc> = now;
@@ -605,6 +610,7 @@ impl RotatorTimePoint {
         Ok(())
     }
 
+    #[must_use]
     fn calc_file_path(
         base_path: impl AsRef<Path>,
         time_point: TimePoint,
@@ -689,6 +695,7 @@ impl Rotator for RotatorTimePoint {
 }
 
 impl TimePoint {
+    #[must_use]
     fn delta_std(&self) -> Duration {
         const HOUR_1: Duration = Duration::from_secs(60 * 60);
         const DAY_1: Duration = Duration::from_secs(60 * 60 * 24);
@@ -699,6 +706,7 @@ impl TimePoint {
         }
     }
 
+    #[must_use]
     fn delta_chrono(&self) -> chrono::Duration {
         match self {
             Self::Daily { .. } => chrono::Duration::days(1),
@@ -728,6 +736,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// - `/path/to/base_file_2022-03-23_04.log`
     ///
     /// This parameter is **required**.
+    #[must_use]
     pub fn base_path<P>(self, base_path: P) -> RotatingFileSinkBuilder<PathBuf, ArgRP>
     where
         P: Into<PathBuf>,
@@ -744,6 +753,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// Specifies the rotation policy.
     ///
     /// This parameter is **required**.
+    #[must_use]
     pub fn rotation_policy(
         self,
         rotation_policy: RotationPolicy,
@@ -765,6 +775,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// Pass `0` for no limit.
     ///
     /// This parameter is **optional**, and defaults to `0`.
+    #[must_use]
     pub fn max_files(mut self, max_files: usize) -> Self {
         self.max_files = max_files;
         self
@@ -779,6 +790,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// index.
     ///
     /// This parameter is **optional**, and defaults to `false`.
+    #[must_use]
     pub fn rotate_on_open(mut self, rotate_on_open: bool) -> Self {
         self.rotate_on_open = rotate_on_open;
         self

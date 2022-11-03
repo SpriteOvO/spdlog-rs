@@ -73,12 +73,14 @@ impl PatternTemplate {
         Ok(parsed_template)
     }
 
+    #[must_use]
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let token_parser = PatternTemplateToken::parser();
         nom::combinator::complete(nom::multi::many0(token_parser).and(nom::combinator::eof))
             .map(|(tokens, _)| Self { tokens })
     }
 
+    #[must_use]
     fn parser_without_style_range<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let token_parser = PatternTemplateToken::parser_without_style_range();
         nom::combinator::complete(nom::multi::many0(token_parser).and(nom::combinator::eof))
@@ -94,6 +96,7 @@ pub(crate) enum PatternTemplateToken {
 }
 
 impl PatternTemplateToken {
+    #[must_use]
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let style_range_parser = PatternTemplateStyleRange::parser();
         let other_parser = Self::parser_without_style_range();
@@ -101,6 +104,7 @@ impl PatternTemplateToken {
         nom::combinator::map(style_range_parser, Self::StyleRange).or(other_parser)
     }
 
+    #[must_use]
     fn parser_without_style_range<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let literal_parser = PatternTemplateLiteral::parser();
         let formatter_parser = PatternTemplateFormatter::parser();
@@ -116,6 +120,7 @@ pub(crate) struct PatternTemplateLiteral {
 }
 
 impl PatternTemplateLiteral {
+    #[must_use]
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let literal_char_parser = nom::combinator::value('{', nom::bytes::complete::tag("{{"))
             .or(nom::combinator::value('}', nom::bytes::complete::tag("}}")))
@@ -133,6 +138,7 @@ pub(crate) struct PatternTemplateFormatter {
 }
 
 impl PatternTemplateFormatter {
+    #[must_use]
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         let open_paren_parser = nom::character::complete::char('{');
         let close_paren_parser = nom::character::complete::char('}');
@@ -170,6 +176,7 @@ pub(crate) struct PatternTemplateStyleRange {
 }
 
 impl PatternTemplateStyleRange {
+    #[must_use]
     fn parser<'a>() -> impl Parser<&'a str, Self, nom::error::Error<&'a str>> {
         nom::bytes::complete::tag("{^")
             .and(helper::take_until_unbalanced('{', '}'))

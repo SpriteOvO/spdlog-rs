@@ -18,6 +18,7 @@ pub use self::atomic::*;
 pub trait MutexExtend<'a> {
     type LockReturn;
 
+    #[must_use]
     fn lock_expect(&'a self) -> Self::LockReturn;
 }
 
@@ -25,7 +26,10 @@ pub trait RwLockExtend<'a> {
     type ReadReturn;
     type WriteReturn;
 
+    #[must_use]
     fn read_expect(&'a self) -> Self::ReadReturn;
+
+    #[must_use]
     fn write_expect(&'a self) -> Self::WriteReturn;
 }
 

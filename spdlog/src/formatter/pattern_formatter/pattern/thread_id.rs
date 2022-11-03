@@ -33,18 +33,21 @@ impl Pattern for ThreadId {
 }
 
 #[cfg(target_os = "linux")]
+#[must_use]
 fn get_current_thread_id() -> u64 {
     let tid = unsafe { libc::gettid() };
     tid as u64
 }
 
 #[cfg(target_os = "macos")]
+#[must_use]
 fn get_current_thread_id() -> u64 {
     let tid = unsafe { libc::pthread_self() };
     tid as u64
 }
 
 #[cfg(target_os = "windows")]
+#[must_use]
 fn get_current_thread_id() -> u64 {
     let tid = unsafe { winapi::um::processthreadsapi::GetCurrentThreadId() };
     tid as u64

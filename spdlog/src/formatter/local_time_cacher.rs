@@ -64,6 +64,7 @@ pub(crate) struct MultiName<T> {
 }
 
 impl LocalTimeCacher {
+    #[must_use]
     fn new() -> LocalTimeCacher {
         LocalTimeCacher {
             stored_key: CacheKey::NonLeap(0),
@@ -71,6 +72,7 @@ impl LocalTimeCacher {
         }
     }
 
+    #[must_use]
     pub(crate) fn get(&mut self, system_time: SystemTime) -> TimeDate {
         const LEAP_BOUNDARY: u32 = 1_000_000_000;
 
@@ -100,6 +102,7 @@ impl LocalTimeCacher {
 
 macro_rules! impl_cache_fields_getter {
     ( $($field:ident: $type:ty),*$(,)? ) => {
+        #[must_use]
         $(pub(crate) fn $field(&self) -> $type {
             *self
                 .cached
@@ -112,6 +115,7 @@ macro_rules! impl_cache_fields_getter {
 
 macro_rules! impl_cache_fields_str_getter {
     ( $($field:ident => $str_field:ident : $fmt:literal),* $(,)? ) => {
+        #[must_use]
         $(pub(crate) fn $str_field(&self) -> Arc<String> {
             self.cached
                 .$str_field
@@ -123,6 +127,7 @@ macro_rules! impl_cache_fields_str_getter {
 }
 
 impl<'a> TimeDate<'a> {
+    #[must_use]
     fn new(cached: &'a mut CacheValues, nanosecond: u32, millisecond: u32) -> Self {
         Self {
             cached,
@@ -135,6 +140,7 @@ impl<'a> TimeDate<'a> {
     // https://github.com/rust-lang/rust/pull/57401
     // There is nothing like `RefMut::downgrade()` for now, just keep in mind don't
     // modify the return value :)
+    #[must_use]
     pub(crate) fn full_second_str(&self) -> RefMut<'_, str> {
         RefMut::map(self.cached.full_second_str.borrow_mut(), |opt| {
             opt.get_or_insert_with(|| {
@@ -172,6 +178,7 @@ impl<'a> TimeDate<'a> {
         timestamp => unix_timestamp_str : "{}",
     }
 
+    #[must_use]
     pub(crate) fn second(&self) -> u32 {
         *self.cached.second.borrow_mut().get_or_insert_with(|| {
             if !self.cached.is_leap_second {
@@ -183,6 +190,7 @@ impl<'a> TimeDate<'a> {
         })
     }
 
+    #[must_use]
     pub(crate) fn weekday_name(&self) -> MultiName<&'static str> {
         *self
             .cached
@@ -210,6 +218,7 @@ impl<'a> TimeDate<'a> {
             })
     }
 
+    #[must_use]
     pub(crate) fn month_name(&self) -> MultiName<&'static str> {
         *self.cached.month_name.borrow_mut().get_or_insert_with(|| {
             const SHORT: [&str; 12] = [
@@ -239,14 +248,17 @@ impl<'a> TimeDate<'a> {
         })
     }
 
+    #[must_use]
     pub(crate) fn nanosecond(&self) -> u32 {
         self.nanosecond
     }
 
+    #[must_use]
     pub(crate) fn millisecond(&self) -> u32 {
         self.millisecond
     }
 
+    #[must_use]
     pub(crate) fn hour12_str(&self) -> Arc<String> {
         self.cached
             .hour12_str
@@ -255,6 +267,7 @@ impl<'a> TimeDate<'a> {
             .clone()
     }
 
+    #[must_use]
     pub(crate) fn am_pm_str(&self) -> &'static str {
         self.cached.am_pm_str.borrow_mut().get_or_insert_with(|| {
             if !self.hour12().0 {
@@ -265,6 +278,7 @@ impl<'a> TimeDate<'a> {
         })
     }
 
+    #[must_use]
     pub(crate) fn year_short_str(&self) -> Arc<String> {
         self.cached
             .year_short_str
@@ -273,6 +287,7 @@ impl<'a> TimeDate<'a> {
             .clone()
     }
 
+    #[must_use]
     pub(crate) fn tz_offset_str(&self) -> Arc<String> {
         self.cached
             .tz_offset_str
@@ -294,6 +309,7 @@ impl<'a> TimeDate<'a> {
 }
 
 impl CacheKey {
+    #[must_use]
     fn new(utc_time: &DateTime<Utc>, is_leap_second: bool) -> Self {
         let timestamp = utc_time.timestamp();
         if !is_leap_second {
@@ -305,6 +321,7 @@ impl CacheKey {
 }
 
 impl CacheValues {
+    #[must_use]
     fn new(utc_time: DateTime<Utc>, is_leap_second: bool) -> Self {
         CacheValues {
             local_time: utc_time.into(),

@@ -38,6 +38,7 @@ pub trait Formatter: Send + Sync {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo>;
 
     /// Clones self into a boxed trait object.
+    #[must_use]
     fn clone_box(&self) -> Box<dyn Formatter>;
 }
 
@@ -49,11 +50,13 @@ pub struct FmtExtraInfo {
 
 impl FmtExtraInfo {
     /// Constructs a `FmtExtraInfo`.
+    #[must_use]
     pub fn new() -> FmtExtraInfo {
         FmtExtraInfo::default()
     }
 
     /// Constructs a [`FmtExtraInfoBuilder`].
+    #[must_use]
     pub fn builder() -> FmtExtraInfoBuilder {
         FmtExtraInfoBuilder::new()
     }
@@ -66,6 +69,7 @@ impl FmtExtraInfo {
     ///
     /// Its indexes are guaranteed by the setter to be the correct UTF-8
     /// boundary.
+    #[must_use]
     pub fn style_range(&self) -> Option<Range<usize>> {
         self.style_range.clone() // This clone is cheap
     }
@@ -88,6 +92,7 @@ impl FmtExtraInfoBuilder {
     ///
     /// The default value of [`FmtExtraInfo`] is the same as
     /// [`FmtExtraInfo::new`].
+    #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
@@ -102,6 +107,7 @@ impl FmtExtraInfoBuilder {
     }
 
     /// Builds a [`FmtExtraInfo`].
+    #[must_use]
     pub fn build(self) -> FmtExtraInfo {
         self.info
     }

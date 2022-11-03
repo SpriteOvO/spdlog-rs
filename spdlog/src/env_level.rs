@@ -35,6 +35,7 @@ pub enum EnvLevelError {
 }
 
 impl EnvLevelLogger {
+    #[must_use]
     fn from_key(logger_name: &str) -> Self {
         if logger_name.is_empty() {
             EnvLevelLogger::Unnamed
@@ -45,6 +46,7 @@ impl EnvLevelLogger {
         }
     }
 
+    #[must_use]
     fn from_logger(logger_name: Option<&str>) -> Self {
         match logger_name {
             None => Self::Unnamed,
@@ -110,6 +112,7 @@ pub(crate) fn from_str_inner(var: &str) -> Result<EnvLevel, EnvLevelError> {
     .map_err(EnvLevelError::ParseEnvVar)
 }
 
+#[must_use]
 pub(crate) fn logger_level(kind: LoggerKind) -> Option<LevelFilter> {
     logger_level_inner(ENV_LEVEL.read().unwrap().as_ref()?, kind)
 }
@@ -120,6 +123,7 @@ pub(crate) enum LoggerKind<'a> {
     Other(Option<&'a str>),
 }
 
+#[must_use]
 pub(crate) fn logger_level_inner(env_level: &EnvLevel, kind: LoggerKind) -> Option<LevelFilter> {
     let level = match kind {
         LoggerKind::Default => env_level.get(&EnvLevelLogger::Default)?,

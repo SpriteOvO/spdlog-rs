@@ -12,6 +12,7 @@ pub struct WinDebugSink {
 
 impl WinDebugSink {
     /// Constructs a builder of `WinDebugSink`.
+    #[must_use]
     pub fn builder() -> WinDebugSinkBuilder {
         WinDebugSinkBuilder {
             common_builder_impl: helper::CommonBuilderImpl::new(),
@@ -21,6 +22,7 @@ impl WinDebugSink {
     /// Constructs a `WinDebugSink`.
     #[allow(clippy::new_without_default)]
     #[deprecated(note = "it may be removed in the future, use `WinDebugSink::builder()` instead")]
+    #[must_use]
     pub fn new() -> WinDebugSink {
         WinDebugSink::builder().build().unwrap()
     }

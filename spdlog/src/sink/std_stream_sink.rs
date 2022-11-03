@@ -32,6 +32,7 @@ enum StdStreamDest<O, E> {
 }
 
 impl StdStreamDest<io::Stdout, io::Stderr> {
+    #[must_use]
     fn new(stream: StdStream) -> Self {
         match stream {
             StdStream::Stdout => StdStreamDest::Stdout(io::stdout()),
@@ -39,6 +40,7 @@ impl StdStreamDest<io::Stdout, io::Stderr> {
         }
     }
 
+    #[must_use]
     fn lock(&self) -> StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>> {
         match self {
             StdStreamDest::Stdout(stream) => StdStreamDest::Stdout(stream.lock()),
@@ -84,6 +86,7 @@ pub struct StdStreamSink {
 
 impl StdStreamSink {
     /// Constructs a builder of `StdStreamSink`.
+    #[must_use]
     pub fn builder() -> StdStreamSinkBuilder<()> {
         StdStreamSinkBuilder {
             common_builder_impl: helper::CommonBuilderImpl::new(),
@@ -94,6 +97,7 @@ impl StdStreamSink {
 
     /// Constructs a `StdStreamSink`.
     #[deprecated(note = "it may be removed in the future, use `StdStreamSink::builder()` instead")]
+    #[must_use]
     pub fn new(std_stream: StdStream, style_mode: StyleMode) -> StdStreamSink {
         Self::builder()
             .std_stream(std_stream)
@@ -112,6 +116,7 @@ impl StdStreamSink {
         self.should_render_style = Self::should_render_style(style_mode, self.atty_stream);
     }
 
+    #[must_use]
     fn should_render_style(style_mode: StyleMode, atty_stream: atty::Stream) -> bool {
         match style_mode {
             StyleMode::Always => true,
@@ -223,6 +228,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// Specifies the target standard stream.
     ///
     /// This parameter is **required**.
+    #[must_use]
     pub fn std_stream(self, std_stream: StdStream) -> StdStreamSinkBuilder<StdStream> {
         StdStreamSinkBuilder {
             common_builder_impl: self.common_builder_impl,
@@ -234,6 +240,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// Specifies the style mode.
     ///
     /// This parameter is **optional**, and defaults to [`StyleMode::Auto`].
+    #[must_use]
     pub fn style_mode(mut self, style_mode: StyleMode) -> Self {
         self.style_mode = style_mode;
         self
@@ -271,7 +278,9 @@ impl StdStreamSinkBuilder<StdStream> {
 
 // --------------------------------------------------
 #[cfg(windows)]
+#[must_use]
 fn enable_ansi_escape_sequences() -> bool {
+    #[must_use]
     fn enable() -> bool {
         use winapi::um::{
             consoleapi::{GetConsoleMode, SetConsoleMode},
@@ -303,6 +312,7 @@ fn enable_ansi_escape_sequences() -> bool {
 }
 
 #[cfg(not(windows))]
+#[must_use]
 fn enable_ansi_escape_sequences() -> bool {
     true
 }

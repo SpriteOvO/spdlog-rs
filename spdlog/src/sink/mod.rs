@@ -79,6 +79,7 @@ use crate::{formatter::Formatter, sync::*, ErrorHandler, Level, LevelFilter, Rec
 /// A trait for sinks.
 pub trait Sink: Sync + Send {
     /// Determines if a log message with the specified level would be logged.
+    #[must_use]
     fn should_log(&self, level: Level) -> bool {
         self.level_filter().compare(level)
     }
@@ -93,6 +94,7 @@ pub trait Sink: Sync + Send {
     fn flush(&self) -> Result<()>;
 
     /// Gets the log level filter.
+    #[must_use]
     fn level_filter(&self) -> LevelFilter;
 
     /// Sets the log level filter.

@@ -28,6 +28,7 @@ pub struct FileSink {
 
 impl FileSink {
     /// Constructs a builder of `FileSink`.
+    #[must_use]
     pub fn builder() -> FileSinkBuilder<()> {
         FileSinkBuilder {
             path: (),
@@ -137,6 +138,7 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
     /// The path of the log file.
     ///
     /// This parameter is **required**.
+    #[must_use]
     pub fn path<P>(self, path: P) -> FileSinkBuilder<PathBuf>
     where
         P: Into<PathBuf>,
@@ -151,6 +153,7 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
     /// If it is true, the existing contents of the filewill be discarded.
     ///
     /// This parameter is **optional**, and defaults to `false`.
+    #[must_use]
     pub fn truncate(mut self, truncate: bool) -> Self {
         self.truncate = truncate;
         self

@@ -31,12 +31,14 @@ impl Pattern for ProcessId {
 }
 
 #[cfg(target_family = "unix")]
+#[must_use]
 fn get_current_process_id() -> u64 {
     let pid = unsafe { libc::getpid() };
     pid as u64
 }
 
 #[cfg(target_os = "windows")]
+#[must_use]
 fn get_current_process_id() -> u64 {
     let pid = unsafe { winapi::um::processthreadsapi::GetCurrentProcessId() };
     pid as u64

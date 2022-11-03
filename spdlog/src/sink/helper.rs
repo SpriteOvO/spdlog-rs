@@ -25,10 +25,12 @@ pub(crate) struct CommonImpl {
 }
 
 impl CommonImpl {
+    #[must_use]
     pub(crate) fn from_builder(common_builder_impl: CommonBuilderImpl) -> Self {
         Self::from_builder_with_formatter(common_builder_impl, || Box::new(FullFormatter::new()))
     }
 
+    #[must_use]
     pub(crate) fn from_builder_with_formatter(
         common_builder_impl: CommonBuilderImpl,
         fallback: impl FnOnce() -> Box<dyn Formatter>,
@@ -41,6 +43,7 @@ impl CommonImpl {
     }
 
     #[allow(dead_code)]
+    #[must_use]
     pub(crate) fn with_formatter(formatter: Box<dyn Formatter>) -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
@@ -64,6 +67,7 @@ pub(crate) struct CommonBuilderImpl {
 }
 
 impl CommonBuilderImpl {
+    #[must_use]
     pub(crate) fn new() -> Self {
         Self {
             level_filter: SINK_DEFAULT_LEVEL_FILTER,
@@ -144,6 +148,7 @@ macro_rules! common_impl {
     };
     ( $(#[$attr:meta])* @SinkBuilderCustomInner@level_filter: $($field:ident).+ ) => {
         $(#[$attr])*
+        #[must_use]
         pub fn level_filter(mut self, level_filter: $crate::LevelFilter) -> Self {
             self.$($field).+ = level_filter;
             self
@@ -162,6 +167,7 @@ macro_rules! common_impl {
     };
     ( $(#[$attr:meta])* @SinkBuilderCustomInner@formatter: $($field:ident).+ ) => {
         $(#[$attr])*
+        #[must_use]
         pub fn formatter(mut self, formatter: Box<dyn $crate::formatter::Formatter>) -> Self {
             self.$($field).+ = Some(formatter);
             self
@@ -180,6 +186,7 @@ macro_rules! common_impl {
     };
     ( $(#[$attr:meta])* @SinkBuilderCustomInner@error_handler: $($field:ident).+ ) => {
         $(#[$attr])*
+        #[must_use]
         pub fn error_handler(mut self, handler: $crate::ErrorHandler) -> Self {
             self.$($field).+ = Some(handler);
             self

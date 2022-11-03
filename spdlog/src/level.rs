@@ -77,6 +77,7 @@ cfg_if! {
 }
 
 impl Level {
+    #[must_use]
     fn from_usize(u: usize) -> Option<Level> {
         match u {
             0 => Some(Level::Critical),
@@ -89,24 +90,29 @@ impl Level {
         }
     }
 
+    #[must_use]
     const fn min_usize() -> usize {
         Self::most_severe() as usize
     }
 
+    #[must_use]
     const fn max_usize() -> usize {
         Self::most_verbose() as usize
     }
 
+    #[must_use]
     pub(crate) const fn count() -> usize {
         Self::max_usize() + 1
     }
 
     /// Returns the most severe logging level.
+    #[must_use]
     pub const fn most_severe() -> Level {
         Level::Critical
     }
 
     /// Returns the most verbose logging level.
+    #[must_use]
     pub const fn most_verbose() -> Level {
         Level::Trace
     }
@@ -114,10 +120,12 @@ impl Level {
     /// Returns the string representation of the `Level`.
     ///
     /// This returns the same string as the `fmt::Display` implementation.
+    #[must_use]
     pub fn as_str(&self) -> &'static str {
         LOG_LEVEL_NAMES[*self as usize]
     }
 
+    #[must_use]
     pub(crate) fn as_short_str(&self) -> &'static str {
         LOG_LEVEL_SHORT_NAMES[*self as usize]
     }
@@ -234,12 +242,14 @@ impl LevelFilter {
     /// # Examples
     ///
     /// See the documentation of [`LevelFilter`].
+    #[must_use]
     pub fn compare(&self, level: Level) -> bool {
         self.__compare_const(level)
     }
 
     // Users should not use this function directly.
     #[doc(hidden)]
+    #[must_use]
     pub const fn __compare_const(&self, level: Level) -> bool {
         let level_num: u16 = level as u16;
 
@@ -255,6 +265,7 @@ impl LevelFilter {
         }
     }
 
+    #[must_use]
     pub(crate) fn from_str_for_env(text: &str) -> Option<LevelFilter> {
         if let Ok(level) = Level::from_str(text) {
             Some(LevelFilter::MoreSevereEqual(level))

@@ -79,6 +79,7 @@ struct MockSink {
 }
 
 impl MockSink {
+    #[must_use]
     fn new() -> Self {
         Self {
             formatter: Mutex::new(None),
@@ -86,6 +87,7 @@ impl MockSink {
         }
     }
 
+    #[must_use]
     fn get_last_msg(&self) -> Option<(String, Option<Range<usize>>)> {
         self.last_msg.lock().unwrap().clone()
     }

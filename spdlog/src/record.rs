@@ -40,6 +40,7 @@ impl<'a> Record<'a> {
     /// Constructs a `Record`.
     ///
     /// [`Sink`]: crate::sink::Sink
+    #[must_use]
     pub(crate) fn new<S>(level: Level, payload: S) -> Record<'a>
     where
         S: Into<Cow<'a, str>>,
@@ -58,6 +59,7 @@ impl<'a> Record<'a> {
     /// Constructs a [`RecordBuilder`].
     ///
     /// [`Sink`]: crate::sink::Sink
+    #[must_use]
     pub(crate) fn builder<S>(level: Level, payload: S) -> RecordBuilder<'a>
     where
         S: Into<Cow<'a, str>>,
@@ -66,6 +68,7 @@ impl<'a> Record<'a> {
     }
 
     /// Creates a [`RecordOwned`] that doesn't have lifetimes.
+    #[must_use]
     pub fn to_owned(&self) -> RecordOwned {
         RecordOwned {
             logger_name: self.logger_name.map(|n| n.into()),
@@ -75,26 +78,31 @@ impl<'a> Record<'a> {
     }
 
     /// Gets the logger name.
+    #[must_use]
     pub fn logger_name(&self) -> Option<&'a str> {
         self.logger_name
     }
 
     /// Gets the level.
+    #[must_use]
     pub fn level(&self) -> Level {
         self.inner.level
     }
 
     /// Gets the payload.
+    #[must_use]
     pub fn payload(&self) -> &str {
         self.payload.borrow()
     }
 
     /// Gets the source location.
+    #[must_use]
     pub fn source_location(&self) -> Option<&SourceLocation> {
         self.inner.source_location.as_ref()
     }
 
     /// Gets the time when the record was created.
+    #[must_use]
     pub fn time(&self) -> SystemTime {
         self.inner.time
     }
@@ -102,6 +110,7 @@ impl<'a> Record<'a> {
     // When adding more getters, also add to `RecordOwned`
 
     #[cfg(feature = "log")]
+    #[must_use]
     pub(crate) fn from_log_crate_record(
         logger: &'a crate::Logger,
         record: &log::Record,
@@ -146,6 +155,7 @@ impl RecordOwned {
     pub const __SIZE_OF: usize = std::mem::size_of::<Self>();
 
     /// References as [`Record`] cheaply.
+    #[must_use]
     pub fn as_ref(&self) -> Record {
         Record {
             logger_name: self.logger_name.as_deref(),
@@ -155,26 +165,31 @@ impl RecordOwned {
     }
 
     /// Gets the logger name.
+    #[must_use]
     pub fn logger_name(&self) -> Option<&str> {
         self.logger_name.as_deref()
     }
 
     /// Gets the level.
+    #[must_use]
     pub fn level(&self) -> Level {
         self.inner.level
     }
 
     /// Gets the payload.
+    #[must_use]
     pub fn payload(&self) -> &str {
         self.payload.borrow()
     }
 
     /// Gets the source location.
+    #[must_use]
     pub fn source_location(&self) -> Option<&SourceLocation> {
         self.inner.source_location.as_ref()
     }
 
     /// Gets the time when the record was created.
+    #[must_use]
     pub fn time(&self) -> SystemTime {
         self.inner.time
     }
@@ -198,6 +213,7 @@ impl<'a> RecordBuilder<'a> {
     /// Typically users should only use it for testing [`Sink`].
     ///
     /// [`Sink`]: crate::sink::Sink
+    #[must_use]
     pub(crate) fn new<S>(level: Level, payload: S) -> Self
     where
         S: Into<Cow<'a, str>>,
@@ -224,6 +240,7 @@ impl<'a> RecordBuilder<'a> {
     }
 
     /// Builds a [`Record`].
+    #[must_use]
     pub(crate) fn build(self) -> Record<'a> {
         self.record
     }

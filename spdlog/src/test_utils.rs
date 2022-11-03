@@ -30,10 +30,12 @@ pub struct CounterSink {
 pub struct NoModFormatter {}
 
 impl CounterSink {
+    #[must_use]
     pub fn new() -> Self {
         Self::with_delay(None)
     }
 
+    #[must_use]
     pub fn with_delay(duration: Option<Duration>) -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
@@ -44,14 +46,17 @@ impl CounterSink {
         }
     }
 
+    #[must_use]
     pub fn log_count(&self) -> usize {
         self.log_counter.load(Ordering::Relaxed)
     }
 
+    #[must_use]
     pub fn flush_count(&self) -> usize {
         self.flush_counter.load(Ordering::Relaxed)
     }
 
+    #[must_use]
     pub fn payloads(&self) -> Vec<String> {
         self.payloads.lock_expect().clone()
     }
@@ -111,6 +116,7 @@ impl Default for CounterSink {
 }
 
 impl NoModFormatter {
+    #[must_use]
     pub fn new() -> Self {
         Self {}
     }
@@ -135,6 +141,7 @@ impl Default for NoModFormatter {
     }
 }
 
+#[must_use]
 pub fn test_logger_builder() -> LoggerBuilder {
     let mut builder = LoggerBuilder::new();
     builder.error_handler(|err| panic!("{}", err));
