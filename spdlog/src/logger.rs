@@ -4,7 +4,7 @@ use std::{result::Result as StdResult, time::Duration};
 
 use crate::{
     env_level,
-    error::{Error, ErrorHandler, SetLoggerNameError},
+    error::{Error, ErrorHandler, InvalidArgumentError, SetLoggerNameError},
     periodic_worker::PeriodicWorker,
     sink::{Sink, Sinks},
     sync::*,
@@ -362,7 +362,7 @@ impl Logger {
         S: Into<String>,
     {
         self.fork_with(|new| {
-            new.set_name(new_name)?;
+            new.set_name(new_name).map_err(InvalidArgumentError::from)?;
             Ok(())
         })
     }
@@ -546,7 +546,7 @@ impl LoggerBuilder {
 
     fn build_inner(&mut self, preset_level: Option<LevelFilter>) -> Result<Logger> {
         if let Some(name) = &self.name {
-            check_logger_name(name)?;
+            check_logger_name(name).map_err(InvalidArgumentError::from)?;
         }
 
         let logger = Logger {
@@ -665,7 +665,7 @@ mod tests {
         macro_rules! assert_name_err {
             ( $($name:literal),+ $(,)? ) => {
                 $(match LoggerBuilder::new().name($name).build() {
-                    Err(Error::SetLoggerName(err)) => {
+                    Err(Error::InvalidArgument(InvalidArgumentError::LoggerName(err))) => {
                         assert_eq!(err.name(), $name)
                     }
                     _ => panic!("test case '{}' failed", $name),
@@ -838,7 +838,7 @@ mod tests {
 
         assert!(matches!(
             new.fork_with_name(Some("invalid,name")),
-            Err(Error::SetLoggerName(_))
+            Err(Error::InvalidArgument(InvalidArgumentError::LoggerName(_)))
         ));
 
         assert!(new

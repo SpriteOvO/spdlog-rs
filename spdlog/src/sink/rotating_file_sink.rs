@@ -15,6 +15,7 @@ use std::{
 use chrono::prelude::*;
 
 use crate::{
+    error::InvalidArgumentError,
     sink::{helper, Sink},
     sync::*,
     utils, Error, Record, Result, StringBuf,
@@ -320,8 +321,7 @@ impl RotationPolicy {
             Self::FileSize(max_size) => {
                 if *max_size == 0 {
                     return Err(format!(
-                        "invalid rotation policy. (FileSize) \
-                         expect `max_size` to be (0, u64::MAX] but {}",
+                        "policy 'file size' expect `max_size` to be (0, u64::MAX] but got {}",
                         *max_size
                     ));
                 }
@@ -329,8 +329,7 @@ impl RotationPolicy {
             Self::Daily { hour, minute } => {
                 if *hour > 23 || *minute > 59 {
                     return Err(format!(
-                        "invalid rotation policy. (Daily) \
-                         expect (`hour`, `minute`) to be ([0, 23], [0, 59]) but ({}, {})",
+                        "policy 'daily' expect `(hour, minute)` to be ([0, 23], [0, 59]) but got ({}, {})",
                         *hour, *minute
                     ));
                 }
@@ -830,7 +829,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
     pub fn build(self) -> Result<RotatingFileSink> {
         self.rotation_policy
             .validate()
-            .map_err(Error::SetRotationPolicy)?;
+            .map_err(|err| Error::InvalidArgument(InvalidArgumentError::RotationPolicy(err)))?;
 
         let rotator = match self.rotation_policy {
             RotationPolicy::FileSize(max_size) => RotatorKind::FileSize(RotatorFileSize::new(

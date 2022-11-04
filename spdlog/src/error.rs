@@ -81,24 +81,9 @@ pub enum Error {
     #[error("attempted to convert a string that doesn't match an existing log level: {0}")]
     ParseLevel(String),
 
-    /// The variant returned if an error occurs in setting a invalid logger
-    /// name.
-    ///
-    /// See the documentation of [`LoggerBuilder::name`] for the name
-    /// requirements.
-    ///
-    /// [`LoggerBuilder::name`]: crate::LoggerBuilder::name
-    #[error("failed to set logger name: {0}")]
-    SetLoggerName(#[from] SetLoggerNameError),
-
-    /// The variant returned if an error occurs in setting an invalid
-    /// [`RotationPolicy`].
-    ///
-    /// See the documentation of [`RotationPolicy`] for the input requirements.
-    ///
-    /// [`RotationPolicy`]: crate::sink::RotationPolicy
-    #[error("failed to set rotation policy: {0}")]
-    SetRotationPolicy(String),
+    /// The variant returned if an invalid argument was passed in.
+    #[error("invalid argument {0}")]
+    InvalidArgument(#[from] InvalidArgumentError),
 
     /// The variant returned by [`Sink`]s when an error occurs in sending to the
     /// channel.
@@ -107,6 +92,28 @@ pub enum Error {
     #[cfg(feature = "multi-thread")]
     #[error("failed to send message to channel: {0}")]
     SendToChannel(SendToChannelError, SendToChannelErrorDropped),
+}
+
+/// This error type contains a variety of possible invalid arguments.
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum InvalidArgumentError {
+    /// Invalid logger name.
+    ///
+    /// See the documentation of [`LoggerBuilder::name`] for the name
+    /// requirements.
+    ///
+    /// [`LoggerBuilder::name`]: crate::LoggerBuilder::name
+    #[error("'logger name': {0}")]
+    LoggerName(#[from] SetLoggerNameError),
+
+    /// Invalid [`RotationPolicy`].
+    ///
+    /// See the documentation of [`RotationPolicy`] for the input requirements.
+    ///
+    /// [`RotationPolicy`]: crate::sink::RotationPolicy
+    #[error("'rotation policy': {0}")]
+    RotationPolicy(String),
 }
 
 /// This error indicates that an invalid logger name was set.
