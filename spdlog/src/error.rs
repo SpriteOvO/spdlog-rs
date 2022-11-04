@@ -114,6 +114,10 @@ pub enum InvalidArgumentError {
     /// [`RotationPolicy`]: crate::sink::RotationPolicy
     #[error("'rotation policy': {0}")]
     RotationPolicy(String),
+
+    /// Invalid thread pool capacity.
+    #[error("'thread pool capacity': {0}")]
+    ThreadPoolCapacity(String),
 }
 
 /// This error indicates that an invalid logger name was set.

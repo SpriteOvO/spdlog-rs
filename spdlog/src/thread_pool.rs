@@ -4,9 +4,10 @@ use crossbeam::channel::{self as mpmc, Receiver, Sender};
 use once_cell::sync::Lazy;
 
 use crate::{
+    error::{Error, InvalidArgumentError},
     sink::{OverflowPolicy, Task},
     sync::*,
-    Error, Result,
+    Result,
 };
 
 /// A thread pool for processing operations asynchronously.
@@ -107,6 +108,9 @@ impl ThreadPoolBuilder {
 
     // The current Sinks are not beneficial with more than one thread, so the method
     // is not public.
+    //
+    // If it is ready to be made public in the future, please don't forget to
+    // replace the `panic!` in the `build` function with a recoverable error.
     #[allow(dead_code)]
     fn threads(&mut self, threads: usize) -> &mut Self {
         self.threads = threads;
@@ -116,10 +120,14 @@ impl ThreadPoolBuilder {
     /// Builds a [`ThreadPool`].
     pub fn build(&self) -> Result<ThreadPool> {
         if self.capacity < 1 {
-            panic!("capacity of ThreadPool cannot be 0");
+            return Err(Error::InvalidArgument(
+                InvalidArgumentError::ThreadPoolCapacity("cannot be 0".to_string()),
+            ));
         }
 
         if self.threads < 1 {
+            // Users cannot currently configure this value, so `panic!` is not a problem
+            // here.
             panic!("threads of ThreadPool cannot be 0");
         }
 
@@ -167,14 +175,18 @@ mod tests {
     use super::*;
 
     #[test]
-    #[should_panic]
     fn panic_capacity_0() {
-        ThreadPool::builder().capacity(0).build().unwrap();
+        assert!(matches!(
+            ThreadPool::builder().capacity(0).build(),
+            Err(Error::InvalidArgument(
+                InvalidArgumentError::ThreadPoolCapacity(_)
+            ))
+        ));
     }
 
     #[test]
     #[should_panic]
     fn panic_thread_0() {
-        ThreadPool::builder().threads(0).build().unwrap();
+        let _ = ThreadPool::builder().threads(0).build();
     }
 }
