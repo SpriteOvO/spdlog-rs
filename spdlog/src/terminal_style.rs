@@ -55,7 +55,7 @@ impl Color {
 /// The terminal text style structure.
 ///
 /// You can construct it easily with [`StyleBuilder`].
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Style {
     color: Option<Color>,
     bg_color: Option<Color>,
@@ -73,15 +73,32 @@ pub struct Style {
 
 impl Style {
     /// Constructs a `Style` with no styles.
+    #[allow(clippy::new_without_default)]
+    #[deprecated(note = "it may be removed in the future, use `Style::builder()` instead")]
     #[must_use]
     pub fn new() -> Style {
-        Style::default()
+        Style::builder().build()
     }
 
     /// Constructs a [`StyleBuilder`].
     #[must_use]
     pub fn builder() -> StyleBuilder {
-        StyleBuilder::new()
+        StyleBuilder {
+            style: Style {
+                color: None,
+                bg_color: None,
+                bold: false,
+                faint: false,
+                italic: false,
+                underline: false,
+                slow_blink: false,
+                rapid_blink: false,
+                invert: false,
+                conceal: false,
+                strikethrough: false,
+                reset: false,
+            },
+        }
     }
 
     #[must_use]
@@ -138,7 +155,7 @@ impl Style {
 }
 
 /// The builder of [`Style`].
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct StyleBuilder {
     style: Style,
 }
@@ -168,9 +185,11 @@ pub(crate) mod macros {
 
 impl StyleBuilder {
     /// Constructs a `StyleBuilder`.
+    #[allow(clippy::new_without_default)]
+    #[deprecated(note = "it may be removed in the future, use `Style::builder()` instead")]
     #[must_use]
     pub fn new() -> StyleBuilder {
-        StyleBuilder::default()
+        Style::builder()
     }
 
     macros::impl_style_builder_setters! {
@@ -233,12 +252,12 @@ impl From<LevelStyles> for LevelStyleCodes {
 impl Default for LevelStyles {
     fn default() -> LevelStyles {
         LevelStyles([
-            StyleBuilder::new().bg_color(Color::Red).bold().build(), // Critical
-            StyleBuilder::new().color(Color::Red).bold().build(),    // Error
-            StyleBuilder::new().color(Color::Yellow).bold().build(), // Warn
-            StyleBuilder::new().color(Color::Green).build(),         // Info
-            StyleBuilder::new().color(Color::Cyan).build(),          // Debug
-            StyleBuilder::new().color(Color::White).build(),         // Trace
+            Style::builder().bg_color(Color::Red).bold().build(), // Critical
+            Style::builder().color(Color::Red).bold().build(),    // Error
+            Style::builder().color(Color::Yellow).bold().build(), // Warn
+            Style::builder().color(Color::Green).build(),         // Info
+            Style::builder().color(Color::Cyan).build(),          // Debug
+            Style::builder().color(Color::White).build(),         // Trace
         ])
     }
 }
