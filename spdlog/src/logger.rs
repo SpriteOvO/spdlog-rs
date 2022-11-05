@@ -75,7 +75,13 @@ impl Logger {
     /// Constructs a [`LoggerBuilder`].
     #[must_use]
     pub fn builder() -> LoggerBuilder {
-        LoggerBuilder::new()
+        LoggerBuilder {
+            name: None,
+            level_filter: LevelFilter::MoreSevereEqual(Level::Info),
+            sinks: vec![],
+            flush_level_filter: LevelFilter::Off,
+            error_handler: None,
+        }
     }
 
     /// Gets the logger name.
@@ -450,15 +456,11 @@ pub struct LoggerBuilder {
 
 impl LoggerBuilder {
     /// Constructs a `LoggerBuilder`.
+    #[allow(clippy::new_without_default)]
+    #[deprecated(note = "it may be removed in the future, use `Logger::builder()` instead")]
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            name: None,
-            level_filter: LevelFilter::MoreSevereEqual(Level::Info),
-            sinks: vec![],
-            flush_level_filter: LevelFilter::Off,
-            error_handler: None,
-        }
+        Logger::builder()
     }
 
     /// Sets the name of the logger.
@@ -584,12 +586,6 @@ impl LoggerBuilder {
     }
 }
 
-impl Default for LoggerBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -660,11 +656,11 @@ mod tests {
 
     #[test]
     fn builder_name() {
-        LoggerBuilder::new().name("hello-world");
+        Logger::builder().name("hello-world");
 
         macro_rules! assert_name_err {
             ( $($name:literal),+ $(,)? ) => {
-                $(match LoggerBuilder::new().name($name).build() {
+                $(match Logger::builder().name($name).build() {
                     Err(Error::InvalidArgument(InvalidArgumentError::LoggerName(err))) => {
                         assert_eq!(err.name(), $name)
                     }

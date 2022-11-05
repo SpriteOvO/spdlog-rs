@@ -4,7 +4,7 @@ use crate::{
     formatter::{FmtExtraInfo, Formatter},
     sink::Sink,
     sync::*,
-    Error, ErrorHandler, LevelFilter, LoggerBuilder, Record, Result, StringBuf,
+    Error, ErrorHandler, LevelFilter, Logger, LoggerBuilder, Record, Result, StringBuf,
 };
 
 pub static TEST_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
@@ -143,7 +143,7 @@ impl Default for NoModFormatter {
 
 #[must_use]
 pub fn test_logger_builder() -> LoggerBuilder {
-    let mut builder = LoggerBuilder::new();
+    let mut builder = Logger::builder();
     builder.error_handler(|err| panic!("{}", err));
     builder
 }
