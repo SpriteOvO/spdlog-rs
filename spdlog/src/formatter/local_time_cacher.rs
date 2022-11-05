@@ -74,9 +74,12 @@ impl LocalTimeCacher {
 
     #[must_use]
     pub(crate) fn get(&mut self, system_time: SystemTime) -> TimeDate {
+        self.get_inner(system_time.into())
+    }
+
+    fn get_inner(&mut self, utc_time: DateTime<Utc>) -> TimeDate {
         const LEAP_BOUNDARY: u32 = 1_000_000_000;
 
-        let utc_time: DateTime<Utc> = system_time.into();
         let nanosecond = utc_time.nanosecond();
         let is_leap_second = nanosecond >= LEAP_BOUNDARY;
         let reduced_nanosecond = if is_leap_second {
@@ -347,6 +350,57 @@ impl CacheValues {
             second_str: RefCell::new(None),
             tz_offset_str: RefCell::new(None),
             unix_timestamp_str: RefCell::new(None),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn leap_second() {
+        let (date_2015, date_2022) = (Utc.ymd(2015, 6, 30), Utc.ymd(2022, 6, 30));
+
+        enum UtcKind {
+            NonLeap,
+            Leap,
+        }
+
+        let datetimes = [
+            (
+                UtcKind::NonLeap,
+                date_2015.and_hms_nano(23, 59, 59, 100_000_000),
+            ),
+            (
+                UtcKind::Leap,
+                date_2015.and_hms_nano(23, 59, 59, 1_000_000_000),
+            ),
+            (
+                UtcKind::Leap,
+                date_2015.and_hms_nano(23, 59, 59, 1_100_000_000),
+            ),
+            (UtcKind::NonLeap, date_2022.and_hms(23, 59, 59)),
+            (
+                UtcKind::NonLeap,
+                date_2022.and_hms_nano(23, 59, 59, 100_000_000),
+            ),
+        ];
+
+        let mut cacher = LocalTimeCacher::new();
+
+        for datetime in datetimes {
+            let leap = match datetime.0 {
+                UtcKind::NonLeap => false,
+                UtcKind::Leap => true,
+            };
+            let utc = datetime.1;
+
+            println!(" => checking '{utc}'");
+
+            let result = cacher.get_inner(utc);
+            assert_eq!(result.cached.is_leap_second, leap);
+            assert_eq!(result.second(), if !leap { 59 } else { 60 });
         }
     }
 }
