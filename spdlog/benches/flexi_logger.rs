@@ -54,7 +54,7 @@ fn bench_1_file(bencher: &mut Bencher) {
         .write_mode(WriteMode::BufferDontFlush)
         .format(formatter);
 
-    let mut handle = HANDLE.lock().unwrap();
+    let handle = HANDLE.lock().unwrap();
     handle.set_new_spec(LogSpecification::info());
     handle.reset_flw(&writer_builder).unwrap();
 
@@ -76,7 +76,7 @@ fn bench_3_rotating_file_size(bencher: &mut Bencher) {
             Cleanup::KeepLogFiles(common::ROTATING_FILES),
         );
 
-    let mut handle = HANDLE.lock().unwrap();
+    let handle = HANDLE.lock().unwrap();
     handle.set_new_spec(LogSpecification::info());
     handle.reset_flw(&writer_builder).unwrap();
 
@@ -96,7 +96,7 @@ fn bench_4_rotating_daily(bencher: &mut Bencher) {
             Cleanup::KeepLogFiles(common::ROTATING_FILES),
         );
 
-    let mut handle = HANDLE.lock().unwrap();
+    let handle = HANDLE.lock().unwrap();
     handle.set_new_spec(LogSpecification::info());
     handle.reset_flw(&writer_builder).unwrap();
 
