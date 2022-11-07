@@ -254,6 +254,7 @@ impl RotatingFileSink {
     /// Panics if the parameter `rotation_policy` is invalid. See the
     /// documentation of [`RotationPolicy`] for requirements.
     #[deprecated(
+        since = "0.3.0",
         note = "it may be removed in the future, use `RotatingFileSink::builder()` instead"
     )]
     pub fn new<P>(

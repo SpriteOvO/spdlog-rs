@@ -46,7 +46,10 @@ impl FileSink {
     ///
     /// If an error occurs opening the file, [`Error::CreateDirectory`] or
     /// [`Error::OpenFile`] will be returned.
-    #[deprecated(note = "it may be removed in the future, use `FileSink::builder()` instead")]
+    #[deprecated(
+        since = "0.3.0",
+        note = "it may be removed in the future, use `FileSink::builder()` instead"
+    )]
     pub fn new<P>(path: P, truncate: bool) -> Result<FileSink>
     where
         P: AsRef<Path>, /* Keep the `AsRef<Path>` instead of `Into<PathBuf>` for backward

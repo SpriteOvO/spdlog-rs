@@ -96,7 +96,10 @@ impl StdStreamSink {
     }
 
     /// Constructs a `StdStreamSink`.
-    #[deprecated(note = "it may be removed in the future, use `StdStreamSink::builder()` instead")]
+    #[deprecated(
+        since = "0.3.0",
+        note = "it may be removed in the future, use `StdStreamSink::builder()` instead"
+    )]
     #[must_use]
     pub fn new(std_stream: StdStream, style_mode: StyleMode) -> StdStreamSink {
         Self::builder()

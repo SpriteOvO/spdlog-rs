@@ -457,7 +457,10 @@ pub struct LoggerBuilder {
 impl LoggerBuilder {
     /// Constructs a `LoggerBuilder`.
     #[allow(clippy::new_without_default)]
-    #[deprecated(note = "it may be removed in the future, use `Logger::builder()` instead")]
+    #[deprecated(
+        since = "0.3.0",
+        note = "it may be removed in the future, use `Logger::builder()` instead"
+    )]
     #[must_use]
     pub fn new() -> Self {
         Logger::builder()

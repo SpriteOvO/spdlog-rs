@@ -74,7 +74,10 @@ pub struct Style {
 impl Style {
     /// Constructs a `Style` with no styles.
     #[allow(clippy::new_without_default)]
-    #[deprecated(note = "it may be removed in the future, use `Style::builder()` instead")]
+    #[deprecated(
+        since = "0.3.0",
+        note = "it may be removed in the future, use `Style::builder()` instead"
+    )]
     #[must_use]
     pub fn new() -> Style {
         Style::builder().build()
@@ -186,7 +189,10 @@ pub(crate) mod macros {
 impl StyleBuilder {
     /// Constructs a `StyleBuilder`.
     #[allow(clippy::new_without_default)]
-    #[deprecated(note = "it may be removed in the future, use `Style::builder()` instead")]
+    #[deprecated(
+        since = "0.3.0",
+        note = "it may be removed in the future, use `Style::builder()` instead"
+    )]
     #[must_use]
     pub fn new() -> StyleBuilder {
         Style::builder()
