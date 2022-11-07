@@ -77,7 +77,7 @@ fn bench_1_full_formatter(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_2_full_pattern(bencher: &mut Bencher) {
-    let pattern = pattern!("[{date} {time}.{millisecond}] [{level}] {payload}\n");
+    let pattern = pattern!("[{date} {time}.{millisecond}] [{level}] {payload}{eol}");
 
     let full_formatter = Arc::new(
         WriteSink::builder()
