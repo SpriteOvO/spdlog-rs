@@ -9,7 +9,7 @@ A fast and combinable Rust logging crate, inspired by the C++ logging library [s
 
 ## Features
 
- - Very fast (see [Benchmarks](/spdlog/benches/README.md)).
+ - Very fast (see [Benchmarks]).
  - Various log targets:
     - Standard streams with optional colors.
     - Files.
@@ -69,6 +69,7 @@ for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 
 [spdlog]: https://github.com/gabime/spdlog
+[Benchmarks]: https://github.com/SpriteOvO/spdlog-rs/blob/main/spdlog/benches/README.md
 [log crate]: https://crates.io/crates/log
 [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 [docs.rs]: https://docs.rs/spdlog-rs/
