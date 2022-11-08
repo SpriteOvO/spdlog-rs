@@ -2,6 +2,13 @@
 name = "spdlog-macros"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.56"
+description = "Macros implementation of crate \"spdlog-rs\""
+repository = "https://github.com/SpriteOvO/spdlog-rs"
+license = "MIT OR Apache-2.0"
+readme = "crates-io.md"
+keywords = ["spdlog", "log", "logging"]
+categories = ["development-tools::debugging"]
 
 [lib]
 proc-macro = true
