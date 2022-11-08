@@ -106,4 +106,9 @@ jobs:
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
     - name: Run check for core with Rust ${{ env.rust_minver }}
-      run: cargo +${{ env.rust_minver }} check --all-features --verbose
+      run: |
+        # Some dev-dependencies require a newer version of Rust, but it doesn't matter for MSRV check
+        # This is a workaround for the cargo nightly option `-Z avoid-dev-deps`
+        sed -i 's/\[dev-dependencies]/[workaround-avoid-dev-deps]/g' ./spdlog/Cargo.toml
+
+        cargo +${{ env.rust_minver }} check --all-features --verbose
