@@ -3,7 +3,6 @@ use nom::{
     Err, IResult,
 };
 
-//
 // [Credits] Copied and modified from:
 // https://github.com/Geal/nom/issues/1253
 // https://github.com/getreu/parse-hyperlinks/blob/0a69575d5d0356f850940717daadbec974d1efb4/parse-hyperlinks/src/lib.rs
@@ -56,9 +55,9 @@ pub(crate) fn take_until_unbalanced(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use nom::{bytes::complete::tag, error::ErrorKind, sequence::delimited};
+
+    use super::*;
 
     #[test]
     fn take_until_unmatched() {

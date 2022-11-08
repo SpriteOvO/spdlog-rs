@@ -5,12 +5,11 @@ extern crate test;
 mod common;
 
 use std::{fs, path::PathBuf};
-use test::Bencher;
 
 use once_cell::sync::Lazy;
-
 use slog::{info, o, Fuse, Logger};
 use sloggers::{file::FileLoggerBuilder, types::SourceLocation, Build};
+use test::Bencher;
 
 static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let path = common::BENCH_LOGS_PATH.join("slog");

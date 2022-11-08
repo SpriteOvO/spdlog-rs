@@ -10,8 +10,9 @@ pub use spin::{
 };
 
 pub mod atomic {
-    pub use atomic::Atomic;
     pub use std::sync::atomic::*;
+
+    pub use atomic::Atomic;
 }
 pub use self::atomic::*;
 

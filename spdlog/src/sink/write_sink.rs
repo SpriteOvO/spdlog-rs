@@ -123,7 +123,6 @@ where
 
 /// The builder of [`WriteSink`].
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
-///
 /// # Examples
 ///
 /// - Building a [`WriteSink`].

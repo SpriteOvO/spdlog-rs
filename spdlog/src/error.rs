@@ -9,10 +9,9 @@ use atomic::Atomic;
 use static_assertions::const_assert;
 use thiserror::Error;
 
+pub use crate::env_level::EnvLevelError;
 #[cfg(feature = "multi-thread")]
 use crate::{sink::Task, RecordOwned};
-
-pub use crate::env_level::EnvLevelError;
 
 /// The error type of this crate.
 #[derive(Error, Debug)]

@@ -5,10 +5,9 @@ extern crate test;
 mod common;
 
 use std::{fs, path::PathBuf};
-use test::Bencher;
 
 use once_cell::sync::Lazy;
-
+use test::Bencher;
 use tracing::info;
 use tracing_subscriber::{filter::LevelFilter, fmt::MakeWriter};
 

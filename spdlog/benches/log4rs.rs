@@ -5,9 +5,6 @@ extern crate test;
 mod common;
 
 use std::{fs, path::PathBuf};
-use test::Bencher;
-
-use once_cell::sync::Lazy;
 
 use log::{info, LevelFilter};
 use log4rs::{
@@ -15,8 +12,7 @@ use log4rs::{
         file::FileAppender,
         rolling_file::{
             policy::compound::{
-                roll::fixed_window::FixedWindowRoller,
-                {trigger::size::SizeTrigger, CompoundPolicy},
+                roll::fixed_window::FixedWindowRoller, trigger::size::SizeTrigger, CompoundPolicy,
             },
             RollingFileAppender,
         },
@@ -25,6 +21,8 @@ use log4rs::{
     encode::pattern::PatternEncoder,
     Handle,
 };
+use once_cell::sync::Lazy;
+use test::Bencher;
 
 static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let path = common::BENCH_LOGS_PATH.join("log4rs");

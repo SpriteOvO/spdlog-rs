@@ -5,11 +5,9 @@ extern crate test;
 mod common;
 
 use std::{cmp, env, fs, path::PathBuf, sync::Arc, thread, time::Instant};
-use test::black_box;
 
 use clap::Parser;
 use once_cell::sync::Lazy;
-
 use spdlog::{
     error::{Error, SendToChannelError},
     formatter::{pattern, PatternFormatter},
@@ -17,6 +15,7 @@ use spdlog::{
     sink::*,
     ThreadPool,
 };
+use test::black_box;
 
 required_multi_thread_feature!();
 

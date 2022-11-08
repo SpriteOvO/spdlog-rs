@@ -4,8 +4,10 @@ mod synthesis;
 
 use proc_macro::TokenStream;
 
-use crate::parse::Pattern;
-use crate::synthesis::{PatternFormatter, PatternFormatterKind, Synthesiser};
+use crate::{
+    parse::Pattern,
+    synthesis::{PatternFormatter, PatternFormatterKind, Synthesiser},
+};
 
 #[proc_macro]
 pub fn pattern(input: TokenStream) -> TokenStream {

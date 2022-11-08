@@ -1206,9 +1206,7 @@ tuple_pattern! {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-
-    use crate::Level;
-    use crate::SourceLocation;
+    use crate::{Level, SourceLocation};
 
     // We use `get_mock_record` and `test_pattern` in tests/pattern.rs so let's make
     // them pub in test builds.

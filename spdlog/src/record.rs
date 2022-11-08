@@ -19,7 +19,6 @@ use crate::{Level, SourceLocation};
 /// [`Logger::log`]: crate::logger::Logger::log
 /// [`Sink::log`]: crate::sink::Sink::log
 /// [`log!`]: crate::log
-//
 // FIXME: `Record` still owns some data and not just a reference, I'm not sure this is necessary and
 // possible to correct.
 #[derive(Clone, Debug)]

@@ -5,17 +5,16 @@ extern crate test;
 mod common;
 
 use std::{env, fs, path::PathBuf, sync::Arc, thread, time::Instant};
-use test::black_box;
 
 use clap::Parser;
 use once_cell::sync::Lazy;
-
 use spdlog::{
     formatter::{pattern, PatternFormatter},
     info,
     sink::{RotationPolicy, *},
     LevelFilter, Logger,
 };
+use test::black_box;
 
 static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let path = common::BENCH_LOGS_PATH.join("compare_with_cpp_spdlog");

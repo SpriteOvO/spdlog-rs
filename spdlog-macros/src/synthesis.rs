@@ -1,12 +1,12 @@
-use std::collections::HashMap;
-use std::error::Error;
-use std::fmt::{Display, Formatter};
+use std::{
+    collections::HashMap,
+    error::Error,
+    fmt::{Display, Formatter},
+};
 
 use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
-use syn::punctuated::Punctuated;
-use syn::token::Paren;
-use syn::{Expr, ExprLit, ExprTuple, Lit, LitStr, Path};
+use syn::{punctuated::Punctuated, token::Paren, Expr, ExprLit, ExprTuple, Lit, LitStr, Path};
 
 use crate::parse::{
     PatternTemplate, PatternTemplateFormatter, PatternTemplateLiteral, PatternTemplateStyleRange,

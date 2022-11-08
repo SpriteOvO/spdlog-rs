@@ -591,10 +591,10 @@ impl LoggerBuilder {
 
 #[cfg(test)]
 mod tests {
+    use std::{thread, time::Duration};
+
     use super::*;
     use crate::{prelude::*, test_utils::*};
-
-    use std::{thread, time::Duration};
 
     #[test]
     fn send_sync() {

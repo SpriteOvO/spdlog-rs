@@ -242,8 +242,9 @@ pub use thread_pool::*;
 
 /// Contains all log macros and common types.
 pub mod prelude {
-    pub use super::{critical, debug, error, info, log, trace, warn};
-    pub use super::{Level, LevelFilter, Logger, LoggerBuilder};
+    pub use super::{
+        critical, debug, error, info, log, trace, warn, Level, LevelFilter, Logger, LoggerBuilder,
+    };
 }
 
 use std::{
@@ -254,11 +255,8 @@ use std::{
 };
 
 use cfg_if::cfg_if;
-
 use error::EnvLevelError;
-use sink::{
-    Sink, {StdStream, StdStreamSink},
-};
+use sink::{Sink, StdStream, StdStreamSink};
 use sync::*;
 
 /// The statically resolved log level filter.
@@ -720,9 +718,9 @@ pub fn __log(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use test_utils::*;
+
+    use super::*;
 
     #[test]
     fn test_default_logger() {

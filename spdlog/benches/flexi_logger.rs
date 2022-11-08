@@ -5,15 +5,14 @@ extern crate test;
 mod common;
 
 use std::{fs, path::PathBuf, sync::Mutex};
-use test::Bencher;
-
-use once_cell::sync::Lazy;
 
 use flexi_logger::{
     writers::FileLogWriter, Age, Cleanup, Criterion, DeferredNow, FileSpec, LogSpecification,
     Logger, LoggerHandle, Naming, WriteMode, TS_DASHES_BLANK_COLONS_DOT_BLANK,
 };
 use log::{info, Record};
+use once_cell::sync::Lazy;
+use test::Bencher;
 
 static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let path = common::BENCH_LOGS_PATH.join("flexi_logger");

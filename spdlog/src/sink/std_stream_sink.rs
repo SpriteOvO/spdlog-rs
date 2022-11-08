@@ -184,7 +184,6 @@ impl Sink for StdStreamSink {
 
 /// The builder of [`StdStreamSink`].
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
-///
 /// # Examples
 ///
 /// - Building a [`StdStreamSink`].

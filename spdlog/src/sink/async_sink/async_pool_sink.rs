@@ -24,7 +24,6 @@ use crate::{
 /// [combined sink]: index.html#combined-sink
 /// [asynchronously]: index.html#asynchronous-combined-sink
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
-//
 // The names `AsyncSink` and `AsyncRuntimeSink` is reserved for future use.
 pub struct AsyncPoolSink {
     level_filter: Atomic<LevelFilter>,

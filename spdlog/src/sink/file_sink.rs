@@ -4,8 +4,7 @@ use std::{
     convert::Infallible,
     fs::File,
     io::{BufWriter, Write},
-    path::Path,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use crate::{
@@ -102,7 +101,6 @@ impl Drop for FileSink {
 
 /// The builder of [`FileSink`].
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
-///
 /// # Examples
 ///
 /// - Building a [`FileSink`].

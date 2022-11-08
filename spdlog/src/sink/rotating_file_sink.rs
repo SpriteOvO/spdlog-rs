@@ -165,7 +165,6 @@ pub struct RotatingFileSink {
 
 /// The builder of [`RotatingFileSink`].
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
-///
 /// # Examples
 ///
 /// - Building a [`RotatingFileSink`].

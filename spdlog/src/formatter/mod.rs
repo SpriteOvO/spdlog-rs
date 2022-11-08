@@ -13,6 +13,8 @@ mod journald_formatter;
 mod local_time_cacher;
 mod pattern_formatter;
 
+use std::ops::Range;
+
 pub use full_formatter::*;
 #[cfg(any(
     all(target_os = "linux", feature = "native", feature = "libsystemd"),
@@ -21,8 +23,6 @@ pub use full_formatter::*;
 pub(crate) use journald_formatter::*;
 pub(crate) use local_time_cacher::*;
 pub use pattern_formatter::*;
-
-use std::ops::Range;
 
 use crate::{Record, Result, StringBuf};
 

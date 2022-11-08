@@ -4,6 +4,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use cfg_if::cfg_if;
+use regex::Regex;
 use spdlog::{
     error,
     formatter::{pattern, Formatter, Pattern, PatternFormatter},
@@ -11,9 +13,6 @@ use spdlog::{
     sink::{Sink, WriteSink},
     StringBuf,
 };
-
-use cfg_if::cfg_if;
-use regex::Regex;
 
 #[test]
 fn test_basic() {

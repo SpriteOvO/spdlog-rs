@@ -5,16 +5,15 @@ extern crate test;
 mod common;
 
 use std::{fs, path::PathBuf, sync::Arc};
-use test::Bencher;
 
 use once_cell::sync::Lazy;
-
 use spdlog::{
     error::{Error, ErrorHandler, SendToChannelError},
     prelude::*,
     sink::*,
     ThreadPool,
 };
+use test::Bencher;
 
 required_multi_thread_feature!();
 

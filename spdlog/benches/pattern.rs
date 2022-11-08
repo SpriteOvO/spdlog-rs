@@ -3,7 +3,6 @@
 extern crate test;
 
 use std::{cell::RefCell, sync::Arc};
-use test::Bencher;
 
 use spdlog::{
     formatter::{pattern, Formatter, FullFormatter, Pattern, PatternFormatter},
@@ -11,6 +10,7 @@ use spdlog::{
     sink::{Sink, WriteSink},
     Record, StringBuf,
 };
+use test::Bencher;
 
 #[derive(Clone)]
 struct BenchSink<F> {
