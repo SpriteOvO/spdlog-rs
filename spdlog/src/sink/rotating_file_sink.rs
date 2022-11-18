@@ -1101,7 +1101,7 @@ mod tests {
 
         #[test]
         fn calc_file_path() {
-            let system_time = Local.ymd(2012, 3, 4).and_hms(5, 6, 7).into();
+            let system_time = Local.with_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap().into();
 
             let calc_daily = |base_path| {
                 RotatorTimePoint::calc_file_path(

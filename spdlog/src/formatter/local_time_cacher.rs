@@ -360,30 +360,37 @@ mod tests {
 
     #[test]
     fn leap_second() {
-        let (date_2015, date_2022) = (Utc.ymd(2015, 6, 30), Utc.ymd(2022, 6, 30));
+        let (date_2015, date_2022) = (
+            NaiveDate::from_ymd_opt(2015, 6, 30).unwrap(),
+            NaiveDate::from_ymd_opt(2022, 6, 30).unwrap(),
+        );
 
-        enum UtcKind {
+        enum Kind {
             NonLeap,
             Leap,
         }
 
         let datetimes = [
             (
-                UtcKind::NonLeap,
-                date_2015.and_hms_nano(23, 59, 59, 100_000_000),
+                Kind::NonLeap,
+                date_2015.and_hms_nano_opt(23, 59, 59, 100_000_000).unwrap(),
             ),
             (
-                UtcKind::Leap,
-                date_2015.and_hms_nano(23, 59, 59, 1_000_000_000),
+                Kind::Leap,
+                date_2015
+                    .and_hms_nano_opt(23, 59, 59, 1_000_000_000)
+                    .unwrap(),
             ),
             (
-                UtcKind::Leap,
-                date_2015.and_hms_nano(23, 59, 59, 1_100_000_000),
+                Kind::Leap,
+                date_2015
+                    .and_hms_nano_opt(23, 59, 59, 1_100_000_000)
+                    .unwrap(),
             ),
-            (UtcKind::NonLeap, date_2022.and_hms(23, 59, 59)),
+            (Kind::NonLeap, date_2022.and_hms_opt(23, 59, 59).unwrap()),
             (
-                UtcKind::NonLeap,
-                date_2022.and_hms_nano(23, 59, 59, 100_000_000),
+                Kind::NonLeap,
+                date_2022.and_hms_nano_opt(23, 59, 59, 100_000_000).unwrap(),
             ),
         ];
 
@@ -391,14 +398,14 @@ mod tests {
 
         for datetime in datetimes {
             let leap = match datetime.0 {
-                UtcKind::NonLeap => false,
-                UtcKind::Leap => true,
+                Kind::NonLeap => false,
+                Kind::Leap => true,
             };
-            let utc = datetime.1;
+            let datetime = datetime.1;
 
-            println!(" => checking '{utc}'");
+            println!(" => checking '{datetime}'");
 
-            let result = cacher.get_inner(utc);
+            let result = cacher.get_inner(datetime.and_local_timezone(Utc).unwrap());
             assert_eq!(result.cached.is_leap_second, leap);
             assert_eq!(result.second(), if !leap { 59 } else { 60 });
         }
