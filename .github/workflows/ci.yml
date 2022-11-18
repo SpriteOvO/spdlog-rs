@@ -94,21 +94,28 @@ jobs:
         cd ../spdlog-macros
         cargo +nightly rustdoc --all-features --verbose -- -D warnings
 
-  check-minver:
-    runs-on: ubuntu-latest
+  check:
+    strategy:
+      matrix:
+        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+    runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-    - name: Install dependencies
+    - name: Install dependencies (Linux)
+      if: matrix.os == 'ubuntu-latest'
       run: sudo apt install libsystemd-dev
     - name: Install Rust ${{ env.rust_minver }}
       run: rustup toolchain install ${{ env.rust_minver }}
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
-    - name: Run check for core with Rust ${{ env.rust_minver }}
+    - name: Avoid dev-dependencies
       run: |
         # Some dev-dependencies require a newer version of Rust, but it doesn't matter for MSRV check
+        # And the features they enable for their own dependencies may disrupt `cargo check` reporting obvious errors
         # This is a workaround for the cargo nightly option `-Z avoid-dev-deps`
-        sed -i 's/\[dev-dependencies]/[workaround-avoid-dev-deps]/g' ./spdlog/Cargo.toml
-
-        cargo +${{ env.rust_minver }} check --all-features --verbose
+        perl -pi -e 's/\[dev-dependencies]/[workaround-avoid-dev-deps]/g' ./spdlog/Cargo.toml
+    - name: Run check for core with Rust latest
+      run: cargo check --all-features --verbose
+    - name: Run check for core with Rust ${{ env.rust_minver }} (MSRV check)
+      run: cargo +${{ env.rust_minver }} check --all-features --verbose
