@@ -47,6 +47,13 @@ impl StdStreamDest<io::Stdout, io::Stderr> {
             StdStreamDest::Stderr(stream) => StdStreamDest::Stderr(stream.lock()),
         }
     }
+
+    fn stream_type(&self) -> StdStream {
+        match self {
+            StdStreamDest::Stdout(_) => StdStream::Stdout,
+            StdStreamDest::Stderr(_) => StdStream::Stderr,
+        }
+    }
 }
 
 macro_rules! impl_write_for_dest {
@@ -79,7 +86,6 @@ impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 pub struct StdStreamSink {
     common_impl: helper::CommonImpl,
     dest: StdStreamDest<io::Stdout, io::Stderr>,
-    atty_stream: atty::Stream,
     should_render_style: bool,
     level_style_codes: LevelStyleCodes,
 }
@@ -116,14 +122,20 @@ impl StdStreamSink {
 
     /// Sets the style mode.
     pub fn set_style_mode(&mut self, style_mode: StyleMode) {
-        self.should_render_style = Self::should_render_style(style_mode, self.atty_stream);
+        self.should_render_style = Self::should_render_style(style_mode, self.dest.stream_type());
     }
 
     #[must_use]
-    fn should_render_style(style_mode: StyleMode, atty_stream: atty::Stream) -> bool {
+    fn should_render_style(style_mode: StyleMode, stream: StdStream) -> bool {
+        use is_terminal::IsTerminal;
+        let is_terminal = match stream {
+            StdStream::Stdout => io::stdout().is_terminal(),
+            StdStream::Stderr => io::stderr().is_terminal(),
+        };
+
         match style_mode {
             StyleMode::Always => true,
-            StyleMode::Auto => atty::is(atty_stream) && enable_ansi_escape_sequences(),
+            StyleMode::Auto => is_terminal && enable_ansi_escape_sequences(),
             StyleMode::Never => false,
         }
     }
@@ -263,16 +275,13 @@ impl StdStreamSinkBuilder<()> {
 impl StdStreamSinkBuilder<StdStream> {
     /// Builds a [`StdStreamSink`].
     pub fn build(self) -> Result<StdStreamSink> {
-        let atty_stream = match self.std_stream {
-            StdStream::Stdout => atty::Stream::Stdout,
-            StdStream::Stderr => atty::Stream::Stderr,
-        };
-
         Ok(StdStreamSink {
             common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
             dest: StdStreamDest::new(self.std_stream),
-            atty_stream,
-            should_render_style: StdStreamSink::should_render_style(self.style_mode, atty_stream),
+            should_render_style: StdStreamSink::should_render_style(
+                self.style_mode,
+                self.std_stream,
+            ),
             level_style_codes: LevelStyleCodes::default(),
         })
     }
