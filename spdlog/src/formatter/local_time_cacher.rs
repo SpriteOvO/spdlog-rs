@@ -242,11 +242,11 @@ impl<'a> TimeDate<'a> {
                 "December",
             ];
 
-            let month = self.cached.local_time.month() as usize;
+            let month_index = self.cached.local_time.month() as usize - 1;
 
             MultiName {
-                short: SHORT[month],
-                full: FULL[month],
+                short: SHORT[month_index],
+                full: FULL[month_index],
             }
         })
     }
