@@ -1249,11 +1249,13 @@ pub mod tests {
 
     #[test]
     fn test_pattern_ref_as_pattern() {
+        #[allow(clippy::needless_borrow)]
         test_pattern(&String::from("literal"), "literal", None);
     }
 
     #[test]
     fn test_pattern_mut_as_pattern() {
+        #[allow(clippy::needless_borrow)]
         test_pattern(&mut String::from("literal"), "literal", None);
     }
 

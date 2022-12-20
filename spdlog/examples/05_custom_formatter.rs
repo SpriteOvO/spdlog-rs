@@ -66,7 +66,7 @@ fn impl_manually() {
     }
 
     // Building a custom formatter.
-    let new_formatter: Box<MyFormatter> = Box::new(MyFormatter::default());
+    let new_formatter: Box<MyFormatter> = Box::default();
 
     // Setting the new formatter for each sink of the default logger.
     for sink in spdlog::default_logger().sinks() {
