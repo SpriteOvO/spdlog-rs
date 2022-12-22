@@ -54,7 +54,7 @@ static_assertions = "1.1.0"
 thiserror = "1.0.37"
 
 [target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3.9", features = ["debugapi", "handleapi", "processthreadsapi"] }
+winapi = { version = "0.3.9", features = ["consoleapi", "debugapi", "handleapi", "processenv", "processthreadsapi", "winbase", "wincon"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
