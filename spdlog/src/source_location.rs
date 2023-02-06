@@ -67,6 +67,26 @@ impl SourceLocation {
     pub fn column(&self) -> u32 {
         self.column
     }
+
+    #[cfg(feature = "log")]
+    #[must_use]
+    pub(crate) fn from_log_crate_record(record: &log::Record) -> Option<Self> {
+        let (module_path, file, line) = (
+            record.module_path_static(),
+            record.file_static(),
+            record.line(),
+        );
+
+        match (module_path, file, line) {
+            (None, None, None) => None,
+            _ => Some(Self {
+                module_path: module_path.unwrap_or(""),
+                file: file.unwrap_or(""),
+                line: line.unwrap_or(0),
+                column: 0,
+            }),
+        }
+    }
 }
 
 /// Constructs a [`SourceLocation`] with current source location.

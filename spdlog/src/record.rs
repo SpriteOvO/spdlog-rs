@@ -125,8 +125,7 @@ impl<'a> Record<'a> {
             },
             inner: Cow::Owned(RecordInner {
                 level: record.level().into(),
-                // `module_path` and `file` in `log::Record` are not `'static`
-                source_location: None,
+                source_location: SourceLocation::from_log_crate_record(record),
                 time,
             }),
         }
