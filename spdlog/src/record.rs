@@ -118,6 +118,15 @@ impl<'a> Record<'a> {
 
     // When adding more getters, also add to `RecordOwned`
 
+    #[must_use]
+    pub(crate) fn replace_payload(&'a self, new: impl Into<Cow<'a, str>>) -> Self {
+        Self {
+            logger_name: self.logger_name,
+            payload: new.into(),
+            inner: Cow::Borrowed(&self.inner),
+        }
+    }
+
     #[cfg(feature = "log")]
     #[must_use]
     pub(crate) fn from_log_crate_record(

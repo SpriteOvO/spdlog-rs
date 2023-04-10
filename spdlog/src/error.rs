@@ -91,6 +91,14 @@ pub enum Error {
     #[cfg(feature = "multi-thread")]
     #[error("failed to send message to channel: {0}")]
     SendToChannel(SendToChannelError, SendToChannelErrorDropped),
+
+    /// This variant returned when multiple errors occurred.
+    #[error("{0:?}")]
+    Multiple(Vec<Error>),
+
+    #[cfg(test)]
+    #[error("{0}")]
+    __ForInternalTestsUseOnly(i32),
 }
 
 /// This error type contains a variety of possible invalid arguments.
@@ -180,6 +188,26 @@ pub enum SendToChannelErrorDropped {
     Flush,
 }
 
+impl Error {
+    pub(crate) fn push_err<T>(result: Result<T>, new: Self) -> Result<T> {
+        match result {
+            Ok(_) => Err(new),
+            Err(Self::Multiple(mut errors)) => {
+                errors.push(new);
+                Err(Self::Multiple(errors))
+            }
+            Err(prev) => Err(Error::Multiple(vec![prev, new])),
+        }
+    }
+
+    pub(crate) fn push_result<T, N>(result: Result<T>, new: Result<N>) -> Result<T> {
+        match new {
+            Ok(_) => result,
+            Err(err) => Self::push_err(result, err),
+        }
+    }
+}
+
 #[cfg(feature = "multi-thread")]
 impl Error {
     #[must_use]
@@ -222,3 +250,27 @@ pub type ErrorHandler = fn(Error);
 
 const_assert!(Atomic::<ErrorHandler>::is_lock_free());
 const_assert!(Atomic::<Option<ErrorHandler>>::is_lock_free());
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn push_err() {
+        macro_rules! make_err {
+            ( $($inputs:tt)+ ) => {
+                Error::__ForInternalTestsUseOnly($($inputs)*)
+            };
+        }
+
+        assert!(matches!(
+            Error::push_err(Ok(()), make_err!(1)),
+            Err(make_err!(1))
+        ));
+
+        assert!(matches!(
+            Error::push_err::<()>(Err(make_err!(1)), make_err!(2)),
+            Err(Error::Multiple(v)) if matches!(v[..], [make_err!(1), make_err!(2)])
+        ));
+    }
+}

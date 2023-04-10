@@ -18,7 +18,8 @@ use atomic::Atomic;
 use spdlog::{
     formatter::{FmtExtraInfo, Formatter, Pattern, PatternFormatter},
     sink::{Sink, WriteSink, WriteSinkBuilder},
-    Error, ErrorHandler, LevelFilter, Logger, LoggerBuilder, Record, Result, StringBuf,
+    Error, ErrorHandler, LevelFilter, Logger, LoggerBuilder, Record, RecordOwned, Result,
+    StringBuf,
 };
 
 //////////////////////////////////////////////////
@@ -27,7 +28,7 @@ pub struct CounterSink {
     level_filter: Atomic<LevelFilter>,
     log_counter: AtomicUsize,
     flush_counter: AtomicUsize,
-    payloads: Mutex<Vec<String>>,
+    records: Mutex<Vec<RecordOwned>>,
     delay_duration: Option<Duration>,
 }
 
@@ -43,7 +44,7 @@ impl CounterSink {
             level_filter: Atomic::new(LevelFilter::All),
             log_counter: AtomicUsize::new(0),
             flush_counter: AtomicUsize::new(0),
-            payloads: Mutex::new(vec![]),
+            records: Mutex::new(vec![]),
             delay_duration: duration,
         }
     }
@@ -59,14 +60,24 @@ impl CounterSink {
     }
 
     #[must_use]
+    pub fn records(&self) -> Vec<RecordOwned> {
+        self.records.lock().unwrap().clone()
+    }
+
+    #[must_use]
     pub fn payloads(&self) -> Vec<String> {
-        self.payloads.lock().unwrap().clone()
+        self.records
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|r| r.payload().to_string())
+            .collect()
     }
 
     pub fn reset(&self) {
         self.log_counter.store(0, Ordering::Relaxed);
         self.flush_counter.store(0, Ordering::Relaxed);
-        self.payloads.lock().unwrap().clear();
+        self.records.lock().unwrap().clear();
     }
 }
 
@@ -77,11 +88,7 @@ impl Sink for CounterSink {
         }
 
         self.log_counter.fetch_add(1, Ordering::Relaxed);
-
-        self.payloads
-            .lock()
-            .unwrap()
-            .push(record.payload().to_string());
+        self.records.lock().unwrap().push(record.to_owned());
 
         Ok(())
     }
