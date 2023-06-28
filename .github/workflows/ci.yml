@@ -29,7 +29,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-    - name: Install nightly
+    - name: Install Rust nightly
       run: |
         rustup toolchain install nightly
         rustup component add rustfmt --toolchain nightly
@@ -69,7 +69,7 @@ jobs:
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install nightly
+    - name: Install Rust nightly
       run: |
         rustup toolchain install nightly
         rustup component add clippy --toolchain nightly
@@ -89,7 +89,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Install dependencies
       run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install nightly
+    - name: Install Rust nightly
       run: rustup toolchain install nightly
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
@@ -100,7 +100,7 @@ jobs:
         cd ../spdlog-macros
         cargo +nightly rustdoc --all-features --verbose -- -D warnings
 
-  check:
+  check-msrv:
     strategy:
       fail-fast: false
       matrix:
@@ -112,6 +112,8 @@ jobs:
     - name: Install dependencies (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
+    - name: Install Rust nightly
+      run: rustup toolchain install nightly
     - name: Install Rust ${{ env.rust_minver }}
       run: rustup toolchain install ${{ env.rust_minver }}
     - name: Restore cargo caches
@@ -119,10 +121,9 @@ jobs:
     - name: Avoid dev-dependencies
       run: |
         # Some dev-dependencies require a newer version of Rust, but it doesn't matter for MSRV check
-        # And the features they enable for their own dependencies may disrupt `cargo check` reporting obvious errors
         # This is a workaround for the cargo nightly option `-Z avoid-dev-deps`
         perl -pi -e 's/\[dev-dependencies]/[workaround-avoid-dev-deps]/g' ./spdlog/Cargo.toml
-    - name: Run check for core with Rust latest
-      run: cargo check --all-features --verbose
-    - name: Run check for core with Rust ${{ env.rust_minver }} (MSRV check)
-      run: cargo +${{ env.rust_minver }} check --all-features --verbose
+    - name: Downgrade dependencies to minimal versions
+      run: cargo +nightly update -Z minimal-versions
+    - name: Check MSRV for core with Rust ${{ env.rust_minver }}
+      run: cargo +${{ env.rust_minver }} check --locked --all-features --verbose
