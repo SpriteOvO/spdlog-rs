@@ -174,6 +174,7 @@ pub enum SendToChannelError {
 #[non_exhaustive]
 pub enum SendToChannelErrorDropped {
     /// A `log` operation and a record are dropped.
+    // TODO: Box the `RecordOwned` in the next minor version, as it's a bit large.
     Record(RecordOwned),
     /// A `flush` operation is dropped.
     Flush,

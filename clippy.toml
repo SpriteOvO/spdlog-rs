@@ -1,0 +1,2 @@
+# TODO: Remove this in the next minor version (After `RecordOwned` is boxed in `SendToChannelErrorDropped`)
+large-error-threshold = 136

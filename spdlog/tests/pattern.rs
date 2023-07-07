@@ -430,3 +430,40 @@ fn test_builtin_patterns() {
     check(pattern!("{tid}"), None as Option<&str>, vec![OS_ID_RANGE]);
     check(pattern!("{eol}"), Some("{eol}"), vec![]);
 }
+
+#[cfg(feature = "multi-thread")]
+#[test]
+fn test_different_context_thread() {
+    use std::time::Duration;
+
+    use spdlog::{sink::AsyncPoolSink, ThreadPool};
+
+    let formatter = Box::new(PatternFormatter::new(pattern!("{tid}{eol}")));
+    let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
+    let buffer_sink = Arc::new(
+        WriteSink::builder()
+            .formatter(formatter)
+            .target(Vec::new())
+            .build()
+            .unwrap(),
+    );
+    let sinks: [Arc<dyn Sink>; 2] = [
+        buffer_sink.clone(),
+        Arc::new(
+            AsyncPoolSink::builder()
+                .sink(buffer_sink.clone())
+                .thread_pool(thread_pool)
+                .build()
+                .unwrap(),
+        ),
+    ];
+    let logger = Arc::new(Logger::builder().sinks(sinks).build().unwrap());
+
+    info!(logger: logger, "");
+    std::thread::sleep(Duration::from_millis(200));
+
+    let buffer = String::from_utf8(buffer_sink.clone_target()).unwrap();
+    let buffer = buffer.lines().collect::<Vec<_>>();
+    assert_eq!(buffer.len(), 2);
+    buffer.windows(2).for_each(|w| assert_eq!(w[0], w[1]))
+}
