@@ -30,6 +30,9 @@ impl Pattern for ProcessId {
     }
 }
 
+// TODO: We can cache the PID someway to improve the performance, but remember
+// to test the case of process forking.
+
 #[cfg(target_family = "unix")]
 #[must_use]
 fn get_current_process_id() -> u64 {
