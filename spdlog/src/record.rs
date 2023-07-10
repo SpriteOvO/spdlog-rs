@@ -261,7 +261,11 @@ fn get_current_tid() -> u64 {
     #[cfg(target_os = "linux")]
     #[must_use]
     fn get_current_tid_inner() -> u64 {
-        let tid = unsafe { libc::gettid() };
+        // https://github.com/SpriteOvO/spdlog-rs/issues/31
+        //
+        // We don't use `gettid` since earlier glibc versions (before v2.30) did not
+        // provide a wrapper for this system call.
+        let tid = unsafe { libc::syscall(libc::SYS_gettid) };
         tid as u64
     }
 
