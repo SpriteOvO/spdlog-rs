@@ -272,8 +272,9 @@ fn get_current_tid() -> u64 {
     #[cfg(target_os = "macos")]
     #[must_use]
     fn get_current_tid_inner() -> u64 {
-        let tid = unsafe { libc::pthread_self() };
-        tid as u64
+        let mut tid = 0;
+        unsafe { libc::pthread_threadid_np(0, &mut tid) };
+        tid
     }
 
     #[cfg(target_os = "windows")]
