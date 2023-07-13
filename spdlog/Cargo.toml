@@ -1,6 +1,6 @@
 [package]
 name = "spdlog-rs"
-version = "0.3.9"
+version = "0.3.10"
 edition = "2021"
 rust-version = "1.56"
 description = "A fast and combinable Rust logging crate, inspired by the C++ logging library spdlog"
