@@ -7,10 +7,16 @@ use std::{cell::RefCell, sync::Arc};
 use spdlog::{
     formatter::{pattern, Formatter, FullFormatter, Pattern, PatternFormatter},
     prelude::*,
-    sink::{Sink, WriteSink},
+    sink::Sink,
     Record, StringBuf,
 };
 use test::Bencher;
+
+include!(concat!(
+    env!("OUT_DIR"),
+    "/test_utils/common_for_integration_test.rs"
+));
+use test_utils::*;
 
 #[derive(Clone)]
 struct BenchSink<F> {
@@ -61,7 +67,7 @@ impl<F: Formatter> Sink for BenchSink<F> {
 
 fn bench_formatter(bencher: &mut Bencher, formatter: impl Formatter + 'static) {
     let bench_sink = Arc::new(BenchSink::new(formatter));
-    let logger = Logger::builder().sink(bench_sink).build().unwrap();
+    let logger = build_test_logger(|b| b.sink(bench_sink));
 
     bencher.iter(|| info!(logger: logger, "payload"));
 }
@@ -79,34 +85,20 @@ fn bench_1_full_formatter(bencher: &mut Bencher) {
 fn bench_2_full_pattern(bencher: &mut Bencher) {
     let pattern = pattern!("[{date} {time}.{millisecond}] [{level}] {payload}{eol}");
 
-    let full_formatter = Arc::new(
-        WriteSink::builder()
-            .formatter(Box::new(FullFormatter::new()))
-            .target(Vec::new())
-            .build()
-            .unwrap(),
-    );
+    let full_formatter = Arc::new(StringSink::with(|b| {
+        b.formatter(Box::new(FullFormatter::new()))
+    }));
 
-    let full_pattern = Arc::new(
-        WriteSink::builder()
-            .formatter(Box::new(PatternFormatter::new(pattern.clone())))
-            .target(Vec::new())
-            .build()
-            .unwrap(),
-    );
+    let full_pattern = Arc::new(StringSink::with(|b| {
+        b.formatter(Box::new(PatternFormatter::new(pattern.clone())))
+    }));
 
-    let combination = Logger::builder()
-        .sink(full_formatter.clone())
-        .sink(full_pattern.clone())
-        .build()
-        .unwrap();
+    let combination =
+        build_test_logger(|b| b.sink(full_formatter.clone()).sink(full_pattern.clone()));
 
     info!(logger: combination, "test payload");
 
-    assert_eq!(
-        String::from_utf8(full_formatter.clone_target()).unwrap(),
-        String::from_utf8(full_pattern.clone_target()).unwrap()
-    );
+    assert_eq!(full_formatter.clone_string(), full_pattern.clone_string());
 
     bench_pattern(bencher, pattern)
 }

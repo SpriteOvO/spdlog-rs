@@ -239,8 +239,8 @@ mod tests {
     fn default_thread_pool() {
         let counter_sink = Arc::new(CounterSink::new());
         let build_logger = || {
-            Logger::builder()
-                .sink(Arc::new(
+            build_test_logger(|b| {
+                b.sink(Arc::new(
                     AsyncPoolSink::builder()
                         .sink(counter_sink.clone())
                         .build()
@@ -248,8 +248,7 @@ mod tests {
                 ))
                 .level_filter(LevelFilter::All)
                 .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Error))
-                .build()
-                .unwrap()
+            })
         };
 
         assert_eq!(counter_sink.log_count(), 0);
@@ -288,8 +287,8 @@ mod tests {
     fn custom_thread_pool() {
         let counter_sink = Arc::new(CounterSink::new());
         let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
-        let logger = Logger::builder()
-            .sink(Arc::new(
+        let logger = build_test_logger(|b| {
+            b.sink(Arc::new(
                 AsyncPoolSink::builder()
                     .sink(counter_sink.clone())
                     .thread_pool(thread_pool)
@@ -298,8 +297,7 @@ mod tests {
             ))
             .level_filter(LevelFilter::All)
             .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Error))
-            .build()
-            .unwrap();
+        });
 
         assert_eq!(counter_sink.log_count(), 0);
         assert_eq!(counter_sink.flush_count(), 0);
@@ -326,8 +324,8 @@ mod tests {
         // The default thread pool is not used here to avoid race when tests are run in
         // parallel.
         let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
-        let logger = Logger::builder()
-            .sink(Arc::new(
+        let logger = build_test_logger(|b| {
+            b.sink(Arc::new(
                 AsyncPoolSink::builder()
                     .sink(counter_sink.clone())
                     .thread_pool(thread_pool)
@@ -336,8 +334,7 @@ mod tests {
             ))
             .level_filter(LevelFilter::All)
             .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
-            .build()
-            .unwrap();
+        });
 
         assert_eq!(counter_sink.log_count(), 0);
         assert_eq!(counter_sink.flush_count(), 0);

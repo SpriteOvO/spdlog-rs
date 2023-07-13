@@ -213,11 +213,7 @@ mod tests {
     fn validation() {
         let sink = Arc::new(WriteSink::builder().target(Vec::new()).build().unwrap());
         sink.set_formatter(Box::new(NoModFormatter::new()));
-        let logger = test_logger_builder()
-            .sink(sink.clone())
-            .level_filter(LevelFilter::All)
-            .build()
-            .unwrap();
+        let logger = build_test_logger(|b| b.sink(sink.clone()).level_filter(LevelFilter::All));
 
         info!(logger: logger, "hello WriteSink");
 

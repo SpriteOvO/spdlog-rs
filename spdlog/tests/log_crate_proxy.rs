@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
-use spdlog::{
-    formatter::{pattern, PatternFormatter},
-    prelude::*,
-    sink::WriteSink,
-};
+use spdlog::formatter::{pattern, PatternFormatter};
+
+include!(concat!(
+    env!("OUT_DIR"),
+    "/test_utils/common_for_integration_test.rs"
+));
+use test_utils::*;
 
 #[cfg(feature = "log")]
 #[test]
@@ -12,14 +14,8 @@ fn test_source_location() {
     let formatter = Box::new(PatternFormatter::new(pattern!(
         "({module_path}::{file_name}) {payload}{eol}"
     )));
-    let sink = Arc::new(
-        WriteSink::builder()
-            .formatter(formatter)
-            .target(Vec::new())
-            .build()
-            .unwrap(),
-    );
-    let logger = Arc::new(Logger::builder().sink(sink.clone()).build().unwrap());
+    let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
+    let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
     spdlog::init_log_crate_proxy().unwrap();
     spdlog::log_crate_proxy().set_logger(Some(logger));
@@ -27,7 +23,7 @@ fn test_source_location() {
 
     log::info!("text");
     assert_eq!(
-        String::from_utf8(sink.clone_target()).unwrap(),
+        sink.clone_string(),
         "(log_crate_proxy::log_crate_proxy.rs) text\n"
     );
 }

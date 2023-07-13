@@ -939,7 +939,7 @@ mod tests {
                     .unwrap();
                 sink.set_formatter(formatter);
                 let sink = Arc::new(sink);
-                let logger = test_logger_builder().sink(sink.clone()).build().unwrap();
+                let logger = build_test_logger(|b| b.sink(sink.clone()));
                 logger.set_level_filter(LevelFilter::All);
                 (sink, logger)
             };
@@ -1168,7 +1168,7 @@ mod tests {
                     .unwrap();
 
                 let sinks: [Arc<dyn Sink>; 2] = [Arc::new(hourly_sink), Arc::new(daily_sink)];
-                let logger = test_logger_builder().sinks(sinks).build().unwrap();
+                let logger = build_test_logger(|b| b.sinks(sinks));
                 logger.set_level_filter(LevelFilter::All);
                 logger
             };

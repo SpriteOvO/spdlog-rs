@@ -7,8 +7,8 @@
 // rustdoc bug https://github.com/rust-lang/rust/issues/67295
 
 use std::{
-    env,
     fmt::Write,
+    marker::PhantomData,
     sync::{atomic::*, Arc, Mutex},
     thread::sleep,
     time::Duration,
@@ -17,7 +17,7 @@ use std::{
 use atomic::Atomic;
 use spdlog::{
     formatter::{FmtExtraInfo, Formatter, Pattern, PatternFormatter},
-    sink::{Sink, WriteSink},
+    sink::{Sink, WriteSink, WriteSinkBuilder},
     Error, ErrorHandler, LevelFilter, Logger, LoggerBuilder, Record, Result, StringBuf,
 };
 
@@ -104,17 +104,71 @@ impl Sink for CounterSink {
     }
 
     fn set_formatter(&self, _formatter: Box<dyn Formatter>) {
-        // no-op
+        unimplemented!("no-op")
     }
 
     fn set_error_handler(&self, _handler: Option<ErrorHandler>) {
-        // no-op
+        unimplemented!("no-op")
     }
 }
 
 impl Default for CounterSink {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+//////////////////////////////////////////////////
+
+pub struct StringSink {
+    underlying: WriteSink<Vec<u8>>,
+}
+
+impl StringSink {
+    pub fn new() -> Self {
+        Self {
+            underlying: WriteSink::builder().target(vec![]).build().unwrap(),
+        }
+    }
+
+    pub fn with(
+        cb: impl FnOnce(
+            WriteSinkBuilder<Vec<u8>, PhantomData<Vec<u8>>>,
+        ) -> WriteSinkBuilder<Vec<u8>, PhantomData<Vec<u8>>>,
+    ) -> Self {
+        Self {
+            underlying: cb(WriteSink::builder().target(vec![])).build().unwrap(),
+        }
+    }
+
+    pub fn clone_string(&self) -> String {
+        String::from_utf8(self.underlying.clone_target()).unwrap()
+    }
+}
+
+impl Sink for StringSink {
+    fn log(&self, record: &Record) -> Result<()> {
+        self.underlying.log(record)
+    }
+
+    fn flush(&self) -> Result<()> {
+        self.underlying.flush()
+    }
+
+    fn level_filter(&self) -> LevelFilter {
+        self.underlying.level_filter()
+    }
+
+    fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.underlying.set_level_filter(level_filter)
+    }
+
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        self.underlying.set_formatter(formatter)
+    }
+
+    fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+        self.underlying.set_error_handler(handler)
     }
 }
 
@@ -153,10 +207,10 @@ impl Default for NoModFormatter {
 //////////////////////////////////////////////////
 
 #[must_use]
-pub fn test_logger_builder() -> LoggerBuilder {
+pub fn build_test_logger(cb: impl FnOnce(&mut LoggerBuilder) -> &mut LoggerBuilder) -> Logger {
     let mut builder = Logger::builder();
-    builder.error_handler(|err| panic!("{}", err));
-    builder
+    cb(builder.error_handler(|err| panic!("{}", err)));
+    builder.build().unwrap()
 }
 
 pub fn assert_send<T: Send>() {}
@@ -167,7 +221,7 @@ pub fn assert_sync<T: Sync>() {}
 pub fn echo_logger_from_pattern(
     pattern: impl Pattern + Clone + 'static,
     name: Option<&'static str>,
-) -> (Logger, Arc<WriteSink<Vec<u8>>>) {
+) -> (Logger, Arc<StringSink>) {
     echo_logger_from_formatter(Box::new(PatternFormatter::new(pattern)), name)
 }
 
@@ -175,14 +229,8 @@ pub fn echo_logger_from_pattern(
 pub fn echo_logger_from_formatter(
     formatter: Box<dyn Formatter>,
     name: Option<&'static str>,
-) -> (Logger, Arc<WriteSink<Vec<u8>>>) {
-    let sink = Arc::new(
-        WriteSink::builder()
-            .formatter(formatter)
-            .target(Vec::new())
-            .build()
-            .unwrap(),
-    );
+) -> (Logger, Arc<StringSink>) {
+    let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
 
     let mut builder = Logger::builder();
 

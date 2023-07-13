@@ -10,9 +10,14 @@ use spdlog::{
     error,
     formatter::{pattern, Formatter, Pattern, PatternFormatter},
     prelude::*,
-    sink::{Sink, WriteSink},
+    sink::Sink,
     StringBuf,
 };
+
+include!(concat!(
+    env!("OUT_DIR"),
+    "/test_utils/common_for_integration_test.rs"
+));
 
 #[test]
 fn test_basic() {
@@ -157,13 +162,9 @@ impl Pattern for MockPattern2 {
 fn test_builtin_patterns() {
     #[track_caller]
     fn fmt(pattern: impl Pattern + Clone + 'static) -> String {
-        let sink = Arc::new(
-            WriteSink::builder()
-                .formatter(Box::new(PatternFormatter::new(pattern)))
-                .target(Vec::new())
-                .build()
-                .unwrap(),
-        );
+        let sink = Arc::new(test_utils::StringSink::with(|b| {
+            b.formatter(Box::new(PatternFormatter::new(pattern)))
+        }));
 
         let logger = Logger::builder()
             .sink(sink.clone())
@@ -173,7 +174,7 @@ fn test_builtin_patterns() {
 
         info!(logger: logger, "test payload");
 
-        String::from_utf8(sink.clone_target()).unwrap()
+        sink.clone_string()
     }
 
     const WEEKDAY_NAMES: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -440,13 +441,7 @@ fn test_different_context_thread() {
 
     let formatter = Box::new(PatternFormatter::new(pattern!("{tid}{eol}")));
     let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
-    let buffer_sink = Arc::new(
-        WriteSink::builder()
-            .formatter(formatter)
-            .target(Vec::new())
-            .build()
-            .unwrap(),
-    );
+    let buffer_sink = Arc::new(test_utils::StringSink::with(|b| b.formatter(formatter)));
     let sinks: [Arc<dyn Sink>; 2] = [
         buffer_sink.clone(),
         Arc::new(
@@ -462,7 +457,7 @@ fn test_different_context_thread() {
     info!(logger: logger, "");
     std::thread::sleep(Duration::from_millis(200));
 
-    let buffer = String::from_utf8(buffer_sink.clone_target()).unwrap();
+    let buffer = buffer_sink.clone_string();
     let buffer = buffer.lines().collect::<Vec<_>>();
     assert_eq!(buffer.len(), 2);
     buffer.windows(2).for_each(|w| assert_eq!(w[0], w[1]))

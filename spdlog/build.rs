@@ -44,6 +44,10 @@ fn generate_code_test_utils() -> Result<(), Box<dyn Error>> {
             .collect::<String>(),
     )?;
     write_generated_code(
+        out_dir.join("common_for_integration_test.rs"),
+        format!("#[allow(dead_code)]\nmod test_utils {{\n{}\n}}", input),
+    )?;
+    write_generated_code(
         out_dir.join("common_for_unit_test.rs"),
         input.replace("spdlog::", "crate::"),
     )?;

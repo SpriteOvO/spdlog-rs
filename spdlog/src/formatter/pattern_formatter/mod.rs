@@ -81,7 +81,7 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #     String::from_utf8(sink.clone_target()).unwrap(),
+/// #     sink.clone_string(),
 /// /* Output */ "[info] Interesting log message"
 /// # );
 /// ```
@@ -106,7 +106,7 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #     String::from_utf8(sink.clone_target()).unwrap(),
+/// #     sink.clone_string(),
 /// /* Output */ "[{escaped}] Interesting log message"
 /// # );
 /// ```
@@ -135,7 +135,7 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #     String::from_utf8(sink.clone_target()).unwrap(),
+/// #     sink.clone_string(),
 /// /* Output */ "[info] Interesting log message"
 /// //            ^^^^^^ <- style range
 /// # );
@@ -182,7 +182,7 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #   String::from_utf8(sink.clone_target()).unwrap(),
+/// #   sink.clone_string(),
 /// /* Output */ "[info] Interesting log message - My own pattern"
 /// # );
 /// ```
@@ -251,7 +251,7 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #   String::from_utf8(sink.clone_target()).unwrap(),
+/// #   sink.clone_string(),
 /// /* Output */ "[info] Interesting log message - 0 1 2"
 /// # );
 /// ```

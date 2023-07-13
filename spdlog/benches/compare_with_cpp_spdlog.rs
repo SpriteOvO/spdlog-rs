@@ -16,6 +16,12 @@ use spdlog::{
 };
 use test::black_box;
 
+include!(concat!(
+    env!("OUT_DIR"),
+    "/test_utils/common_for_integration_test.rs"
+));
+use test_utils::*;
+
 static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let path = common::BENCH_LOGS_PATH.join("compare_with_cpp_spdlog");
     fs::create_dir_all(&path).unwrap();
@@ -35,8 +41,8 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     info!("Multi threaded: {} threads, {} messages", threads, iters);
     info!("**********************************************************************");
 
-    let logger = Logger::builder()
-        .sink(Arc::new(
+    let logger = build_test_logger(|b| {
+        b.sink(Arc::new(
             FileSink::builder()
                 .path(LOGS_PATH.join("FileSink.log"))
                 .truncate(true)
@@ -44,12 +50,11 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
                 .unwrap(),
         ))
         .name("basic_mt")
-        .build()
-        .unwrap();
+    });
     bench_mt(logger, threads, iters);
 
-    let logger = Logger::builder()
-        .sink(Arc::new(
+    let logger = build_test_logger(|b| {
+        b.sink(Arc::new(
             RotatingFileSink::builder()
                 .base_path(LOGS_PATH.join("RotatingFileSink_FileSize.log"))
                 .rotation_policy(RotationPolicy::FileSize(FILE_SIZE))
@@ -58,12 +63,11 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
                 .unwrap(),
         ))
         .name("rotating_mt")
-        .build()
-        .unwrap();
+    });
     bench_mt(logger, threads, iters);
 
-    let logger = Logger::builder()
-        .sink(Arc::new(
+    let logger = build_test_logger(|b| {
+        b.sink(Arc::new(
             RotatingFileSink::builder()
                 .base_path(LOGS_PATH.join("RotatingFileSink_Daily.log"))
                 .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
@@ -71,15 +75,10 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
                 .unwrap(),
         ))
         .name("daily_mt")
-        .build()
-        .unwrap();
+    });
     bench_mt(logger, threads, iters);
 
-    let logger = Logger::builder()
-        .name("level-off")
-        .level_filter(LevelFilter::Off)
-        .build()
-        .unwrap();
+    let logger = build_test_logger(|b| b.name("level-off").level_filter(LevelFilter::Off));
     bench_mt(logger, threads, iters);
 }
 

@@ -302,11 +302,12 @@ impl Logger {
     /// # Examples
     ///
     /// ```
+    #[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
     /// # use std::sync::Arc;
-    /// # use spdlog::{prelude::*, sink::WriteSink};
+    /// # use spdlog::prelude::*;
     /// #
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// # let test_sink = Arc::new(WriteSink::builder().target(vec![]).build().unwrap());
+    /// # let test_sink = Arc::new(test_utils::StringSink::new());
     /// let old: Arc<Logger> = /* ... */
     /// # Arc::new(Logger::builder().build().unwrap());
     /// // Fork from an existing logger and add a new sink.
@@ -318,9 +319,9 @@ impl Logger {
     ///
     /// # info!(logger: new, "first line");
     /// info!(logger: new, "this record will be written to `new_sink`");
-    /// # assert_eq!(String::from_utf8(test_sink.clone_target()).unwrap().lines().count(), 2);
+    /// # assert_eq!(test_sink.clone_string().lines().count(), 2);
     /// info!(logger: old, "this record will not be written to `new_sink`");
-    /// # assert_eq!(String::from_utf8(test_sink.clone_target()).unwrap().lines().count(), 2);
+    /// # assert_eq!(test_sink.clone_string().lines().count(), 2);
     /// # Ok(()) }
     /// ```
     pub fn fork_with<F>(self: &Arc<Self>, modifier: F) -> Result<Arc<Self>>
@@ -789,12 +790,7 @@ mod tests {
     #[test]
     fn fork_logger() {
         let test_sink = (Arc::new(CounterSink::new()), Arc::new(CounterSink::new()));
-        let logger = Arc::new(
-            test_logger_builder()
-                .sink(test_sink.0.clone())
-                .build()
-                .unwrap(),
-        );
+        let logger = Arc::new(build_test_logger(|b| b.sink(test_sink.0.clone())));
 
         assert!(logger.name().is_none());
         assert_eq!(test_sink.0.log_count(), 0);
@@ -847,12 +843,7 @@ mod tests {
             .is_none());
 
         let test_sink = (Arc::new(CounterSink::new()), Arc::new(CounterSink::new()));
-        let old = Arc::new(
-            test_logger_builder()
-                .sink(test_sink.0.clone())
-                .build()
-                .unwrap(),
-        );
+        let old = Arc::new(build_test_logger(|b| b.sink(test_sink.0.clone())));
         old.set_flush_period(Some(Duration::from_secs(1)));
         std::thread::sleep(Duration::from_millis(1250));
 

@@ -15,6 +15,12 @@ use spdlog::{
 };
 use test::Bencher;
 
+include!(concat!(
+    env!("OUT_DIR"),
+    "/test_utils/common_for_integration_test.rs"
+));
+use test_utils::*;
+
 required_multi_thread_feature!();
 
 static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
@@ -74,11 +80,10 @@ impl Mode {
 fn bench_any(bencher: &mut Bencher, mode: Mode, sink: Arc<dyn Sink>) {
     sink.set_error_handler(Some(|err| panic!("an error occurred: {err}")));
 
-    let mut logger_builder = Logger::builder();
-    logger_builder
-        .error_handler(mode.error_handler())
-        .sink(mode.final_sink(sink));
-    let logger = logger_builder.build().unwrap();
+    let logger = build_test_logger(|b| {
+        b.error_handler(mode.error_handler())
+            .sink(mode.final_sink(sink))
+    });
 
     bencher.iter(|| info!(logger: logger, bench_log_message!()))
 }
@@ -133,10 +138,7 @@ fn bench_4_rotating_daily(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_5_level_off(bencher: &mut Bencher) {
-    let logger = Logger::builder()
-        .level_filter(LevelFilter::Off)
-        .build()
-        .unwrap();
+    let logger = build_test_logger(|b| b.level_filter(LevelFilter::Off));
 
     bencher.iter(|| info!(logger: logger, bench_log_message!()))
 }
