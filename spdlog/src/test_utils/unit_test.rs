@@ -1,3 +1,8 @@
+// Test utils for unit tests only
+//
+// In this file, you can use public or private items from spdlog-rs as you wish,
+// as they will be used from unit tests only.
+
 use std::{env, fmt::Write, fs, path::PathBuf, thread::sleep, time::Duration};
 
 use crate::{

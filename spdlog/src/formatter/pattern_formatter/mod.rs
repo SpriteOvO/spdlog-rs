@@ -71,10 +71,10 @@ use crate::{
 /// ```
 /// # use spdlog::formatter::{pattern, PatternFormatter};
 /// use spdlog::info;
-#[doc = include_str!("../../include/doc/test_utils.rs")]
+#[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 ///
 /// let formatter = PatternFormatter::new(pattern!("[{level}] {payload}"));
-/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
 /// #     Box::new(formatter),
 /// #     None
 /// # );
@@ -97,9 +97,9 @@ use crate::{
 /// #     formatter::{pattern, PatternFormatter},
 /// #     info,
 /// # };
-#[doc = include_str!("../../include/doc/test_utils.rs")]
+#[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 /// let formatter = PatternFormatter::new(pattern!("[{{escaped}}] {payload}"));
-/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
 /// #     Box::new(formatter),
 /// #     None
 /// # );
@@ -126,9 +126,9 @@ use crate::{
 /// #     formatter::{pattern, PatternFormatter},
 /// #     info,
 /// # };
-#[doc = include_str!("../../include/doc/test_utils.rs")]
+#[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 /// let formatter = PatternFormatter::new(pattern!("{^[{level}]} {payload}"));
-/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
 /// #     Box::new(formatter),
 /// #     None
 /// # );
@@ -155,7 +155,7 @@ use crate::{
 ///     formatter::{pattern, Pattern, PatternContext, PatternFormatter},
 ///     Record, StringBuf, info
 /// };
-#[doc = include_str!("../../include/doc/test_utils.rs")]
+#[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 ///
 /// #[derive(Default, Clone)]
 /// struct MyPattern;
@@ -175,7 +175,7 @@ use crate::{
 ///     {$mypat} => MyPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
-/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
 /// #     Box::new(formatter),
 /// #     None
 /// # );
@@ -213,7 +213,7 @@ use crate::{
 /// #     prelude::*,
 /// #     Record, StringBuf,
 /// # };
-#[doc = include_str!("../../include/doc/test_utils.rs")]
+#[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 /// static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 ///
 /// #[derive(Clone)]
@@ -244,7 +244,7 @@ use crate::{
 ///     {$mypat} => MyPattern::new,
 /// );
 /// let formatter = PatternFormatter::new(pat);
-/// # let (doctest, sink) = doc_test_utils::echo_logger_from_formatter(
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
 /// #     Box::new(formatter),
 /// #     None
 /// # );
