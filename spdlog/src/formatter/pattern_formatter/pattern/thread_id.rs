@@ -12,8 +12,8 @@ use crate::{
 ///
 /// On Linux, this pattern writes the return value of `gettid` to the output.
 ///
-/// On macOS, this pattern writes the return value of `pthread_self` to the
-/// output.
+/// On macOS and iOS, this pattern writes the return value of
+/// `pthread_threadid_np` to the output.
 ///
 /// On Windows, this pattern writes the return value of `GetCurrentThreadId` to
 /// the output.
