@@ -80,6 +80,35 @@ jobs:
     - name: Run clippy nightly for benches
       run: cargo +nightly clippy --all-features --benches
 
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        target: ['', 'x86_64-apple-ios']
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+    - name: Install dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo bash ./.github/workflows/install-deps.sh
+    - name: Install Rust target
+      if: matrix.target != ''
+      run: rustup target add ${{ matrix.target }}
+    - name: Restore cargo caches
+      uses: Swatinem/rust-cache@v1
+    - name: Run check
+      run: |
+        if [[ -z "${{ matrix.target }}" ]]; then
+          cargo check --all-features
+        else
+          cargo check --all-features --target ${{ matrix.target }}
+        fi
+
   check-doc:
     strategy:
       fail-fast: false
