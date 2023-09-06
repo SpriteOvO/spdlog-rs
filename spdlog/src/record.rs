@@ -269,7 +269,7 @@ fn get_current_tid() -> u64 {
         tid as u64
     }
 
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
     #[must_use]
     fn get_current_tid_inner() -> u64 {
         let mut tid = 0;
