@@ -34,20 +34,20 @@ fn generate_code_test_utils() -> Result<(), Box<dyn Error>> {
         fs::create_dir(&out_dir)?;
     }
 
-    let input = fs::read_to_string("src/test_utils/common.rs")?;
+    let input = read_code("src/test_utils/common.rs")?;
 
-    write_generated_code(
+    fs::write(
         out_dir.join("common_for_doc_test.rs"),
         format!("mod test_utils {{\n{}\n}}", input)
             .lines()
             .map(|line| format!("# {}\n", line))
             .collect::<String>(),
     )?;
-    write_generated_code(
+    fs::write(
         out_dir.join("common_for_integration_test.rs"),
         format!("#[allow(dead_code)]\nmod test_utils {{\n{}\n}}", input),
     )?;
-    write_generated_code(
+    fs::write(
         out_dir.join("common_for_unit_test.rs"),
         input.replace("spdlog::", "crate::"),
     )?;
@@ -55,11 +55,7 @@ fn generate_code_test_utils() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn write_generated_code(
-    path: impl AsRef<Path>,
-    contents: impl AsRef<[u8]>,
-) -> Result<(), Box<dyn Error>> {
+fn read_code(path: impl AsRef<Path>) -> Result<String, Box<dyn Error>> {
     println!("cargo:rerun-if-changed={}", path.as_ref().display());
-    fs::write(path, contents)?;
-    Ok(())
+    Ok(fs::read_to_string(path)?)
 }
