@@ -1,6 +1,7 @@
 use std::{
     env,
     error::Error,
+    fmt::Write,
     fs,
     path::{Path, PathBuf},
 };
@@ -38,10 +39,13 @@ fn generate_code_test_utils() -> Result<(), Box<dyn Error>> {
 
     fs::write(
         out_dir.join("common_for_doc_test.rs"),
-        format!("mod test_utils {{\n{}\n}}", input)
-            .lines()
-            .map(|line| format!("# {}\n", line))
-            .collect::<String>(),
+        format!("mod test_utils {{\n{}\n}}", input).lines().fold(
+            String::new(),
+            |mut contents, line| {
+                writeln!(&mut contents, "# {}", line).unwrap();
+                contents
+            },
+        ),
     )?;
     fs::write(
         out_dir.join("common_for_integration_test.rs"),
