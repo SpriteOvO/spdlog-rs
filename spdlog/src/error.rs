@@ -92,6 +92,14 @@ pub enum Error {
     #[error("failed to send message to channel: {0}")]
     SendToChannel(SendToChannelError, SendToChannelErrorDropped),
 
+    /// The variant returned by [`RuntimePatternBuilder::build`] when the
+    /// pattern is failed to be built at runtime.
+    ///
+    /// [`RuntimePatternBuilder::build`]: crate::formatter::RuntimePatternBuilder::build
+    #[cfg(feature = "runtime-pattern")]
+    #[error("failed to build pattern at runtime: {0}")]
+    BuildPattern(BuildPatternError),
+
     /// This variant returned when multiple errors occurred.
     #[error("{0:?}")]
     Multiple(Vec<Error>),
@@ -125,6 +133,16 @@ pub enum InvalidArgumentError {
     /// Invalid thread pool capacity.
     #[error("'thread pool capacity': {0}")]
     ThreadPoolCapacity(String),
+}
+
+#[cfg(feature = "runtime-pattern")]
+impl Error {
+    pub(crate) fn err_build_pattern(err: BuildPatternErrorInner) -> Self {
+        Self::BuildPattern(BuildPatternError(err))
+    }
+    pub(crate) fn err_build_pattern_internal(err: spdlog_internal::pattern_parser::Error) -> Self {
+        Self::BuildPattern(BuildPatternError(BuildPatternErrorInner::Internal(err)))
+    }
 }
 
 /// This error indicates that an invalid logger name was set.
@@ -240,6 +258,22 @@ impl SendToChannelErrorDropped {
             Task::Flush { .. } => Self::Flush,
         }
     }
+}
+
+/// This error indicates that an error occurred while building a pattern at
+/// compile-time.
+#[cfg(feature = "runtime-pattern")]
+#[derive(Error, Debug)]
+#[error("{0}")]
+pub struct BuildPatternError(BuildPatternErrorInner);
+
+#[cfg(feature = "runtime-pattern")]
+#[derive(Error, Debug)]
+pub(crate) enum BuildPatternErrorInner {
+    #[error("{0}")]
+    Internal(spdlog_internal::pattern_parser::Error),
+    #[error("invalid placeholder for custom pattern '{0}'")]
+    InvalidCustomPlaceholder(String),
 }
 
 /// The result type of this crate.

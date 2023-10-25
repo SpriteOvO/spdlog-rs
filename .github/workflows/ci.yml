@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        fn_features: ['', 'log native libsystemd multi-thread']
+        fn_features: ['', 'log native libsystemd multi-thread runtime-pattern']
         cfg_feature: ['', 'flexible-string', 'source-location']
     runs-on: ${{ matrix.os }}
     steps:
