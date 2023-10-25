@@ -4,8 +4,9 @@ extern crate test;
 
 use std::{cell::RefCell, sync::Arc};
 
+use paste::paste;
 use spdlog::{
-    formatter::{pattern, Formatter, FullFormatter, Pattern, PatternFormatter},
+    formatter::{pattern, Formatter, FullFormatter, Pattern, PatternFormatter, RuntimePattern},
     prelude::*,
     sink::Sink,
     Record, StringBuf,
@@ -76,15 +77,7 @@ fn bench_pattern(bencher: &mut Bencher, pattern: impl Pattern + Clone + 'static)
     bench_formatter(bencher, PatternFormatter::new(pattern));
 }
 
-#[bench]
-fn bench_1_full_formatter(bencher: &mut Bencher) {
-    bench_formatter(bencher, FullFormatter::new())
-}
-
-#[bench]
-fn bench_2_full_pattern(bencher: &mut Bencher) {
-    let pattern = pattern!("[{date} {time}.{millisecond}] [{level}] {payload}{eol}");
-
+fn bench_full_pattern(bencher: &mut Bencher, pattern: impl Pattern + Clone + 'static) {
     let full_formatter = Arc::new(StringSink::with(|b| {
         b.formatter(Box::new(FullFormatter::new()))
     }));
@@ -103,192 +96,81 @@ fn bench_2_full_pattern(bencher: &mut Bencher) {
     bench_pattern(bencher, pattern)
 }
 
+//
+
 #[bench]
-fn bench_weekday_name(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{weekday_name}"))
+fn bench_1_full_formatter(bencher: &mut Bencher) {
+    bench_formatter(bencher, FullFormatter::new())
 }
 
 #[bench]
-fn bench_weekday_name_full(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{weekday_name_full}"))
+fn bench_2_full_pattern_ct(bencher: &mut Bencher) {
+    bench_full_pattern(
+        bencher,
+        pattern!("[{date} {time}.{millisecond}] [{level}] {payload}{eol}"),
+    )
 }
 
 #[bench]
-fn bench_month_name(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{month_name}"))
+fn bench_3_full_pattern_rt(bencher: &mut Bencher) {
+    bench_full_pattern(
+        bencher,
+        RuntimePattern::new("[{date} {time}.{millisecond}] [{level}] {payload}{eol}").unwrap(),
+    )
 }
 
-#[bench]
-fn bench_month_name_full(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{month_name_full}"))
+macro_rules! bench_patterns {
+    ( $(($name:ident, $placeholder:literal)),+ $(,)? ) => {
+        $(paste! {
+            #[bench]
+            fn [<bench_4_ct_ $name>](bencher: &mut Bencher) {
+                bench_pattern(bencher, pattern!($placeholder))
+            }
+            #[bench]
+            fn [<bench_5_rt_ $name>](bencher: &mut Bencher) {
+                bench_pattern(bencher, RuntimePattern::new($placeholder).unwrap())
+            }
+        })+
+    };
 }
 
-#[bench]
-fn bench_datetime(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{datetime}"))
-}
-
-#[bench]
-fn bench_year_short(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{year_short}"))
-}
-
-#[bench]
-fn bench_year(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{year}"))
-}
-
-#[bench]
-fn bench_date_short(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{date_short}"))
-}
-
-#[bench]
-fn bench_date(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{date}"))
-}
-
-#[bench]
-fn bench_month(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{month}"))
-}
-
-#[bench]
-fn bench_day(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{day}"))
-}
-
-#[bench]
-fn bench_hour(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{hour}"))
-}
-
-#[bench]
-fn bench_hour_12(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{hour_12}"))
-}
-
-#[bench]
-fn bench_minute(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{minute}"))
-}
-
-#[bench]
-fn bench_second(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{second}"))
-}
-
-#[bench]
-fn bench_millsecond(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{millisecond}"))
-}
-
-#[bench]
-fn bench_microsecond(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{microsecond}"))
-}
-
-#[bench]
-fn bench_nanosecond(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{nanosecond}"))
-}
-
-#[bench]
-fn bench_am_pm(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{am_pm}"))
-}
-
-#[bench]
-fn bench_time_12(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{time_12}"))
-}
-
-#[bench]
-fn bench_time_short(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{time_short}"))
-}
-
-#[bench]
-fn bench_time(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{time}"))
-}
-
-#[bench]
-fn bench_tz_offset(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{tz_offset}"))
-}
-
-#[bench]
-fn bench_unix_timestamp(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{unix_timestamp}"))
-}
-
-#[bench]
-fn bench_full(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{full}"))
-}
-
-#[bench]
-fn bench_level(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{level}"))
-}
-
-#[bench]
-fn bench_level_short(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{level_short}"))
-}
-
-#[bench]
-fn bench_source(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{source}"))
-}
-
-#[bench]
-fn bench_file_name(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{file_name}"))
-}
-
-#[bench]
-fn bench_file(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{file}"))
-}
-
-#[bench]
-fn bench_line(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{line}"))
-}
-
-#[bench]
-fn bench_column(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{column}"))
-}
-
-#[bench]
-fn bench_module_path(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{module_path}"))
-}
-
-#[bench]
-fn bench_logger(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{logger}"))
-}
-
-#[bench]
-fn bench_payload(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{payload}"))
-}
-
-#[bench]
-fn bench_pid(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{pid}"))
-}
-
-#[bench]
-fn bench_tid(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{tid}"))
-}
-
-#[bench]
-fn bench_eol(bencher: &mut Bencher) {
-    bench_pattern(bencher, pattern!("{eol}"))
+bench_patterns! {
+    (weekday_name, "{weekday_name}"),
+    (weekday_name_full, "{weekday_name_full}"),
+    (month_name, "{month_name}"),
+    (month_name_full, "{month_name_full}"),
+    (datetime, "{datetime}"),
+    (year_short, "{year_short}"),
+    (year, "{year}"),
+    (date_short, "{date_short}"),
+    (date, "{date}"),
+    (month, "{month}"),
+    (day, "{day}"),
+    (hour, "{hour}"),
+    (hour_12, "{hour_12}"),
+    (minute, "{minute}"),
+    (second, "{second}"),
+    (millsecond, "{millisecond}"),
+    (microsecond, "{microsecond}"),
+    (nanosecond, "{nanosecond}"),
+    (am_pm, "{am_pm}"),
+    (time_12, "{time_12}"),
+    (time_short, "{time_short}"),
+    (time, "{time}"),
+    (tz_offset, "{tz_offset}"),
+    (unix_timestamp, "{unix_timestamp}"),
+    (full, "{full}"),
+    (level, "{level}"),
+    (level_short, "{level_short}"),
+    (source, "{source}"),
+    (file_name, "{file_name}"),
+    (file, "{file}"),
+    (line, "{line}"),
+    (column, "{column}"),
+    (module_path, "{module_path}"),
+    (logger, "{logger}"),
+    (payload, "{payload}"),
+    (pid, "{pid}"),
+    (tid, "{tid}"),
+    (eol, "{eol}"),
 }

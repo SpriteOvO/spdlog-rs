@@ -22,8 +22,13 @@ fn test_source_location() {
     log::set_max_level(log::LevelFilter::Trace);
 
     log::info!("text");
+
+    #[cfg(not(windows))]
+    const EOL: &str = "\n";
+    #[cfg(windows)]
+    const EOL: &str = "\r\n";
     assert_eq!(
         sink.clone_string(),
-        "(log_crate_proxy::log_crate_proxy.rs) text\n"
+        format!("(log_crate_proxy::log_crate_proxy.rs) text{}", EOL)
     );
 }
