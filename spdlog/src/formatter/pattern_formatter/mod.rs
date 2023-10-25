@@ -14,7 +14,14 @@
 #[path = "pattern/mod.rs"]
 pub mod __pattern;
 
+#[cfg(feature = "runtime-pattern")]
+mod runtime;
+
 use std::{fmt::Write, ops::Range, sync::Arc};
+
+use dyn_clone::*;
+#[cfg(feature = "runtime-pattern")]
+pub use runtime::*;
 
 use crate::{
     formatter::{FmtExtraInfo, FmtExtraInfoBuilder, Formatter},
@@ -41,9 +48,13 @@ use crate::{
 /// # #[derive(Default)]
 /// # struct MyPattern;
 /// pattern!("text");
-/// pattern!("current line: {line}");
-/// pattern!("custom: {$my_pattern}", {$my_pattern} => MyPattern::default);
+/// pattern!("current line: {line}{eol}");
+/// pattern!("custom: {$my_pattern}{eol}", {$my_pattern} => MyPattern::default);
 /// ```
+///
+/// Its first argument accepts only a literal string that is known at compile-time.
+/// If you want to build a pattern from a runtime string, use
+/// [`RuntimePattern`] instead.
 ///
 /// # Note
 ///
@@ -53,12 +64,12 @@ use crate::{
 ///
 /// # Basic Usage
 ///
-/// In its simplest form, `pattern` receives a **literal** pattern string and
+/// In its simplest form, `pattern` receives a **literal** template string and
 /// converts it into a zero-cost pattern:
 /// ```
 /// use spdlog::formatter::{pattern, PatternFormatter};
 ///
-/// let formatter = PatternFormatter::new(pattern!("pattern string"));
+/// let formatter = PatternFormatter::new(pattern!("template string"));
 /// ```
 ///
 /// # Using Built-in Patterns
@@ -73,7 +84,7 @@ use crate::{
 /// use spdlog::info;
 #[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 ///
-/// let formatter = PatternFormatter::new(pattern!("[{level}] {payload}"));
+/// let formatter = PatternFormatter::new(pattern!("[{level}] {payload}{eol}"));
 /// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
 /// #     Box::new(formatter),
 /// #     None
@@ -81,8 +92,8 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #     sink.clone_string(),
-/// /* Output */ "[info] Interesting log message"
+/// #     sink.clone_string().replace("\r", ""),
+/// /* Output */ "[info] Interesting log message\n"
 /// # );
 /// ```
 ///
@@ -98,7 +109,7 @@ use crate::{
 /// #     info,
 /// # };
 #[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
-/// let formatter = PatternFormatter::new(pattern!("[{{escaped}}] {payload}"));
+/// let formatter = PatternFormatter::new(pattern!("[{{escaped}}] {payload}{eol}"));
 /// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
 /// #     Box::new(formatter),
 /// #     None
@@ -106,8 +117,8 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #     sink.clone_string(),
-/// /* Output */ "[{escaped}] Interesting log message"
+/// #     sink.clone_string().replace("\r", ""),
+/// /* Output */ "[{escaped}] Interesting log message\n"
 /// # );
 /// ```
 ///
@@ -127,7 +138,7 @@ use crate::{
 /// #     info,
 /// # };
 #[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
-/// let formatter = PatternFormatter::new(pattern!("{^[{level}]} {payload}"));
+/// let formatter = PatternFormatter::new(pattern!("{^[{level}]} {payload}{eol}"));
 /// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
 /// #     Box::new(formatter),
 /// #     None
@@ -135,8 +146,8 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #     sink.clone_string(),
-/// /* Output */ "[info] Interesting log message"
+/// #     sink.clone_string().replace("\r", ""),
+/// /* Output */ "[info] Interesting log message\n"
 /// //            ^^^^^^ <- style range
 /// # );
 /// ```
@@ -161,17 +172,12 @@ use crate::{
 /// struct MyPattern;
 ///
 /// impl Pattern for MyPattern {
-///     fn format(
-///         &self,
-///         record: &Record,
-///         dest: &mut StringBuf,
-///         _ctx: &mut PatternContext,
-///     ) -> spdlog::Result<()> {
+///     fn format(&self, record: &Record, dest: &mut StringBuf, _: &mut PatternContext) -> spdlog::Result<()> {
 ///         write!(dest, "My own pattern").map_err(spdlog::Error::FormatRecord)
 ///     }
 /// }
 ///
-/// let pat = pattern!("[{level}] {payload} - {$mypat}",
+/// let pat = pattern!("[{level}] {payload} - {$mypat}{eol}",
 ///     {$mypat} => MyPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
@@ -182,8 +188,8 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #   sink.clone_string(),
-/// /* Output */ "[info] Interesting log message - My own pattern"
+/// #   sink.clone_string().replace("\r", ""),
+/// /* Output */ "[info] Interesting log message - My own pattern\n"
 /// # );
 /// ```
 ///
@@ -230,17 +236,12 @@ use crate::{
 /// }
 ///
 /// impl Pattern for MyPattern {
-///     fn format(
-///         &self,
-///         record: &Record,
-///         dest: &mut StringBuf,
-///         _ctx: &mut PatternContext,
-///     ) -> spdlog::Result<()> {
+///     fn format(&self, record: &Record, dest: &mut StringBuf, _: &mut PatternContext) -> spdlog::Result<()> {
 ///         write!(dest, "{}", self.id).map_err(spdlog::Error::FormatRecord)
 ///     }
 /// }
 ///
-/// let pat = pattern!("[{level}] {payload} - {$mypat} {$mypat} {$mypat}",
+/// let pat = pattern!("[{level}] {payload} - {$mypat} {$mypat} {$mypat}{eol}",
 ///     {$mypat} => MyPattern::new,
 /// );
 /// let formatter = PatternFormatter::new(pat);
@@ -251,8 +252,8 @@ use crate::{
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
-/// #   sink.clone_string(),
-/// /* Output */ "[info] Interesting log message - 0 1 2"
+/// #   sink.clone_string().replace("\r", ""),
+/// /* Output */ "[info] Interesting log message - 0 1 2\n"
 /// # );
 /// ```
 ///
@@ -265,7 +266,7 @@ use crate::{
 /// # #[derive(Default)]
 /// # struct MyOtherPattern;
 /// #
-/// let pat = pattern!("[{level}] {payload} - {$mypat} {$myotherpat}",
+/// let pat = pattern!("[{level}] {payload} - {$mypat} {$myotherpat}{eol}",
 ///     {$mypat} => MyPattern::default,
 ///     {$myotherpat} => MyOtherPattern::default,
 /// );
@@ -284,7 +285,7 @@ use crate::{
 /// # #[derive(Default)]
 /// # struct MyOtherPattern;
 /// #
-/// let pattern = pattern!("[{level}] {payload} - {$mypat}",
+/// let pattern = pattern!("[{level}] {payload} - {$mypat}{eol}",
 ///     {$mypat} => MyPattern::new,
 ///     // Error: name conflicts with another custom pattern
 ///     {$mypat} => MyOtherPattern::new,
@@ -297,7 +298,7 @@ use crate::{
 /// # #[derive(Default)]
 /// # struct MyPattern;
 /// #
-/// let pattern = pattern!("[{level}] {payload} - {$day}",
+/// let pattern = pattern!("[{level}] {payload} - {$day}{eol}",
 ///     // Error: name conflicts with a built-in pattern
 ///     {$day} => MyPattern::new,
 /// );
@@ -349,6 +350,7 @@ use crate::{
 /// [^1]: Patterns related to source location require that feature
 ///       `source-location` is enabled, otherwise the output is empty.
 ///
+/// [`RuntimePattern`]: crate::formatter::RuntimePattern
 /// [`FullFormatter`]: crate::formatter::FullFormatter
 pub use ::spdlog_macros::pattern;
 
@@ -364,8 +366,10 @@ where
 {
     /// Creates a new `PatternFormatter` object with the given pattern.
     ///
-    /// Currently users can only create a `pattern` object at compile-time by
-    /// calling [`pattern!`] macro.
+    /// Currently users can only create a `pattern` object by using:
+    ///
+    /// - Macro [`pattern!`] to build a pattern at compile-time.
+    /// - Struct [`RuntimePattern::builder`] to build a pattern at runtime.
     #[must_use]
     pub fn new(pattern: P) -> Self {
         Self { pattern }
@@ -428,7 +432,7 @@ impl PatternContext {
 /// There are 2 approaches to create your own pattern:
 /// - Define a new type and implements this trait;
 /// - Use the [`pattern`] macro to create a pattern from a template string.
-pub trait Pattern: Send + Sync {
+pub trait Pattern: Send + Sync + DynClone {
     /// Format this pattern against the given log record and write the formatted
     /// message into the output buffer.
     ///
@@ -441,6 +445,7 @@ pub trait Pattern: Send + Sync {
         ctx: &mut PatternContext,
     ) -> crate::Result<()>;
 }
+clone_trait_object!(Pattern);
 
 impl Pattern for String {
     fn format(
@@ -478,23 +483,10 @@ where
     }
 }
 
-impl<'a, T> Pattern for &'a mut T
-where
-    T: ?Sized + Pattern,
-{
-    fn format(
-        &self,
-        record: &Record,
-        dest: &mut StringBuf,
-        ctx: &mut PatternContext,
-    ) -> crate::Result<()> {
-        <T as Pattern>::format(*self, record, dest, ctx)
-    }
-}
-
 impl<T> Pattern for Box<T>
 where
     T: ?Sized + Pattern,
+    Self: Clone,
 {
     fn format(
         &self,
@@ -509,6 +501,7 @@ where
 impl<T> Pattern for Arc<T>
 where
     T: ?Sized + Pattern,
+    Self: Clone,
 {
     fn format(
         &self,
@@ -520,9 +513,28 @@ where
     }
 }
 
-impl<T> Pattern for [T]
+impl<T> Pattern for &[T]
 where
     T: Pattern,
+    Self: Clone,
+{
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        ctx: &mut PatternContext,
+    ) -> crate::Result<()> {
+        for p in *self {
+            <T as Pattern>::format(p, record, dest, ctx)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T, const N: usize> Pattern for [T; N]
+where
+    T: Pattern,
+    Self: Clone,
 {
     fn format(
         &self,
@@ -537,23 +549,10 @@ where
     }
 }
 
-impl<T, const N: usize> Pattern for [T; N]
-where
-    T: Pattern,
-{
-    fn format(
-        &self,
-        record: &Record,
-        dest: &mut StringBuf,
-        ctx: &mut PatternContext,
-    ) -> crate::Result<()> {
-        <[T] as Pattern>::format(self, record, dest, ctx)
-    }
-}
-
 impl<T> Pattern for Vec<T>
 where
     T: Pattern,
+    Self: Clone,
 {
     fn format(
         &self,
@@ -561,7 +560,10 @@ where
         dest: &mut StringBuf,
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        <[T] as Pattern>::format(self, record, dest, ctx)
+        for p in self {
+            <T as Pattern>::format(p, record, dest, ctx)?;
+        }
+        Ok(())
     }
 }
 
@@ -585,6 +587,7 @@ macro_rules! tuple_pattern {
             where
                 $($T : Pattern,)+
                 last!($($T,)+) : ?Sized,
+                Self: Clone,
             {
                 fn format(&self, record: &Record, dest: &mut StringBuf, ctx: &mut PatternContext) -> crate::Result<()> {
                     $(
@@ -1256,9 +1259,12 @@ pub mod tests {
 
     #[test]
     fn test_pattern_mut_as_pattern() {
-        #[allow(unknown_lints)]
-        #[allow(clippy::needless_borrow, clippy::needless_borrows_for_generic_args)]
-        test_pattern(&mut String::from("literal"), "literal", None);
+        // Since we now require `T: Pattern` to implement `Clone`, there is no way to
+        // accept an `&mut T` as a `Pattern` anymore, since `&mut T` is not cloneable.
+        //
+        // test_pattern(&mut String::from("literal"), "literal", None);
+        #[allow(clippy::deref_addrof)]
+        test_pattern(&*&mut String::from("literal"), "literal", None);
     }
 
     #[test]

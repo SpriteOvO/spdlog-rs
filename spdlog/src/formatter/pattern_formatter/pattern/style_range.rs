@@ -23,7 +23,7 @@ where
 
 impl<P> Pattern for StyleRange<P>
 where
-    P: Pattern,
+    P: Pattern + Clone,
 {
     fn format(
         &self,
