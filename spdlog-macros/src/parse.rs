@@ -194,8 +194,7 @@ pub(crate) struct CustomPatternMapping {
 
 impl Parse for CustomPatternMapping {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let items: Punctuated<_, Token![,]> =
-            input.parse_terminated(CustomPatternMappingItem::parse)?;
+        let items = Punctuated::<CustomPatternMappingItem, Token![,]>::parse_terminated(input)?;
 
         let mapping_pairs = items.into_iter().fold(vec![], |mut prev, item| {
             prev.push((item.name, item.factory));
