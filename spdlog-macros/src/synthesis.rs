@@ -6,7 +6,7 @@ use std::{
 
 use proc_macro2::{Span, TokenStream};
 use quote::ToTokens;
-use syn::{punctuated::Punctuated, token::Paren, Expr, ExprLit, ExprTuple, Lit, LitStr, Path};
+use syn::{Expr, ExprLit, Lit, LitStr, Path};
 
 use crate::parse::{
     PatternTemplate, PatternTemplateFormatter, PatternTemplateLiteral, PatternTemplateStyleRange,
@@ -126,14 +126,7 @@ impl Synthesiser {
         template: &PatternTemplate,
         mut style_range_seen: bool,
     ) -> Result<Expr, SynthesisError> {
-        let mut template_expr = ExprTuple {
-            attrs: Vec::new(),
-            paren_token: Paren {
-                span: Span::mixed_site(),
-            },
-            elems: Punctuated::new(),
-        };
-
+        let mut tuple_elems = Vec::with_capacity(template.tokens.len());
         for token in &template.tokens {
             let token_template_expr = match token {
                 PatternTemplateToken::Literal(literal_token) => {
@@ -150,10 +143,12 @@ impl Synthesiser {
                     self.build_style_range_template_pattern_expr(style_range_token)?
                 }
             };
-            template_expr.elems.push(token_template_expr);
+            tuple_elems.push(token_template_expr);
         }
 
-        Ok(Expr::Tuple(template_expr))
+        let stream = quote::quote! { ( #(#tuple_elems ,)* ) };
+        let expr = syn::parse2(stream).unwrap();
+        Ok(Expr::Tuple(expr))
     }
 
     fn build_literal_template_pattern_expr(
