@@ -1,5 +1,6 @@
 use std::convert::Infallible;
 
+use serde::Deserialize;
 use spdlog_internal::pattern_parser::{
     error::TemplateError,
     parse::{Template, TemplateToken},
@@ -8,8 +9,9 @@ use spdlog_internal::pattern_parser::{
     Result as PatternParserResult,
 };
 
-use super::{Pattern, PatternContext, __pattern as pattern};
+use super::{Pattern, PatternContext, PatternFormatter, __pattern as pattern};
 use crate::{
+    config::{ComponentMetadata, Configurable},
     error::{BuildPatternErrorInner, Error},
     Record, Result, StringBuf,
 };
@@ -136,6 +138,12 @@ impl Pattern for RuntimePattern {
         }
         Ok(())
     }
+}
+
+#[derive(Default, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct PatternFormatterRuntimePatternParams {
+    template: String,
 }
 
 #[rustfmt::skip] // rustfmt currently breaks some empty lines if `#[doc = include_str!("xxx")]` exists
@@ -344,6 +352,20 @@ fn build_builtin_pattern(builtin: &BuiltInFormatter) -> Box<dyn Pattern> {
     )
 }
 
+impl Configurable for PatternFormatter<RuntimePattern> {
+    type Params = PatternFormatterRuntimePatternParams;
+
+    fn metadata() -> ComponentMetadata<'static> {
+        ComponentMetadata {
+            name: "PatternFormatter",
+        }
+    }
+
+    fn build(params: Self::Params) -> Result<Self> {
+        Ok(Self::new(RuntimePattern::new(params.template)?))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -414,5 +436,20 @@ mod tests {
                 .build(),
             Err(Error::BuildPattern(_))
         ));
+    }
+
+    #[test]
+    fn deser_params() {
+        assert!(
+            toml::from_str::<PatternFormatterRuntimePatternParams>(
+                r#"template = "[{level}] {payload}""#,
+            )
+            .unwrap()
+                == PatternFormatterRuntimePatternParams {
+                    template: "[{level}] {payload}".to_string()
+                }
+        );
+
+        // TODO: Test ill-formed template string err
     }
 }
