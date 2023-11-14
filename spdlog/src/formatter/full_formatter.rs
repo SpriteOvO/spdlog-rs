@@ -1,12 +1,16 @@
 //! Provides a full info formatter.
 
-use std::fmt::{self, Write};
+use std::{
+    fmt::{self, Write},
+    result::Result as StdResult,
+};
 
 use cfg_if::cfg_if;
 
 use crate::{
+    config::{ComponentMetadata, Configurable},
     formatter::{FmtExtraInfo, Formatter, LOCAL_TIME_CACHER},
-    Error, Record, StringBuf, __EOL,
+    Error, Record, Result, StringBuf, EOL, __EOL,
 };
 
 #[rustfmt::skip]
@@ -54,7 +58,7 @@ impl FullFormatter {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-    ) -> Result<FmtExtraInfo, fmt::Error> {
+    ) -> StdResult<FmtExtraInfo, fmt::Error> {
         cfg_if! {
             if #[cfg(not(feature = "flexible-string"))] {
                 dest.reserve(crate::string_buf::RESERVE_SIZE);
@@ -117,6 +121,20 @@ impl Formatter for FullFormatter {
 impl Default for FullFormatter {
     fn default() -> FullFormatter {
         FullFormatter::new()
+    }
+}
+
+impl Configurable for FullFormatter {
+    type Params = ();
+
+    fn metadata() -> ComponentMetadata<'static> {
+        ComponentMetadata {
+            name: "FullFormatter",
+        }
+    }
+
+    fn build(params: Self::Params) -> Result<Self> {
+        Ok(FullFormatter::new())
     }
 }
 

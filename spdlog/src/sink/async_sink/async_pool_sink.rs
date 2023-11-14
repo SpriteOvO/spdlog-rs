@@ -37,7 +37,7 @@ impl AsyncPoolSink {
     #[must_use]
     pub fn builder() -> AsyncPoolSinkBuilder {
         AsyncPoolSinkBuilder {
-            level_filter: helper::SINK_DEFAULT_LEVEL_FILTER,
+            level_filter: helper::sink_default_level_filter(),
             overflow_policy: OverflowPolicy::Block,
             sinks: Sinks::new(),
             thread_pool: None,

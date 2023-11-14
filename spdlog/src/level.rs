@@ -55,6 +55,7 @@ const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", 
 /// [`log!`]: crate::log!
 #[repr(u16)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Level {
     /// Designates critical errors.
     Critical = 0,
@@ -201,6 +202,7 @@ impl FromStr for Level {
 /// ```
 #[repr(align(4))]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LevelFilter {
     /// Disables all levels.
     Off,

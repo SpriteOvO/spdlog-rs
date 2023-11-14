@@ -1,3 +1,6 @@
+use std::convert::Infallible;
+
+use serde::Deserialize;
 use spdlog_internal::pattern_parser::{
     error::TemplateError,
     parse::{Template, TemplateToken},
@@ -6,9 +9,10 @@ use spdlog_internal::pattern_parser::{
     Result as PatternParserResult,
 };
 
-use super::{Pattern, PatternContext, __pattern as pattern};
+use super::{Pattern, PatternContext, PatternFormatter, __pattern as pattern};
 use crate::{
-    error::{BuildPatternError, Error},
+    config::{ComponentMetadata, Configurable},
+    error::{BuildPatternError, BuildPatternErrorInner, Error},
     Record, Result, StringBuf,
 };
 
@@ -159,6 +163,118 @@ impl Pattern for RuntimePattern {
     }
 }
 
+#[derive(Default, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct PatternFormatterRuntimePatternParams {
+    template: String,
+}
+
+#[rustfmt::skip] // rustfmt currently breaks some empty lines if `#[doc = include_str!("xxx")]` exists
+/// The builder of [`RuntimePattern`].
+#[doc = include_str!("../../include/doc/generic-builder-note.md")]
+///
+/// # Example
+/// 
+/// See the documentation of [`RuntimePattern`].
+pub struct RuntimePatternBuilder<ArgT> {
+    template: ArgT,
+    custom_patterns: Vec<(String, PatternCreator)>,
+}
+
+impl<ArgT> RuntimePatternBuilder<ArgT> {
+    /// Specifies the template string.
+    ///
+    /// This parameter is **required**.
+    ///
+    /// About the template string format, please see the documentation of
+    /// [`pattern!`] macro.
+    ///
+    /// [`pattern!`]: crate::formatter::pattern
+    pub fn template<S>(self, template: S) -> RuntimePatternBuilder<String>
+    where
+        S: Into<String>,
+    {
+        RuntimePatternBuilder {
+            template: template.into(),
+            custom_patterns: self.custom_patterns,
+        }
+    }
+
+    /// Specifies a creator for a custom pattern that appears in the template
+    /// string.
+    ///
+    /// This parameter is **optional** if there is no reference to a custom
+    /// pattern in the template string, otherwise it's **required**.
+    ///
+    /// It is conceptually equivalent to `{$my_pat} => MyPattern::new` in
+    /// [`pattern!`] macro.
+    ///
+    /// The placeholder argument must be an identifier, e.g. `"my_pat"`,
+    /// `"_my_pat"`, etc., it cannot be `"2my_pat"`, `"r#my_pat"`, `"3"`, etc.
+    ///
+    /// [`pattern!`]: crate::formatter::pattern
+    pub fn custom_pattern<S, P, F>(mut self, placeholder: S, pattern_creator: F) -> Self
+    where
+        S: Into<String>,
+        P: Pattern + 'static,
+        F: Fn() -> P + 'static,
+    {
+        self.custom_patterns.push((
+            placeholder.into(),
+            Box::new(move || Box::new(pattern_creator())),
+        ));
+        self
+    }
+}
+
+impl RuntimePatternBuilder<()> {
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required field `template`\n\n\
+    ")]
+    pub fn build(self, _: Infallible) {}
+}
+
+impl RuntimePatternBuilder<String> {
+    /// Builds a runtime pattern.
+    pub fn build(self) -> Result<RuntimePattern> {
+        self.build_inner()
+    }
+
+    fn build_inner(self) -> Result<RuntimePattern> {
+        let mut registry = PatternRegistry::with_builtin();
+        for (name, formatter) in self.custom_patterns {
+            if !(!name.is_empty()
+                && name
+                    .chars()
+                    .next()
+                    .map(|ch| ch.is_ascii_alphabetic() || ch == '_')
+                    .unwrap()
+                && name
+                    .chars()
+                    .skip(1)
+                    .all(|ch| ch.is_ascii_alphanumeric() || ch == '_'))
+            {
+                return Err(Error::err_build_pattern(
+                    BuildPatternErrorInner::InvalidCustomPlaceholder(name),
+                ));
+            }
+            registry
+                .register_custom(name, formatter)
+                .map_err(Error::err_build_pattern_internal)?;
+        }
+
+        let template =
+            Template::parse(&self.template).map_err(Error::err_build_pattern_internal)?;
+
+        Synthesiser::new(registry)
+            .synthesize(template)
+            .map_err(Error::err_build_pattern_internal)
+            .map(RuntimePattern)
+    }
+}
+
 struct Synthesiser {
     registry: PatternRegistry,
 }
@@ -257,4 +373,106 @@ fn build_builtin_pattern(builtin: &BuiltInFormatter) -> Box<dyn Pattern> {
         ThreadId,
         Eol
     )
+}
+
+impl Configurable for PatternFormatter<RuntimePattern> {
+    type Params = PatternFormatterRuntimePatternParams;
+
+    fn metadata() -> ComponentMetadata<'static> {
+        ComponentMetadata {
+            name: "PatternFormatter",
+        }
+    }
+
+    fn build(params: Self::Params) -> Result<Self> {
+        Ok(Self::new(RuntimePattern::new(params.template)?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn builder(template: &str) -> RuntimePatternBuilder<String> {
+        RuntimePattern::builder().template(template)
+    }
+
+    fn new(template: &str) -> Result<RuntimePattern> {
+        RuntimePattern::new(template)
+    }
+
+    fn custom_pat_creator() -> impl Pattern {
+        pattern::Level
+    }
+
+    #[test]
+    fn valid() {
+        assert!(new("").is_ok());
+        assert!(new("{logger}").is_ok());
+        assert!(builder("{logger} {$custom_pat}")
+            .custom_pattern("custom_pat", custom_pat_creator)
+            .build()
+            .is_ok());
+        assert!(builder("{logger} {$_custom_pat}")
+            .custom_pattern("_custom_pat", custom_pat_creator)
+            .build()
+            .is_ok());
+        assert!(builder("{logger} {$_2custom_pat}")
+            .custom_pattern("_2custom_pat", custom_pat_creator)
+            .build()
+            .is_ok());
+    }
+
+    #[test]
+    fn invalid() {
+        assert!(matches!(new("{logger-name}"), Err(Error::BuildPattern(_))));
+        assert!(matches!(new("{nonexistent}"), Err(Error::BuildPattern(_))));
+        assert!(matches!(new("{}"), Err(Error::BuildPattern(_))));
+        assert!(matches!(
+            new("{logger} {$custom_pat_no_ref}"),
+            Err(Error::BuildPattern(_))
+        ));
+        assert!(matches!(
+            builder("{logger} {$custom_pat}")
+                .custom_pattern("custom_pat", custom_pat_creator)
+                .custom_pattern("", custom_pat_creator)
+                .build(),
+            Err(Error::BuildPattern(_))
+        ));
+        assert!(matches!(
+            builder("{logger} {$custom_pat}")
+                .custom_pattern("custom_pat", custom_pat_creator)
+                .custom_pattern("custom-pat2", custom_pat_creator)
+                .build(),
+            Err(Error::BuildPattern(_))
+        ));
+        assert!(matches!(
+            builder("{logger} {$custom_pat}")
+                .custom_pattern("custom_pat", custom_pat_creator)
+                .custom_pattern("2custom_pat", custom_pat_creator)
+                .build(),
+            Err(Error::BuildPattern(_))
+        ));
+        assert!(matches!(
+            builder("{logger} {$r#custom_pat}")
+                .custom_pattern("r#custom_pat", custom_pat_creator)
+                .build(),
+            Err(Error::BuildPattern(_))
+        ));
+    }
+
+    #[test]
+    fn deser_params() {
+        assert!(
+            toml::from_str::<PatternFormatterRuntimePatternParams>(
+                r#"template = "[{level}] {payload}""#,
+            )
+            .unwrap()
+                == PatternFormatterRuntimePatternParams {
+                    template: "[{level}] {payload}".to_string()
+                }
+        );
+
+        // TODO: Test ill-formed template string err
+    }
 }

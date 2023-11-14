@@ -112,3 +112,20 @@ impl FmtExtraInfoBuilder {
         self.info
     }
 }
+
+/// There is no easy way to implement `PartialEq` for `dyn T`. we just do it for
+/// testing, so we implement it this way
+#[cfg(test)]
+impl PartialEq for dyn Formatter {
+    fn eq(&self, other: &Self) -> bool {
+        let record = Record::new(crate::Level::Critical, "this is a mock record");
+
+        let (mut self_result, mut other_result) = (StringBuf::new(), StringBuf::new());
+        let (self_extra, other_extra) = (
+            self.format(&record, &mut self_result).unwrap(),
+            other.format(&record, &mut other_result).unwrap(),
+        );
+
+        (self_result, self_extra) == (other_result, other_extra)
+    }
+}

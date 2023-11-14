@@ -120,3 +120,12 @@ pub trait Sink: Sync + Send {
 
 /// A container for [`Sink`]s.
 pub type Sinks = Vec<Arc<dyn Sink>>;
+
+/// There is no easy way to implement `PartialEq` for `dyn T`. we just do it for
+/// testing, so we implement it this way
+#[cfg(test)]
+impl PartialEq for dyn Sink {
+    fn eq(&self, other: &Self) -> bool {
+        self.level_filter() == other.level_filter()
+    }
+}

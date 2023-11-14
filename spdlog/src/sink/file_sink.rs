@@ -7,7 +7,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use serde::Deserialize;
+
 use crate::{
+    config::{ComponentMetadata, Configurable},
     sink::{helper, Sink},
     sync::*,
     utils, Error, Record, Result, StringBuf,
@@ -30,9 +33,11 @@ impl FileSink {
     #[must_use]
     pub fn builder() -> FileSinkBuilder<()> {
         FileSinkBuilder {
-            path: (),
-            truncate: false,
-            common_builder_impl: helper::CommonBuilderImpl::new(),
+            inner: FileSinkParamsInner {
+                path: (),
+                truncate: false,
+                common_builder_impl: helper::CommonBuilderImpl::new(),
+            },
         }
     }
 
@@ -97,6 +102,41 @@ impl Drop for FileSink {
     }
 }
 
+#[derive(Default, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
+struct FileSinkParamsInner<ArgPath> {
+    #[serde(flatten)]
+    common_builder_impl: helper::CommonBuilderImpl,
+    path: ArgPath,
+    #[serde(default)]
+    truncate: bool,
+}
+
+#[derive(Default, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
+#[doc(hidden)]
+pub struct FileSinkParams(FileSinkParamsInner<PathBuf>);
+
+impl Configurable for FileSink {
+    type Params = FileSinkParams;
+
+    fn metadata() -> ComponentMetadata<'static> {
+        ComponentMetadata { name: "FileSink" }
+    }
+
+    fn build(params: Self::Params) -> Result<Self> {
+        let mut builder = FileSink::builder()
+            .level_filter(params.0.common_builder_impl.level_filter)
+            // .error_handler(params.0.common_builder_impl.error_handler)
+            .path(params.0.path)
+            .truncate(params.0.truncate);
+        if let Some(formatter) = params.0.common_builder_impl.formatter {
+            builder = builder.formatter(formatter);
+        }
+        builder.build()
+    }
+}
+
 // --------------------------------------------------
 
 /// The builder of [`FileSink`].
@@ -130,9 +170,7 @@ impl Drop for FileSink {
 ///   # Ok(()) }
 ///   ```
 pub struct FileSinkBuilder<ArgPath> {
-    common_builder_impl: helper::CommonBuilderImpl,
-    path: ArgPath,
-    truncate: bool,
+    inner: FileSinkParamsInner<ArgPath>,
 }
 
 impl<ArgPath> FileSinkBuilder<ArgPath> {
@@ -145,9 +183,11 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
         P: Into<PathBuf>,
     {
         FileSinkBuilder {
-            common_builder_impl: self.common_builder_impl,
-            path: path.into(),
-            truncate: self.truncate,
+            inner: FileSinkParamsInner {
+                common_builder_impl: self.inner.common_builder_impl,
+                path: path.into(),
+                truncate: self.inner.truncate,
+            },
         }
     }
 
@@ -156,11 +196,11 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
     /// This parameter is **optional**, and defaults to `false`.
     #[must_use]
     pub fn truncate(mut self, truncate: bool) -> Self {
-        self.truncate = truncate;
+        self.inner.truncate = truncate;
         self
     }
 
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
+    helper::common_impl!(@SinkBuilder: inner.common_builder_impl);
 }
 
 impl FileSinkBuilder<()> {
@@ -180,13 +220,80 @@ impl FileSinkBuilder<PathBuf> {
     /// If an error occurs opening the file, [`Error::CreateDirectory`] or
     /// [`Error::OpenFile`] will be returned.
     pub fn build(self) -> Result<FileSink> {
-        let file = utils::open_file(self.path, self.truncate)?;
+        let file = utils::open_file(self.inner.path, self.inner.truncate)?;
 
         let sink = FileSink {
-            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+            common_impl: helper::CommonImpl::from_builder(self.inner.common_builder_impl),
             file: SpinMutex::new(BufWriter::new(file)),
         };
 
         Ok(sink)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+    use crate::{
+        formatter::{FullFormatter, PatternFormatter, RuntimePattern},
+        LevelFilter,
+    };
+
+    #[test]
+    fn deser_params() {
+        assert!(
+            toml::from_str::<FileSinkParams>(r#"path = "/path/to/log_file""#,).unwrap()
+                == FileSinkParams(FileSinkParamsInner {
+                    common_builder_impl: helper::CommonBuilderImpl {
+                        level_filter: LevelFilter::All,
+                        formatter: None,
+                        error_handler: None
+                    },
+                    path: PathBuf::from_str("/path/to/log_file").unwrap(),
+                    truncate: false
+                })
+        );
+        assert!(
+            toml::from_str::<FileSinkParams>(
+                r#"
+                    path = "/path/to/app.log"
+                    truncate = true
+                    formatter = { name = "FullFormatter" }
+                "#,
+            )
+            .unwrap()
+                == FileSinkParams(FileSinkParamsInner {
+                    common_builder_impl: helper::CommonBuilderImpl {
+                        level_filter: LevelFilter::All,
+                        formatter: Some(Box::new(FullFormatter::new())),
+                        error_handler: None
+                    },
+                    path: PathBuf::from_str("/path/to/app.log").unwrap(),
+                    truncate: true
+                })
+        );
+        assert!(
+            toml::from_str::<FileSinkParams>(
+                r#"
+                    path = "/path/to/app.log"
+                    truncate = true
+                    formatter = { name = "PatternFormatter", template = "[{level}] >w< {payload}{eol}" }
+                "#,
+            )
+            .unwrap()
+                == FileSinkParams(FileSinkParamsInner {
+                    common_builder_impl: helper::CommonBuilderImpl {
+                        level_filter: LevelFilter::All,
+                        formatter: Some(Box::new(PatternFormatter::new(
+                            RuntimePattern::new("[{level}] >w< {payload}{eol}").unwrap()
+                        ))),
+                        error_handler: None
+                    },
+                    path: PathBuf::from_str("/path/to/app.log").unwrap(),
+                    truncate: true
+                })
+        );
     }
 }
