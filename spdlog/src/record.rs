@@ -24,7 +24,7 @@ use crate::{Level, SourceLocation};
 // possible to correct.
 #[derive(Clone, Debug)]
 pub struct Record<'a> {
-    logger_name: Option<&'a str>,
+    logger_name: Option<Cow<'a, str>>,
     payload: Cow<'a, str>,
     inner: Cow<'a, RecordInner>,
 }
@@ -73,7 +73,7 @@ impl<'a> Record<'a> {
     #[must_use]
     pub fn to_owned(&self) -> RecordOwned {
         RecordOwned {
-            logger_name: self.logger_name.map(|n| n.into()),
+            logger_name: self.logger_name.clone().map(|n| n.into_owned()),
             payload: self.payload.to_string(),
             inner: self.inner.clone().into_owned(),
         }
@@ -81,8 +81,8 @@ impl<'a> Record<'a> {
 
     /// Gets the logger name.
     #[must_use]
-    pub fn logger_name(&self) -> Option<&'a str> {
-        self.logger_name
+    pub fn logger_name(&self) -> Option<&str> {
+        self.logger_name.as_ref().map(|n| n.as_ref())
     }
 
     /// Gets the level.
@@ -128,7 +128,16 @@ impl<'a> Record<'a> {
         let args = record.args();
 
         Self {
-            logger_name: logger.name(),
+            // If the logger has a name configured, use that name. Otherwise, the name can also be
+            // given by the target of the log record.
+            logger_name: logger.name().map(Cow::Borrowed).or_else(|| {
+                let log_target = record.target();
+                if log_target.is_empty() {
+                    None
+                } else {
+                    Some(Cow::Owned(String::from(log_target)))
+                }
+            }),
             payload: match args.as_str() {
                 Some(literal_str) => literal_str.into(),
                 None => args.to_string().into(),
@@ -169,7 +178,7 @@ impl RecordOwned {
     #[must_use]
     pub fn as_ref(&self) -> Record {
         Record {
-            logger_name: self.logger_name.as_deref(),
+            logger_name: self.logger_name.as_deref().map(Cow::Borrowed),
             payload: Cow::Borrowed(&self.payload),
             inner: Cow::Borrowed(&self.inner),
         }
@@ -237,7 +246,7 @@ impl<'a> RecordBuilder<'a> {
     /// Sets the logger name.
     #[must_use]
     pub(crate) fn logger_name(mut self, logger_name: &'a str) -> Self {
-        self.record.logger_name = Some(logger_name);
+        self.record.logger_name = Some(Cow::Borrowed(logger_name));
         self
     }
 
