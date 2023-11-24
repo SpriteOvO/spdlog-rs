@@ -11,8 +11,7 @@ pub(crate) type SinkErrorHandler = Atomic<Option<ErrorHandler>>;
 
 cfg_if! {
     if #[cfg(test)] {
-        use static_assertions::const_assert;
-        const_assert!(Atomic::<SinkErrorHandler>::is_lock_free());
+        crate::utils::const_assert!(Atomic::<SinkErrorHandler>::is_lock_free());
     }
 }
 

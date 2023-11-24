@@ -25,3 +25,14 @@ pub fn open_file(path: impl AsRef<Path>, truncate: bool) -> Result<File> {
         .open(path)
         .map_err(Error::OpenFile)
 }
+
+// Credits `static_assertions` crate
+macro_rules! const_assert {
+    ( $cond:expr $(,)? ) => {
+        const _: [(); 0 - !{
+            const EVALUATED: bool = $cond;
+            EVALUATED
+        } as usize] = [];
+    };
+}
+pub(crate) use const_assert;

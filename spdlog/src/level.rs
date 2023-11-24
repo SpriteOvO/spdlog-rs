@@ -72,7 +72,7 @@ pub enum Level {
 
 cfg_if! {
     if #[cfg(test)] {
-        static_assertions::const_assert!(atomic::Atomic::<Level>::is_lock_free());
+        crate::utils::const_assert!(atomic::Atomic::<Level>::is_lock_free());
     }
 }
 
@@ -224,15 +224,12 @@ pub enum LevelFilter {
 
 cfg_if! {
     if #[cfg(test)] {
-        static_assertions::const_assert!(atomic::Atomic::<LevelFilter>::is_lock_free());
-        static_assertions::const_assert_eq!(
-            std::mem::size_of::<Level>() * 2,
-            std::mem::size_of::<LevelFilter>()
-        );
-        static_assertions::const_assert_eq!(
-            std::mem::align_of::<Level>() * 2,
-            std::mem::align_of::<LevelFilter>()
-        );
+        use std::mem::{align_of, size_of};
+        use crate::utils::const_assert;
+
+        const_assert!(atomic::Atomic::<LevelFilter>::is_lock_free());
+        const_assert!(size_of::<Level>() * 2 == size_of::<LevelFilter>());
+        const_assert!(align_of::<Level>() * 2 == align_of::<LevelFilter>());
     }
 }
 
