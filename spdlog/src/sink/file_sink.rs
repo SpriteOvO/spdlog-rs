@@ -114,14 +114,14 @@ struct FileSinkParamsInner<ArgPath> {
 
 #[derive(Default, Deserialize)]
 #[cfg_attr(test, derive(PartialEq))]
-#[doc(hidden)]
+#[doc(hidden)] // TODO: Any other way to hide it?
 pub struct FileSinkParams(FileSinkParamsInner<PathBuf>);
 
 impl Configurable for FileSink {
     type Params = FileSinkParams;
 
-    fn metadata() -> ComponentMetadata<'static> {
-        ComponentMetadata { name: "FileSink" }
+    fn metadata() -> ComponentMetadata {
+        ComponentMetadata::builder().name("FileSink").build()
     }
 
     fn build(params: Self::Params) -> Result<Self> {

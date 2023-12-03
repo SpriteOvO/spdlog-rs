@@ -70,9 +70,9 @@ impl CommonImpl {
 pub(crate) struct CommonBuilderImpl {
     #[serde(default = "sink_default_level_filter")]
     pub(crate) level_filter: LevelFilter,
-    #[serde(default, deserialize_with = "crate::config::parse::formatter_deser")]
+    #[serde(default, deserialize_with = "crate::config::deser::formatter")]
     pub(crate) formatter: Option<Box<dyn Formatter>>,
-    #[serde(skip)]
+    #[serde(skip)] // Set `error_handler` from config is not supported
     pub(crate) error_handler: Option<ErrorHandler>,
 }
 

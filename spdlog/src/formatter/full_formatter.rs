@@ -127,13 +127,11 @@ impl Default for FullFormatter {
 impl Configurable for FullFormatter {
     type Params = ();
 
-    fn metadata() -> ComponentMetadata<'static> {
-        ComponentMetadata {
-            name: "FullFormatter",
-        }
+    fn metadata() -> ComponentMetadata {
+        ComponentMetadata::builder().name("FullFormatter").build()
     }
 
-    fn build(params: Self::Params) -> Result<Self> {
+    fn build(_params: Self::Params) -> Result<Self> {
         Ok(FullFormatter::new())
     }
 }

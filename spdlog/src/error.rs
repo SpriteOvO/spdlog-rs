@@ -109,7 +109,7 @@ pub enum Error {
 
     #[cfg(test)]
     #[error("{0}")]
-    __ForInternalTestsUseOnly(i32),
+    __ForInternalTestsUseOnly(i32, i32),
 }
 
 /// This error type contains a variety of possible invalid arguments.
@@ -263,9 +263,11 @@ pub struct BuildPatternError(pub(crate) spdlog_internal::pattern_parser::Error);
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error("TODO: MultipleRegistration")]
-    MultipleRegistration,
+    MultipleRegistration, // TODO: arg?
+    #[error("TODO: BuildComponent: {0}")]
+    BuildComponent(String /* TODO: other type? */),
     #[error("TODO: UnknownComponent ({0})")]
-    UnknownComponent(String), // TODO: Better name?
+    UnknownComponent(String), // TODO: Better name? Distinguish builtin and custom
 }
 
 /// The result type of this crate.
