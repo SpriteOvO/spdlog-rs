@@ -99,6 +99,13 @@ pub enum Error {
     #[cfg(feature = "runtime-pattern")]
     #[error("failed to build pattern at runtime: {0}")]
     BuildPattern(BuildPatternError),
+
+    #[error("TODO: {0}")]
+    Config(ConfigError), // TODO: Better name?
+
+    #[cfg(test)]
+    #[error("{0}")]
+    __ForInternalTestsUseOnly(i32, i32),
 }
 
 /// This error type contains a variety of possible invalid arguments.
@@ -246,6 +253,16 @@ pub(crate) enum BuildPatternErrorInner {
     Internal(spdlog_internal::pattern_parser::Error),
     #[error("invalid placeholder for custom pattern '{0}'")]
     InvalidCustomPlaceholder(String),
+}
+
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error("TODO: MultipleRegistration")]
+    MultipleRegistration, // TODO: arg?
+    #[error("TODO: BuildComponent: {0}")]
+    BuildComponent(String /* TODO: other type? */),
+    #[error("TODO: UnknownComponent ({0})")]
+    UnknownComponent(String), // TODO: Better name? Distinguish builtin and custom
 }
 
 /// The result type of this crate.

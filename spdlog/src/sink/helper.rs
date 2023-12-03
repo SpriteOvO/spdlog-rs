@@ -1,6 +1,10 @@
+use std::result::Result as StdResult;
+
 use cfg_if::cfg_if;
+use serde::Deserialize;
 
 use crate::{
+    config::Configurable,
     formatter::{Formatter, FullFormatter},
     prelude::*,
     sync::*,
@@ -16,7 +20,9 @@ cfg_if! {
     }
 }
 
-pub(crate) const SINK_DEFAULT_LEVEL_FILTER: LevelFilter = LevelFilter::All;
+pub(crate) const fn sink_default_level_filter() -> LevelFilter {
+    LevelFilter::All
+}
 
 pub(crate) struct CommonImpl {
     pub(crate) level_filter: Atomic<LevelFilter>,
@@ -60,17 +66,28 @@ impl CommonImpl {
     }
 }
 
+#[derive(Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
 pub(crate) struct CommonBuilderImpl {
+    #[serde(default = "sink_default_level_filter")]
     pub(crate) level_filter: LevelFilter,
+    #[serde(default, deserialize_with = "crate::config::deser::formatter")]
     pub(crate) formatter: Option<Box<dyn Formatter>>,
+    #[serde(skip)] // Set `error_handler` from config is not supported
     pub(crate) error_handler: Option<ErrorHandler>,
+}
+
+impl Default for CommonBuilderImpl {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CommonBuilderImpl {
     #[must_use]
     pub(crate) fn new() -> Self {
         Self {
-            level_filter: SINK_DEFAULT_LEVEL_FILTER,
+            level_filter: sink_default_level_filter(),
             formatter: None,
             error_handler: None,
         }
