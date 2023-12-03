@@ -58,6 +58,7 @@ spdlog-macros = { version = "0.1.0", path = "../spdlog-macros" }
 spin = "0.9.8"
 static_assertions = "1.1.0"
 thiserror = "1.0.37"
+toml = "0.8.8"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["consoleapi", "debugapi", "handleapi", "processenv", "processthreadsapi", "winbase", "wincon"] }
@@ -84,7 +85,6 @@ tracing = "=0.1.37"
 tracing-subscriber = "=0.3.16"
 tracing-appender = "=0.2.2"
 paste = "1.0.14"
-toml = "0.8.6"
 
 [build-dependencies]
 rustc_version = "0.4.0"

@@ -142,6 +142,8 @@ impl Pattern for RuntimePattern {
 
 #[derive(Default, Deserialize)]
 #[cfg_attr(test, derive(PartialEq))]
+#[serde(deny_unknown_fields)]
+#[doc(hidden)]
 pub struct PatternFormatterRuntimePatternParams {
     template: String,
 }
@@ -355,10 +357,10 @@ fn build_builtin_pattern(builtin: &BuiltInFormatter) -> Box<dyn Pattern> {
 impl Configurable for PatternFormatter<RuntimePattern> {
     type Params = PatternFormatterRuntimePatternParams;
 
-    fn metadata() -> ComponentMetadata<'static> {
-        ComponentMetadata {
-            name: "PatternFormatter",
-        }
+    fn metadata() -> ComponentMetadata {
+        ComponentMetadata::builder()
+            .name("PatternFormatter")
+            .build()
     }
 
     fn build(params: Self::Params) -> Result<Self> {

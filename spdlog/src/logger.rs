@@ -2,6 +2,8 @@
 
 use std::{result::Result as StdResult, time::Duration};
 
+use serde::Deserialize;
+
 use crate::{
     env_level,
     error::{Error, ErrorHandler, InvalidArgumentError, SetLoggerNameError},
@@ -75,13 +77,7 @@ impl Logger {
     /// Constructs a [`LoggerBuilder`].
     #[must_use]
     pub fn builder() -> LoggerBuilder {
-        LoggerBuilder {
-            name: None,
-            level_filter: LevelFilter::MoreSevereEqual(Level::Info),
-            sinks: vec![],
-            flush_level_filter: LevelFilter::Off,
-            error_handler: None,
-        }
+        LoggerBuilder(LoggerParams::default())
     }
 
     /// Gets the logger name.
@@ -445,15 +441,50 @@ impl Clone for Logger {
     }
 }
 
-/// The builder of [`Logger`].
-#[derive(Clone)]
-pub struct LoggerBuilder {
-    name: Option<String>,
+#[derive(Clone, Deserialize)]
+pub(crate) struct ArcSinkWrapper(
+    // `Option` is used to support `Default` trait required in config deserialization, it should
+    // never be `None`, it's fine to `unwrap` it anywhere.
+    #[serde(default, deserialize_with = "crate::config::deser::sink")] Option<Arc<dyn Sink>>,
+);
+
+pub(crate) const fn logger_default_level_filter() -> LevelFilter {
+    LevelFilter::MoreSevereEqual(Level::Info)
+}
+
+pub(crate) const fn logger_default_flush_level_filter() -> LevelFilter {
+    LevelFilter::Off
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct LoggerParams {
+    name: Option<String>, // TODO: maybe conflict with `match` key
+    #[serde(default = "logger_default_level_filter")]
     level_filter: LevelFilter,
-    sinks: Sinks,
+    sinks: Vec<ArcSinkWrapper>,
+    #[serde(default = "logger_default_flush_level_filter")]
     flush_level_filter: LevelFilter,
+    #[serde(skip)] // Set `error_handler` from config is not supported
     error_handler: Option<ErrorHandler>,
 }
+// TODO: Is it possible and necessary to support `periodic_flusher` for config?
+
+impl Default for LoggerParams {
+    fn default() -> Self {
+        Self {
+            name: None,
+            level_filter: logger_default_level_filter(),
+            sinks: vec![],
+            flush_level_filter: logger_default_flush_level_filter(),
+            error_handler: None,
+        }
+    }
+}
+
+/// The builder of [`Logger`].
+#[derive(Clone)]
+pub struct LoggerBuilder(pub(crate) LoggerParams);
 
 impl LoggerBuilder {
     /// Constructs a `LoggerBuilder`.
@@ -482,7 +513,7 @@ impl LoggerBuilder {
     where
         S: Into<String>,
     {
-        self.name = Some(name.into());
+        self.0.name = Some(name.into());
         self
     }
 
@@ -491,13 +522,13 @@ impl LoggerBuilder {
     /// This parameter is **optional**, and defaults to
     /// `LevelFilter::MoreSevereEqual(Level::Info)`.
     pub fn level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
-        self.level_filter = level_filter;
+        self.0.level_filter = level_filter;
         self
     }
 
     /// Add a [`Sink`].
     pub fn sink(&mut self, sink: Arc<dyn Sink>) -> &mut Self {
-        self.sinks.push(sink);
+        self.0.sinks.push(ArcSinkWrapper(Some(sink)));
         self
     }
 
@@ -506,7 +537,12 @@ impl LoggerBuilder {
     where
         I: IntoIterator<Item = Arc<dyn Sink>>,
     {
-        self.sinks.append(&mut sinks.into_iter().collect());
+        self.0.sinks.append(
+            &mut sinks
+                .into_iter()
+                .map(|sink| ArcSinkWrapper(Some(sink)))
+                .collect(),
+        );
         self
     }
 
@@ -517,7 +553,7 @@ impl LoggerBuilder {
     /// See the documentation of [`Logger::set_flush_level_filter`] for the
     /// description of this parameter.
     pub fn flush_level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
-        self.flush_level_filter = level_filter;
+        self.0.flush_level_filter = level_filter;
         self
     }
 
@@ -528,13 +564,20 @@ impl LoggerBuilder {
     /// See the documentation of [`Logger::set_error_handler`] for the
     /// description of this parameter.
     pub fn error_handler(&mut self, handler: ErrorHandler) -> &mut Self {
-        self.error_handler = Some(handler);
+        self.0.error_handler = Some(handler);
         self
     }
+
+    // Always do checks in the `build` function!
+    // Since the field setters will not be called for config
 
     /// Builds a [`Logger`].
     pub fn build(&mut self) -> Result<Logger> {
         self.build_inner(self.preset_level(false))
+    }
+
+    pub(crate) fn build_config(params: LoggerParams) -> Result<Logger> {
+        Self(params).build_inner(None)
     }
 
     pub(crate) fn build_default(&mut self) -> Result<Logger> {
@@ -546,21 +589,27 @@ impl LoggerBuilder {
         if is_default {
             env_level::logger_level(env_level::LoggerKind::Default)
         } else {
-            env_level::logger_level(env_level::LoggerKind::Other(self.name.as_deref()))
+            env_level::logger_level(env_level::LoggerKind::Other(self.0.name.as_deref()))
         }
     }
 
     fn build_inner(&mut self, preset_level: Option<LevelFilter>) -> Result<Logger> {
-        if let Some(name) = &self.name {
+        if let Some(name) = &self.0.name {
             check_logger_name(name).map_err(InvalidArgumentError::from)?;
         }
 
         let logger = Logger {
-            name: self.name.clone(),
-            level_filter: Atomic::new(self.level_filter),
-            sinks: self.sinks.clone(),
-            flush_level_filter: Atomic::new(self.flush_level_filter),
-            error_handler: SpinRwLock::new(self.error_handler),
+            name: self.0.name.clone(),
+            level_filter: Atomic::new(self.0.level_filter),
+            sinks: self
+                .0
+                .sinks
+                .clone()
+                .into_iter()
+                .map(|sink| sink.0.unwrap())
+                .collect(),
+            flush_level_filter: Atomic::new(self.0.flush_level_filter),
+            error_handler: SpinRwLock::new(self.0.error_handler),
             periodic_flusher: Mutex::new(None),
         };
 
@@ -582,7 +631,7 @@ impl LoggerBuilder {
         } else {
             env_level::logger_level_inner(
                 &env_level::from_str_inner(env_level).unwrap(),
-                env_level::LoggerKind::Other(self.name.as_deref()),
+                env_level::LoggerKind::Other(self.0.name.as_deref()),
             )
         };
 
