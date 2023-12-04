@@ -55,31 +55,27 @@ pub trait Configurable: Sized {
     fn build(params: Self::Params) -> Result<Self>;
 }
 
-mod storage {
-    use serde::Deserialize;
+// #[derive(Deserialize)]
+// #[serde(deny_unknown_fields)]
+// pub(super) struct Logger(#[serde(deserialize_with =
+// "crate::config::deser::logger")] crate::Logger);
 
-    use super::*;
-
-    #[derive(Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub(super) struct Logger(
-        #[serde(deserialize_with = "crate::config::deser::logger")] crate::Logger,
-    );
-
-    #[derive(Deserialize)]
-    #[serde(deny_unknown_fields)]
-    pub(super) struct Config {
-        loggers: HashMap<String, Logger>,
-    }
+#[derive(PartialEq, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct ConfigView {
+    loggers: HashMap<String, toml::Value>,
 }
 
-pub struct Config(storage::Config);
+#[derive(PartialEq, Debug)]
+pub struct Config {
+    view: ConfigView, // Stores the config values only, build lazily
+}
 
 impl Config {
     // TODO: Remember to remove me
     pub fn new_for_test(inputs: &str) -> Result<Self> {
-        let config = toml::from_str(inputs).unwrap();
-        Ok(Self(config))
+        let view = toml::from_str(inputs).unwrap();
+        Ok(Self { view })
     }
 }
 
@@ -90,6 +86,7 @@ mod tests {
 
     #[test]
     fn full() {
+        let path = TEST_LOGS_PATH.join("unit_test_config_full.log");
         let inputs = format!(
             r#"
 [loggers.default]
@@ -97,17 +94,103 @@ sinks = [
     {{ name = "$ConfigMockSink1", arg = 114 }},
     {{ name = "$ConfigMockSink2", arg = 514 }},
     {{ name = "$ConfigMockSink3", arg = 1919 }},
-    {{ name = "FileSink", path = "{}", formatter = {{ name = "PatternFormatter", template = "114514 {{payload}}{{eol}}" }} }}
+    {{ name = "FileSink", path = "{}", formatter = {{ name = "PatternFormatter", template = "Meow! {{payload}}{{eol}}" }} }}
 ]
-# flush_level_filter = "all" # TODO: design the syntax
+flush_level_filter = "Equal(Info)" # TODO: reconsider the syntax
+
+[loggers.network]
+sinks = [ {{ name = "$ConfigMockSink2", arg = 810 }} ]
 # TODO: flush_period = "10s"
             "#,
-            TEST_LOGS_PATH.join("unit_test_config_full.log").display()
+            path.display()
         );
 
         register_global();
 
-        Config::new_for_test(&inputs).unwrap();
+        let config = Config::new_for_test(&inputs).unwrap();
+
+        assert_eq!(
+            config.view,
+            ConfigView {
+                loggers: HashMap::from([
+                    (
+                        "default".to_string(),
+                        toml::Value::Table(toml::Table::from_iter([
+                            (
+                                "sinks".to_string(),
+                                toml::Value::Array(vec![
+                                    toml::Value::Table(toml::Table::from_iter([
+                                        (
+                                            "name".to_string(),
+                                            toml::Value::String("$ConfigMockSink1".to_string())
+                                        ),
+                                        ("arg".to_string(), toml::Value::Integer(114))
+                                    ])),
+                                    toml::Value::Table(toml::Table::from_iter([
+                                        (
+                                            "name".to_string(),
+                                            toml::Value::String("$ConfigMockSink2".to_string())
+                                        ),
+                                        ("arg".to_string(), toml::Value::Integer(514))
+                                    ])),
+                                    toml::Value::Table(toml::Table::from_iter([
+                                        (
+                                            "name".to_string(),
+                                            toml::Value::String("$ConfigMockSink3".to_string())
+                                        ),
+                                        ("arg".to_string(), toml::Value::Integer(1919))
+                                    ])),
+                                    toml::Value::Table(toml::Table::from_iter([
+                                        (
+                                            "name".to_string(),
+                                            toml::Value::String("FileSink".to_string())
+                                        ),
+                                        (
+                                            "path".to_string(),
+                                            toml::Value::String(path.display().to_string())
+                                        ),
+                                        (
+                                            "formatter".to_string(),
+                                            toml::Value::Table(toml::Table::from_iter([
+                                                (
+                                                    "name".to_string(),
+                                                    toml::Value::String(
+                                                        "PatternFormatter".to_string()
+                                                    ),
+                                                ),
+                                                (
+                                                    "template".to_string(),
+                                                    toml::Value::String(
+                                                        "Meow! {payload}{eol}".to_string()
+                                                    ),
+                                                )
+                                            ]))
+                                        )
+                                    ]))
+                                ])
+                            ),
+                            (
+                                "flush_level_filter".to_string(),
+                                toml::Value::String("Equal(Info)".to_string())
+                            )
+                        ]))
+                    ),
+                    (
+                        "network".to_string(),
+                        toml::Value::Table(toml::Table::from_iter([(
+                            "sinks".to_string(),
+                            toml::Value::Array(vec![toml::Value::Table(toml::Table::from_iter([
+                                (
+                                    "name".to_string(),
+                                    toml::Value::String("$ConfigMockSink2".to_string())
+                                ),
+                                ("arg".to_string(), toml::Value::Integer(810))
+                            ]))])
+                        )]))
+                    )
+                ])
+            }
+        );
 
         // TODO
     }

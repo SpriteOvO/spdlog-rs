@@ -55,7 +55,7 @@ const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", 
 /// [`log!`]: crate::log!
 #[repr(u16)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 pub enum Level {
     /// Designates critical errors.
     Critical = 0,
@@ -202,7 +202,6 @@ impl FromStr for Level {
 /// ```
 #[repr(align(4))]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum LevelFilter {
     /// Disables all levels.
     Off,
@@ -222,6 +221,33 @@ pub enum LevelFilter {
     MoreVerboseEqual(Level),
     /// Enables all levels.
     All,
+}
+
+impl<'de> serde::Deserialize<'de> for LevelFilter {
+    fn deserialize<D>(de: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct LevelFilterExprVisitor;
+
+        impl<'de> serde::de::Visitor<'de> for LevelFilterExprVisitor {
+            type Value = LevelFilter;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a spdlog-rs level filter expression")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                LevelFilter::from_config_str(v)
+                    .ok_or_else(|| E::custom(format!("unknown level filter expression '{}'", v)))
+            }
+        }
+
+        de.deserialize_str(LevelFilterExprVisitor)
+    }
 }
 
 cfg_if! {
@@ -275,6 +301,35 @@ impl LevelFilter {
         } else {
             None
         }
+    }
+
+    // TODO: cfg
+    fn from_config_str(v: &str) -> Option<Self> {
+        let value =
+            if v.ends_with(')') && v.matches('(').count() == 1 && v.matches(')').count() == 1 {
+                let (lpa, rpa) = (v.find('(').unwrap(), v.find(')').unwrap());
+                assert!(lpa < rpa);
+
+                let condition = &v[..lpa];
+                let level = v[lpa + 1..rpa].parse::<Level>().ok()?;
+
+                match condition {
+                    "Equal" => Self::Equal(level),
+                    "NotEqual" => Self::NotEqual(level),
+                    "MoreSevere" => Self::MoreSevere(level),
+                    "MoreSevereEqual" => Self::MoreSevereEqual(level),
+                    "MoreVerbose" => Self::MoreVerbose(level),
+                    "MoreVerboseEqual" => Self::MoreVerboseEqual(level),
+                    _ => return None,
+                }
+            } else {
+                match v {
+                    "Off" => Self::Off,
+                    "All" => Self::All,
+                    _ => return None,
+                }
+            };
+        Some(value)
     }
 }
 
@@ -371,6 +426,53 @@ mod tests {
             LevelFilter::All,
             LevelFilter::from_str_for_env("aLl").unwrap()
         );
+    }
+
+    #[test]
+    fn level_filter_from_str_for_config() {
+        assert_eq!(
+            LevelFilter::Off,
+            LevelFilter::from_config_str("Off").unwrap()
+        );
+        assert_eq!(
+            LevelFilter::Equal(Level::Trace),
+            LevelFilter::from_config_str("Equal(trace)").unwrap()
+        );
+        assert_eq!(
+            LevelFilter::NotEqual(Level::Debug),
+            LevelFilter::from_config_str("NotEqual(debug)").unwrap()
+        );
+        assert_eq!(
+            LevelFilter::MoreSevere(Level::Info),
+            LevelFilter::from_config_str("MoreSevere(info)").unwrap()
+        );
+        assert_eq!(
+            LevelFilter::MoreSevereEqual(Level::Warn),
+            LevelFilter::from_config_str("MoreSevereEqual(warn)").unwrap()
+        );
+        assert_eq!(
+            LevelFilter::MoreVerbose(Level::Error),
+            LevelFilter::from_config_str("MoreVerbose(Error)").unwrap()
+        );
+        assert_eq!(
+            LevelFilter::MoreVerboseEqual(Level::Critical),
+            LevelFilter::from_config_str("MoreVerboseEqual(Critical)").unwrap()
+        );
+        assert_eq!(
+            LevelFilter::All,
+            LevelFilter::from_config_str("All").unwrap()
+        );
+
+        assert!(LevelFilter::from_config_str("Unknown").is_none());
+        assert!(LevelFilter::from_config_str("Equal(info").is_none());
+        assert!(LevelFilter::from_config_str("Equal)info(").is_none());
+        assert!(LevelFilter::from_config_str("Equal)info").is_none());
+        assert!(LevelFilter::from_config_str("(Equal)info").is_none());
+        assert!(LevelFilter::from_config_str("Equal(info) ").is_none());
+        assert!(LevelFilter::from_config_str(" Equal(info)").is_none());
+        assert!(LevelFilter::from_config_str("Equal (info)").is_none());
+        assert!(LevelFilter::from_config_str("Equal( info)").is_none());
+        assert!(LevelFilter::from_config_str("Equal(info )").is_none());
     }
 
     #[test]
