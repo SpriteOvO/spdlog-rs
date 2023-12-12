@@ -40,6 +40,7 @@ pub struct ThreadPool {
 pub struct ThreadPoolBuilder {
     capacity: usize,
     threads: usize,
+    core_id: Option<usize>,
 }
 
 struct Worker {
@@ -53,6 +54,7 @@ impl ThreadPool {
         ThreadPoolBuilder {
             capacity: 8192,
             threads: 1,
+            core_id: None,
         }
     }
 
@@ -117,7 +119,17 @@ impl ThreadPoolBuilder {
         self
     }
 
+    /// Specify the core ID to which the thread pool should be pinned when built. Only one thread
+    /// will be pinned to the specified core as the thread pool currently only has one thread.
+    pub fn affinity(&mut self, core_id: usize) -> &mut Self {
+        self.core_id = Some(core_id);
+        self
+    }
+
     /// Builds a [`ThreadPool`].
+    ///
+    /// # Panics
+    /// Panics if core affinity has been set using [`ThreadPoolBuilder::affinity`] and pinning the thread to that core failed.
     pub fn build(&self) -> Result<ThreadPool> {
         if self.capacity < 1 {
             return Err(Error::InvalidArgument(
@@ -136,7 +148,16 @@ impl ThreadPoolBuilder {
         let mut threads = Vec::new();
         threads.resize_with(self.threads, || {
             let receiver = receiver.clone();
-            Some(thread::spawn(move || Worker { receiver }.run()))
+            let core_id = self.core_id;
+
+            Some(thread::spawn(move || {
+                if let Some(core_id) = core_id {
+                    if !core_affinity::set_for_current(core_affinity::CoreId { id: core_id }) {
+                        panic!("failed to pin thread to core {}", core_id);
+                    }
+                }
+                Worker { receiver }.run()
+            }))
         });
 
         Ok(ThreadPool {
