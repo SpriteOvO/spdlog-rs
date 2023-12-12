@@ -3,13 +3,17 @@ mod source;
 
 pub(crate) mod deser;
 
-use std::{collections::HashMap, convert::Infallible};
+use std::{
+    cell::RefCell,
+    collections::{hash_map::Entry, HashMap},
+    convert::Infallible,
+};
 
 pub use registry::*;
 use serde::{de::DeserializeOwned, Deserialize};
 pub use source::*;
 
-use crate::{sync::*, Result};
+use crate::{sync::*, Logger, LoggerBuilder, LoggerParams, Result};
 
 // TODO: Builder?
 #[derive(PartialEq, Eq, Hash)]
@@ -57,25 +61,78 @@ pub trait Configurable: Sized {
 
 // #[derive(Deserialize)]
 // #[serde(deny_unknown_fields)]
-// pub(super) struct Logger(#[serde(deserialize_with =
+// struct Logger(#[serde(deserialize_with =
 // "crate::config::deser::logger")] crate::Logger);
 
-#[derive(PartialEq, Debug, Deserialize)]
+#[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct ConfigView {
-    loggers: HashMap<String, toml::Value>,
+struct ConfigView {
+    loggers: HashMap<String, LoggerParams>,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug, Hash, Eq, PartialEq)]
+enum LoggerKind {
+    Default,
+    Named(String),
+}
+
 pub struct Config {
-    view: ConfigView, // Stores the config values only, build lazily
+    view: ConfigView, // Stores the config values only, build loggers lazily
+    built: RefCell<HashMap<LoggerKind, Weak<Logger>>>,
+}
+// TODO: But only build once! For later acquires, return the built `Arc<Logger>`
+//       Stores `Weak`?
+
+impl Config {
+    pub fn acquire_default_logger(&self) -> Option<Result<Arc<Logger>>> {
+        self.acquire_logger_inner(LoggerKind::Default)
+    }
+
+    pub fn acquire_logger<S>(&self, name: S) -> Option<Result<Arc<Logger>>>
+    where
+        S: AsRef<str>,
+    {
+        self.acquire_logger_inner(LoggerKind::Named(name.as_ref().into()))
+    }
 }
 
+impl Config {
+    fn acquire_logger_inner(&self, logger_kind: LoggerKind) -> Option<Result<Arc<Logger>>> {
+        let logger_name = match &logger_kind {
+            LoggerKind::Default => "default",
+            LoggerKind::Named(name) => name,
+        };
+        let logger_params = self.view.loggers.get(logger_name)?;
+
+        // TODO: Factually unnecessary clone in the argument of `build_config`, could be
+        // avoided with some effort
+        Some((|| match self.built.borrow_mut().entry(logger_kind) {
+            Entry::Occupied(mut entry) => match entry.get().upgrade() {
+                None => {
+                    let new = Arc::new(LoggerBuilder::build_config(logger_params.clone())?);
+                    entry.insert(Arc::downgrade(&new));
+                    Ok(new)
+                }
+                Some(built) => Ok(built),
+            },
+            Entry::Vacant(entry) => {
+                let new = Arc::new(LoggerBuilder::build_config(logger_params.clone())?);
+                entry.insert(Arc::downgrade(&new));
+                Ok(new)
+            }
+        })())
+    }
+}
+
+// TODO: temp code
 impl Config {
     // TODO: Remember to remove me
     pub fn new_for_test(inputs: &str) -> Result<Self> {
         let view = toml::from_str(inputs).unwrap();
-        Ok(Self { view })
+        Ok(Self {
+            view,
+            built: RefCell::new(HashMap::new()),
+        })
     }
 }
 

@@ -16,18 +16,20 @@ use crate::{
 fn check_logger_name(name: impl AsRef<str>) -> StdResult<(), SetLoggerNameError> {
     let name = name.as_ref();
 
-    if name.chars().any(|ch| {
-        ch == ','
-            || ch == '='
-            || ch == '*'
-            || ch == '?'
-            || ch == '$'
-            || ch == '{'
-            || ch == '}'
-            || ch == '"'
-            || ch == '\''
-            || ch == ';'
-    }) || name.starts_with(' ')
+    if name.to_ascii_lowercase() == "default"
+        || name.chars().any(|ch| {
+            ch == ','
+                || ch == '='
+                || ch == '*'
+                || ch == '?'
+                || ch == '$'
+                || ch == '{'
+                || ch == '}'
+                || ch == '"'
+                || ch == '\''
+                || ch == ';'
+        })
+        || name.starts_with(' ')
         || name.ends_with(' ')
     {
         Err(SetLoggerNameError::new(name))

@@ -44,7 +44,6 @@ mod erased_serde_ext {
 use erased_serde_ext::*;
 
 type ComponentDeser<C> = fn(de: &mut dyn ErasedDeserializer) -> Result<C>;
-
 type RegisteredComponents<C> = HashMap<&'static str, ComponentDeser<C>>;
 
 pub struct Registry {
