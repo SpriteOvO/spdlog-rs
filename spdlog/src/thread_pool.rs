@@ -119,8 +119,9 @@ impl ThreadPoolBuilder {
         self
     }
 
-    /// Specify the core ID to which the thread pool should be pinned when built. Only one thread
-    /// will be pinned to the specified core as the thread pool currently only has one thread.
+    /// Specify the core ID to which the thread pool should be pinned when
+    /// built. Only one thread will be pinned to the specified core as the
+    /// thread pool currently only has one thread.
     pub fn affinity(&mut self, core_id: usize) -> &mut Self {
         self.core_id = Some(core_id);
         self
@@ -129,7 +130,9 @@ impl ThreadPoolBuilder {
     /// Builds a [`ThreadPool`].
     ///
     /// # Panics
-    /// Panics if core affinity has been set using [`ThreadPoolBuilder::affinity`] and pinning the thread to that core failed.
+    /// Panics if core affinity has been set using
+    /// [`ThreadPoolBuilder::affinity`] and pinning the thread to that core
+    /// failed.
     pub fn build(&self) -> Result<ThreadPool> {
         if self.capacity < 1 {
             return Err(Error::InvalidArgument(
