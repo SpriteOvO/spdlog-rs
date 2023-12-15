@@ -36,10 +36,14 @@ pub struct ThreadPool {
     sender: Option<Sender<Task>>,
 }
 
+type Callback = Arc<dyn Fn() + Send + Sync + 'static>;
+
 /// The builder of [`ThreadPool`].
 pub struct ThreadPoolBuilder {
     capacity: usize,
     threads: usize,
+    on_thread_spawn: Option<Callback>,
+    on_thread_finish: Option<Callback>,
 }
 
 struct Worker {
@@ -53,6 +57,8 @@ impl ThreadPool {
         ThreadPoolBuilder {
             capacity: 8192,
             threads: 1,
+            on_thread_spawn: None,
+            on_thread_finish: None,
         }
     }
 
@@ -117,6 +123,21 @@ impl ThreadPoolBuilder {
         self
     }
 
+    /// Provide a function that will be called on each thread of the thread pool
+    /// immediately after it is spawned. This can, for example, be used to set
+    /// core affinity for each thread.
+    pub fn on_thread_spawn(&mut self, f: impl Fn() + Send + Sync + 'static) -> &mut Self {
+        self.on_thread_spawn = Some(Arc::new(f));
+        self
+    }
+
+    /// Provide a function that will be called on each thread of the thread pool
+    /// just before the thread finishes.
+    pub fn on_thread_finish(&mut self, f: impl Fn() + Send + Sync + 'static) -> &mut Self {
+        self.on_thread_finish = Some(Arc::new(f));
+        self
+    }
+
     /// Builds a [`ThreadPool`].
     pub fn build(&self) -> Result<ThreadPool> {
         if self.capacity < 1 {
@@ -136,7 +157,20 @@ impl ThreadPoolBuilder {
         let mut threads = Vec::new();
         threads.resize_with(self.threads, || {
             let receiver = receiver.clone();
-            Some(thread::spawn(move || Worker { receiver }.run()))
+            let on_thread_spawn = self.on_thread_spawn.clone();
+            let on_thread_finish = self.on_thread_finish.clone();
+
+            Some(thread::spawn(move || {
+                if let Some(f) = on_thread_spawn {
+                    f();
+                }
+
+                Worker { receiver }.run();
+
+                if let Some(f) = on_thread_finish {
+                    f();
+                }
+            }))
         });
 
         Ok(ThreadPool {
