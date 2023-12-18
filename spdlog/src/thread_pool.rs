@@ -126,14 +126,20 @@ impl ThreadPoolBuilder {
     /// Provide a function that will be called on each thread of the thread pool
     /// immediately after it is spawned. This can, for example, be used to set
     /// core affinity for each thread.
-    pub fn on_thread_spawn(&mut self, f: impl Fn() + Send + Sync + 'static) -> &mut Self {
+    pub fn on_thread_spawn<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
         self.on_thread_spawn = Some(Arc::new(f));
         self
     }
 
     /// Provide a function that will be called on each thread of the thread pool
     /// just before the thread finishes.
-    pub fn on_thread_finish(&mut self, f: impl Fn() + Send + Sync + 'static) -> &mut Self {
+    pub fn on_thread_finish<F>(&mut self, f: F) -> &mut Self
+    where
+        F: Fn() + Send + Sync + 'static,
+    {
         self.on_thread_finish = Some(Arc::new(f));
         self
     }
