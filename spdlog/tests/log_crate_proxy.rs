@@ -17,7 +17,7 @@ fn test_source_location() {
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
-    spdlog::init_log_crate_proxy().unwrap();
+    spdlog::init_log_crate_proxy().ok();
     spdlog::log_crate_proxy().set_logger(Some(logger));
     log::set_max_level(log::LevelFilter::Trace);
 
@@ -26,4 +26,19 @@ fn test_source_location() {
         sink.clone_string(),
         "(log_crate_proxy::log_crate_proxy.rs) text\n"
     );
+}
+
+#[cfg(feature = "log")]
+#[test]
+fn test_target() {
+    let formatter = Box::new(PatternFormatter::new(pattern!("[{logger}] {payload}{eol}")));
+    let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
+    let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
+
+    spdlog::init_log_crate_proxy().ok();
+    spdlog::log_crate_proxy().set_logger(Some(logger));
+    log::set_max_level(log::LevelFilter::Trace);
+
+    log::info!(target: "MyLogger", "body");
+    assert_eq!(sink.clone_string(), "[MyLogger] body\n");
 }
