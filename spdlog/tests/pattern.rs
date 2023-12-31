@@ -7,13 +7,13 @@ use std::{
 use cfg_if::cfg_if;
 use regex::Regex;
 #[cfg(feature = "runtime-pattern")]
-use spdlog::formatter::RuntimePattern;
+use spdlog::formatter::runtime_pattern;
 use spdlog::{
     error,
     formatter::{pattern, Formatter, Pattern, PatternFormatter},
     prelude::*,
     sink::Sink,
-    StringBuf, __EOL,
+    Error, StringBuf, __EOL,
 };
 
 include!(concat!(
@@ -25,7 +25,7 @@ macro_rules! test_pattern {
     ( $template:literal, $($args: expr),+ $(,)? ) => {
         test_pattern_inner(pattern!($template), $($args),+);
         #[cfg(feature = "runtime-pattern")]
-        test_pattern_inner(RuntimePattern::new($template).unwrap(), $($args),+);
+        test_pattern_inner(runtime_pattern!($template).unwrap(), $($args),+);
     };
     ( $patterns:expr, $($args: expr),+ $(,)? ) => {
         $patterns.into_iter().for_each(|pat| {
@@ -50,27 +50,36 @@ fn test_builtin_formatters() {
 
 #[test]
 fn test_custom_formatters() {
+    let mut patterns = vec![Box::new(
+        pattern!("{logger}: [{level}] hello {payload} - {$mock1} / {$mock2}",
+            {$mock1} => MockPattern1::default,
+            {$mock2} => MockPattern2::default,
+        ),
+    ) as Box<dyn Pattern>];
+
+    #[cfg(feature = "runtime-pattern")]
+    patterns.push(Box::new(
+        runtime_pattern!("{logger}: [{level}] hello {payload} - {$mock1} / {$mock2}",
+            {$mock1} => MockPattern1::default,
+            {$mock2} => MockPattern2::default,
+        )
+        .unwrap(),
+    ));
+
     test_pattern!(
-        [
-            Box::new(
-                pattern!("{logger}: [{level}] hello {payload} - {$mock1} / {$mock2}",
-                    {$mock1} => MockPattern1::default,
-                    {$mock2} => MockPattern2::default,
-                )
-            ) as Box<dyn Pattern>,
-            #[cfg(feature = "runtime-pattern")]
-            Box::new(
-                RuntimePattern::builder()
-                    .template("{logger}: [{level}] hello {payload} - {$mock1} / {$mock2}")
-                    .custom_pattern("mock1", MockPattern1::default)
-                    .custom_pattern("mock2", MockPattern2::default)
-                    .build()
-                    .unwrap()
-            )
-        ],
+        patterns,
         "logger_name: [error] hello record_payload - mock_pattern_1 / mock_pattern_2",
         None,
     );
+}
+
+#[cfg(feature = "runtime-pattern")]
+#[test]
+fn test_unknown_custom_formatter() {
+    let pattern = runtime_pattern!("{logger}: [{level}] hello {payload} - {$mock1} / {$mock2}",
+        {$mock1} => MockPattern1::default,
+    );
+    assert!(pattern.is_err());
 }
 
 #[test]
@@ -302,7 +311,7 @@ fn test_builtin_patterns() {
         ( $template:literal, $($args: expr),+ $(,)? ) => {
             check_inner(pattern!($template), $($args),+);
             #[cfg(feature = "runtime-pattern")]
-            check_inner(RuntimePattern::new($template).unwrap(), $($args),+);
+            check_inner(runtime_pattern!($template).unwrap(), $($args),+);
         };
     }
 
@@ -441,6 +450,56 @@ fn test_builtin_patterns() {
     check!("{pid}", None as Option<&str>, vec![OS_ID_RANGE]);
     check!("{tid}", None as Option<&str>, vec![OS_ID_RANGE]);
     check!("{eol}", Some("{eol}"), vec![]);
+}
+
+#[cfg(feature = "runtime-pattern")]
+fn custom_pat_creator() -> impl Pattern {
+    spdlog::formatter::__pattern::Level
+}
+
+#[cfg(feature = "runtime-pattern")]
+#[test]
+fn runtime_pattern_valid() {
+    assert!(runtime_pattern!("").is_ok());
+    assert!(runtime_pattern!("{logger}").is_ok());
+    assert!(
+        runtime_pattern!("{logger} {$custom_pat}", {$custom_pat} => custom_pat_creator).is_ok()
+    );
+    assert!(
+        runtime_pattern!("{logger} {$_custom_pat}", {$_custom_pat} => custom_pat_creator).is_ok()
+    );
+    assert!(
+        runtime_pattern!("{logger} {$_2custom_pat}", {$_2custom_pat} => custom_pat_creator).is_ok()
+    );
+}
+
+#[cfg(feature = "runtime-pattern")]
+#[test]
+fn runtime_pattern_invalid() {
+    assert!(matches!(
+        runtime_pattern!("{logger-name}"),
+        Err(Error::BuildPattern(_))
+    ));
+    assert!(matches!(
+        runtime_pattern!("{nonexistent}"),
+        Err(Error::BuildPattern(_))
+    ));
+    assert!(matches!(
+        runtime_pattern!("{}"),
+        Err(Error::BuildPattern(_))
+    ));
+    assert!(matches!(
+        runtime_pattern!("{logger} {$custom_pat_no_ref}"),
+        Err(Error::BuildPattern(_))
+    ));
+    assert!(matches!(
+        runtime_pattern!("{logger} {$custom_pat}", {$r#custom_pat} => custom_pat_creator),
+        Err(Error::BuildPattern(_))
+    ));
+    assert!(matches!(
+        runtime_pattern!("{logger} {$r#custom_pat}", {$r#custom_pat} => custom_pat_creator),
+        Err(Error::BuildPattern(_))
+    ));
 }
 
 #[cfg(feature = "multi-thread")]

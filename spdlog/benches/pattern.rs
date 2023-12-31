@@ -11,6 +11,7 @@ use spdlog::{
     sink::Sink,
     Record, StringBuf,
 };
+use spdlog_macros::runtime_pattern;
 use test::Bencher;
 
 include!(concat!(
@@ -115,7 +116,7 @@ fn bench_2_full_pattern_ct(bencher: &mut Bencher) {
 fn bench_3_full_pattern_rt(bencher: &mut Bencher) {
     bench_full_pattern(
         bencher,
-        RuntimePattern::new("[{date} {time}.{millisecond}] [{level}] {payload}{eol}").unwrap(),
+        runtime_pattern!("[{date} {time}.{millisecond}] [{level}] {payload}{eol}").unwrap(),
     )
 }
 
@@ -128,7 +129,7 @@ macro_rules! bench_patterns {
             }
             #[bench]
             fn [<bench_5_rt_ $name>](bencher: &mut Bencher) {
-                bench_pattern(bencher, RuntimePattern::new($placeholder).unwrap())
+                bench_pattern(bencher, runtime_pattern!($placeholder).unwrap())
             }
         })+
     };

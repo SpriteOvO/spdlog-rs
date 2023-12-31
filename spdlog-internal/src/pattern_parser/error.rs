@@ -6,7 +6,7 @@ use thiserror::Error;
 use super::PatternKind;
 use crate::impossible;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq)]
 pub enum Error {
     ConflictName {
         existing: PatternKind<()>,
@@ -14,6 +14,29 @@ pub enum Error {
     },
     Template(TemplateError),
     Parse(NomError<String>),
+    Multiple(Vec<Error>),
+    #[cfg(test)]
+    __ForInternalTestsUseOnly(usize),
+}
+
+impl Error {
+    pub fn push_err<T>(result: Result<T>, new: Self) -> Result<T> {
+        match result {
+            Ok(_) => Err(new),
+            Err(Self::Multiple(mut errors)) => {
+                errors.push(new);
+                Err(Self::Multiple(errors))
+            }
+            Err(prev) => Err(Error::Multiple(vec![prev, new])),
+        }
+    }
+
+    pub fn push_result<T, N>(result: Result<T>, new: Result<N>) -> Result<T> {
+        match new {
+            Ok(_) => result,
+            Err(err) => Self::push_err(result, err),
+        }
+    }
 }
 
 impl Display for Error {
@@ -44,11 +67,22 @@ impl Display for Error {
             Error::Parse(err) => {
                 write!(f, "failed to parse template string: {}", err)
             }
+            Error::Multiple(errs) => {
+                writeln!(f, "{} errors detected:", errs.len())?;
+                for err in errs {
+                    writeln!(f, " - {}", err)?;
+                }
+                Ok(())
+            }
+            #[cfg(test)]
+            Error::__ForInternalTestsUseOnly(value) => {
+                write!(f, "{}", value)
+            }
         }
     }
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Eq, PartialEq)]
 pub enum TemplateError {
     WrongPatternKindReference {
         is_builtin_as_custom: bool,
@@ -104,3 +138,27 @@ impl Display for TemplateError {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn push_err() {
+        macro_rules! make_err {
+            ( $($inputs:tt)+ ) => {
+                Error::__ForInternalTestsUseOnly($($inputs)*)
+            };
+        }
+
+        assert!(matches!(
+            Error::push_err(Ok(()), make_err!(1)),
+            Err(make_err!(1))
+        ));
+
+        assert!(matches!(
+            Error::push_err::<()>(Err(make_err!(1)), make_err!(2)),
+            Err(Error::Multiple(v)) if matches!(v[..], [make_err!(1), make_err!(2)])
+        ));
+    }
+}
