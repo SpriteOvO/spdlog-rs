@@ -101,21 +101,24 @@
 //! string. There are 2 ways to construct a pattern:
 //!
 //! - Macro [`pattern!`]: Builds a pattern at compile-time.
-//! - Struct [`RuntimePattern`]: A pattern built at runtime.
+//! - Macro [`runtime_pattern!`]: Builds a pattern at runtime.
 //!
 //! ```
 //! use spdlog::formatter::{pattern, PatternFormatter};
 //! #[cfg(feature = "runtime-pattern")]
-//! use spdlog::formatter::RuntimePattern;
+//! use spdlog::formatter::runtime_pattern;
 //! # use spdlog::sink::{Sink, WriteSink};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! // This pattern is built at compile-time, the template accepts only a literal string.
 //! let pattern = pattern!("[{date} {time}.{millisecond}] [{level}] {payload}{eol}");
 //!
-//! // This pattern is built at runtime, the template accepts a runtime string.
 //! #[cfg(feature = "runtime-pattern")]
-//! let pattern = RuntimePattern::new("[{date} {time}.{millisecond}] [{level}] {payload}{eol}")?;
+//! {
+//!     // This pattern is built at runtime, the template accepts a runtime string.
+//!     let input = "[{date} {time}.{millisecond}] [{level}] {payload}{eol}";
+//!     let pattern = runtime_pattern!(input)?;
+//! }
 //!
 //! // Use the compile-time or runtime pattern.
 //! # let your_sink = WriteSink::builder().target(vec![]).build()?;
@@ -238,6 +241,7 @@
 //! [log crate]: https://crates.io/crates/log
 //! [Asynchronous combined sink]: sink/index.html#asynchronous-combined-sink
 //! [`pattern!`]: crate::formatter::pattern
+//! [`runtime_pattern!`]: crate::formatter::runtime_pattern
 //! [`RuntimePattern`]: crate::formatter::RuntimePattern
 //! [`FullFormatter`]: crate::formatter::FullFormatter
 //! [`RotatingFileSink`]: crate::sink::RotatingFileSink

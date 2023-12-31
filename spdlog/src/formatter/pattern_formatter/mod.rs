@@ -29,7 +29,7 @@ use crate::{
 };
 
 #[rustfmt::skip] // rustfmt currently breaks some empty lines if `#[doc = include_str!("xxx")]` exists
-/// Build a pattern from a template string at compile-time.
+/// Build a pattern from a template literal string at compile-time.
 ///
 /// It accepts inputs in the form:
 ///
@@ -54,7 +54,7 @@ use crate::{
 ///
 /// Its first argument accepts only a literal string that is known at compile-time.
 /// If you want to build a pattern from a runtime string, use
-/// [`RuntimePattern`] instead.
+/// [`runtime_pattern!`] macro instead.
 ///
 /// # Note
 ///
@@ -350,7 +350,7 @@ use crate::{
 /// [^1]: Patterns related to source location require that feature
 ///       `source-location` is enabled, otherwise the output is empty.
 ///
-/// [`RuntimePattern`]: crate::formatter::RuntimePattern
+/// [`runtime_pattern!`]: crate::formatter::runtime_pattern
 /// [`FullFormatter`]: crate::formatter::FullFormatter
 pub use ::spdlog_macros::pattern;
 
@@ -368,8 +368,9 @@ where
     ///
     /// Currently users can only create a `pattern` object by using:
     ///
-    /// - Macro [`pattern!`] to build a pattern at compile-time.
-    /// - Struct [`RuntimePattern::builder`] to build a pattern at runtime.
+    /// - Macro [`pattern!`] to build a pattern with a literal template string
+    ///   at compile-time.
+    /// - Macro [`runtime_pattern!`] to build a pattern at runtime.
     #[must_use]
     pub fn new(pattern: P) -> Self {
         Self { pattern }
@@ -429,9 +430,12 @@ impl PatternContext {
 ///
 /// # Custom Patterns
 ///
-/// There are 2 approaches to create your own pattern:
+/// There are 3 approaches to create your own pattern:
 /// - Define a new type and implements this trait;
-/// - Use the [`pattern`] macro to create a pattern from a template string.
+/// - Use the [`pattern`] macro to create a pattern from a literal template
+///   string.
+/// - Use the [`runtime_pattern`] macro to create a pattern from a runtime
+///   template string.
 pub trait Pattern: Send + Sync + DynClone {
     /// Format this pattern against the given log record and write the formatted
     /// message into the output buffer.

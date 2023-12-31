@@ -2,6 +2,7 @@ use std::{
     borrow::Cow,
     collections::{hash_map::Entry, HashMap},
     fmt::Debug,
+    hash::Hash,
 };
 
 use super::{error::TemplateError, BuiltInFormatter, Error, PatternKind, Result};
@@ -87,5 +88,178 @@ impl<F> PatternRegistry<F> {
                 entry.insert(PatternKind::BuiltIn(formatter));
             }
         }
+    }
+}
+
+pub fn check_custom_pattern_names<N, I>(names: I) -> Result<()>
+where
+    N: AsRef<str> + Eq + PartialEq + Hash,
+    I: IntoIterator<Item = N>,
+{
+    let mut seen_names: HashMap<N, usize> = HashMap::new();
+    let mut result = Ok(());
+
+    for name in names {
+        if let Some(existing) = BuiltInFormatter::iter().find(|f| f.placeholder() == name.as_ref())
+        {
+            result = Error::push_err(
+                result,
+                Error::ConflictName {
+                    existing: PatternKind::BuiltIn(existing),
+                    incoming: PatternKind::Custom {
+                        placeholder: Cow::Owned(name.as_ref().into()),
+                        factory: (),
+                    },
+                },
+            );
+        }
+
+        if let Some(seen_count) = seen_names.get_mut(&name) {
+            *seen_count += 1;
+            if *seen_count == 2 {
+                let conflict_pattern = PatternKind::Custom {
+                    placeholder: Cow::Owned(name.as_ref().into()),
+                    factory: (),
+                };
+                result = Error::push_err(
+                    result,
+                    Error::ConflictName {
+                        existing: conflict_pattern.clone(),
+                        incoming: conflict_pattern,
+                    },
+                );
+            }
+        } else {
+            seen_names.insert(name, 1);
+        }
+    }
+
+    debug_assert!(seen_names.iter().all(|(_, seen_count)| *seen_count == 1) || result.is_err());
+
+    result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pattern_parser::BuiltInFormatterInner;
+
+    #[test]
+    fn custom_pattern_names_checker() {
+        use check_custom_pattern_names as check;
+
+        assert!(check(["a", "b"]).is_ok());
+        assert_eq!(
+            check(["a", "a"]),
+            Err(Error::ConflictName {
+                existing: PatternKind::Custom {
+                    placeholder: "a".into(),
+                    factory: ()
+                },
+                incoming: PatternKind::Custom {
+                    placeholder: "a".into(),
+                    factory: ()
+                }
+            })
+        );
+        assert_eq!(
+            check(["a", "b", "a"]),
+            Err(Error::ConflictName {
+                existing: PatternKind::Custom {
+                    placeholder: "a".into(),
+                    factory: ()
+                },
+                incoming: PatternKind::Custom {
+                    placeholder: "a".into(),
+                    factory: ()
+                }
+            })
+        );
+        assert_eq!(
+            check(["date"]),
+            Err(Error::ConflictName {
+                existing: PatternKind::BuiltIn(BuiltInFormatter(BuiltInFormatterInner::Date)),
+                incoming: PatternKind::Custom {
+                    placeholder: "date".into(),
+                    factory: ()
+                }
+            })
+        );
+        assert_eq!(
+            check(["date", "a", "a"]),
+            Err(Error::Multiple(vec![
+                Error::ConflictName {
+                    existing: PatternKind::BuiltIn(BuiltInFormatter(BuiltInFormatterInner::Date)),
+                    incoming: PatternKind::Custom {
+                        placeholder: "date".into(),
+                        factory: ()
+                    }
+                },
+                Error::ConflictName {
+                    existing: PatternKind::Custom {
+                        placeholder: "a".into(),
+                        factory: ()
+                    },
+                    incoming: PatternKind::Custom {
+                        placeholder: "a".into(),
+                        factory: ()
+                    }
+                }
+            ]))
+        );
+        assert_eq!(
+            check(["date", "a", "a", "a"]),
+            Err(Error::Multiple(vec![
+                Error::ConflictName {
+                    existing: PatternKind::BuiltIn(BuiltInFormatter(BuiltInFormatterInner::Date)),
+                    incoming: PatternKind::Custom {
+                        placeholder: "date".into(),
+                        factory: ()
+                    }
+                },
+                Error::ConflictName {
+                    existing: PatternKind::Custom {
+                        placeholder: "a".into(),
+                        factory: ()
+                    },
+                    incoming: PatternKind::Custom {
+                        placeholder: "a".into(),
+                        factory: ()
+                    }
+                }
+            ]))
+        );
+        assert_eq!(
+            check(["b", "date", "a", "b", "a", "a"]),
+            Err(Error::Multiple(vec![
+                Error::ConflictName {
+                    existing: PatternKind::BuiltIn(BuiltInFormatter(BuiltInFormatterInner::Date)),
+                    incoming: PatternKind::Custom {
+                        placeholder: "date".into(),
+                        factory: ()
+                    }
+                },
+                Error::ConflictName {
+                    existing: PatternKind::Custom {
+                        placeholder: "b".into(),
+                        factory: ()
+                    },
+                    incoming: PatternKind::Custom {
+                        placeholder: "b".into(),
+                        factory: ()
+                    }
+                },
+                Error::ConflictName {
+                    existing: PatternKind::Custom {
+                        placeholder: "a".into(),
+                        factory: ()
+                    },
+                    incoming: PatternKind::Custom {
+                        placeholder: "a".into(),
+                        factory: ()
+                    }
+                }
+            ]))
+        );
     }
 }

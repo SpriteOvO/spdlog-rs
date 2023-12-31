@@ -9,7 +9,7 @@ pub mod parse;
 mod registry;
 
 pub use error::{Error, Result};
-pub use registry::PatternRegistry;
+pub use registry::{check_custom_pattern_names, PatternRegistry};
 
 #[derive(
     Clone, Copy, Debug, Eq, PartialEq, IntoStaticStr, EnumDiscriminants, EnumIter, EnumString,
