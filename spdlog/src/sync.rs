@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 pub use std::sync::{
     Arc, Condvar, Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard, Weak,
 };
