@@ -21,13 +21,13 @@ impl PeriodicWorker {
         Self {
             active: active.clone(),
             thread: Some(thread::spawn(move || loop {
-                let guard = active.0.lock_expect();
-                let (_, res) = active
+                let flag = active.0.lock_expect();
+                let (flag, res) = active
                     .1
-                    .wait_timeout_while(guard, interval, |active| *active)
+                    .wait_timeout_while(flag, interval, |flag| *flag)
                     .unwrap();
 
-                if !res.timed_out() || !callback() {
+                if !res.timed_out() || !*flag || !callback() {
                     return;
                 }
             })),
