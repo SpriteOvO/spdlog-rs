@@ -709,6 +709,7 @@ impl TimePoint {
 
     #[must_use]
     fn delta_chrono(&self) -> chrono::Duration {
+        #[allow(deprecated)] // For keeping the current MSRV 1.56.0
         match self {
             Self::Daily { .. } => chrono::Duration::days(1),
             Self::Hourly { .. } => chrono::Duration::hours(1),
