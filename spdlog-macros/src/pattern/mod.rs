@@ -2,7 +2,6 @@ mod synthesis;
 
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use self_cell::self_cell;
 use spdlog_internal::pattern_parser::{
     check_custom_pattern_names, parse::Template, PatternRegistry, Result,
 };
@@ -71,17 +70,9 @@ pub fn runtime_pattern_impl(runtime_pattern: RuntimePattern) -> Result<TokenStre
 
 pub struct Pattern {
     /// The template string included in the pattern.
-    template: TemplateSelfRef,
+    template: Option<(&'static String, Template<'static>)>,
     /// Any user-provided pattern-to-formatter mapping.
     custom_patterns: CustomPatterns,
-}
-
-self_cell! {
-    pub struct TemplateSelfRef {
-        owner: String,
-        #[covariant]
-        dependent: Template,
-    }
 }
 
 impl Pattern {
@@ -90,7 +81,7 @@ impl Pattern {
     }
 
     fn template(&self) -> &Template {
-        self.template.borrow_dependent()
+        &self.template.as_ref().unwrap().1
     }
 }
 
@@ -100,20 +91,33 @@ impl Parse for Pattern {
         input.parse::<Option<Token![,]>>()?;
         let custom_patterns = input.parse()?;
 
-        let ret = Pattern {
-            template: TemplateSelfRef::try_new(template_lit.value(), |template_str| {
-                Template::parse(template_str).map_err(|err| {
-                    syn::Error::new(
-                        // TODO: Maybe we can make a subspan for the literal for a better error
-                        // message
-                        template_lit.span(),
-                        err,
-                    )
-                })
-            })?,
+        // Struct `Template` have almost no way of owning a `String`, we have to store
+        // `template_lit` somewhere. Here we use `Box::leak` + `Box::from_raw` to create
+        // a simple self-reference.
+        let template_lit_leaked = Box::leak(Box::new(template_lit.value()));
+
+        let template = Template::parse(template_lit_leaked).map_err(|err| {
+            syn::Error::new(
+                // TODO: Maybe we can make a subspan for the literal for a better error message
+                template_lit.span(),
+                err,
+            )
+        })?;
+
+        Ok(Pattern {
+            template: Some((template_lit_leaked, template)),
             custom_patterns,
-        };
-        Ok(ret)
+        })
+    }
+}
+
+impl Drop for Pattern {
+    fn drop(&mut self) {
+        let (template_lit_leaked, template) = self.template.take().unwrap();
+        // Drop the user of the leaked data first.
+        drop(template);
+        // Restore the ownership of the leaked `String` and then drop it.
+        drop(unsafe { Box::from_raw(template_lit_leaked as *const String as *mut String) });
     }
 }
 
