@@ -55,7 +55,7 @@ jobs:
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
     - name: Run tests
-      run: cargo test --features "${{ env.fn_features }} ${{ matrix.cfg_feature }}" --verbose
+      run: cargo test --features "${{ matrix.fn_features }} ${{ matrix.cfg_feature }}" --verbose
 
   clippy:
     strategy:
