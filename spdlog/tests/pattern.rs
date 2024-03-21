@@ -11,7 +11,7 @@ use spdlog::{
     formatter::{pattern, Formatter, Pattern, PatternFormatter},
     prelude::*,
     sink::Sink,
-    StringBuf,
+    StringBuf, __EOL,
 };
 
 include!(concat!(
@@ -246,12 +246,7 @@ fn test_builtin_patterns() {
             res = replace_substring(res, WEEKDAY_NAMES, "{weekday_name}");
             res = replace_substring(res, MONTH_NAMES, "{month_name}");
             res = replace_substring(res, AM_PM, "{am_pm}");
-
-            #[cfg(not(windows))]
-            const EOL: &str = "\n";
-            #[cfg(windows)]
-            const EOL: &str = "\r\n";
-            res = replace_substring(res, [EOL], "{eol}");
+            res = replace_substring(res, [__EOL], "{eol}");
 
             if res.starts_with('+') || res.starts_with('-') {
                 res.replace_range(0..1, "{begin_sign}");

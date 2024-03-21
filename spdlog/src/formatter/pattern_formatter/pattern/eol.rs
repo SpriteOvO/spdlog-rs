@@ -22,6 +22,6 @@ impl Pattern for Eol {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(crate::EOL).map_err(Error::FormatRecord)
+        dest.write_str(crate::__EOL).map_err(Error::FormatRecord)
     }
 }

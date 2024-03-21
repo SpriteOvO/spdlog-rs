@@ -6,7 +6,7 @@ use cfg_if::cfg_if;
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter, LOCAL_TIME_CACHER},
-    Error, Record, StringBuf, EOL,
+    Error, Record, StringBuf, __EOL,
 };
 
 #[rustfmt::skip]
@@ -95,7 +95,7 @@ impl FullFormatter {
         dest.write_str(record.payload())?;
 
         if self.with_eol {
-            dest.write_str(EOL)?;
+            dest.write_str(__EOL)?;
         }
 
         Ok(FmtExtraInfo {
@@ -125,7 +125,7 @@ mod tests {
     use chrono::prelude::*;
 
     use super::*;
-    use crate::{Level, EOL};
+    use crate::{Level, __EOL};
 
     #[test]
     fn format() {
@@ -138,7 +138,7 @@ mod tests {
             format!(
                 "[{}] [warn] test log content{}",
                 local_time.format("%Y-%m-%d %H:%M:%S.%3f"),
-                EOL
+                __EOL
             ),
             buf
         );

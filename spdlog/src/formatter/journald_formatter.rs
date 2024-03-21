@@ -9,7 +9,7 @@ use cfg_if::cfg_if;
 
 use crate::{
     formatter::{FmtExtraInfo, Formatter},
-    Error, Record, StringBuf, EOL,
+    Error, Record, StringBuf, __EOL,
 };
 
 #[derive(Clone)]
@@ -47,7 +47,7 @@ impl JournaldFormatter {
 
         dest.write_str("] ")?;
         dest.write_str(record.payload())?;
-        dest.write_str(EOL)?;
+        dest.write_str(__EOL)?;
 
         Ok(FmtExtraInfo {
             style_range: Some(style_range_begin..style_range_end),

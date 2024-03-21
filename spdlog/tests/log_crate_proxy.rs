@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use spdlog::formatter::{pattern, PatternFormatter};
+use spdlog::{
+    formatter::{pattern, PatternFormatter},
+    __EOL,
+};
 
 include!(concat!(
     env!("OUT_DIR"),
@@ -27,7 +30,7 @@ fn test_source_location() {
     log::info!("text");
     assert_eq!(
         sink.clone_string(),
-        "(log_crate_proxy::log_crate_proxy.rs) text\n"
+        format!("(log_crate_proxy::log_crate_proxy.rs) text{__EOL}")
     );
 }
 
@@ -44,5 +47,5 @@ fn test_target() {
     log::set_max_level(log::LevelFilter::Trace);
 
     log::info!(target: "MyLogger", "body");
-    assert_eq!(sink.clone_string(), "[MyLogger] body\n");
+    assert_eq!(sink.clone_string(), format!("[MyLogger] body{__EOL}"));
 }

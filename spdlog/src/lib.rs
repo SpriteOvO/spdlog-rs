@@ -304,9 +304,11 @@ cfg_if! {
 }
 
 #[cfg(not(windows))]
-pub(crate) const EOL: &str = "\n";
+#[doc(hidden)]
+pub const __EOL: &str = "\n";
 #[cfg(windows)]
-pub(crate) const EOL: &str = "\r\n";
+#[doc(hidden)]
+pub const __EOL: &str = "\r\n";
 
 static DEFAULT_LOGGER: OnceCell<ArcSwap<Logger>> = OnceCell::new();
 
