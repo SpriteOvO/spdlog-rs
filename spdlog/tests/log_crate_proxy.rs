@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use spdlog::formatter::{pattern, PatternFormatter};
 
@@ -7,6 +7,8 @@ include!(concat!(
     "/test_utils/common_for_integration_test.rs"
 ));
 use test_utils::*;
+
+static GLOBAL_LOG_CRATE_PROXY_MUTEX: Mutex<()> = Mutex::new(());
 
 #[cfg(feature = "log")]
 #[test]
@@ -17,6 +19,7 @@ fn test_source_location() {
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
+    let _guard = GLOBAL_LOG_CRATE_PROXY_MUTEX.lock().unwrap();
     spdlog::init_log_crate_proxy().ok();
     spdlog::log_crate_proxy().set_logger(Some(logger));
     log::set_max_level(log::LevelFilter::Trace);
@@ -35,6 +38,7 @@ fn test_target() {
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
+    let _guard = GLOBAL_LOG_CRATE_PROXY_MUTEX.lock().unwrap();
     spdlog::init_log_crate_proxy().ok();
     spdlog::log_crate_proxy().set_logger(Some(logger));
     log::set_max_level(log::LevelFilter::Trace);
