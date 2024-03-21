@@ -80,6 +80,11 @@ tracing-appender = "=0.2.2"
 [build-dependencies]
 rustc_version = "0.4.0"
 
+[[test]]
+name = "global_async_pool_sink"
+harness = false
+required-features = ["multi-thread"]
+
 [[bench]]
 name = "compare_with_cpp_spdlog"
 harness = false
