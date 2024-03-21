@@ -78,13 +78,13 @@ fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io
 ///
 /// ## Install on Ubuntu / Debian
 ///
-/// ```
+/// ```bash
 /// apt install libsystemd-dev
 /// ```
 ///
 /// ## Install on ArchLinux
 ///
-/// ```
+/// ```bash
 /// pacman -S systemd
 /// ```
 pub struct JournaldSink {
