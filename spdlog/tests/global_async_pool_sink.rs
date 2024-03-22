@@ -16,16 +16,20 @@ use spdlog::{
     ErrorHandler,
 };
 
+static IS_LOGGED: AtomicBool = AtomicBool::new(false);
 static IS_FLUSHED: AtomicBool = AtomicBool::new(false);
 
 struct SetFlagSink;
 
 impl Sink for SetFlagSink {
     fn log(&self, _record: &spdlog::Record) -> error::Result<()> {
+        IS_LOGGED.store(true, Ordering::SeqCst);
         Ok(())
     }
 
     fn flush(&self) -> error::Result<()> {
+        // Assert that the record has been logged before flushing
+        assert!(IS_LOGGED.load(Ordering::SeqCst));
         IS_FLUSHED.store(true, Ordering::SeqCst);
         Ok(())
     }

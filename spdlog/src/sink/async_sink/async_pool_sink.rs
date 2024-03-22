@@ -81,9 +81,12 @@ impl Sink for AsyncPoolSink {
         if crate::IS_TEARING_DOWN.load(Ordering::SeqCst) {
             // https://github.com/SpriteOvO/spdlog-rs/issues/64
             //
-            // `crossbeam` uses thread-local internally, which is not supported in `atexit`
-            // callback. Let's directly flush the sinks on the current thread if the program
-            // is tearing down.
+            // If the program is tearing down, this will be the final flush. `crossbeam`
+            // uses thread-local internally, which is not supported in `atexit` callback.
+            // This can be bypassed by flushing sinks directly on the current thread, but
+            // before we do that we have to destroy the thread pool to ensure that any
+            // pending log tasks are completed.
+            self.thread_pool.destroy();
             self.backend.flush()
         } else {
             self.assign_task(Task::Flush {
