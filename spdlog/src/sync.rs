@@ -29,6 +29,7 @@ pub trait RwLockExtend<'a> {
     type ReadReturn;
     type WriteReturn;
 
+    #[allow(dead_code)]
     #[must_use]
     fn read_expect(&'a self) -> Self::ReadReturn;
 
