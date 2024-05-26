@@ -224,15 +224,17 @@ fn test_builtin_patterns() {
         "Saturday",
         "Sunday",
     ];
-    const MONTH_NAMES: [&str; 12] = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    // "May" is ambiguous for short or full :)
+    const MONTH_NAMES: [&str; 11] = [
+        "Jan", "Feb", "Mar", "Apr", // "May",
+        "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
-    const MONTH_FULL_NAMES: [&str; 12] = [
+    const MONTH_FULL_NAMES: [&str; 11] = [
         "January",
         "February",
         "March",
         "April",
-        "May",
+        // "May",
         "June",
         "July",
         "August",
@@ -246,7 +248,7 @@ fn test_builtin_patterns() {
     #[track_caller]
     fn check_inner(
         pattern: impl Pattern + Clone + 'static,
-        template: Option<impl AsRef<str>>,
+        expected_templates: Option<impl IntoIterator<Item = impl AsRef<str>>>, // OR list
         ranges: Vec<RangeInclusive<u64>>,
     ) {
         #[track_caller]
@@ -282,6 +284,7 @@ fn test_builtin_patterns() {
             res = replace_substring(res, MONTH_FULL_NAMES, "{month_name_full}");
             res = replace_substring(res, WEEKDAY_NAMES, "{weekday_name}");
             res = replace_substring(res, MONTH_NAMES, "{month_name}");
+            res = replace_substring(res, ["May"], "{month_name|month_name_full}");
             res = replace_substring(res, AM_PM, "{am_pm}");
             res = replace_substring(res, [__EOL], "{eol}");
 
@@ -302,8 +305,10 @@ fn test_builtin_patterns() {
             assert!(r.contains(d));
         });
 
-        if let Some(template) = template {
-            assert_eq!(input.1, template.as_ref());
+        if let Some(expected_templates) = expected_templates {
+            assert!(expected_templates
+                .into_iter()
+                .any(|t| input.1 == t.as_ref()));
         }
     }
 
@@ -330,13 +335,24 @@ fn test_builtin_patterns() {
     const SOURCE_RANGE: RangeInclusive<u64> = 0..=9999;
     const OS_ID_RANGE: RangeInclusive<u64> = 1..=u64::MAX;
 
-    check!("{weekday_name}", Some("{weekday_name}"), vec![]);
-    check!("{weekday_name_full}", Some("{weekday_name_full}"), vec![]);
-    check!("{month_name}", Some("{month_name}"), vec![]);
-    check!("{month_name_full}", Some("{month_name_full}"), vec![]);
+    check!("{weekday_name}", Some(["{weekday_name}"]), vec![]);
+    check!("{weekday_name_full}", Some(["{weekday_name_full}"]), vec![]);
+    check!(
+        "{month_name}",
+        Some(["{month_name}", "{month_name|month_name_full}"]),
+        vec![]
+    );
+    check!(
+        "{month_name_full}",
+        Some(["{month_name_full}", "{month_name|month_name_full}"]),
+        vec![]
+    );
     check!(
         "{datetime}",
-        Some("{weekday_name} {month_name} 00 00:00:00 0000"),
+        Some([
+            "{weekday_name} {month_name} 00 00:00:00 0000",
+            "{weekday_name} {month_name|month_name_full} 00 00:00:00 0000"
+        ]),
         vec![
             DAY_RANGE,
             HOUR_RANGE,
@@ -345,51 +361,51 @@ fn test_builtin_patterns() {
             YEAR_RANGE,
         ],
     );
-    check!("{year_short}", Some("00"), vec![YEAR_SHORT_RANGE]);
-    check!("{year}", Some("0000"), vec![YEAR_RANGE]);
+    check!("{year_short}", Some(["00"]), vec![YEAR_SHORT_RANGE]);
+    check!("{year}", Some(["0000"]), vec![YEAR_RANGE]);
     check!(
         "{date_short}",
-        Some("00/00/00"),
+        Some(["00/00/00"]),
         vec![MONTH_RANGE, DAY_RANGE, YEAR_SHORT_RANGE],
     );
     check!(
         "{date}",
-        Some("0000-00-00"),
+        Some(["0000-00-00"]),
         vec![YEAR_RANGE, MONTH_RANGE, DAY_RANGE],
     );
-    check!("{month}", Some("00"), vec![MONTH_RANGE]);
-    check!("{day}", Some("00"), vec![DAY_RANGE]);
-    check!("{hour}", Some("00"), vec![HOUR_RANGE]);
-    check!("{hour_12}", Some("00"), vec![HOUR_12_RANGE]);
-    check!("{minute}", Some("00"), vec![MINUTE_RANGE]);
-    check!("{second}", Some("00"), vec![SECOND_RANGE]);
-    check!("{millisecond}", Some("000"), vec![MILLISECOND_RANGE]);
-    check!("{microsecond}", Some("000000"), vec![MICROSECOND_RANGE]);
-    check!("{nanosecond}", Some("000000000"), vec![NANOSECOND_RANGE]);
-    check!("{am_pm}", Some("{am_pm}"), vec![]);
+    check!("{month}", Some(["00"]), vec![MONTH_RANGE]);
+    check!("{day}", Some(["00"]), vec![DAY_RANGE]);
+    check!("{hour}", Some(["00"]), vec![HOUR_RANGE]);
+    check!("{hour_12}", Some(["00"]), vec![HOUR_12_RANGE]);
+    check!("{minute}", Some(["00"]), vec![MINUTE_RANGE]);
+    check!("{second}", Some(["00"]), vec![SECOND_RANGE]);
+    check!("{millisecond}", Some(["000"]), vec![MILLISECOND_RANGE]);
+    check!("{microsecond}", Some(["000000"]), vec![MICROSECOND_RANGE]);
+    check!("{nanosecond}", Some(["000000000"]), vec![NANOSECOND_RANGE]);
+    check!("{am_pm}", Some(["{am_pm}"]), vec![]);
     check!(
         "{time_12}",
-        Some("00:00:00 {am_pm}"),
+        Some(["00:00:00 {am_pm}"]),
         vec![HOUR_12_RANGE, MINUTE_RANGE, SECOND_RANGE],
     );
     check!(
         "{time_short}",
-        Some("00:00"),
+        Some(["00:00"]),
         vec![HOUR_RANGE, MINUTE_RANGE],
     );
     check!(
         "{time}",
-        Some("00:00:00"),
+        Some(["00:00:00"]),
         vec![HOUR_RANGE, MINUTE_RANGE, SECOND_RANGE],
     );
     check!(
         "{tz_offset}",
-        Some("{begin_sign}00:00"),
+        Some(["{begin_sign}00:00"]),
         vec![HOUR_RANGE, MINUTE_RANGE],
     );
     check!(
         "{unix_timestamp}",
-        None as Option<&str>,
+        None as Option<Vec<&str>>,
         vec![0..=i32::MAX as u64],
     );
 
@@ -397,7 +413,7 @@ fn test_builtin_patterns() {
         if #[cfg(feature = "source-location")] {
             check!(
                 "{full}",
-                Some(format!("[0000-00-00 00:00:00.000] [logger-name] [info] [pattern, {}:000] test payload", file!())),
+                Some([format!("[0000-00-00 00:00:00.000] [logger-name] [info] [pattern, {}:000] test payload", file!())]),
                 vec![
                     YEAR_RANGE,
                     MONTH_RANGE,
@@ -412,7 +428,7 @@ fn test_builtin_patterns() {
         } else {
             check!(
                 "{full}",
-                Some("[0000-00-00 00:00:00.000] [logger-name] [info] test payload"),
+                Some(["[0000-00-00 00:00:00.000] [logger-name] [info] test payload"]),
                 vec![
                     YEAR_RANGE,
                     MONTH_RANGE,
@@ -426,30 +442,30 @@ fn test_builtin_patterns() {
         }
     }
 
-    check!("{level}", Some("info"), vec![]);
-    check!("{level_short}", Some("I"), vec![]);
+    check!("{level}", Some(["info"]), vec![]);
+    check!("{level_short}", Some(["I"]), vec![]);
     cfg_if! {
         if #[cfg(feature = "source-location")] {
-            check!("{source}", Some(format!("{}:000", file!())), vec![SOURCE_RANGE]);
-            check!("{file_name}", Some("pattern.rs"), vec![]);
-            check!("{file}", Some(file!()), vec![]);
-            check!("{line}", Some("000"), vec![SOURCE_RANGE]);
-            check!("{column}", Some("0"), vec![SOURCE_RANGE]);
-            check!("{module_path}", Some(module_path!()), vec![]);
+            check!("{source}", Some([format!("{}:000", file!())]), vec![SOURCE_RANGE]);
+            check!("{file_name}", Some(["pattern.rs"]), vec![]);
+            check!("{file}", Some([file!()]), vec![]);
+            check!("{line}", Some(["000"]), vec![SOURCE_RANGE]);
+            check!("{column}", Some(["0"]), vec![SOURCE_RANGE]);
+            check!("{module_path}", Some([module_path!()]), vec![]);
         } else {
-            check!("{source}", Some(""), vec![]);
-            check!("{file_name}", Some(""), vec![]);
-            check!("{file}", Some(""), vec![]);
-            check!("{line}", Some(""), vec![]);
-            check!("{column}", Some(""), vec![]);
-            check!("{module_path}", Some(""), vec![]);
+            check!("{source}", Some([""]), vec![]);
+            check!("{file_name}", Some([""]), vec![]);
+            check!("{file}", Some([""]), vec![]);
+            check!("{line}", Some([""]), vec![]);
+            check!("{column}", Some([""]), vec![]);
+            check!("{module_path}", Some([""]), vec![]);
         }
     }
-    check!("{logger}", Some("logger-name"), vec![]);
-    check!("{payload}", Some("test payload"), vec![]);
-    check!("{pid}", None as Option<&str>, vec![OS_ID_RANGE]);
-    check!("{tid}", None as Option<&str>, vec![OS_ID_RANGE]);
-    check!("{eol}", Some("{eol}"), vec![]);
+    check!("{logger}", Some(["logger-name"]), vec![]);
+    check!("{payload}", Some(["test payload"]), vec![]);
+    check!("{pid}", None as Option<Vec<&str>>, vec![OS_ID_RANGE]);
+    check!("{tid}", None as Option<Vec<&str>>, vec![OS_ID_RANGE]);
+    check!("{eol}", Some(["{eol}"]), vec![]);
 }
 
 #[cfg(feature = "runtime-pattern")]
