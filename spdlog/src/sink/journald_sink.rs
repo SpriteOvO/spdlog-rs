@@ -47,7 +47,7 @@ impl Default for SyslogLevels {
 }
 
 fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io::Error> {
-    #[cfg(target_os = "linux")] // https://github.com/rust-lang/rust/issues/97976
+    #[cfg(not(doc))] // https://github.com/rust-lang/rust/issues/97976
     use libsystemd_sys::{const_iovec, journal as ffi};
 
     let iovecs: Vec<_> = args.map(|a| unsafe { const_iovec::from_str(a) }).collect();

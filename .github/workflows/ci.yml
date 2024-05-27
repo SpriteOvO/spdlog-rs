@@ -126,8 +126,10 @@ jobs:
       run: |
         cd spdlog
         # The reason for allowing lint `unexpected_cfgs` not in `build.rs` or `Cargo.toml` but only in CI is that we need to keep MSRV
+        cargo +nightly rustdoc --verbose -- -D warnings -A unexpected_cfgs -A rustdoc::broken-intra-doc-links
         cargo +nightly rustdoc --all-features --verbose -- -D warnings -A unexpected_cfgs
         cd ../spdlog-macros
+        cargo +nightly rustdoc --verbose -- -D warnings -A unexpected_cfgs -A rustdoc::broken-intra-doc-links
         cargo +nightly rustdoc --all-features --verbose -- -D warnings -A unexpected_cfgs
 
   check-msrv:
