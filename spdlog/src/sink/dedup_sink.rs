@@ -86,7 +86,23 @@ pub struct DedupSink {
 }
 
 impl DedupSink {
-    /// Constructs a builder of `DedupSink`.
+    /// Gets a builder of `DedupSink` with default parameters:
+    ///
+    /// | Parameter       | Default Value           |
+    /// |-----------------|-------------------------|
+    /// | [level_filter]  | `All`                   |
+    /// | [formatter]     | `FullFormatter`         |
+    /// | [error_handler] | [default error handler] |
+    /// |                 |                         |
+    /// | [sinks]         | `[]`                    |
+    /// | [skip_duration] | *must be specified*     |
+    ///
+    /// [level_filter]: DedupSinkBuilder::level_filter
+    /// [formatter]: DedupSinkBuilder::formatter
+    /// [error_handler]: DedupSinkBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
+    /// [sinks]: DedupSinkBuilder::sink
+    /// [skip_duration]: DedupSinkBuilder::skip_duration
     #[must_use]
     pub fn builder() -> DedupSinkBuilder<()> {
         DedupSinkBuilder {
@@ -163,7 +179,8 @@ impl Sink for DedupSink {
     helper::common_impl!(@Sink: common_impl);
 }
 
-/// The builder of [`DedupSink`].
+/// #
+#[doc = include_str!("../include/doc/generic-builder-note.md")]
 pub struct DedupSinkBuilder<ArgS> {
     common_builder_impl: helper::CommonBuilderImpl,
     sinks: Sinks,

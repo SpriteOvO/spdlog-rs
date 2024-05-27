@@ -1,5 +1,3 @@
-//! Provides stuff related to source location.
-
 use std::path;
 
 /// Represents a location in source code.
@@ -91,14 +89,15 @@ impl SourceLocation {
 
 /// Constructs a [`SourceLocation`] with current source location.
 ///
-/// Returns `None` if the feature `source-location` is not enabled.
+/// The return type of this macro is `Option<SourceLocation>`. Returns `None` if
+/// the feature `source-location` is not enabled.
 ///
 /// # Examples
 ///
 /// ```
 /// use spdlog::{SourceLocation, source_location_current};
 ///
-/// let source_location: Option<SourceLocation> = source_location_current!();
+/// let source_location = source_location_current!();
 /// ```
 #[macro_export]
 macro_rules! source_location_current {

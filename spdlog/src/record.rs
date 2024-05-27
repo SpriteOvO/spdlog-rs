@@ -1,5 +1,3 @@
-//! Provides a log record structure.
-
 use std::{
     borrow::{Borrow, Cow},
     cell::RefCell,
@@ -225,9 +223,7 @@ impl RecordOwned {
     // When adding more getters, also add to `Record`
 }
 
-/// The builder of [`Record`].
-///
-/// [`Sink`]: crate::sink::Sink
+#[allow(missing_docs)]
 #[derive(Clone, Debug)]
 pub(crate) struct RecordBuilder<'a> {
     record: Record<'a>,
