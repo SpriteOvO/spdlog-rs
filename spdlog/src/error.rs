@@ -104,9 +104,12 @@ pub enum Error {
     #[error("{0:?}")]
     Multiple(Vec<Error>),
 
+    #[error("TODO: {0}")]
+    Config(ConfigError), // TODO: Better name?
+
     #[cfg(test)]
     #[error("{0}")]
-    __ForInternalTestsUseOnly(i32),
+    __ForInternalTestsUseOnly(i32, i32),
 }
 
 /// This error type contains a variety of possible invalid arguments.
@@ -256,6 +259,16 @@ impl SendToChannelErrorDropped {
 #[derive(Error, Debug)]
 #[error("{0}")]
 pub struct BuildPatternError(pub(crate) spdlog_internal::pattern_parser::Error);
+
+#[derive(Error, Debug)]
+pub enum ConfigError {
+    #[error("TODO: MultipleRegistration")]
+    MultipleRegistration, // TODO: arg?
+    #[error("TODO: BuildComponent: {0}")]
+    BuildComponent(String /* TODO: other type? */),
+    #[error("TODO: UnknownComponent ({0})")]
+    UnknownComponent(String), // TODO: Better name? Distinguish builtin and custom
+}
 
 /// The result type of this crate.
 pub type Result<T> = result::Result<T, Error>;

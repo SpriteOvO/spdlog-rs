@@ -254,6 +254,7 @@
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 
+pub mod config;
 mod env_level;
 pub mod error;
 pub mod formatter;
