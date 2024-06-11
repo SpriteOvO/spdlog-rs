@@ -91,12 +91,22 @@ harness = false
 required-features = ["multi-thread"]
 
 [[bench]]
-name = "compare_with_cpp_spdlog"
+name = "spdlog_rs"
+path = "benches/spdlog-rs/spdlog_rs.rs"
+
+[[bench]]
+name = "spdlog_rs_compare_with_cpp_spdlog"
+path = "benches/spdlog-rs/compare_with_cpp_spdlog.rs"
 harness = false
 
 [[bench]]
-name = "compare_with_cpp_spdlog_async"
+name = "spdlog_rs_compare_with_cpp_spdlog_async"
+path = "benches/spdlog-rs/compare_with_cpp_spdlog_async.rs"
 harness = false
+
+[[bench]]
+name = "spdlog_rs_pattern"
+path = "benches/spdlog-rs/pattern.rs"
 
 [[example]]
 name = "06_compatible_with_log_crate"

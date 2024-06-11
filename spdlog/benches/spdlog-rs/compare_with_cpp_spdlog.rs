@@ -2,6 +2,7 @@
 
 extern crate test;
 
+#[path = "../common/mod.rs"]
 mod common;
 
 use std::{env, sync::Arc, thread, time::Instant};
