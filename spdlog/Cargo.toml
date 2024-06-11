@@ -78,6 +78,7 @@ sloggers = "=2.2.0"
 log4rs = "=1.3.0"
 fern = "=0.6.2"
 flexi_logger = "=0.28.3"
+ftlog = "=0.2.14"
 tracing = "=0.1.40"
 tracing-subscriber = "=0.3.18"
 tracing-appender = "=0.2.3"
@@ -93,25 +94,34 @@ required-features = ["multi-thread"]
 [[bench]]
 name = "spdlog_rs"
 path = "benches/spdlog-rs/spdlog_rs.rs"
-
 [[bench]]
 name = "spdlog_rs_compare_with_cpp_spdlog"
 path = "benches/spdlog-rs/compare_with_cpp_spdlog.rs"
 harness = false
-
 [[bench]]
 name = "spdlog_rs_compare_with_cpp_spdlog_async"
 path = "benches/spdlog-rs/compare_with_cpp_spdlog_async.rs"
 harness = false
-
 [[bench]]
 name = "spdlog_rs_pattern"
 path = "benches/spdlog-rs/pattern.rs"
+[[bench]]
+name = "ftlog"
+path = "benches/ftlog/main.rs"
+harness = false
+[[bench]]
+name = "ftlog_1_file_async"
+path = "benches/ftlog/1_file_async.rs"
+[[bench]]
+name = "ftlog_2_rotating_daily"
+path = "benches/ftlog/2_rotating_daily.rs"
+[[bench]]
+name = "ftlog_3_level_off"
+path = "benches/ftlog/3_level_off.rs"
 
 [[example]]
 name = "06_compatible_with_log_crate"
 required-features = ["log"]
-
 [[example]]
 name = "07_async_pool_sink"
 required-features = ["multi-thread"]
