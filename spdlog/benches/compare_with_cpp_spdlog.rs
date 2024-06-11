@@ -4,10 +4,9 @@ extern crate test;
 
 mod common;
 
-use std::{env, fs, path::PathBuf, sync::Arc, thread, time::Instant};
+use std::{env, sync::Arc, thread, time::Instant};
 
 use clap::Parser;
-use once_cell::sync::Lazy;
 use spdlog::{
     formatter::{pattern, PatternFormatter},
     info,
@@ -21,12 +20,6 @@ include!(concat!(
     "/test_utils/common_for_integration_test.rs"
 ));
 use test_utils::*;
-
-static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = common::BENCH_LOGS_PATH.join("compare_with_cpp_spdlog");
-    fs::create_dir_all(&path).unwrap();
-    path
-});
 
 const FILE_SIZE: u64 = 30 * 1024 * 1024;
 // C++ "spdlog" is `5` here because it does not include the current file,
@@ -44,7 +37,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     let logger = build_test_logger(|b| {
         b.sink(Arc::new(
             FileSink::builder()
-                .path(LOGS_PATH.join("FileSink.log"))
+                .path(common::BENCH_LOGS_PATH.join("FileSink.log"))
                 .truncate(true)
                 .build()
                 .unwrap(),
@@ -56,7 +49,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     let logger = build_test_logger(|b| {
         b.sink(Arc::new(
             RotatingFileSink::builder()
-                .base_path(LOGS_PATH.join("RotatingFileSink_FileSize.log"))
+                .base_path(common::BENCH_LOGS_PATH.join("RotatingFileSink_FileSize.log"))
                 .rotation_policy(RotationPolicy::FileSize(FILE_SIZE))
                 .max_files(ROTATING_FILES)
                 .build()
@@ -69,7 +62,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     let logger = build_test_logger(|b| {
         b.sink(Arc::new(
             RotatingFileSink::builder()
-                .base_path(LOGS_PATH.join("RotatingFileSink_Daily.log"))
+                .base_path(common::BENCH_LOGS_PATH.join("RotatingFileSink_Daily.log"))
                 .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
                 .build()
                 .unwrap(),

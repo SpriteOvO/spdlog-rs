@@ -4,10 +4,9 @@ extern crate test;
 
 mod common;
 
-use std::{cmp, env, fs, path::PathBuf, sync::Arc, thread, time::Instant};
+use std::{cmp, env, sync::Arc, thread, time::Instant};
 
 use clap::Parser;
-use once_cell::sync::Lazy;
 use spdlog::{
     error::{Error, SendToChannelError},
     formatter::{pattern, PatternFormatter},
@@ -18,12 +17,6 @@ use spdlog::{
 use test::black_box;
 
 required_multi_thread_feature!();
-
-static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = common::BENCH_LOGS_PATH.join("compare_with_cpp_spdlog_async");
-    fs::create_dir_all(&path).unwrap();
-    path
-});
 
 fn bench(
     policy: OverflowPolicy,
@@ -43,7 +36,7 @@ fn bench(
 
         let file_sink = Arc::new(
             FileSink::builder()
-                .path(LOGS_PATH.join(file_name))
+                .path(common::BENCH_LOGS_PATH.join(file_name))
                 .truncate(true)
                 .build()
                 .unwrap(),

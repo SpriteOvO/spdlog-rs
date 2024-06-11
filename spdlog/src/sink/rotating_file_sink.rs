@@ -871,7 +871,7 @@ mod tests {
 
     static BASE_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
         let path = TEST_LOGS_PATH.join("rotating_file_sink");
-        fs::create_dir_all(&path).unwrap();
+        fs::create_dir(&path).unwrap();
         path
     });
 

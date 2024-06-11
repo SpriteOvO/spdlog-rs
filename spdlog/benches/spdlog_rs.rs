@@ -4,9 +4,8 @@ extern crate test;
 
 mod common;
 
-use std::{fs, path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc};
 
-use once_cell::sync::Lazy;
 use spdlog::{
     error::{Error, ErrorHandler, SendToChannelError},
     prelude::*,
@@ -23,12 +22,6 @@ use test_utils::*;
 
 required_multi_thread_feature!();
 
-static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = common::BENCH_LOGS_PATH.join("spdlog_rs");
-    fs::create_dir_all(&path).unwrap();
-    path
-});
-
 enum Mode {
     Sync,
     Async,
@@ -40,7 +33,7 @@ impl Mode {
             Self::Sync => format!("{file_name}.log"),
             Self::Async => format!("{file_name}_async.log"),
         };
-        LOGS_PATH.join(file_name)
+        common::BENCH_LOGS_PATH.join(file_name)
     }
 
     fn final_sink(&self, sink: Arc<dyn Sink>) -> Arc<dyn Sink> {

@@ -4,7 +4,7 @@ extern crate test;
 
 mod common;
 
-use std::{fs, path::PathBuf, sync::Mutex};
+use std::sync::Mutex;
 
 use flexi_logger::{
     writers::FileLogWriter, Age, Cleanup, Criterion, DeferredNow, FileSpec, LogSpecification,
@@ -14,16 +14,10 @@ use log::{info, Record};
 use once_cell::sync::Lazy;
 use test::Bencher;
 
-static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = common::BENCH_LOGS_PATH.join("flexi_logger");
-    fs::create_dir_all(&path).unwrap();
-    path
-});
-
 static HANDLE: Lazy<Mutex<LoggerHandle>> = Lazy::new(|| {
     Mutex::new(
         Logger::with(LogSpecification::off())
-            .log_to_file(FileSpec::try_from(LOGS_PATH.join("empty.log")).unwrap())
+            .log_to_file(FileSpec::try_from(common::BENCH_LOGS_PATH.join("empty.log")).unwrap())
             .write_mode(WriteMode::BufferDontFlush)
             .format(formatter)
             .start()
@@ -47,7 +41,7 @@ pub fn formatter(
 
 #[bench]
 fn bench_1_file(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("file.log");
+    let path = common::BENCH_LOGS_PATH.join("file.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
         .write_mode(WriteMode::BufferDontFlush)
@@ -64,7 +58,7 @@ unavailable_bench!(bench_2_file_async);
 
 #[bench]
 fn bench_3_rotating_file_size(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("rotating_file_size.log");
+    let path = common::BENCH_LOGS_PATH.join("rotating_file_size.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
         .write_mode(WriteMode::BufferDontFlush)
@@ -84,7 +78,7 @@ fn bench_3_rotating_file_size(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_4_rotating_daily(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("rotating_daily.log");
+    let path = common::BENCH_LOGS_PATH.join("rotating_daily.log");
 
     let writer_builder = FileLogWriter::builder(FileSpec::try_from(path).unwrap())
         .write_mode(WriteMode::BufferDontFlush)

@@ -4,22 +4,13 @@ extern crate test;
 
 mod common;
 
-use std::{fs, path::PathBuf};
-
 use fern::Dispatch;
 use log::info;
-use once_cell::sync::Lazy;
 use test::Bencher;
-
-static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = common::BENCH_LOGS_PATH.join("fern");
-    fs::create_dir_all(&path).unwrap();
-    path
-});
 
 #[bench]
 fn bench_1_file(bencher: &mut Bencher) {
-    let path = LOGS_PATH.join("file.log");
+    let path = common::BENCH_LOGS_PATH.join("file.log");
 
     Dispatch::new()
         .format(|out, message, record| {

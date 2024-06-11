@@ -1,14 +1,15 @@
-use std::{env, fs, path::PathBuf};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
 use once_cell::sync::Lazy;
 
 pub static BENCH_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let path = env::current_exe()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("dev/bench_logs");
-    fs::create_dir_all(&path).unwrap();
+    let path = Path::new(env!("OUT_DIR")).join("bench_logs");
+    if !path.exists() {
+        fs::create_dir(&path).unwrap();
+    }
     path
 });
 
