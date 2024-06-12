@@ -21,6 +21,10 @@ env:
   # - README.md
   rust_minver: 1.56.0
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   format:
     strategy:
@@ -29,6 +33,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+    - name: Disable bench dependencies
+      run: ./.github/workflows/disable-bench-deps.sh
     - name: Install Rust nightly
       run: |
         rustup toolchain install nightly
@@ -49,6 +55,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+    - name: Disable bench dependencies
+      run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
@@ -87,12 +95,11 @@ jobs:
         os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
         target: ['', 'x86_64-apple-ios']
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+    - name: Disable bench dependencies
+      run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
@@ -116,6 +123,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+    - name: Disable bench dependencies
+      run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
       run: sudo bash ./.github/workflows/install-deps.sh
     - name: Install Rust nightly
@@ -141,6 +150,8 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+    - name: Disable bench dependencies
+      run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies (Linux)
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh

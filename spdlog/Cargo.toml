@@ -71,7 +71,7 @@ regex = "1.7.0"
 paste = "1.0.14"
 trybuild = "1.0.90"
 
-# The following dependencies are used for benchmarks
+# [bench-dependencies]
 log = "=0.4.21"
 slog = "=2.7.0"
 sloggers = "=2.2.0"
