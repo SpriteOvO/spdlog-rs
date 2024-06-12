@@ -77,16 +77,23 @@ jobs:
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust nightly
+    - name: Install Rust nightly (stable date version)
+      id: install-rust
       run: |
-        rustup toolchain install nightly
-        rustup component add clippy --toolchain nightly
+        STABLE_DATE=$(cargo clippy --version | perl -ne 'print $& if /\b\d{4}-\d{2}-\d{2}\b/')
+        echo "stable_date=$STABLE_DATE" >> $GITHUB_OUTPUT
+
+        rustup toolchain install nightly-$STABLE_DATE
+        rustup component add clippy --toolchain nightly-$STABLE_DATE
+
+        echo "Stable version: $(cargo clippy --version)"
+        echo "Near stable nightly version: $(cargo +nightly-$STABLE_DATE clippy --version)"
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
     - name: Run clippy 
       run: cargo clippy --all-features --tests --examples -- -D warnings
-    - name: Run clippy nightly for benches
-      run: cargo +nightly clippy --all-features --benches
+    - name: Run clippy nightly-${{ steps.install-rust.outputs.stable_date }} for benches
+      run: cargo +nightly-${{ steps.install-rust.outputs.stable_date }} clippy --all-features --benches -- -D warnings -A clippy::incompatible_msrv
 
   check:
     strategy:

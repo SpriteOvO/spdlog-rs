@@ -9,6 +9,7 @@ use std::{
 
 use once_cell::sync::Lazy;
 
+#[allow(dead_code)]
 pub static BENCH_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let path = Path::new(env!("OUT_DIR")).join("bench_logs");
     if !path.exists() {

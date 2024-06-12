@@ -6,7 +6,7 @@ use std::{cell::RefCell, sync::Arc};
 
 use paste::paste;
 use spdlog::{
-    formatter::{pattern, Formatter, FullFormatter, Pattern, PatternFormatter, RuntimePattern},
+    formatter::{pattern, Formatter, FullFormatter, Pattern, PatternFormatter},
     prelude::*,
     sink::Sink,
     Record, StringBuf,
