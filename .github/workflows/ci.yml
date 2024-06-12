@@ -77,16 +77,19 @@ jobs:
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust nightly (stable date version)
+    - name: Install Rust nightly (latest and stable date version)
       id: install-rust
       run: |
         STABLE_DATE=$(cargo clippy --version | perl -ne 'print $& if /\b\d{4}-\d{2}-\d{2}\b/')
         echo "stable_date=$STABLE_DATE" >> $GITHUB_OUTPUT
 
+        rustup toolchain install nightly
+        rustup component add clippy --toolchain nightly
         rustup toolchain install nightly-$STABLE_DATE
         rustup component add clippy --toolchain nightly-$STABLE_DATE
 
         echo "Stable version: $(cargo clippy --version)"
+        echo "Nightly version: $(cargo +nightly clippy --version)"
         echo "Near stable nightly version: $(cargo +nightly-$STABLE_DATE clippy --version)"
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v1
@@ -94,6 +97,15 @@ jobs:
       run: cargo clippy --all-features --tests --examples -- -D warnings
     - name: Run clippy nightly-${{ steps.install-rust.outputs.stable_date }} for benches
       run: cargo +nightly-${{ steps.install-rust.outputs.stable_date }} clippy --all-features --benches -- -D warnings -A clippy::incompatible_msrv
+    - name: Run clippy nightly-latest without denying warnings
+      run: |
+        cargo +nightly clippy --all-features --tests --examples
+
+        echo "## clippy nightly output" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        # Run it again so there is no noise like "Compiling xxx" and "Checking xxx" in the output.
+        CARGO_TERM_COLOR=never cargo +nightly clippy --all-features --tests --examples 2>> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   check:
     strategy:
