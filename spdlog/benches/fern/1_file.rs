@@ -2,6 +2,7 @@
 
 extern crate test;
 
+#[path = "../common/mod.rs"]
 mod common;
 
 use fern::Dispatch;
@@ -34,5 +35,4 @@ unavailable_bench! {
     bench_2_file_async,
     bench_3_rotating_file_size,
     bench_4_rotating_daily,
-    bench_5_level_off
 }

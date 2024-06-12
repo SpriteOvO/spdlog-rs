@@ -123,6 +123,16 @@ path = "benches/fast_log/3_rotating_daily_async.rs"
 name = "fast_log_4_level_off"
 path = "benches/fast_log/4_level_off.rs"
 [[bench]]
+name = "fern"
+path = "benches/fern/main.rs"
+harness = false
+[[bench]]
+name = "fern_1_file"
+path = "benches/fern/1_file.rs"
+[[bench]]
+name = "fern_2_level_off"
+path = "benches/fern/2_level_off.rs"
+[[bench]]
 name = "ftlog"
 path = "benches/ftlog/main.rs"
 harness = false
