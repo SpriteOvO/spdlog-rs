@@ -196,3 +196,36 @@ jobs:
       run: cargo +nightly update -Z minimal-versions
     - name: Check MSRV for core with Rust ${{ env.rust_minver }}
       run: cargo +${{ env.rust_minver }} check --locked --all-features --verbose
+
+  bench:
+    needs: [test, check]
+    strategy:
+      fail-fast: false
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Disable bench dependencies
+      run: ./.github/workflows/disable-bench-deps.sh
+    - name: Install Rust nightly
+      run: rustup toolchain install nightly
+    - name: Restore cargo caches
+      uses: Swatinem/rust-cache@v2
+    - name: Run benchmark
+      run: cargo +nightly bench --features "multi-thread,runtime-pattern" --bench spdlog_rs --bench spdlog_rs_pattern | tee bench-results.txt
+    - name: Discard irrelevant changes
+      run: git checkout -- spdlog/Cargo.toml
+    - name: Process results
+      uses: benchmark-action/github-action-benchmark@v1
+      with:
+        name: spdlog-rs on Linux
+        tool: cargo
+        output-file-path: bench-results.txt
+        benchmark-data-dir-path: docs/dev/benchmarks
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        summary-always: true
+        comment-on-alert: true
+        alert-comment-cc-users: '@SpriteOvO'
+    - name: Push results to GitHub Pages branch
+      if: github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'main-dev')
+      run: git push 'https://${{ github.repository_owner }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git' gh-pages:gh-pages

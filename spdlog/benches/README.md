@@ -1,5 +1,7 @@
 # Benchmarks
 
+[The tracking page] for benchmark changes for each commit during development.
+
 Run `cargo +nightly bench --features multi-thread` in the root directory of this repository for benchmarking.
 
 The following results are generated with `Windows 10 64 bit` and `Intel i9-10900KF CPU @ 3.70GHz`.
@@ -281,4 +283,5 @@ test bench_5_level_off          ...                unavailable
 
 </details>
 
+[The tracking page]: https://spriteovo.github.io/spdlog-rs/dev/benchmarks/
 [`4cfdc8c`]: https://github.com/gabime/spdlog/commit/4cfdc8c5c84f696774cb9acde2f95c9e87c11a5e
