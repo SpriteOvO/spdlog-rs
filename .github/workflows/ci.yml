@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Disable bench dependencies
       run: ./.github/workflows/disable-bench-deps.sh
     - name: Install Rust nightly
@@ -40,7 +40,7 @@ jobs:
         rustup toolchain install nightly
         rustup component add rustfmt --toolchain nightly
     - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v1
+      uses: Swatinem/rust-cache@v2
     - name: Check formatting
       run: cargo +nightly fmt --all --verbose -- --check
 
@@ -54,14 +54,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Disable bench dependencies
       run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
     - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v1
+      uses: Swatinem/rust-cache@v2
     - name: Run tests
       run: cargo test --features "${{ matrix.fn_features }} ${{ matrix.cfg_feature }}" --verbose
 
@@ -73,7 +73,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
@@ -92,7 +92,7 @@ jobs:
         echo "Nightly version: $(cargo +nightly clippy --version)"
         echo "Near stable nightly version: $(cargo +nightly-$STABLE_DATE clippy --version)"
     - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v1
+      uses: Swatinem/rust-cache@v2
     - name: Run clippy 
       run: cargo clippy --all-features --tests --examples -- -D warnings
     - name: Run clippy nightly-${{ steps.install-rust.outputs.stable_date }} for benches
@@ -116,7 +116,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Disable bench dependencies
       run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
@@ -126,7 +126,7 @@ jobs:
       if: matrix.target != ''
       run: rustup target add ${{ matrix.target }}
     - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v1
+      uses: Swatinem/rust-cache@v2
     - name: Run check
       run: |
         if [[ -z "${{ matrix.target }}" ]]; then
@@ -141,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Disable bench dependencies
       run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
@@ -157,7 +157,7 @@ jobs:
         echo "Stable version: $(rustdoc --version)"
         echo "Near stable nightly version: $(rustdoc +nightly-$STABLE_DATE --version)"
     - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v1
+      uses: Swatinem/rust-cache@v2
     - name: Run rustdoc nightly-${{ steps.install-rust.outputs.stable_date }}
       run: |
         cd spdlog
@@ -175,7 +175,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: Disable bench dependencies
       run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies (Linux)
@@ -186,7 +186,7 @@ jobs:
     - name: Install Rust ${{ env.rust_minver }}
       run: rustup toolchain install ${{ env.rust_minver }}
     - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v1
+      uses: Swatinem/rust-cache@v2
     - name: Avoid dev-dependencies
       run: |
         # Some dev-dependencies require a newer version of Rust, but it doesn't matter for MSRV check
