@@ -312,8 +312,8 @@ use sync::*;
 /// See the crate level documentation for information on how to configure this.
 ///
 /// This value is checked by the log macros, but not by [`Logger`]s and
-/// [`Sink`]s. Code that manually calls functions on these should compare the
-/// level against this value.
+/// [`Sink`]s. Code that manually calls functions on these should test the level
+/// against this value.
 ///
 /// [`Logger`]: crate::logger::Logger
 /// [`Sink`]: crate::sink::Sink

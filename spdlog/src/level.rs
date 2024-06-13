@@ -14,7 +14,7 @@ const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", 
 /// An enum representing log levels.
 ///
 /// Typical usage includes: specifying the `Level` of [`log!`], and comparing a
-/// `Level` to a [`LevelFilter`] through [`LevelFilter::compare`].
+/// `Level` to a [`LevelFilter`] through [`LevelFilter::test`].
 ///
 /// # Note
 ///
@@ -185,7 +185,7 @@ impl FromStr for Level {
 /// An enum representing log level logical filter conditions.
 ///
 /// A `LevelFilter` may be compared to a [`Level`] through
-/// [`LevelFilter::compare`].
+/// [`LevelFilter::test`].
 ///
 /// # Examples
 ///
@@ -194,10 +194,10 @@ impl FromStr for Level {
 ///
 /// let level_filter: LevelFilter = LevelFilter::MoreSevere(Level::Info);
 ///
-/// assert_eq!(level_filter.compare(Level::Trace), false);
-/// assert_eq!(level_filter.compare(Level::Info), false);
-/// assert_eq!(level_filter.compare(Level::Warn), true);
-/// assert_eq!(level_filter.compare(Level::Error), true);
+/// assert_eq!(level_filter.test(Level::Trace), false);
+/// assert_eq!(level_filter.test(Level::Info), false);
+/// assert_eq!(level_filter.test(Level::Warn), true);
+/// assert_eq!(level_filter.test(Level::Error), true);
 /// ```
 #[repr(align(4))]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -239,15 +239,29 @@ impl LevelFilter {
     /// # Examples
     ///
     /// See the documentation of [`LevelFilter`].
+    #[deprecated(
+        since = "0.4.0",
+        note = "it may be removed in the future, use method `test()` instead"
+    )]
     #[must_use]
     pub fn compare(&self, level: Level) -> bool {
-        self.__compare_const(level)
+        self.__test_const(level)
+    }
+
+    /// Tests the given level with the logical filter condition
+    ///
+    /// # Examples
+    ///
+    /// See the documentation of [`LevelFilter`].
+    #[must_use]
+    pub fn test(&self, level: Level) -> bool {
+        self.__test_const(level)
     }
 
     // Users should not use this function directly.
     #[doc(hidden)]
     #[must_use]
-    pub const fn __compare_const(&self, level: Level) -> bool {
+    pub const fn __test_const(&self, level: Level) -> bool {
         let level_num: u16 = level as u16;
 
         match *self {
@@ -385,37 +399,37 @@ mod tests {
 
     #[test]
     fn filter() {
-        assert!(!LevelFilter::Off.compare(Level::Trace));
-        assert!(!LevelFilter::Off.compare(Level::Critical));
-        assert!(!LevelFilter::Off.compare(Level::Warn));
+        assert!(!LevelFilter::Off.test(Level::Trace));
+        assert!(!LevelFilter::Off.test(Level::Critical));
+        assert!(!LevelFilter::Off.test(Level::Warn));
 
-        assert!(LevelFilter::Equal(Level::Error).compare(Level::Error));
-        assert!(!LevelFilter::Equal(Level::Error).compare(Level::Warn));
-        assert!(!LevelFilter::Equal(Level::Error).compare(Level::Critical));
+        assert!(LevelFilter::Equal(Level::Error).test(Level::Error));
+        assert!(!LevelFilter::Equal(Level::Error).test(Level::Warn));
+        assert!(!LevelFilter::Equal(Level::Error).test(Level::Critical));
 
-        assert!(LevelFilter::NotEqual(Level::Error).compare(Level::Trace));
-        assert!(LevelFilter::NotEqual(Level::Error).compare(Level::Info));
-        assert!(!LevelFilter::NotEqual(Level::Error).compare(Level::Error));
+        assert!(LevelFilter::NotEqual(Level::Error).test(Level::Trace));
+        assert!(LevelFilter::NotEqual(Level::Error).test(Level::Info));
+        assert!(!LevelFilter::NotEqual(Level::Error).test(Level::Error));
 
-        assert!(LevelFilter::MoreSevere(Level::Info).compare(Level::Warn));
-        assert!(LevelFilter::MoreSevere(Level::Info).compare(Level::Error));
-        assert!(!LevelFilter::MoreSevere(Level::Info).compare(Level::Info));
+        assert!(LevelFilter::MoreSevere(Level::Info).test(Level::Warn));
+        assert!(LevelFilter::MoreSevere(Level::Info).test(Level::Error));
+        assert!(!LevelFilter::MoreSevere(Level::Info).test(Level::Info));
 
-        assert!(LevelFilter::MoreSevereEqual(Level::Info).compare(Level::Warn));
-        assert!(LevelFilter::MoreSevereEqual(Level::Info).compare(Level::Info));
-        assert!(!LevelFilter::MoreSevereEqual(Level::Info).compare(Level::Trace));
+        assert!(LevelFilter::MoreSevereEqual(Level::Info).test(Level::Warn));
+        assert!(LevelFilter::MoreSevereEqual(Level::Info).test(Level::Info));
+        assert!(!LevelFilter::MoreSevereEqual(Level::Info).test(Level::Trace));
 
-        assert!(LevelFilter::MoreVerbose(Level::Error).compare(Level::Warn));
-        assert!(LevelFilter::MoreVerbose(Level::Error).compare(Level::Info));
-        assert!(!LevelFilter::MoreVerbose(Level::Error).compare(Level::Error));
+        assert!(LevelFilter::MoreVerbose(Level::Error).test(Level::Warn));
+        assert!(LevelFilter::MoreVerbose(Level::Error).test(Level::Info));
+        assert!(!LevelFilter::MoreVerbose(Level::Error).test(Level::Error));
 
-        assert!(LevelFilter::MoreVerboseEqual(Level::Error).compare(Level::Warn));
-        assert!(LevelFilter::MoreVerboseEqual(Level::Error).compare(Level::Error));
-        assert!(!LevelFilter::MoreVerboseEqual(Level::Error).compare(Level::Critical));
+        assert!(LevelFilter::MoreVerboseEqual(Level::Error).test(Level::Warn));
+        assert!(LevelFilter::MoreVerboseEqual(Level::Error).test(Level::Error));
+        assert!(!LevelFilter::MoreVerboseEqual(Level::Error).test(Level::Critical));
 
-        assert!(LevelFilter::All.compare(Level::Trace));
-        assert!(LevelFilter::All.compare(Level::Critical));
-        assert!(LevelFilter::All.compare(Level::Error));
+        assert!(LevelFilter::All.test(Level::Trace));
+        assert!(LevelFilter::All.test(Level::Critical));
+        assert!(LevelFilter::All.test(Level::Error));
     }
 
     #[cfg(feature = "log")]

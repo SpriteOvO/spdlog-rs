@@ -83,7 +83,7 @@ pub trait Sink: Sync + Send {
     /// Determines if a log message with the specified level would be logged.
     #[must_use]
     fn should_log(&self, level: Level) -> bool {
-        self.level_filter().compare(level)
+        self.level_filter().test(level)
     }
 
     /// Logs a record.

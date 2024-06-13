@@ -135,7 +135,7 @@ impl Logger {
     /// ```
     #[must_use]
     pub fn should_log(&self, level: Level) -> bool {
-        self.level_filter().compare(level)
+        self.level_filter().test(level)
     }
 
     /// Logs a record.
@@ -423,7 +423,7 @@ impl Logger {
 
     #[must_use]
     fn should_flush(&self, record: &Record) -> bool {
-        self.flush_level_filter().compare(record.level())
+        self.flush_level_filter().test(record.level())
     }
 }
 
