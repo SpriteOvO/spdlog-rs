@@ -110,9 +110,8 @@ impl<'a> Record<'a> {
     }
 
     /// Gets the TID when the record was created.
-    // TODO: Public this new method to users in the next minor version
     #[must_use]
-    pub(crate) fn tid(&self) -> u64 {
+    pub fn tid(&self) -> u64 {
         self.inner.tid
     }
 
