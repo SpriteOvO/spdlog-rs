@@ -1,17 +1,5 @@
 use std::time::SystemTime;
 
-/// Re-export some stuff from `log` crate for convenience.
-///
-/// Users sometimes need these stuff, re-exporting them eliminates the need to
-/// explicitly depend on `log` crate in `Cargo.toml`.
-///
-/// See the documentation of [`LogCrateProxy`].
-#[cfg(feature = "log")] // Intentionally redundant, workaround for defects in nested exports of feature
-                        // `doc_auto_cfg`.
-pub mod log_crate {
-    pub use log::{set_max_level, LevelFilter, SetLoggerError};
-}
-
 use crate::{default_logger, sync::*, Logger, Record};
 
 /// Log crate proxy.
@@ -25,13 +13,13 @@ use crate::{default_logger, sync::*, Logger, Record};
 ///
 /// Note that the `log` crate uses a different log level filter and by default
 /// it rejects all log messages. To make `LogCrateProxy` able to receive log
-/// messages from `log` crate, you may need to call [`log_crate::set_max_level`]
-/// with [`log_crate::LevelFilter`].
+/// messages from `log` crate, you may need to call
+/// [`re_export::log::set_max_level`] with [`re_export::log::LevelFilter`].
 ///
 /// ## Examples
 ///
 /// ```
-/// use spdlog::log_crate as log;
+/// use spdlog::re_export::log;
 ///
 /// # fn main() -> Result<(), log::SetLoggerError> {
 /// spdlog::init_log_crate_proxy()?;
@@ -42,6 +30,8 @@ use crate::{default_logger, sync::*, Logger, Record};
 ///
 /// For more and detailed examples, see [./examples] directory.
 ///
+/// [`re_export::log::set_max_level`]: crate::re_export::log::set_max_level
+/// [`re_export::log::LevelFilter`]: crate::re_export::log::LevelFilter
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 #[derive(Default)]
 pub struct LogCrateProxy {

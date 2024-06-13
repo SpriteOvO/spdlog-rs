@@ -263,6 +263,7 @@ mod log_crate_proxy;
 mod log_macros;
 mod logger;
 mod periodic_worker;
+pub mod re_export;
 mod record;
 pub mod sink;
 mod source_location;
@@ -682,7 +683,7 @@ pub fn init_env_level_from<K: AsRef<OsStr>>(env_key: K) -> StdResult<bool, EnvLe
 /// For more details, please read documentation of [`log::set_logger`] and
 /// [`LogCrateProxy`].
 #[cfg(feature = "log")]
-pub fn init_log_crate_proxy() -> StdResult<(), log_crate::SetLoggerError> {
+pub fn init_log_crate_proxy() -> StdResult<(), re_export::log::SetLoggerError> {
     log::set_logger(log_crate_proxy())
 }
 
