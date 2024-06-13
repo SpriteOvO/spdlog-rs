@@ -190,8 +190,7 @@ pub enum SendToChannelError {
 #[non_exhaustive]
 pub enum SendToChannelErrorDropped {
     /// A `log` operation and a record are dropped.
-    // TODO: Box the `RecordOwned` in the next minor version, as it's a bit large.
-    Record(RecordOwned),
+    Record(Box<RecordOwned>), // Boxed because `RecordOwned` is a bit large.
     /// A `flush` operation is dropped.
     Flush,
 }
@@ -244,7 +243,7 @@ impl SendToChannelErrorDropped {
     #[must_use]
     pub(crate) fn from_task(task: Task) -> Self {
         match task {
-            Task::Log { record, .. } => Self::Record(record),
+            Task::Log { record, .. } => Self::Record(Box::new(record)),
             Task::Flush { .. } => Self::Flush,
         }
     }
