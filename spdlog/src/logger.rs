@@ -605,7 +605,7 @@ mod tests {
 
     #[test]
     fn flush_level() {
-        let test_sink = Arc::new(CounterSink::new());
+        let test_sink = Arc::new(TestSink::new());
         let test_logger = Logger::builder().sink(test_sink.clone()).build().unwrap();
 
         trace!(logger: test_logger, "");
@@ -634,7 +634,7 @@ mod tests {
 
     #[test]
     fn periodic_flush() {
-        let test_sink = Arc::new(CounterSink::new());
+        let test_sink = Arc::new(TestSink::new());
         let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build().unwrap());
 
         test_logger.set_flush_period(Some(Duration::from_secs(1)));
@@ -789,7 +789,7 @@ mod tests {
 
     #[test]
     fn fork_logger() {
-        let test_sink = (Arc::new(CounterSink::new()), Arc::new(CounterSink::new()));
+        let test_sink = (Arc::new(TestSink::new()), Arc::new(TestSink::new()));
         let logger = Arc::new(build_test_logger(|b| b.sink(test_sink.0.clone())));
 
         assert!(logger.name().is_none());
@@ -842,7 +842,7 @@ mod tests {
             .name()
             .is_none());
 
-        let test_sink = (Arc::new(CounterSink::new()), Arc::new(CounterSink::new()));
+        let test_sink = (Arc::new(TestSink::new()), Arc::new(TestSink::new()));
         let old = Arc::new(build_test_logger(|b| b.sink(test_sink.0.clone())));
         old.set_flush_period(Some(Duration::from_secs(1)));
         std::thread::sleep(Duration::from_millis(1250));

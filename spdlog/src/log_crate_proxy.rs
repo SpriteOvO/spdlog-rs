@@ -102,7 +102,7 @@ mod tests {
         crate::init_log_crate_proxy().unwrap();
         log::set_max_level(log::LevelFilter::Debug);
 
-        let sink = Arc::new(CounterSink::new());
+        let sink = Arc::new(TestSink::new());
         crate::log_crate_proxy()
             .set_logger(Some(Arc::new(build_test_logger(|b| b.sink(sink.clone())))));
 

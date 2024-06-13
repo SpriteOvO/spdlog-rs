@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn dedup() {
-        let test_sink = Arc::new(CounterSink::new());
+        let test_sink = Arc::new(TestSink::new());
         let dedup_sink = Arc::new(
             DedupSink::builder()
                 .skip_duration(Duration::from_secs(1))

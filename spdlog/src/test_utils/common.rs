@@ -24,7 +24,7 @@ use spdlog::{
 
 //////////////////////////////////////////////////
 
-pub struct CounterSink {
+pub struct TestSink {
     level_filter: Atomic<LevelFilter>,
     log_counter: AtomicUsize,
     flush_counter: AtomicUsize,
@@ -32,7 +32,7 @@ pub struct CounterSink {
     delay_duration: Option<Duration>,
 }
 
-impl CounterSink {
+impl TestSink {
     #[must_use]
     pub fn new() -> Self {
         Self::with_delay(None)
@@ -81,7 +81,7 @@ impl CounterSink {
     }
 }
 
-impl Sink for CounterSink {
+impl Sink for TestSink {
     fn log(&self, record: &Record) -> Result<()> {
         if let Some(delay) = self.delay_duration {
             sleep(delay);
@@ -119,7 +119,7 @@ impl Sink for CounterSink {
     }
 }
 
-impl Default for CounterSink {
+impl Default for TestSink {
     fn default() -> Self {
         Self::new()
     }

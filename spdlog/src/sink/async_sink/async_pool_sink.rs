@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn default_thread_pool() {
-        let counter_sink = Arc::new(CounterSink::new());
+        let counter_sink = Arc::new(TestSink::new());
         let build_logger = || {
             build_test_logger(|b| {
                 b.sink(Arc::new(
@@ -301,7 +301,7 @@ mod tests {
 
     #[test]
     fn custom_thread_pool() {
-        let counter_sink = Arc::new(CounterSink::new());
+        let counter_sink = Arc::new(TestSink::new());
         let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
         let logger = build_test_logger(|b| {
             b.sink(Arc::new(
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn async_opeartions() {
-        let counter_sink = Arc::new(CounterSink::with_delay(Some(Duration::from_secs(1))));
+        let counter_sink = Arc::new(TestSink::with_delay(Some(Duration::from_secs(1))));
         // The default thread pool is not used here to avoid race when tests are run in
         // parallel.
         let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
