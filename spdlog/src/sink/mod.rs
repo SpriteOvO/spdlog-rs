@@ -52,7 +52,7 @@ pub use write_sink::*;
 
 use crate::{formatter::Formatter, sync::*, ErrorHandler, Level, LevelFilter, Record, Result};
 
-/// A trait for sinks.
+/// Represents a sink
 pub trait Sink: Sync + Send {
     /// Determines if a log message with the specified level would be logged.
     #[must_use]
@@ -90,5 +90,5 @@ pub trait Sink: Sync + Send {
     fn set_error_handler(&self, handler: Option<ErrorHandler>);
 }
 
-/// A container for [`Sink`]s.
+/// Container type for [`Sink`]s.
 pub type Sinks = Vec<Arc<dyn Sink>>;
