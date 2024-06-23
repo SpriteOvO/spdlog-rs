@@ -506,7 +506,7 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 /// - Specifies the level filter for ***loggers with the specified name***.
 ///
 ///   Possible inputs: `logger-name=info`, `network=warn`, `core=info`,
-/// `gui=critical`, etc.
+///   `gui=critical`, etc.
 ///
 /// ---
 ///
@@ -533,15 +533,15 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 /// - `off,*=ERROR`
 ///
 ///   Specifies the level filter for the default logger as `LevelFilter::Off`,
-/// the rest of loggers as `LevelFilter::MoreSevereEqual(Level::Error)`.
+///   the rest of loggers as `LevelFilter::MoreSevereEqual(Level::Error)`.
 ///
 /// ---
 ///
 /// - `gui=warn,network=trace`
 ///
 ///   Specifies the level filter for loggers with name "gui" as
-/// `LevelFilter::MoreSevereEqual(Level::Warn)`, loggers with name "network" as
-/// `LevelFilter::MoreSevereEqual(Level::Trace)`.
+///   `LevelFilter::MoreSevereEqual(Level::Warn)`, loggers with name "network"
+///   as `LevelFilter::MoreSevereEqual(Level::Trace)`.
 ///
 /// ---
 ///

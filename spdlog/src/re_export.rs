@@ -16,7 +16,7 @@
 /// appropriately so that `spdlog-rs` can receive logs.
 ///
 /// - To enable the `log` crate compatibility layer proxy, call
-/// [`spdlog::init_log_crate_proxy`].
+///   [`spdlog::init_log_crate_proxy`].
 ///
 /// - To configure `log` crate's own level filter, call
 ///   [`re_export::log::set_max_level`] with [`re_export::log::LevelFilter`].
