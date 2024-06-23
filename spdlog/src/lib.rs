@@ -250,6 +250,7 @@
 //! [`RotationPolicy::Hourly`]: crate::sink::RotationPolicy::Hourly
 //! [`AsyncPoolSink`]: crate::sink::AsyncPoolSink
 
+#![allow(unexpected_cfgs)]
 // Credits: https://blog.wnut.pw/2020/03/24/documentation-and-unstable-rustdoc-features/
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 #![warn(missing_docs)]
