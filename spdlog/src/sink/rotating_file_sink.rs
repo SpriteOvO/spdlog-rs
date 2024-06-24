@@ -23,44 +23,44 @@ use crate::{
 
 /// Rotation policies for [`RotatingFileSink`].
 ///
-/// Rotation policy defines when and how to split log messages into log files,
+/// Rotation policy defines when and how to split logs into multiple files,
 /// during which new log files may be created and old log files may be deleted.
-/// Currently `spdlog` provides 3 different rotation policies:
 ///
-/// - Rotate by file size, which is represented by the
-///   `RotationPolicy::FileSize` variant. Under this rotation policy, the sink
-///   rotates log messages when the size of the current log file exceeds a
-///   limit. The sink will then create a new log file for further log messages
-///   and may optionally delete the oldest log files depending on the maximum
-///   number of files allowed.
-/// - Rotate daily, which is represented by the `RotationPolicy::Daily` variant.
-///   Under this rotation policy, the sink automatically creates a new log file
-///   at a specified time point within a day. The oldest log files may be
-///   deleted, depending on the maximum number of allowed log files.
-/// - Rotate hourly, which is represented by the `RotationPolicy::Hourly`
-///   variant. Under this rotation policy, the sink automatically creates a new
-///   log file at a specified time point within each hour. The oldest log files
-///   may be deleted, depending on the maximum number of allowed log files.
-///
-/// # Errors
+/// # Error
 ///
 /// Note that some parameters have range requirements, functions that receive it
 /// will return an error if the requirements are not met.
+///
+/// # Examples
+///
+/// ```
+/// use spdlog::sink::RotationPolicy;
+///
+/// // Rotating every 10 MB file.
+/// RotationPolicy::FileSize(1024 * 1024 * 10);
+///
+/// // Rotating every day at 15:30.
+/// RotationPolicy::Daily { hour: 15, minute: 30 };
+///
+/// // Rotating every hour.
+/// RotationPolicy::Hourly;
+/// ```
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RotationPolicy {
-    /// Rotates when the log file reaches the given max file size.
+    /// Rotating to a new log file when the size of the current log file exceeds
+    /// the given limit.
     FileSize(
-        /// Max file size (in bytes). Range: (0, u64::MAX].
+        /// Maximum file size (in bytes). Range: (0, u64::MAX].
         u64,
     ),
-    /// Rotates daily at the given time point.
+    /// Rotating to a new log file at a specified time point within a day.
     Daily {
         /// Hour of the time point. Range: [0, 23].
         hour: u32,
         /// Minute of the time point. Range: [0, 59].
         minute: u32,
     },
-    /// Rotates hourly.
+    /// Rotating to a new log file at minute 0 of each hour.
     Hourly,
 }
 
@@ -109,49 +109,17 @@ struct RotatorTimePointInner {
     file_paths: Option<LinkedList<PathBuf>>,
 }
 
-/// A sink with a collection of files as the target, rotating according to the
-/// rotation policy.
+/// A sink with a file as the target, split files according to the rotation
+/// policy.
 ///
-/// A service program that runs for a long time in an environment with limited
-/// hard disk space may continue to write messages to the log file and
-/// eventually run out of hard disk space. `RotatingFileSink` is designed for
-/// such a usage scenario. It splits log messages into one or more log files
-/// and may be configured to delete old log files automatically to save disk
-/// space. The operation that splits log messages into multiple log files and
-/// optionally creates and deletes log files is called a **rotation**. The
+/// A service program running for a long time may continuously write logs to a
+/// single file, which makes the logs hard to view and manage.
+/// `RotatingFileSink` is designed for this usage scenario. It automatically
+/// splits logs into one or more files and can be configured to automatically
+/// delete old files to save disk space. The operation of splitting logs into
+/// multiple files and optionally deleting old files is called **rotation**. The
 /// **rotation policy** determines when and how log files are created or
-/// deleted, and how log messages are written to different log files.
-///
-/// # Parameters
-///
-/// A rotating file sink can be created with 3 parameters: the **base path**,
-/// the **maximum number of log files**, and the **rotation policy**.
-///
-/// ## The Base Path
-///
-/// Each rotating file sink requires a **base path** which serves as a template
-/// to form log file paths. You can set the base path with
-/// [`RotatingFileSinkBuilder::base_path`] when building a rotating file sink.
-/// Different rotation policy may use different file name patterns based on the
-/// base path. For more information about the base path, see the documentation
-/// of [`RotatingFileSinkBuilder::base_path`].
-///
-/// # Maximum Number of Log Files
-///
-/// This parameter defines the maximum number of log files allowed on the disk.
-/// You can set this parameter with [`RotatingFileSinkBuilder::max_files`] when
-/// building a rotating file sink. During a rotation, the sink won't delete old
-/// log files unless the number of log files on the disk exceeds this
-/// limit. Furthermore, setting this parameter to 0 indicates that no limits are
-/// applied and effectively prevents the sink from deleting any old log files.
-///
-/// # Rotation Policy
-///
-/// [`RotationPolicy`] defines the different available rotation policies. You
-/// can set the rotation policy with
-/// [`RotatingFileSinkBuilder::rotation_policy`] when building a rotating file
-/// sink. For more information about different rotation policies, please refer
-/// to the documentation of [`RotationPolicy`].
+/// deleted.
 ///
 /// # Examples
 ///
@@ -163,53 +131,8 @@ pub struct RotatingFileSink {
     rotator: RotatorKind,
 }
 
-/// The builder of [`RotatingFileSink`].
+/// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
-/// # Examples
-///
-/// - Building a [`RotatingFileSink`].
-///
-///   ```no_run
-///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: RotatingFileSink = RotatingFileSink::builder()
-///       .base_path("/path/to/base_log_file") // required
-///       .rotation_policy(RotationPolicy::Hourly) // required
-///       // .max_files(100) // optional, defaults to `0` for no limit
-///       // .rotate_on_open(true) // optional, defaults to `false`
-///       .build()?;
-///   # Ok(()) }
-///   ```
-///
-/// - If any required parameters are missing, a compile-time error will be
-///   raised.
-///
-///   ```compile_fail,E0061
-///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: RotatingFileSink = RotatingFileSink::builder()
-///       // .base_path("/path/to/base_log_file") // required
-///       .rotation_policy(RotationPolicy::Hourly) // required
-///       .max_files(100) // optional, defaults to `0` for no limit
-///       .rotate_on_open(true) // optional, defaults to `false`
-///       .build()?;
-///   # Ok(()) }
-///   ```
-///
-///   ```compile_fail,E0061
-///   use spdlog::sink::{RotatingFileSink, RotationPolicy};
-///
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: RotatingFileSink = RotatingFileSink::builder()
-///       .base_path("/path/to/base_log_file") // required
-///       // .rotation_policy(RotationPolicy::Hourly) // required
-///       .max_files(100) // optional, defaults to `0` for no limit
-///       .rotate_on_open(true) // optional, defaults to `false`
-///       .build()?;
-///   # Ok(()) }
-///   ```
 pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
     common_builder_impl: helper::CommonBuilderImpl,
     base_path: ArgBP,
@@ -219,7 +142,27 @@ pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
 }
 
 impl RotatingFileSink {
-    /// Constructs a builder of `RotatingFileSink`.
+    /// Gets a builder of `RotatingFileSink` with default parameters:
+    ///
+    /// | Parameter         | Default Value           |
+    /// |-------------------|-------------------------|
+    /// | [level_filter]    | `All`                   |
+    /// | [formatter]       | `FullFormatter`         |
+    /// | [error_handler]   | [default error handler] |
+    /// |                   |                         |
+    /// | [base_path]       | *must be specified*     |
+    /// | [rotation_policy] | *must be specified*     |
+    /// | [max_files]       | `0`                     |
+    /// | [rotate_on_open]  | `false`                 |
+    ///
+    /// [level_filter]: RotatingFileSinkBuilder::level_filter
+    /// [formatter]: RotatingFileSinkBuilder::formatter
+    /// [error_handler]: RotatingFileSinkBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
+    /// [base_path]: RotatingFileSinkBuilder::base_path
+    /// [rotation_policy]: RotatingFileSinkBuilder::rotation_policy
+    /// [max_files]: RotatingFileSinkBuilder::max_files
+    /// [rotate_on_open]: RotatingFileSinkBuilder::rotate_on_open
     #[must_use]
     pub fn builder() -> RotatingFileSinkBuilder<(), ()> {
         RotatingFileSinkBuilder {
@@ -243,7 +186,7 @@ impl RotatingFileSink {
     /// contents of the existing file if the parameter is `true`, since the file
     /// name is a time point and not an index.
     ///
-    /// # Errors
+    /// # Error
     ///
     /// If an error occurs opening the file, [`Error::CreateDirectory`] or
     /// [`Error::OpenFile`] will be returned.
@@ -770,9 +713,9 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// If the number of existing files reaches this parameter, the oldest file
     /// will be deleted on the next rotation.
     ///
-    /// Pass `0` for no limit.
+    /// Specify `0` for no limit.
     ///
-    /// This parameter is **optional**, and defaults to `0`.
+    /// This parameter is **optional**.
     #[must_use]
     pub fn max_files(mut self, max_files: usize) -> Self {
         self.max_files = max_files;
@@ -787,7 +730,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// the parameter is `true`, since the file name is a time point and not an
     /// index.
     ///
-    /// This parameter is **optional**, and defaults to `false`.
+    /// This parameter is **optional**.
     #[must_use]
     pub fn rotate_on_open(mut self, rotate_on_open: bool) -> Self {
         self.rotate_on_open = rotate_on_open;
@@ -818,7 +761,7 @@ impl RotatingFileSinkBuilder<PathBuf, ()> {
 impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
     /// Builds a [`RotatingFileSink`].
     ///
-    /// # Errors
+    /// # Error
     ///
     /// If the argument `rotation_policy` is invalid, or an error occurs opening
     /// the file, [`Error::CreateDirectory`] or [`Error::OpenFile`] will be

@@ -7,7 +7,7 @@ pub use async_pool_sink::*;
 /// When the channel is full, an incoming operation is handled according to the
 /// specified policy.
 ///
-/// [asynchronous sinks]: index.html#asynchronous-combined-sink
+/// [asynchronous sinks]: crate::sink::AsyncPoolSink
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[non_exhaustive]
 pub enum OverflowPolicy {

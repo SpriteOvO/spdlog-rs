@@ -1,15 +1,3 @@
-//! This module provides a pattern-string based formatter.
-//!
-//! The [`PatternFormatter`] struct defines a formatter that formats log
-//! messages against a specific text pattern.
-//!
-//! Patterns are represented by the [`Pattern`] trait. You can create your own
-//! pattern by implementing the [`Pattern`] trait.
-//!
-//! You can also build a pattern with the [`pattern`][pattern-macro] macro.
-//!
-//! [pattern-macro]: crate::formatter::pattern
-
 #[doc(hidden)]
 #[path = "pattern/mod.rs"]
 pub mod __pattern;
@@ -29,7 +17,7 @@ use crate::{
 };
 
 #[rustfmt::skip] // rustfmt currently breaks some empty lines if `#[doc = include_str!("xxx")]` exists
-/// Build a pattern from a template literal string at compile-time.
+/// Builds a pattern from a template literal string at compile-time.
 ///
 /// It accepts inputs in the form:
 ///
@@ -304,7 +292,7 @@ use crate::{
 /// );
 /// ```
 ///
-/// # Appendix: A Full List of Built-in Patterns
+/// # Appendix: Full List of Built-in Patterns
 ///
 /// | Placeholders          | Description                  | Example                                      |
 /// | --------------------- | ---------------------------- | -------------------------------------------- |
@@ -354,7 +342,7 @@ use crate::{
 /// [`FullFormatter`]: crate::formatter::FullFormatter
 pub use ::spdlog_macros::pattern;
 
-/// A formatter that formats log records according to a specified pattern.
+/// Formats logs according to a specified pattern.
 #[derive(Clone)]
 pub struct PatternFormatter<P> {
     pattern: P,
@@ -392,20 +380,22 @@ where
     }
 }
 
-/// Provide context for patterns.
+/// Provides context for patterns.
+///
+/// There is nothing to set up here at the moment, reserved for future use.
 #[derive(Clone, Debug)]
 pub struct PatternContext {
     fmt_info_builder: FmtExtraInfoBuilder,
 }
 
 impl PatternContext {
-    /// Create a new `PatternContext` object.
+    /// Creates a new `PatternContext` object.
     #[must_use]
     fn new(fmt_info_builder: FmtExtraInfoBuilder) -> Self {
         Self { fmt_info_builder }
     }
 
-    /// Set the style range of the log message written by the patterns.
+    /// Sets the style range of the log message written by the patterns.
     ///
     /// This function is reserved for use by the style range pattern. Other
     /// built-in patterns should not use this function. User-defined
@@ -416,26 +406,24 @@ impl PatternContext {
     }
 }
 
-/// A pattern.
+/// Represents a pattern for replacing a placeholder in templates.
 ///
-/// A pattern is like a formatter, except that multiple patterns can be combined
-/// in various ways to create a new pattern. The [`PatternFormatter`] struct
-/// provides a [`Formatter`] that formats log records according to a given
-/// pattern.
+/// A pattern will be used to replace placeholders that appear in a template
+/// string. Multiple patterns can form a new pattern. The [`PatternFormatter`]
+/// formats logs according to a given pattern.
 ///
 /// # Built-in Patterns
 ///
-/// `spdlog` provides a rich set of built-in patterns. See the [`pattern`]
+/// `spdlog-rs` provides a rich set of built-in patterns. See the [`pattern`]
 /// macro.
 ///
 /// # Custom Patterns
 ///
 /// There are 3 approaches to create your own pattern:
-/// - Define a new type and implements this trait;
-/// - Use the [`pattern`] macro to create a pattern from a literal template
+/// - Define a new type and implement this trait;
+/// - Use [`pattern`] macro to create a pattern from a literal template string.
+/// - Use [`runtime_pattern`] macro to create a pattern from a runtime template
 ///   string.
-/// - Use the [`runtime_pattern`] macro to create a pattern from a runtime
-///   template string.
 pub trait Pattern: Send + Sync + DynClone {
     /// Format this pattern against the given log record and write the formatted
     /// message into the output buffer.

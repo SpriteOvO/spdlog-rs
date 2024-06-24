@@ -10,13 +10,12 @@ fn fn_from_other_crate() {
 }
 
 fn main() {
-    // Call this function early. Logs from log crate will not be handled before
-    // calling it.
+    // Call this function early.
+    // Logs from log crate will not be handled before calling it.
     spdlog::init_log_crate_proxy()
         .expect("users should only call `init_log_crate_proxy` function once");
 
-    // Logs will be output to `spdlog::default_logger()`.
-    fn_from_other_crate();
+    log::info!("this log will be handled by the global default logger in spdlog-rs");
 
     // Assuming this is a custom logger, it might be a combination of
     // `StdStreamSink` and `FileSink` or whatever.

@@ -1,5 +1,3 @@
-//! Provides a logger structure.
-
 use std::{result::Result as StdResult, time::Duration};
 
 use crate::{
@@ -34,33 +32,79 @@ fn check_logger_name(name: impl AsRef<str>) -> StdResult<(), SetLoggerNameError>
     }
 }
 
-/// A logger structure.
+/// Manages, controls and manipulates multiple sinks.
 ///
-/// A logger contains a combination of sinks, and sinks implement writing log
-/// messages to actual targets.
+/// Logger is an entry point for a log to be processed, the [`Logger::log`]
+/// method will be called by logging macros.
 ///
-/// Users usually log messages through log macros.
+/// ---
+///
+/// A Logger:
+///
+/// - contains one or more [sink]s, each log will be passed into sinks in
+///   sequence;
+///
+/// - has a level filter of its own, which is not shared with the level filter
+///   of sinks;
+///
+/// - has automatic flushing policies that can be optionally enabled:
+///   - Flush level filter: Flush once when the filter returns `true` for a log.
+///   - Flush period: Flush periodically.
+///
+///   These two automatic flushing policies can work at the same time.
+///
+/// ---
+///
+/// *spdlog-rs* has a global [`default_logger`], you can modify it, or configure
+/// a new logger to suit your needs and then replace it. Basically for a
+/// lightweight program, such a global singleton logger is enough. For a complex
+/// program, for example if you have a number of different components, you can
+/// also configure multiple loggers and store them independently inside the
+/// component struct, which allows different components to have different
+/// approaches for logging.
 ///
 /// # Examples
 ///
+/// - Logging to the global default logger.
+///
 /// ```
-/// # use std::sync::Arc;
-/// use std::time::Duration;
 /// use spdlog::prelude::*;
 ///
-/// # let custom_logger: Arc<Logger> = spdlog::default_logger();
-/// let default_logger: Arc<Logger> = spdlog::default_logger();
-/// default_logger.set_level_filter(LevelFilter::All);
-/// default_logger.set_flush_period(Some(Duration::from_secs(10)));
-/// info!("logging with default logger");
+/// info!("logging to the default logger");
 ///
-/// custom_logger.set_level_filter(LevelFilter::All);
-/// custom_logger.set_flush_period(Some(Duration::from_secs(10)));
-/// info!(logger: custom_logger, "logging with custom logger");
+/// spdlog::default_logger().set_level_filter(LevelFilter::All);
+/// trace!("logging to the default logger at trace level");
 /// ```
 ///
-/// For more examples, see [./examples] directory.
+/// - Logging to a separated logger.
 ///
+/// ```
+/// # use spdlog::prelude::*;
+/// let separated_logger = /* ... */
+/// # spdlog::default_logger();
+///
+/// info!(logger: separated_logger, "logging to a separated logger");
+/// error!(logger: separated_logger, "logging to a separated logger at error level");
+/// ```
+///
+/// - Fork, configure and replace the default logger.
+///
+/// ```
+/// # use spdlog::prelude::*;
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// let new_logger = spdlog::default_logger().fork_with(|new_logger| {
+///     // Configure the new logger...
+///     Ok(())
+/// })?;
+/// spdlog::set_default_logger(new_logger);
+/// info!("logging to the default logger, but it's reconfigured");
+/// # Ok(()) }
+/// ```
+///
+/// - For more examples, see [./examples] directory.
+///
+/// [sink]: crate::sink
+/// [`default_logger`]: crate::default_logger
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct Logger {
     name: Option<String>,
@@ -72,7 +116,24 @@ pub struct Logger {
 }
 
 impl Logger {
-    /// Constructs a [`LoggerBuilder`].
+    /// Gets a [`LoggerBuilder`] with default parameters:
+    ///
+    /// | Parameter            | Default Value           |
+    /// |----------------------|-------------------------|
+    /// | [name]               | `None`                  |
+    /// | [sinks]              | `[]`                    |
+    /// | [level_filter]       | `MoreSevereEqual(Info)` |
+    /// | [flush_level_filter] | `Off`                   |
+    /// | [flush_period]       | `None`                  |
+    /// | [error_handler]      | [default error handler] |
+    ///
+    /// [name]: LoggerBuilder::name
+    /// [sinks]: LoggerBuilder::sink
+    /// [level_filter]: LoggerBuilder::level_filter
+    /// [flush_level_filter]: LoggerBuilder::flush_level_filter
+    /// [flush_period]: Logger::set_flush_period
+    /// [error_handler]: LoggerBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
     #[must_use]
     pub fn builder() -> LoggerBuilder {
         LoggerBuilder {
@@ -107,19 +168,17 @@ impl Logger {
         Ok(())
     }
 
-    /// Determines if a log message with the specified level would be
-    /// logged.
+    /// Determines if a log with the specified level would be logged.
     ///
-    /// This allows callers to avoid expensive computation of log message
-    /// arguments if the message would be discarded anyway.
+    /// This allows callers to avoid expensive computation of log arguments if
+    /// the would be discarded anyway.
     ///
     /// # Examples
     ///
     /// ```
     /// # use std::sync::Arc;
     /// use spdlog::prelude::*;
-    ///
-    /// let logger: Arc<Logger> = spdlog::default_logger();
+    /// # let logger = spdlog::default_logger();
     ///
     /// logger.set_level_filter(LevelFilter::MoreSevere(Level::Info));
     /// assert_eq!(logger.should_log(Level::Debug), false);
@@ -138,9 +197,14 @@ impl Logger {
         self.level_filter().test(level)
     }
 
-    /// Logs a record.
+    /// Passes a log into sinks in sequence.
     ///
-    /// Users usually do not use this function directly, use log macros instead.
+    /// It calls [`Sink::log`] method internally for each sink in sequence.
+    ///
+    /// # Note
+    ///
+    /// Users usually do not use this function directly, use logging macros
+    /// instead.
     pub fn log(&self, record: &Record) {
         if !self.should_log(record.level()) {
             return;
@@ -148,14 +212,16 @@ impl Logger {
         self.sink_record(record);
     }
 
-    /// Flushes any buffered records.
+    /// Flushes sinks explicitly.
     ///
-    /// Users can call this function to flush manually or use auto-flush
-    /// policies. See also [`Logger::flush_level_filter`] and
+    /// It calls [`Sink::flush`] method internally for each sink in sequence.
+    ///
+    /// Users can call this function to flush explicitly and/or use automatic
+    /// flushing policies. See also [`Logger::flush_level_filter`] and
     /// [`Logger::set_flush_period`].
     ///
-    /// Note that it is expensive, calling it frequently will affect
-    /// performance.
+    /// Be aware that the method can be expensive, calling it frequently may
+    /// affect performance.
     pub fn flush(&self) {
         self.flush_sinks();
     }
@@ -168,11 +234,11 @@ impl Logger {
 
     /// Sets a flush level filter.
     ///
-    /// When logging a new record, flush the buffer if this filter condition is
-    /// true.
+    /// When logging a new record, flush the buffer if this filter condition
+    /// returns `true`.
     ///
-    /// This auto-flush policy can work with [`Logger::set_flush_period`]
-    /// together.
+    /// This automatic flushing policy can work with
+    /// [`Logger::set_flush_period`] at the same time.
     ///
     /// # Examples
     ///
@@ -195,13 +261,13 @@ impl Logger {
             .store(level_filter, Ordering::Relaxed);
     }
 
-    /// Gets the log filter level.
+    /// Gets the log level filter.
     #[must_use]
     pub fn level_filter(&self) -> LevelFilter {
         self.level_filter.load(Ordering::Relaxed)
     }
 
-    /// Sets the log filter level.
+    /// Sets the log level filter.
     ///
     /// # Examples
     ///
@@ -210,13 +276,13 @@ impl Logger {
         self.level_filter.store(level_filter, Ordering::Relaxed);
     }
 
-    /// Sets periodic flush.
+    /// Sets automatic periodic flushing.
     ///
     /// This function receives a `&Arc<Self>`. Calling it will spawn a new
-    /// thread.
+    /// thread internally.
     ///
-    /// This auto-flush policy can work with [`Logger::set_flush_level_filter`]
-    /// together.
+    /// This automatic flushing policy can work with
+    /// [`Logger::set_flush_level_filter`] at the same time.
     ///
     /// # Panics
     ///
@@ -233,10 +299,10 @@ impl Logger {
     /// # use spdlog::prelude::*;
     ///
     /// # let logger: Arc<Logger> = spdlog::default_logger();
-    /// // From now on, auto-flush the `logger` buffer every 10 seconds.
+    /// // From now on, the `logger` will automatically call `flush` method the every 10 seconds.
     /// logger.set_flush_period(Some(Duration::from_secs(10)));
     ///
-    /// // Remove periodic auto-flush.
+    /// // Disable automatic periodic flushing.
     /// logger.set_flush_period(None);
     /// ```
     pub fn set_flush_period(self: &Arc<Self>, interval: Option<Duration>) {
@@ -283,15 +349,15 @@ impl Logger {
     /// ```
     /// use spdlog::prelude::*;
     ///
-    /// spdlog::default_logger().set_error_handler(Some(|err: spdlog::Error| {
-    ///     panic!("spdlog-rs error: {}", err)
+    /// spdlog::default_logger().set_error_handler(Some(|err| {
+    ///     panic!("An error occurred in the default logger: {}", err)
     /// }));
     /// ```
     pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
         *self.error_handler.write() = handler;
     }
 
-    /// Fork and configure a separate new logger.
+    /// Forks and configures a separate new logger.
     ///
     /// This function creates a new logger object that inherits logger
     /// properties from `Arc<Self>`. Then this function calls the given
@@ -312,7 +378,7 @@ impl Logger {
     /// # Arc::new(Logger::builder().build().unwrap());
     /// // Fork from an existing logger and add a new sink.
     /// # let new_sink = test_sink.clone();
-    /// let new: Arc<Logger> = old.fork_with(|new: &mut Logger| {
+    /// let new = old.fork_with(|new| {
     ///     new.sinks_mut().push(new_sink);
     ///     Ok(())
     /// })?;
@@ -341,7 +407,7 @@ impl Logger {
         Ok(new_logger)
     }
 
-    /// Fork a separate new logger with a new name.
+    /// Forks a separates new logger with a new name.
     ///
     /// This function creates a new logger object that inherits logger
     /// properties from `Arc<Self>` and rename the new logger object to the
@@ -357,8 +423,8 @@ impl Logger {
     /// # use spdlog::prelude::*;
     /// #
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let old: Arc<Logger> = Arc::new(Logger::builder().name("dog").build()?);
-    /// let new: Arc<Logger> = old.fork_with_name(Some("cat"))?;
+    /// let old = Arc::new(Logger::builder().name("dog").build()?);
+    /// let new = old.fork_with_name(Some("cat"))?;
     ///
     /// assert_eq!(old.name(), Some("dog"));
     /// assert_eq!(new.name(), Some("cat"));
@@ -447,7 +513,7 @@ impl Clone for Logger {
     }
 }
 
-/// The builder of [`Logger`].
+#[allow(missing_docs)]
 #[derive(Clone)]
 pub struct LoggerBuilder {
     name: Option<String>,
@@ -471,7 +537,7 @@ impl LoggerBuilder {
 
     /// Sets the name of the logger.
     ///
-    /// This parameter is **optional**, and defaults to `None`.
+    /// This parameter is **optional**.
     ///
     /// # Requirements
     ///
@@ -488,10 +554,9 @@ impl LoggerBuilder {
         self
     }
 
-    /// Sets the log filter level.
+    /// Sets the log level filter.
     ///
-    /// This parameter is **optional**, and defaults to
-    /// `LevelFilter::MoreSevereEqual(Level::Info)`.
+    /// This parameter is **optional**.
     pub fn level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
         self.level_filter = level_filter;
         self
@@ -514,7 +579,7 @@ impl LoggerBuilder {
 
     /// Sets the flush level filter.
     ///
-    /// This paramter is **optional**, and defaults to [`LevelFilter::Off`].
+    /// This paramter is **optional**.
     ///
     /// See the documentation of [`Logger::set_flush_level_filter`] for the
     /// description of this parameter.
@@ -525,7 +590,7 @@ impl LoggerBuilder {
 
     /// Sets the error handler.
     ///
-    /// This parameter is **optional**, and defaults to `None`.
+    /// This parameter is **optional**.
     ///
     /// See the documentation of [`Logger::set_error_handler`] for the
     /// description of this parameter.

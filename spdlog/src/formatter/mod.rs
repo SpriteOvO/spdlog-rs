@@ -1,8 +1,52 @@
 //! Provides formatters for sink formatting log records.
 //!
-//! Usually use [`Sink::set_formatter`] to set the formatter of a sink.
+//! # Formatter
+//!
+//! Each normal *Sink* owns a *Formatter*, which is used to format each log.
+//!
+//! The default formatter for most sinks is [`FullFormatter`], you can call
+//! [`Sink::set_formatter`] to replace it with another formatter.
+//!
+//! The easiest way to make a custom formatter is to build a pattern, see
+//! [Compile-time and runtime pattern
+//! formatter](#compile-time-and-runtime-pattern-formatter) below. If pattern
+//! isn't flexible enough for you, you need to implement [`Formatter`] trait for
+//! your own formatter struct. See the implementation of [`FullFormatter`] and
+//! [./examples] directory for examples.
+//!
+//! # Compile-time and runtime pattern formatter
+//!
+//! *spdlog-rs* supports formatting your log records according to a pattern
+//! string. There are 2 ways to construct a pattern:
+//!
+//! - Macro [`pattern!`]: Builds a pattern at compile-time.
+//! - Macro [`runtime_pattern!`]: Builds a pattern at runtime.
+//!
+//! ```
+//! use spdlog::formatter::{pattern, PatternFormatter};
+//! # use spdlog::sink::{Sink, WriteSink};
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! // This pattern is built at compile-time, the template accepts only a literal string.
+//! let pattern = pattern!("[{date} {time}.{millisecond}] [{level}] {payload}{eol}");
+//!
+//! #[cfg(feature = "runtime-pattern")]
+//! {
+//!     use spdlog::formatter::runtime_pattern;
+//!
+//!     // This pattern is built at runtime, the template accepts a runtime string.
+//!     let input = "[{date} {time}.{millisecond}] [{level}] {payload}{eol}";
+//!     let pattern = runtime_pattern!(input)?;
+//! }
+//!
+//! // Use the compile-time or runtime pattern.
+//! # let your_sink = WriteSink::builder().target(vec![]).build()?;
+//! your_sink.set_formatter(Box::new(PatternFormatter::new(pattern)));
+//! # Ok(()) }
+//! ```
 //!
 //! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
+//! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 
 mod full_formatter;
 #[cfg(any(
@@ -26,7 +70,7 @@ pub use pattern_formatter::*;
 
 use crate::{Record, Result, StringBuf};
 
-/// A trait for log records formatters.
+/// Represents a formatter that can be used for formatting logs.
 ///
 /// # Examples
 ///
@@ -55,7 +99,7 @@ impl FmtExtraInfo {
         FmtExtraInfo::default()
     }
 
-    /// Constructs a [`FmtExtraInfoBuilder`].
+    /// Gets a [`FmtExtraInfoBuilder`].
     #[must_use]
     pub fn builder() -> FmtExtraInfoBuilder {
         FmtExtraInfoBuilder::new()
@@ -75,13 +119,7 @@ impl FmtExtraInfo {
     }
 }
 
-/// The builder of [`FmtExtraInfo`].
-///
-/// # Examples
-///
-/// See the implementation of [`FullFormatter`] and [./examples] directory.
-///
-/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
+#[allow(missing_docs)]
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub struct FmtExtraInfoBuilder {
     info: FmtExtraInfo,

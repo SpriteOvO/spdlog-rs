@@ -94,7 +94,18 @@ pub struct JournaldSink {
 impl JournaldSink {
     const SYSLOG_LEVELS: SyslogLevels = SyslogLevels::new();
 
-    /// Constructs a builder of `JournaldSink`.
+    /// Gets a builder of `JournaldSink` with default parameters:
+    ///
+    /// | Parameter       | Default Value           |
+    /// |-----------------|-------------------------|
+    /// | [level_filter]  | `All`                   |
+    /// | [formatter]     | `JournaldFormatter`     |
+    /// | [error_handler] | [default error handler] |
+    ///
+    /// [level_filter]: JournaldSinkBuilder::level_filter
+    /// [formatter]: JournaldSinkBuilder::formatter
+    /// [error_handler]: JournaldSinkBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
     #[must_use]
     pub fn builder() -> JournaldSinkBuilder {
         JournaldSinkBuilder {
@@ -137,21 +148,7 @@ impl Sink for JournaldSink {
     helper::common_impl!(@Sink: common_impl);
 }
 
-/// The builder of [`JournaldSink`].
-///
-/// # Examples
-///
-/// - Building a [`JournaldSink`].
-///
-///   ```
-///   use spdlog::{prelude::*, sink::JournaldSink};
-///  
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: JournaldSink = JournaldSink::builder()
-///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
-///       .build()?;
-///   # Ok(()) }
-///   ```
+#[allow(missing_docs)]
 pub struct JournaldSinkBuilder {
     common_builder_impl: helper::CommonBuilderImpl,
 }

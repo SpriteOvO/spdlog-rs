@@ -17,33 +17,7 @@
 //! Operations on a combined sink will be forwarded to its sub-sinks according
 //! to the implementation.
 //!
-//! # Asynchronous combined sink
-//!
-//! Asynchronous combined sink is a type of combined sink. Expensive operations
-//! (such as `log` and `flush`) on asynchronous sinks will be performed
-//! asynchronously on other threads.
-//!
-//! Since there is no waiting, errors that occur while performing asynchronous
-//! operations will not be returned to the upper level, and instead the error
-//! handler of the sink will be called.
-//!
-//! Users should only use asynchronous combined sinks to wrap actual sinks that
-//! require a long time for operations (e.g. involving UDP sends), otherwise
-//! they will not get a performance boost or even worse.
-//!
-//! Since the thread pool has a capacity limit, the queue may be full in some
-//! cases. When users encounter this situation, they have the following options:
-//!
-//!  - Adjust to a larger capacity via [`ThreadPoolBuilder::capacity`].
-//!
-//!  - Adjust the overflow policy via [`AsyncPoolSinkBuilder::overflow_policy`].
-//!
-//!  - Set up an error handler on asynchronous combined sinks via
-//!    [`AsyncPoolSinkBuilder::error_handler`]. The handler will be called when
-//!    a record is dropped or an operation has failed.
-//!
 //! [`Logger`]: crate::logger::Logger
-//! [`ThreadPoolBuilder::capacity`]: crate::ThreadPoolBuilder::capacity
 
 #[cfg(feature = "multi-thread")]
 pub(crate) mod async_sink;
@@ -78,7 +52,7 @@ pub use write_sink::*;
 
 use crate::{formatter::Formatter, sync::*, ErrorHandler, Level, LevelFilter, Record, Result};
 
-/// A trait for sinks.
+/// Represents a sink
 pub trait Sink: Sync + Send {
     /// Determines if a log message with the specified level would be logged.
     #[must_use]
@@ -104,16 +78,17 @@ pub trait Sink: Sync + Send {
 
     /// Sets a error handler.
     ///
-    /// Any errors that occur in `Sink` will be returned as directly as possible
-    /// (e.g. returned to [`Logger`]), but some errors that are not likely to be
-    /// returned directly will call this error handler. Most of these errors are
-    /// uncommon.
+    /// Most errors that occur in `Sink` will be returned as directly as
+    /// possible (e.g. returned to [`Logger`]), but some errors that cannot be
+    /// returned immediately, this function will be called. For example,
+    /// asynchronous errors.
     ///
-    /// If no handler is set, errors will be print to `stderr` and then ignored.
+    /// If no handler is set, [default error handler] will be used.
     ///
     /// [`Logger`]: crate::logger::Logger
+    /// [default error handler]: ../error/index.html#default-error-handler
     fn set_error_handler(&self, handler: Option<ErrorHandler>);
 }
 
-/// A container for [`Sink`]s.
+/// Container type for [`Sink`]s.
 pub type Sinks = Vec<Arc<dyn Sink>>;

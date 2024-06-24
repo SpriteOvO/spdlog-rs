@@ -22,8 +22,8 @@ use crate::{
 ///
 /// # fn main() -> Result<(), spdlog::Error> {
 /// # let underlying_sink = spdlog::default_logger().sinks().first().unwrap().clone();
-/// let thread_pool: Arc<ThreadPool> = Arc::new(ThreadPool::new()?);
-/// let async_pool_sink: AsyncPoolSink = AsyncPoolSink::builder()
+/// let thread_pool = Arc::new(ThreadPool::new()?);
+/// let async_pool_sink = AsyncPoolSink::builder()
 ///     .sink(underlying_sink)
 ///     .thread_pool(thread_pool)
 ///     .build()?;
@@ -40,7 +40,7 @@ struct ThreadPoolInner {
 
 type Callback = Arc<dyn Fn() + Send + Sync + 'static>;
 
-/// The builder of [`ThreadPool`].
+#[allow(missing_docs)]
 pub struct ThreadPoolBuilder {
     capacity: usize,
     threads: usize,
@@ -53,7 +53,17 @@ struct Worker {
 }
 
 impl ThreadPool {
-    /// Constructs a builder of `ThreadPool`.
+    /// Gets a builder of `ThreadPool` with default parameters:
+    ///
+    /// | Parameter          | Default Value                     |
+    /// |--------------------|-----------------------------------|
+    /// | [capacity]         | `8192` (may change in the future) |
+    /// | [on_thread_spawn]  | `None`                            |
+    /// | [on_thread_finish] | `None`                            |
+    ///
+    /// [capacity]: ThreadPoolBuilder::capacity
+    /// [on_thread_spawn]: ThreadPoolBuilder::on_thread_spawn
+    /// [on_thread_finish]: ThreadPoolBuilder::on_thread_finish
     #[must_use]
     pub fn builder() -> ThreadPoolBuilder {
         ThreadPoolBuilder {
@@ -64,7 +74,8 @@ impl ThreadPool {
         }
     }
 
-    /// Constructs a `ThreadPool` with default parameters.
+    /// Constructs a `ThreadPool` with default parameters (see documentation of
+    /// [`ThreadPool::builder`]).
     pub fn new() -> Result<Self> {
         Self::builder().build()
     }
@@ -108,8 +119,7 @@ impl Drop for ThreadPool {
 impl ThreadPoolBuilder {
     /// Specifies the capacity of the operation channel.
     ///
-    /// This parameter is **optional**, and defaults to 8192 (The value may
-    /// change in the future).
+    /// This parameter is **optional**.
     ///
     /// When a new operation is incoming, but the channel is full, it will be
     /// handled by sink according to the [`OverflowPolicy`] that has been set.

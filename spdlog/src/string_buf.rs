@@ -1,5 +1,3 @@
-//! Provides a string buffer type for sinks and formatters.
-
 /// A string buffer type.
 ///
 /// Used at [`Formatter`].
@@ -12,7 +10,7 @@
 /// consistent as possible with [`String`], but some APIs are not yet
 /// implemented or cannot be implemented.
 ///
-/// # Warnings
+/// # Warning
 ///
 /// `FlexibleString` can improve performance as it avoids memory allocation when
 /// formatting records as much as possible, however it contains unsafe code.
