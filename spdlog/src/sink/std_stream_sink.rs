@@ -143,10 +143,6 @@ impl StdStreamSink {
 
 impl Sink for StdStreamSink {
     fn log(&self, record: &Record) -> Result<()> {
-        if !self.should_log(record.level()) {
-            return Ok(());
-        }
-
         let mut string_buf = StringBuf::new();
         let extra_info = self
             .common_impl

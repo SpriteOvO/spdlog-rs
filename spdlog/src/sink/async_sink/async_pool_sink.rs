@@ -68,13 +68,10 @@ impl AsyncPoolSink {
 
 impl Sink for AsyncPoolSink {
     fn log(&self, record: &Record) -> Result<()> {
-        if self.should_log(record.level()) {
-            self.assign_task(Task::Log {
-                backend: self.clone_backend(),
-                record: record.to_owned(),
-            })?;
-        }
-        Ok(())
+        self.assign_task(Task::Log {
+            backend: self.clone_backend(),
+            record: record.to_owned(),
+        })
     }
 
     fn flush(&self) -> Result<()> {

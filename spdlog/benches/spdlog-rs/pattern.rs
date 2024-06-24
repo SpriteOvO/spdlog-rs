@@ -50,11 +50,11 @@ impl<F: Formatter> Sink for BenchSink<F> {
         unimplemented!()
     }
 
-    fn level_filter(&self) -> spdlog::LevelFilter {
-        unimplemented!()
+    fn level_filter(&self) -> LevelFilter {
+        LevelFilter::All
     }
 
-    fn set_level_filter(&self, _level_filter: spdlog::LevelFilter) {
+    fn set_level_filter(&self, _level_filter: LevelFilter) {
         unimplemented!()
     }
 
