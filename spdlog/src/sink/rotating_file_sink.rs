@@ -286,10 +286,6 @@ impl RotatingFileSink {
 
 impl Sink for RotatingFileSink {
     fn log(&self, record: &Record) -> Result<()> {
-        if !self.should_log(record.level()) {
-            return Ok(());
-        }
-
         let mut string_buf = StringBuf::new();
         self.common_impl
             .formatter

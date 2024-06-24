@@ -36,10 +36,6 @@ impl Sink for WinDebugSink {
         #[cfg(windows)] // https://github.com/rust-lang/rust/issues/97976
         use std::os::windows::ffi::OsStrExt;
 
-        if !self.should_log(record.level()) {
-            return Ok(());
-        }
-
         let mut string_buf = StringBuf::new();
         self.common_impl
             .formatter
