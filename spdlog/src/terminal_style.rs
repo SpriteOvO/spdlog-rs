@@ -6,7 +6,7 @@
 
 use crate::Level;
 
-/// The terminal text color style.
+/// Text color for terminal rendering.
 #[allow(missing_docs)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Color {
@@ -52,9 +52,7 @@ impl Color {
     }
 }
 
-/// The terminal text style structure.
-///
-/// You can construct it easily with [`StyleBuilder`].
+/// Expresses how to render a piece of text in the terminal.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Style {
     color: Option<Color>,
@@ -83,7 +81,7 @@ impl Style {
         Style::builder().build()
     }
 
-    /// Constructs a [`StyleBuilder`].
+    /// Gets a [`StyleBuilder`].
     #[must_use]
     pub fn builder() -> StyleBuilder {
         StyleBuilder {
@@ -157,7 +155,7 @@ impl Style {
     }
 }
 
-/// The builder of [`Style`].
+#[allow(missing_docs)]
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct StyleBuilder {
     style: Style,
@@ -221,7 +219,7 @@ impl StyleBuilder {
     }
 }
 
-/// Represents style enable mode.
+/// Represents terminal style enabling mode.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum StyleMode {
     /// Always output style escape codes.

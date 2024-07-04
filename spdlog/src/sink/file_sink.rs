@@ -15,10 +15,16 @@ use crate::{
 
 /// A sink with a file as the target.
 ///
+/// It writes logs to a single file. If you want to automatically rotate into
+/// multiple files, see  [`RotatingFileSink`].
+///
+/// The file and directories will be created recursively if they do not exist.
+///
 /// # Examples
 ///
 /// See [./examples] directory.
 ///
+/// [`RotatingFileSink`]: crate::sink::RotatingFileSink
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct FileSink {
     common_impl: helper::CommonImpl,
@@ -26,7 +32,23 @@ pub struct FileSink {
 }
 
 impl FileSink {
-    /// Constructs a builder of `FileSink`.
+    /// Gets a builder of `FileSink` with default parameters:
+    ///
+    /// | Parameter       | Default Value           |
+    /// |-----------------|-------------------------|
+    /// | [level_filter]  | `All`                   |
+    /// | [formatter]     | `FullFormatter`         |
+    /// | [error_handler] | [default error handler] |
+    /// |                 |                         |
+    /// | [path]          | *must be specified*     |
+    /// | [truncate]      | `false`                 |
+    ///
+    /// [level_filter]: FileSinkBuilder::level_filter
+    /// [formatter]: FileSinkBuilder::formatter
+    /// [error_handler]: FileSinkBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
+    /// [path]: FileSinkBuilder::path
+    /// [truncate]: FileSinkBuilder::truncate
     #[must_use]
     pub fn builder() -> FileSinkBuilder<()> {
         FileSinkBuilder {
@@ -41,7 +63,7 @@ impl FileSink {
     /// If the parameter `truncate` is `true`, the existing contents of the file
     /// will be discarded.
     ///
-    /// # Errors
+    /// # Error
     ///
     /// If an error occurs opening the file, [`Error::CreateDirectory`] or
     /// [`Error::OpenFile`] will be returned.
@@ -95,36 +117,8 @@ impl Drop for FileSink {
 
 // --------------------------------------------------
 
-/// The builder of [`FileSink`].
+/// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
-/// # Examples
-///
-/// - Building a [`FileSink`].
-///
-///   ```no_run
-///   use spdlog::sink::FileSink;
-///  
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: FileSink = FileSink::builder()
-///       .path("/path/to/log_file") // required
-///       // .truncate(true) // optional, defaults to `false`
-///       .build()?;
-///   # Ok(()) }
-///   ```
-///
-/// - If any required parameters are missing, a compile-time error will be
-///   raised.
-///
-///   ```compile_fail,E0061
-///   use spdlog::sink::FileSink;
-///   
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: FileSink = FileSink::builder()
-///       // .path("/path/to/log_file") // required
-///       .truncate(true) // optional, defaults to `false`
-///       .build()?;
-///   # Ok(()) }
-///   ```
 pub struct FileSinkBuilder<ArgPath> {
     common_builder_impl: helper::CommonBuilderImpl,
     path: ArgPath,
@@ -147,9 +141,11 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
         }
     }
 
-    /// If it is true, the existing contents of the filewill be discarded.
+    /// Truncates the contents when opening an existing file.
     ///
-    /// This parameter is **optional**, and defaults to `false`.
+    /// If it is `true`, the existing contents of the file will be discarded.
+    ///
+    /// This parameter is **optional**.
     #[must_use]
     pub fn truncate(mut self, truncate: bool) -> Self {
         self.truncate = truncate;
@@ -163,7 +159,7 @@ impl FileSinkBuilder<()> {
     #[doc(hidden)]
     #[deprecated(note = "\n\n\
         builder compile-time error:\n\
-        - missing required field `path`\n\n\
+        - missing required parameter `path`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
 }
@@ -171,7 +167,7 @@ impl FileSinkBuilder<()> {
 impl FileSinkBuilder<PathBuf> {
     /// Builds a [`FileSink`].
     ///
-    /// # Errors
+    /// # Error
     ///
     /// If an error occurs opening the file, [`Error::CreateDirectory`] or
     /// [`Error::OpenFile`] will be returned.

@@ -1,4 +1,9 @@
 //! Provides error types.
+//!
+//! # Default error handler
+//!
+//! If a logger or sink does not have an error handler set up, a default error
+//! handler will be used, which will print the error to `stderr`.
 
 use std::{
     fmt::{self, Display},
@@ -13,94 +18,87 @@ use crate::utils::const_assert;
 #[cfg(feature = "multi-thread")]
 use crate::{sink::Task, RecordOwned};
 
-/// The error type of this crate.
+/// Contains most errors of this crate.
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// The variant returned by [`Formatter`]s when an error occurs in
-    /// formatting a record.
+    /// Returned by [`Formatter`]s when an error occurs in formatting a record.
     ///
     /// [`Formatter`]: crate::formatter::Formatter
     #[error("format record error: {0}")]
     FormatRecord(fmt::Error),
 
-    /// The variant returned by [`Sink`]s when an error occurs in writing a
-    /// record to the target.
+    /// Returned by [`Sink`]s when an error occurs in writing a record to the
+    /// target.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("write record error: {0}")]
     WriteRecord(io::Error),
 
-    /// The variant returned by [`Sink`]s when an error occurs in flushing the
-    /// buffer.
+    /// Returned by [`Sink`]s when an error occurs in flushing the buffer.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("flush buffer error: {0}")]
     FlushBuffer(io::Error),
 
-    /// The variant returned by [`Sink`]s when an error occurs in creating a
-    /// directory.
+    /// Returned by [`Sink`]s when an error occurs in creating a directory.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("create directory error: {0}")]
     CreateDirectory(io::Error),
 
-    /// The variant returned by [`Sink`]s when an error occurs in opening a
-    /// file.
+    /// Returned by [`Sink`]s when an error occurs in opening a file.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("open file error: {0}")]
     OpenFile(io::Error),
 
-    /// The variant returned by [`Sink`]s when an error occurs in querying the
-    /// metadata of a file.
+    /// Returned by [`Sink`]s when an error occurs in querying the metadata of a
+    /// file.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("query file metadata error: {0}")]
     QueryFileMetadata(io::Error),
 
-    /// The variant returned by [`Sink`]s when an error occurs in renaming a
-    /// file.
+    /// Returned by [`Sink`]s when an error occurs in renaming a file.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("rename file error: {0}")]
     RenameFile(io::Error),
 
-    /// The variant returned by [`Sink`]s when an error occurs in removing a
-    /// file.
+    /// Returned by [`Sink`]s when an error occurs in removing a file.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("remove file error: {0}")]
     RemoveFile(io::Error),
 
-    /// The variant returned by [`from_str`] when the string doesn't match any
-    /// of the log levels.
+    /// Returned by [`from_str`] when the string doesn't match any of the log
+    /// levels.
     ///
     /// [`from_str`]: std::str::FromStr::from_str
     #[error("attempted to convert a string that doesn't match an existing log level: {0}")]
     ParseLevel(String),
 
-    /// The variant returned if an invalid argument was passed in.
+    /// Returned if an invalid argument was passed in.
     #[error("invalid argument {0}")]
     InvalidArgument(#[from] InvalidArgumentError),
 
-    /// The variant returned by [`Sink`]s when an error occurs in sending to the
-    /// channel.
+    /// Returned by [`Sink`]s when an error occurs in sending to the channel.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[cfg(feature = "multi-thread")]
     #[error("failed to send message to channel: {0}")]
     SendToChannel(SendToChannelError, SendToChannelErrorDropped),
 
-    /// The variant returned by [`runtime_pattern!`] when the
-    /// pattern is failed to be built at runtime.
+    /// Returned by [`runtime_pattern!`] when the pattern is failed to be built
+    /// at runtime.
     ///
     /// [`runtime_pattern!`]: crate::formatter::runtime_pattern
     #[cfg(feature = "runtime-pattern")]
     #[error("failed to build pattern at runtime: {0}")]
     BuildPattern(BuildPatternError),
 
-    /// This variant returned when multiple errors occurred.
+    /// Returned when multiple errors occurred.
     #[error("{0:?}")]
     Multiple(Vec<Error>),
 
@@ -109,7 +107,7 @@ pub enum Error {
     __ForInternalTestsUseOnly(i32),
 }
 
-/// This error type contains a variety of possible invalid arguments.
+/// Indicates that an invalid parameter was specified.
 #[derive(Error, Debug)]
 #[non_exhaustive]
 pub enum InvalidArgumentError {
@@ -135,7 +133,7 @@ pub enum InvalidArgumentError {
     ThreadPoolCapacity(String),
 }
 
-/// This error indicates that an invalid logger name was set.
+/// Indicates that an invalid logger name was set.
 ///
 /// See the documentation of [`LoggerBuilder::name`] for the name requirements.
 ///
@@ -164,7 +162,7 @@ impl Display for SetLoggerNameError {
     }
 }
 
-/// The more detailed error type of sending to channel.
+/// Indicates that an error occurred while sending to channel.
 #[cfg(feature = "multi-thread")]
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -249,8 +247,7 @@ impl SendToChannelErrorDropped {
     }
 }
 
-/// This error indicates that an error occurred while building a pattern at
-/// compile-time.
+/// Indicates that an error occurred while building a pattern at compile-time.
 #[cfg(feature = "runtime-pattern")]
 #[derive(Error, Debug)]
 #[error("{0}")]

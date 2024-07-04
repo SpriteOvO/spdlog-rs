@@ -17,7 +17,7 @@ type PatternCreator = Box<dyn Fn() -> Box<dyn Pattern>>;
 type PatternRegistry = GenericPatternRegistry<PatternCreator>;
 type PatternKind = GenericPatternKind<PatternCreator>;
 
-/// Build a pattern from a template string at runtime.
+/// Builds a pattern from a template string at runtime.
 ///
 /// It accepts inputs in the form:
 ///
@@ -58,7 +58,7 @@ type PatternKind = GenericPatternKind<PatternCreator>;
 pub use spdlog_macros::runtime_pattern;
 
 #[rustfmt::skip] // rustfmt currently breaks some empty lines if `#[doc = include_str!("xxx")]` exists
-/// A runtime pattern built via [`runtime_pattern!`] macro.
+/// Runtime pattern built via [`runtime_pattern!`] macro.
 ///
 /// ## Basic Usage
 /// 

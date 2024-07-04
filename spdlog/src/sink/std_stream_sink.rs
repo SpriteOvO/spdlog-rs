@@ -80,7 +80,8 @@ impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 
 /// A sink with a std stream as the target.
 ///
-/// It writes styled text or plain text according to the given [`StyleMode`].
+/// It writes styled text or plain text according to the given [`StyleMode`] and
+/// the current terminal environment.
 ///
 /// Note that this sink always flushes the buffer once with each logging.
 pub struct StdStreamSink {
@@ -91,7 +92,23 @@ pub struct StdStreamSink {
 }
 
 impl StdStreamSink {
-    /// Constructs a builder of `StdStreamSink`.
+    /// Gets a builder of `StdStreamSink` with default parameters:
+    ///
+    /// | Parameter         | Default Value           |
+    /// |-------------------|-------------------------|
+    /// | [level_filter]    | `All`                   |
+    /// | [formatter]       | `FullFormatter`         |
+    /// | [error_handler]   | [default error handler] |
+    /// |                   |                         |
+    /// | [std_stream]      | *must be specified*     |
+    /// | [style_mode]      | `Auto`                  |
+    ///
+    /// [level_filter]: StdStreamSinkBuilder::level_filter
+    /// [formatter]: StdStreamSinkBuilder::formatter
+    /// [error_handler]: StdStreamSinkBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
+    /// [std_stream]: StdStreamSinkBuilder::std_stream
+    /// [style_mode]: StdStreamSinkBuilder::style_mode
     #[must_use]
     pub fn builder() -> StdStreamSinkBuilder<()> {
         StdStreamSinkBuilder {
@@ -190,44 +207,8 @@ impl Sink for StdStreamSink {
 
 // --------------------------------------------------
 
-/// The builder of [`StdStreamSink`].
+/// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
-/// # Examples
-///
-/// - Building a [`StdStreamSink`].
-///
-///   ```
-///   use spdlog::{
-///       sink::{StdStreamSink, StdStream},
-///       terminal_style::StyleMode
-///   };
-///
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: StdStreamSink = StdStreamSink::builder()
-///       .std_stream(StdStream::Stdout) // required
-///       /* .style_mode(StyleMode::Never) // optional, defaults to
-///                                        // `StyleMode::Auto` */
-///       .build()?;
-///   # Ok(()) }
-///   ```
-///
-/// - If any required parameters are missing, a compile-time error will be
-///   raised.
-///
-///   ```compile_fail,E0061
-///   use spdlog::{
-///       sink::{StdStreamSink, StdStream},
-///       terminal_style::StyleMode
-///   };
-///
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: StdStreamSink = StdStreamSink::builder()
-///       // .std_stream(StdStream::Stdout) // required
-///       .style_mode(StyleMode::Never) /* optional, defaults to
-///                                      * `StyleMode::Auto` */
-///       .build()?;
-///   # Ok(()) }
-///   ```
 pub struct StdStreamSinkBuilder<ArgSS> {
     common_builder_impl: helper::CommonBuilderImpl,
     std_stream: ArgSS,
@@ -249,7 +230,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
 
     /// Specifies the style mode.
     ///
-    /// This parameter is **optional**, and defaults to [`StyleMode::Auto`].
+    /// This parameter is **optional**.
     #[must_use]
     pub fn style_mode(mut self, style_mode: StyleMode) -> Self {
         self.style_mode = style_mode;
@@ -263,7 +244,7 @@ impl StdStreamSinkBuilder<()> {
     #[doc(hidden)]
     #[deprecated(note = "\n\n\
         builder compile-time error:\n\
-        - missing required field `std_stream`\n\n\
+        - missing required parameter `std_stream`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
 }

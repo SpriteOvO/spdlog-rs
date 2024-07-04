@@ -11,7 +11,18 @@ pub struct WinDebugSink {
 }
 
 impl WinDebugSink {
-    /// Constructs a builder of `WinDebugSink`.
+    /// Gets a builder of `WinDebugSink` with default parameters:
+    ///
+    /// | Parameter       | Default Value           |
+    /// |-----------------|-------------------------|
+    /// | [level_filter]  | `All`                   |
+    /// | [formatter]     | `FullFormatter`         |
+    /// | [error_handler] | [default error handler] |
+    ///
+    /// [level_filter]: WinDebugSinkBuilder::level_filter
+    /// [formatter]: WinDebugSinkBuilder::formatter
+    /// [error_handler]: WinDebugSinkBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
     #[must_use]
     pub fn builder() -> WinDebugSinkBuilder {
         WinDebugSinkBuilder {
@@ -60,21 +71,7 @@ impl Sink for WinDebugSink {
     helper::common_impl!(@Sink: common_impl);
 }
 
-/// The builder of [`WinDebugSink`].
-///
-/// # Examples
-///
-/// - Building a [`WinDebugSink`].
-///
-///   ```
-///   use spdlog::{prelude::*, sink::WinDebugSink};
-///  
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: WinDebugSink = WinDebugSink::builder()
-///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
-///       .build()?;
-///   # Ok(()) }
-///   ```
+#[allow(missing_docs)]
 pub struct WinDebugSinkBuilder {
     common_builder_impl: helper::CommonBuilderImpl,
 }

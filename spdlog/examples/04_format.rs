@@ -1,5 +1,5 @@
 fn main() {
-    spdlog::info!("default format by `FullFormatter`");
+    spdlog::info!("the default formatter for most sinks is `FullFormatter`");
 
     // There are two ways to set up custom formats
 
@@ -17,10 +17,8 @@ fn use_pattern_formatter() {
     };
 
     // Building a pattern formatter with a pattern.
-    //
     // The `pattern!` macro will parse the template string at compile-time.
-    // See the documentation of `pattern!` macro for more usage.
-    let new_formatter: Box<PatternFormatter<_>> = Box::new(PatternFormatter::new(pattern!(
+    let new_formatter = Box::new(PatternFormatter::new(pattern!(
         "{datetime} - {^{level}} - {payload}{eol}"
     )));
 
@@ -46,12 +44,12 @@ fn impl_manually() {
 
     impl Formatter for MyFormatter {
         fn format(&self, record: &Record, dest: &mut StringBuf) -> spdlog::Result<FmtExtraInfo> {
-            let style_range_begin: usize = dest.len();
+            let style_range_begin = dest.len();
 
             dest.write_str(&record.level().as_str().to_ascii_uppercase())
                 .map_err(spdlog::Error::FormatRecord)?;
 
-            let style_range_end: usize = dest.len();
+            let style_range_end = dest.len();
 
             writeln!(dest, " {}", record.payload()).map_err(spdlog::Error::FormatRecord)?;
 
@@ -66,7 +64,7 @@ fn impl_manually() {
     }
 
     // Building a custom formatter.
-    let new_formatter: Box<MyFormatter> = Box::default();
+    let new_formatter = Box::new(MyFormatter);
 
     // Setting the new formatter for each sink of the default logger.
     for sink in spdlog::default_logger().sinks() {

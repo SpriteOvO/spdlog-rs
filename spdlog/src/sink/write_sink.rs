@@ -36,7 +36,21 @@ impl<W> WriteSink<W>
 where
     W: Write + Send,
 {
-    /// Constructs a builder of `WriteSink`.
+    /// Gets a builder of `WriteSink` with default parameters:
+    ///
+    /// | Parameter         | Default Value           |
+    /// |-------------------|-------------------------|
+    /// | [level_filter]    | `All`                   |
+    /// | [formatter]       | `FullFormatter`         |
+    /// | [error_handler]   | [default error handler] |
+    /// |                   |                         |
+    /// | [target]          | *must be specified*     |
+    ///
+    /// [level_filter]: WriteSinkBuilder::level_filter
+    /// [formatter]: WriteSinkBuilder::formatter
+    /// [error_handler]: WriteSinkBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
+    /// [target]: WriteSinkBuilder::target
     #[must_use]
     pub fn builder() -> WriteSinkBuilder<W, ()> {
         WriteSinkBuilder {
@@ -117,37 +131,8 @@ where
     }
 }
 
-/// The builder of [`WriteSink`].
+/// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
-/// # Examples
-///
-/// - Building a [`WriteSink`].
-///
-///   ```
-///   use spdlog::{prelude::*, sink::WriteSink};
-///  
-///   # fn main() -> Result<(), spdlog::Error> {
-///   # let target = Vec::new();
-///   let sink: WriteSink<_> = WriteSink::builder()
-///       .target(target) // required
-///       // .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
-///       .build()?;
-///   # Ok(()) }
-///   ```
-///
-/// - If any required parameters are missing, a compile-time error will be
-///   raised.
-///
-///   ```compile_fail,E0061
-///   use spdlog::{prelude::*, sink::WriteSink};
-///  
-///   # fn main() -> Result<(), spdlog::Error> {
-///   let sink: WriteSink<_> = WriteSink::builder()
-///       // .target(target) // required
-///       .level_filter(LevelFilter::MoreSevere(Level::Info)) // optional
-///       .build()?;
-///   # Ok(()) }
-///   ```
 pub struct WriteSinkBuilder<W, ArgW> {
     common_builder_impl: helper::CommonBuilderImpl,
     target: Option<W>,
@@ -181,7 +166,7 @@ where
     #[doc(hidden)]
     #[deprecated(note = "\n\n\
         builder compile-time error:\n\
-        - missing required field `target`\n\n\
+        - missing required parameter `target`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
 }
