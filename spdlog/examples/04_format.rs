@@ -57,10 +57,6 @@ fn impl_manually() {
                 .style_range(style_range_begin..style_range_end)
                 .build())
         }
-
-        fn clone_box(&self) -> Box<dyn Formatter> {
-            Box::new(self.clone())
-        }
     }
 
     // Building a custom formatter.

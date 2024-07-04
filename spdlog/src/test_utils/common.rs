@@ -199,10 +199,6 @@ impl Formatter for NoModFormatter {
 
         Ok(FmtExtraInfo::new())
     }
-
-    fn clone_box(&self) -> Box<dyn Formatter> {
-        Box::new(self.clone())
-    }
 }
 
 impl Default for NoModFormatter {

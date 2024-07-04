@@ -129,7 +129,7 @@ impl Sink for AsyncPoolSink {
     /// internal sinks.
     fn set_formatter(&self, formatter: Box<dyn Formatter>) {
         for sink in &self.backend.sinks {
-            sink.set_formatter(formatter.clone_box())
+            sink.set_formatter(formatter.clone())
         }
     }
 

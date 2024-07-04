@@ -59,6 +59,7 @@ mod pattern_formatter;
 
 use std::ops::Range;
 
+use dyn_clone::*;
 pub use full_formatter::*;
 #[cfg(any(
     all(target_os = "linux", feature = "native", feature = "libsystemd"),
@@ -77,14 +78,11 @@ use crate::{Record, Result, StringBuf};
 /// See the implementation of [`FullFormatter`] and [./examples] directory.
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
-pub trait Formatter: Send + Sync {
+pub trait Formatter: Send + Sync + DynClone {
     /// Formats a log record.
     fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo>;
-
-    /// Clones self into a boxed trait object.
-    #[must_use]
-    fn clone_box(&self) -> Box<dyn Formatter>;
 }
+clone_trait_object!(Formatter);
 
 /// Extra information for formatted text.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]

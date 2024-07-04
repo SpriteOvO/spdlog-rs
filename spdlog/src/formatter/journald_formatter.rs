@@ -59,10 +59,6 @@ impl Formatter for JournaldFormatter {
     fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
         self.format_impl(record, dest).map_err(Error::FormatRecord)
     }
-
-    fn clone_box(&self) -> Box<dyn Formatter> {
-        Box::new(self.clone())
-    }
 }
 
 impl Default for JournaldFormatter {
