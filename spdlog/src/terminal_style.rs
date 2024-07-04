@@ -4,6 +4,8 @@
 //!
 //! [ANSI escape code]: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters
 
+use std::io;
+
 use crate::Level;
 
 /// Text color for terminal rendering.
@@ -102,56 +104,54 @@ impl Style {
         }
     }
 
-    #[must_use]
-    pub(crate) fn code(&self) -> StyleCode {
+    pub(crate) fn write_start(&self, dest: &mut impl io::Write) -> io::Result<()> {
         if self.reset {
-            return StyleCode {
-                start: Style::reset_code(),
-                end: Style::reset_code(),
-            };
+            dest.write_all(Self::reset_code().as_bytes())?;
+            return Ok(());
         }
-
-        let mut res = String::new();
-
-        macro_rules! push_escape_code {
-            () => {};
-            ($field_name:ident: Option => $code:expr, $($tail:tt)*) => {
-                if let Some($field_name) = self.$field_name {
-                    res.push_str($code);
-                }
-                push_escape_code! { $($tail)* }
-            };
-            ($field_name:ident: bool => $code:expr, $($tail:tt)*) => {
-                if self.$field_name {
-                    res.push_str($code);
-                }
-                push_escape_code! { $($tail)* }
-            };
+        if let Some(color) = self.color {
+            dest.write_all(color.fg_code().as_bytes())?;
         }
-
-        push_escape_code! {
-            color: Option => color.fg_code(),
-            bg_color: Option => bg_color.bg_code(),
-            bold: bool => "\x1b[1m",
-            faint: bool => "\x1b[2m",
-            italic: bool => "\x1b[3m",
-            underline: bool => "\x1b[4m",
-            slow_blink: bool => "\x1b[5m",
-            rapid_blink: bool => "\x1b[6m",
-            invert: bool => "\x1b[7m",
-            conceal: bool => "\x1b[8m",
-            strikethrough: bool => "\x1b[9m",
+        if let Some(color) = self.bg_color {
+            dest.write_all(color.bg_code().as_bytes())?;
         }
-
-        StyleCode {
-            start: res,
-            end: Style::reset_code(),
+        if self.bold {
+            dest.write_all("\x1b[1m".as_bytes())?;
         }
+        if self.faint {
+            dest.write_all("\x1b[2m".as_bytes())?;
+        }
+        if self.italic {
+            dest.write_all("\x1b[3m".as_bytes())?;
+        }
+        if self.underline {
+            dest.write_all("\x1b[4m".as_bytes())?;
+        }
+        if self.slow_blink {
+            dest.write_all("\x1b[5m".as_bytes())?;
+        }
+        if self.rapid_blink {
+            dest.write_all("\x1b[6m".as_bytes())?;
+        }
+        if self.invert {
+            dest.write_all("\x1b[7m".as_bytes())?;
+        }
+        if self.conceal {
+            dest.write_all("\x1b[8m".as_bytes())?;
+        }
+        if self.strikethrough {
+            dest.write_all("\x1b[9m".as_bytes())?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn write_end(&self, dest: &mut impl io::Write) -> io::Result<()> {
+        dest.write_all(Self::reset_code().as_bytes())
     }
 
     #[must_use]
-    fn reset_code() -> String {
-        "\x1b[m".to_string()
+    fn reset_code() -> &'static str {
+        "\x1b[m"
     }
 }
 
@@ -247,12 +247,6 @@ impl LevelStyles {
     }
 }
 
-impl From<LevelStyles> for LevelStyleCodes {
-    fn from(level_styles: LevelStyles) -> LevelStyleCodes {
-        LevelStyleCodes(level_styles.0.map(|style| style.into()))
-    }
-}
-
 impl Default for LevelStyles {
     fn default() -> LevelStyles {
         LevelStyles([
@@ -263,42 +257,5 @@ impl Default for LevelStyles {
             Style::builder().color(Color::Cyan).build(),          // Debug
             Style::builder().color(Color::White).build(),         // Trace
         ])
-    }
-}
-
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub(crate) struct StyleCode {
-    /// The start escape code for rendering style text.
-    pub(crate) start: String,
-    /// The end escape code for rendering style text.
-    pub(crate) end: String,
-}
-
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub(crate) struct LevelStyleCodes([StyleCode; Level::count()]);
-
-impl LevelStyleCodes {
-    #[must_use]
-    pub(crate) fn code(&self, level: Level) -> &StyleCode {
-        &self.0[level as usize]
-    }
-
-    pub(crate) fn set_code<C>(&mut self, level: Level, code: C)
-    where
-        C: Into<StyleCode>,
-    {
-        self.0[level as usize] = code.into();
-    }
-}
-
-impl From<Style> for StyleCode {
-    fn from(style: Style) -> StyleCode {
-        style.code()
-    }
-}
-
-impl Default for LevelStyleCodes {
-    fn default() -> LevelStyleCodes {
-        LevelStyles::default().into()
     }
 }

@@ -9,7 +9,7 @@ use if_chain::if_chain;
 
 use crate::{
     sink::{helper, Sink},
-    terminal_style::{LevelStyleCodes, Style, StyleMode},
+    terminal_style::{LevelStyles, Style, StyleMode},
     Error, Level, Record, Result, StringBuf,
 };
 
@@ -88,7 +88,7 @@ pub struct StdStreamSink {
     common_impl: helper::CommonImpl,
     dest: StdStreamDest<io::Stdout, io::Stderr>,
     should_render_style: bool,
-    level_style_codes: LevelStyleCodes,
+    level_styles: LevelStyles,
 }
 
 impl StdStreamSink {
@@ -134,7 +134,7 @@ impl StdStreamSink {
 
     /// Sets the style of the specified log level.
     pub fn set_style(&mut self, level: Level, style: Style) {
-        self.level_style_codes.set_code(level, style);
+        self.level_styles.set_style(level, style);
     }
 
     /// Sets the style mode.
@@ -174,12 +174,12 @@ impl Sink for StdStreamSink {
                 if self.should_render_style;
                 if let Some(style_range) = extra_info.style_range();
                 then {
-                    let style_code = self.level_style_codes.code(record.level());
+                    let style = self.level_styles.style(record.level());
 
                     dest.write_all(string_buf[..style_range.start].as_bytes())?;
-                    dest.write_all(style_code.start.as_bytes())?;
+                    style.write_start(&mut dest)?;
                     dest.write_all(string_buf[style_range.start..style_range.end].as_bytes())?;
-                    dest.write_all(style_code.end.as_bytes())?;
+                    style.write_end(&mut dest)?;
                     dest.write_all(string_buf[style_range.end..].as_bytes())?;
                 } else {
                     dest.write_all(string_buf.as_bytes())?;
@@ -259,7 +259,7 @@ impl StdStreamSinkBuilder<StdStream> {
                 self.style_mode,
                 self.std_stream,
             ),
-            level_style_codes: LevelStyleCodes::default(),
+            level_styles: LevelStyles::default(),
         })
     }
 }
