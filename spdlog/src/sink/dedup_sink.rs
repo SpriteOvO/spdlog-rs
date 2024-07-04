@@ -129,6 +129,21 @@ impl DedupSink {
         }
     }
 
+    fn log_skipping_message(&self, state: &mut DedupSinkState) -> Result<()> {
+        if state.skipped_count != 0 {
+            let last_record = state.last_record.as_ref().unwrap().as_ref();
+            match state.skipped_count.cmp(&1) {
+                Ordering::Equal => self.log_record(&last_record)?,
+                Ordering::Greater => self.log_record(
+                    &last_record
+                        .replace_payload(format!("(skipped {} duplicates)", state.skipped_count)),
+                )?,
+                Ordering::Less => unreachable!(), // We have checked if `state.skipped_count != 0`
+            }
+        }
+        Ok(())
+    }
+
     fn log_record(&self, record: &Record) -> Result<()> {
         #[allow(clippy::manual_try_fold)] // https://github.com/rust-lang/rust-clippy/issues/11554
         self.sinks.iter().fold(Ok(()), |result, sink| {
@@ -152,18 +167,7 @@ impl Sink for DedupSink {
             state.skipped_count += 1;
             return Ok(());
         }
-
-        if state.skipped_count != 0 {
-            let last_record = state.last_record.as_ref().unwrap().as_ref();
-            match state.skipped_count.cmp(&1) {
-                Ordering::Equal => self.log_record(&last_record)?,
-                Ordering::Greater => self.log_record(
-                    &last_record
-                        .replace_payload(format!("(skipped {} duplicates)", state.skipped_count)),
-                )?,
-                Ordering::Less => unreachable!(), // We have checked if `state.skipped_count != 0`
-            }
-        }
+        self.log_skipping_message(&mut state)?;
 
         self.log_record(record)?;
         state.skipped_count = 0;
@@ -177,6 +181,17 @@ impl Sink for DedupSink {
     }
 
     helper::common_impl!(@Sink: common_impl);
+}
+
+impl Drop for DedupSink {
+    fn drop(&mut self) {
+        if let Err(err) = self.log_skipping_message(&mut self.state.lock_expect()) {
+            self.common_impl.non_returnable_error("DedupSink", err);
+        }
+        if let Err(err) = self.flush_sinks() {
+            self.common_impl.non_returnable_error("DedupSink", err);
+        }
+    }
 }
 
 /// #
@@ -329,5 +344,65 @@ mod tests {
 
         assert_eq!(records[12].payload(), "Meow~ Meow...");
         assert_eq!(records[12].level(), Level::Info);
+    }
+
+    #[test]
+    fn dedup_on_drop() {
+        {
+            let records = {
+                let test_sink = Arc::new(TestSink::new());
+                {
+                    let dedup_sink = Arc::new(
+                        DedupSink::builder()
+                            .skip_duration(Duration::from_secs(1))
+                            .sink(test_sink.clone())
+                            .build()
+                            .unwrap(),
+                    );
+                    let test = build_test_logger(|b| b.sink(dedup_sink));
+
+                    info!(logger: test, "I wish I was a cat");
+                    info!(logger: test, "I wish I was a cat");
+                }
+                test_sink.records()
+            };
+
+            assert_eq!(records.len(), 2);
+
+            assert_eq!(records[0].payload(), "I wish I was a cat");
+            assert_eq!(records[0].level(), Level::Info);
+
+            assert_eq!(records[1].payload(), "I wish I was a cat");
+            assert_eq!(records[1].level(), Level::Info);
+        }
+
+        {
+            let records = {
+                let test_sink = Arc::new(TestSink::new());
+                {
+                    let dedup_sink = Arc::new(
+                        DedupSink::builder()
+                            .skip_duration(Duration::from_secs(1))
+                            .sink(test_sink.clone())
+                            .build()
+                            .unwrap(),
+                    );
+                    let test = build_test_logger(|b| b.sink(dedup_sink));
+
+                    info!(logger: test, "I wish I was a cat");
+                    info!(logger: test, "I wish I was a cat");
+                    info!(logger: test, "I wish I was a cat");
+                }
+                test_sink.records()
+            };
+
+            assert_eq!(records.len(), 2);
+
+            assert_eq!(records[0].payload(), "I wish I was a cat");
+            assert_eq!(records[0].level(), Level::Info);
+
+            assert_eq!(records[1].payload(), "(skipped 2 duplicates)");
+            assert_eq!(records[1].level(), Level::Info);
+        }
     }
 }
