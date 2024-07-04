@@ -1,6 +1,5 @@
 use std::{
     cell::{RefCell, RefMut},
-    sync::Arc,
     time::SystemTime,
 };
 
@@ -36,25 +35,25 @@ struct CacheValues {
     is_leap_second: bool,
     full_second_str: RefCell<Option<String>>,
     year: RefCell<Option<i32>>,
-    year_str: RefCell<Option<Arc<String>>>,
-    year_short_str: RefCell<Option<Arc<String>>>,
+    year_str: RefCell<Option<String>>,
+    year_short_str: RefCell<Option<String>>,
     month: RefCell<Option<u32>>,
-    month_str: RefCell<Option<Arc<String>>>,
+    month_str: RefCell<Option<String>>,
     month_name: RefCell<Option<MultiName<&'static str>>>,
     weekday_name: RefCell<Option<MultiName<&'static str>>>,
     day: RefCell<Option<u32>>,
-    day_str: RefCell<Option<Arc<String>>>,
+    day_str: RefCell<Option<String>>,
     hour: RefCell<Option<u32>>,
-    hour_str: RefCell<Option<Arc<String>>>,
+    hour_str: RefCell<Option<String>>,
     hour12: RefCell<Option<(bool, u32)>>,
-    hour12_str: RefCell<Option<Arc<String>>>,
+    hour12_str: RefCell<Option<String>>,
     am_pm_str: RefCell<Option<&'static str>>,
     minute: RefCell<Option<u32>>,
-    minute_str: RefCell<Option<Arc<String>>>,
+    minute_str: RefCell<Option<String>>,
     second: RefCell<Option<u32>>,
-    second_str: RefCell<Option<Arc<String>>>,
-    tz_offset_str: RefCell<Option<Arc<String>>>,
-    unix_timestamp_str: RefCell<Option<Arc<String>>>,
+    second_str: RefCell<Option<String>>,
+    tz_offset_str: RefCell<Option<String>>,
+    unix_timestamp_str: RefCell<Option<String>>,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -119,12 +118,12 @@ macro_rules! impl_cache_fields_getter {
 macro_rules! impl_cache_fields_str_getter {
     ( $($field:ident => $str_field:ident : $fmt:literal),* $(,)? ) => {
         #[must_use]
-        $(pub(crate) fn $str_field(&self) -> Arc<String> {
-            self.cached
-                .$str_field
-                .borrow_mut()
-                .get_or_insert_with(|| Arc::new(format!($fmt, self.cached.local_time.$field())))
-                .clone()
+        $(pub(crate) fn $str_field(&self) -> RefMut<str> {
+            let mut value = self.cached.$str_field.borrow_mut();
+            if value.is_none() {
+                *value = Some(format!($fmt, self.cached.local_time.$field()));
+            }
+            RefMut::map(value, |value| value.as_deref_mut().unwrap())
         })*
     };
 }
@@ -262,12 +261,12 @@ impl<'a> TimeDate<'a> {
     }
 
     #[must_use]
-    pub(crate) fn hour12_str(&self) -> Arc<String> {
-        self.cached
-            .hour12_str
-            .borrow_mut()
-            .get_or_insert_with(|| Arc::new(format!("{:02}", self.hour12().1)))
-            .clone()
+    pub(crate) fn hour12_str(&self) -> RefMut<str> {
+        let mut value = self.cached.hour12_str.borrow_mut();
+        if value.is_none() {
+            *value = Some(format!("{:02}", self.hour12().1));
+        }
+        RefMut::map(value, |value| value.as_deref_mut().unwrap())
     }
 
     #[must_use]
@@ -282,32 +281,33 @@ impl<'a> TimeDate<'a> {
     }
 
     #[must_use]
-    pub(crate) fn year_short_str(&self) -> Arc<String> {
-        self.cached
-            .year_short_str
-            .borrow_mut()
-            .get_or_insert_with(|| Arc::new(format!("{:02}", self.year() % 100)))
-            .clone()
+    pub(crate) fn year_short_str(&self) -> RefMut<str> {
+        let mut value = self.cached.year_short_str.borrow_mut();
+        if value.is_none() {
+            *value = Some(format!("{:02}", self.year() % 100));
+        }
+        RefMut::map(value, |value| value.as_deref_mut().unwrap())
     }
 
     #[must_use]
-    pub(crate) fn tz_offset_str(&self) -> Arc<String> {
-        self.cached
-            .tz_offset_str
-            .borrow_mut()
-            .get_or_insert_with(|| {
+    pub(crate) fn tz_offset_str(&self) -> RefMut<str> {
+        let mut value = self.cached.tz_offset_str.borrow_mut();
+        if value.is_none() {
+            *value = {
                 let offset_secs = self.cached.local_time.offset().local_minus_utc();
                 let offset_secs_abs = offset_secs.abs();
 
                 let sign_str = if offset_secs >= 0 { "+" } else { "-" };
                 let offset_hours = offset_secs_abs / 3600;
                 let offset_minutes = offset_secs_abs % 3600 / 60;
-                Arc::new(format!(
+
+                Some(format!(
                     "{}{:02}:{:02}",
                     sign_str, offset_hours, offset_minutes
                 ))
-            })
-            .clone()
+            };
+        }
+        RefMut::map(value, |value| value.as_deref_mut().unwrap())
     }
 }
 
