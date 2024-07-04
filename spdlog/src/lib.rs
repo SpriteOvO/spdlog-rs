@@ -1,9 +1,25 @@
-//! A fast and combinable Rust logging crate.
+//! Fast, highly configurable Rust logging crate.
 //!
-//! It is inspired by the C++ logging library [spdlog], so if you are familiar
-//! with C++ `spdlog`, you should be able to get started with this crate quite
-//! easily. Of course, there are some differences, you can see [Significant
-//! differences from C++ spdlog](#significant-differences-from-c-spdlog) below.
+//! It is inspired by the C++ logging library [spdlog], and we share most of the
+//! same concepts. So if you are already familiar with C++ `spdlog`, you should
+//! be able to get started with this crate quite easily. Of course, there are
+//! some differences, you can see [Significant differences from C++
+//! spdlog](#significant-differences-from-c-spdlog) below.
+//!
+//! # Table of contents
+//!
+//! - [Getting started](#getting-started)
+//! - [Compile-time filters](#compile-time-filters)
+//! - [Crate feature flags](#crate-feature-flags)
+//! - [Supported Rust versions](#supported-rust-versions)
+//! - Overview of features
+//!   - [Configured via environment variable](init_env_level)
+//!   - [Compile-time and runtime pattern formatter]
+//!   - [Asynchronous support]
+//!   - [Compatible with log crate](LogCrateProxy)
+//!
+//! [Compile-time and runtime pattern formatter]: formatter/index.html#compile-time-and-runtime-pattern-formatter
+//! [Asynchronous support]: crate::sink::AsyncPoolSink
 //!
 //! # Getting started
 //!
@@ -13,118 +29,127 @@
 //! spdlog-rs = "0.3"
 //! ```
 //!
-//! `spdlog-rs` is out-of-the-box, it has a default logger, so users can output
-//! logs to terminal by default without any configuration. For more details
-//! about the default logger, please read the documentation of
-//! [`default_logger`].
-//!
-//! The basic use of this crate is through these logging macros: [`trace!`],
-//! [`debug!`], [`info!`], [`warn!`], [`error!`], [`critical!`] and [`log!`],
-//! where [`critical!`] represents the most severe log messages and [`trace!`]
-//! the most verbose. Each of these macros accept format strings similarly to
-//! [`println!`]. All log macros and common types are already under [`prelude`]
-//! module.
-//!
-//! [`Logger`] and [`sink`] are the most important components of `spdlog-rs`.
-//! Make sure to read their documentation. In short, a logger contains a
-//! combination of sinks, and sinks implement writing log messages to actual
-//! targets.
-//!
-//! ## Examples
+//! `spdlog-rs` is highly configurable, and also works out-of-the-box for
+//! lightweight projects. By default, logs will be output to `stdout` and
+//! `stderr`.
 //!
 //! ```
 //! use spdlog::prelude::*;
 //!
-//! info!("hello world!");
-//! warn!("3 + 2 = {}", 5);
+//! // Non-severe logs (trace, debug) are ignored by default.
+//! // If you wish to enable all logs, call
+//! spdlog::default_logger().set_level_filter(spdlog::LevelFilter::All);
+//!
+//! info!("hello, world!");
 //! error!("oops!");
+//! debug!("3 + 2 = {}", 5);
 //! ```
 //!
 //! Output:
 //!
 //! <pre>
-//! [2022-11-02 09:23:12.263] [<font color="#11D116">info</font>] hello, world!
-//! [2022-11-02 09:23:12.263] [<font color="#FDBC4B">warn</font>] 3 + 2 = 5
-//! [2022-11-02 09:23:12.263] [<font color="#C0392B">error</font>] oops!
+//! [2022-11-02 09:23:12.263] [<font color="#0DBC79">info</font>] hello, world!
+//! [2022-11-02 09:23:12.263] [<font color="#F35E5E">error</font>] oops!
+//! [2022-11-02 09:23:12.263] [<font color="#11A8CD">debug</font>] 3 + 2 = 5
 //! </pre>
 //!
-//! If you want to learn more advanced features such as *asynchronous sink*,
-//! *compile-time pattern formatter*, etc., please see [./examples]
-//! directory.
+//! The basic use is through these logging macros: [`trace!`], [`debug!`],
+//! [`info!`], [`warn!`], [`error!`], [`critical!`], where `critical!`
+//! represents the most severe logs and `trace!` the most verbose. Each of these
+//! macros accept format strings similarly to [`println!`]. All log macros
+//! and common types are already under [`prelude`] module.
 //!
-//! ## Help
+//! ## Sink
 //!
-//! If you have any questions or need help while using this crate, feel free to
-//! [open a discussion]. For feature requests or bug reports, please [open an
-//! issue].
+//! Many real programs want more than just displaying logs to the terminal.
 //!
-//! # Overview of features
-//!
-//! - [Compatible with log crate](#compatible-with-log-crate)
-//! - [Asynchronous support](#asynchronous-support)
-//! - [Configured via environment
-//!   variable](#configured-via-environment-variable)
-//! - [Compile-time and runtime pattern
-//!   formatter](#compile-time-and-runtime-pattern-formatter)
-//! - [Compile-time filters](#compile-time-filters)
-//!
-//! # Compatible with log crate
-//!
-//! This is optional and is controlled by crate feature `log`.
-//!
-//! The compatibility with [log crate] is mainly through a proxy layer
-//! [`LogCrateProxy`]. Call [`init_log_crate_proxy`] function to enable the
-//! proxy layer, and all logs from [log crate] will be handled by it. You can
-//! use it to output [log crate] logs of upstream dependencies or to quickly
-//! migrate from [log crate] for your projects.
-//!
-//! [`LogCrateProxy`] forwards all logs from [log crate] to [`default_logger`]
-//! by default, you can call [`log_crate_proxy()`] to get a reference to this
-//! proxy to configure it.
-//!
-//! See [./examples] directory for examples.
-//!
-//! # Asynchronous support
-//!
-//! See [Asynchronous combined sink].
-//!
-//! # Configured via environment variable
-//!
-//! Users can optionally configure the level filter of loggers via the
-//! environment variable `SPDLOG_RS_LEVEL`.
-//!
-//! For more details, see the documentation of [`init_env_level`].
-//!
-//! # Compile-time and runtime pattern formatter
-//!
-//! spdlog-rs supports formatting your log records according to a pattern
-//! string. There are 2 ways to construct a pattern:
-//!
-//! - Macro [`pattern!`]: Builds a pattern at compile-time.
-//! - Macro [`runtime_pattern!`]: Builds a pattern at runtime.
+//! [`Sink`]s are the objects that actually write logs to their targets. If you
+//! want logs to be written to files as well, [`FileSink`] is what you need.
 //!
 //! ```
-//! use spdlog::formatter::{pattern, PatternFormatter};
-//! #[cfg(feature = "runtime-pattern")]
-//! use spdlog::formatter::runtime_pattern;
-//! # use spdlog::sink::{Sink, WriteSink};
+//! # use std::sync::Arc;
+//! use spdlog::{prelude::*, sink::FileSink};
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! // This pattern is built at compile-time, the template accepts only a literal string.
-//! let pattern = pattern!("[{date} {time}.{millisecond}] [{level}] {payload}{eol}");
+//! # fn main() -> spdlog::Result<()> {
+//! let path = "path/to/somewhere.log";
 //!
-//! #[cfg(feature = "runtime-pattern")]
-//! {
-//!     // This pattern is built at runtime, the template accepts a runtime string.
-//!     let input = "[{date} {time}.{millisecond}] [{level}] {payload}{eol}";
-//!     let pattern = runtime_pattern!(input)?;
-//! }
+//! # let path = concat!(env!("OUT_DIR"), "/doctest-out/crate-1.txt");
+//! let new_logger = spdlog::default_logger().fork_with(|new| {
+//!     let file_sink = Arc::new(FileSink::builder().path(path).build()?);
+//!     new.sinks_mut().push(file_sink);
+//!     Ok(())
+//! })?;
+//! # let backup = spdlog::default_logger();
+//! spdlog::set_default_logger(new_logger);
 //!
-//! // Use the compile-time or runtime pattern.
-//! # let your_sink = WriteSink::builder().target(vec![]).build()?;
-//! your_sink.set_formatter(Box::new(PatternFormatter::new(pattern)));
+//! info!("from now on, logs will be written to both stdout/stderr and the file");
+//! # spdlog::set_default_logger(backup);
 //! # Ok(()) }
 //! ```
+//!
+//! Take a look at [`sink`] module for more interesting sinks, such as
+//! [`RotatingFileSink`] that automatically rotates files by time point or file
+//! size, and [`AsyncPoolSink`] that outputs logs asynchronously.
+//!
+//! ## Logger
+//!
+//! A complex program may consist of many separated components.
+//!
+//! [`Logger`] manages, controls and manipulates multiple sinks within it. In
+//! addition to having the global [`default_logger`], more loggers are allowed
+//! to be configured, stored and used independently.
+//!
+//! Logging macros provide an optional parameter `logger`. If it is specified,
+//! logs will be processed by the specified logger instead of the global default
+//! logger.
+//!
+//! And benefiting from the fact that a logger uses `Arc` to store sinks, a sink
+//! can be set and used by more than one logger, and you can combine them as you
+//! like.
+//!
+//! ```
+//! use spdlog::prelude::*;
+//! # use spdlog::Result;
+//!
+//! struct AppDatabase {
+//!     logger: Logger,
+//!     // Database info...
+//! }
+//!
+//! impl AppDatabase {
+//!     fn new() -> Result<Self> {
+//!         let logger = Logger::builder()
+//!             .name("database")
+//!             // .sink( ... )
+//!             // .sink( ... )
+//!             // .level_filter( ... )
+//!             // ...
+//!             .build()?;
+//!         Ok(Self { logger, /* Database info... */ })
+//!     }
+//!
+//!     fn query<T>(&self) -> T {
+//!         let data = /* Query from the database */
+//!         # 114514;
+//!         trace!(logger: self.logger, "queried data {}", data);
+//!         data
+//!         # ; unreachable!()
+//!     }
+//! }
+//!
+//! struct AppNetwork { /* ... */ }
+//! struct AppAuth { /* ... */ }
+//! struct AppBlahBlah { /* ... */ }
+//! ```
+//!
+//! ## Learn more
+//!
+//! Directory [./examples] contains more advanced usage examples. You can learn
+//! them along with their documentation.
+//!
+//! If you have any trouble while using this crate, please don't hesitate to
+//! [open a discussion] for help. For feature requests or bug reports, please
+//! [open an issue].
 //!
 //! # Compile-time filters
 //!
@@ -156,34 +181,33 @@
 //! debug, and info level logs in release builds with
 //! `features = ["level-debug", "release-level-warn"]`.
 //!
-//! # Crate Feature Flags
+//! # Crate feature flags
 //!
 //! The following crate feature flags are available in addition to the filters.
 //! They are configured in your `Cargo.toml`.
 //!
 //!  - `source-location` allows recording the source location of each log. When
-//!    it is enabled the default formatter [`FullFormatter`] will always format
-//!    the source location information, and some formatting patterns related to
-//!    source location will be available. If you do not want the source location
+//!    it is enabled, the source location will be present in [`Record`] and
+//!    visible to [`Formatter`], and formatting patterns related to source
+//!    location will be available. If you do not want the source location
 //!    information to appear in your binary file, you may prefer not to enable
 //!    it.
 //!
 //!  - `flexible-string` improves the performance of formatting records, however
-//!    contains unsafe code. For more details, see the documentation of
+//!    it contains unsafe code. For more details, see the documentation of
 //!    [`StringBuf`].
 //!
-//!  - `log` see [Compatible with log crate](#compatible-with-log-crate) above.
+//!  - `log` enables the compatibility with [log crate].
 //!
 //!  - `native` enables platform-specific components, such as
-//!    [`sink::WinDebugSink`], [`sink::JournaldSink`], etc. Note If the
-//!    component requires additional system dependencies, then more granular
-//!    features need to be enabled as well. See the documentation of the
-//!    component for these details.
+//!    [`sink::WinDebugSink`] for Windows, [`sink::JournaldSink`] for Linux,
+//!    etc. Note If the component requires additional system dependencies, then
+//!    more granular features need to be enabled as well.
 //!
 //!  - `runtime-pattern` enables the ability to build patterns with runtime
 //!    template string. See [`RuntimePattern`] for more details.
 //!
-//! # Supported Rust Versions
+//! # Supported Rust versions
 //!
 //! <!--
 //! When updating this, also update:
@@ -235,20 +259,17 @@
 //! [^2]: C++ `spdlog` is also planned to remove it in v2.x.
 //!
 //! [spdlog]: https://github.com/gabime/spdlog
+//! [`FileSink`]: crate::sink::FileSink
+//! [`RotatingFileSink`]: crate::sink::RotatingFileSink
+//! [`AsyncPoolSink`]: crate::sink::AsyncPoolSink
 //! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 //! [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 //! [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
 //! [log crate]: https://crates.io/crates/log
-//! [Asynchronous combined sink]: sink/index.html#asynchronous-combined-sink
-//! [`pattern!`]: crate::formatter::pattern
-//! [`runtime_pattern!`]: crate::formatter::runtime_pattern
-//! [`RuntimePattern`]: crate::formatter::RuntimePattern
-//! [`FullFormatter`]: crate::formatter::FullFormatter
-//! [`RotatingFileSink`]: crate::sink::RotatingFileSink
 //! [`Formatter`]: crate::formatter::Formatter
+//! [`RuntimePattern`]: crate::formatter::RuntimePattern
 //! [`RotationPolicy::Daily`]: crate::sink::RotationPolicy::Daily
 //! [`RotationPolicy::Hourly`]: crate::sink::RotationPolicy::Hourly
-//! [`AsyncPoolSink`]: crate::sink::AsyncPoolSink
 
 #![allow(unexpected_cfgs)]
 // Credits: https://blog.wnut.pw/2020/03/24/documentation-and-unstable-rustdoc-features/
@@ -385,20 +406,20 @@ fn default_logger_ref() -> &'static ArcSwap<Logger> {
     })
 }
 
-/// Returns an [`Arc`] default logger.
+/// Returns the global default logger.
 ///
 /// This default logger will be used by logging macros, if the `logger`
 /// parameter is not specified when logging macros are called.
 ///
 /// If the default logger has not been replaced, the default:
 ///
-///  - Contains a sink [`StdStreamSink`], writing logs on [`Level::Info`] and
+///  - contains a sink [`StdStreamSink`], writing logs on [`Level::Info`] and
 ///    more verbose levels to `stdout`.
 ///
-///  - Contains a sink [`StdStreamSink`], writing logs on [`Level::Warn`] level
+///  - contains a sink [`StdStreamSink`], writing logs on [`Level::Warn`] level
 ///    and more severe levels to `stderr`.
 ///
-///  - Level filter ignores logs on [`Level::Debug`] and more verbose levels.
+///  - level filter ignores logs on [`Level::Debug`] and more verbose levels.
 ///
 ///    However, if you want to enable logging for all levels:
 ///    ```
@@ -416,7 +437,7 @@ fn default_logger_ref() -> &'static ArcSwap<Logger> {
 /// # use std::sync::Arc;
 /// use spdlog::prelude::*;
 ///
-/// let default_logger: Arc<Logger> = spdlog::default_logger();
+/// let default_logger = spdlog::default_logger();
 ///
 /// default_logger.set_level_filter(LevelFilter::All);
 ///
@@ -433,8 +454,8 @@ pub fn default_logger() -> Arc<Logger> {
     default_logger_ref().load().clone()
 }
 
-/// Sets the given logger as the default logger, and returns the old default
-/// logger.
+/// Sets the given logger as the new global default logger, and returns the old
+/// one.
 ///
 /// # Examples
 ///
@@ -442,8 +463,9 @@ pub fn default_logger() -> Arc<Logger> {
 /// # use std::sync::Arc;
 /// use spdlog::prelude::*;
 ///
-/// # let new_logger = spdlog::default_logger();
-/// let old_logger: Arc<Logger> = spdlog::swap_default_logger(new_logger);
+/// let new_logger: Arc<Logger> = /* ... */
+/// # spdlog::default_logger();
+/// let old_logger = spdlog::swap_default_logger(new_logger);
 ///
 /// info!("this log will be handled by `new_logger`");
 /// info!(logger: old_logger, "this log will be handled by `old_logger`");
@@ -452,7 +474,7 @@ pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
     default_logger_ref().swap(logger)
 }
 
-/// Sets the given logger as the default logger.
+/// Sets the given logger as the new global default logger.
 ///
 /// # Examples
 ///
@@ -469,7 +491,7 @@ pub fn set_default_logger(logger: Arc<Logger>) {
     swap_default_logger(logger);
 }
 
-/// Initialize environment variable level filters from environment variable
+/// Initializes environment variable level filters from environment variable
 /// `SPDLOG_RS_LEVEL`.
 ///
 /// Returns whether the level in the environment variable was applied if there
@@ -622,7 +644,7 @@ pub fn init_env_level() -> StdResult<bool, EnvLevelError> {
     init_env_level_from("SPDLOG_RS_LEVEL")
 }
 
-/// Initialize environment variable level filters from a specified environment
+/// Initializes environment variable level filters from a specified environment
 /// variable.
 ///
 /// For more information, see [`init_env_level`].
@@ -668,27 +690,25 @@ pub fn init_env_level_from<K: AsRef<OsStr>>(env_key: K) -> StdResult<bool, EnvLe
     Ok(true)
 }
 
-/// Initialize log crate proxy.
+/// Initializes the log crate proxy.
 ///
 /// This function calls [`log::set_logger`] to set up a [`LogCrateProxy`] and
 /// all logs from log crate will be forwarded to `spdlog-rs`'s logger.
 ///
-/// Users should call this function only once. Get the proxy to configure by
+/// Users should call this function only once, and then configure the proxy by
 /// calling [`log_crate_proxy()`].
 ///
 /// Note that the `log` crate uses a different log level filter and by default
 /// it rejects all log messages. To log messages via the `log` crate, you have
 /// to call [`log::set_max_level`] manually before logging. For more
-/// information, please read the documentation of [`log::set_max_level`].
-///
-/// For more details, please read documentation of [`log::set_logger`] and
-/// [`LogCrateProxy`].
+/// information, please read the upstream documentation of
+/// [`log::set_max_level`].
 #[cfg(feature = "log")]
 pub fn init_log_crate_proxy() -> StdResult<(), re_export::log::SetLoggerError> {
     log::set_logger(log_crate_proxy())
 }
 
-/// Returns a [`LogCrateProxy`].
+/// Returns the global instance of log crate proxy.
 #[cfg(feature = "log")]
 #[must_use]
 pub fn log_crate_proxy() -> &'static LogCrateProxy {

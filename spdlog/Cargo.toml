@@ -147,8 +147,8 @@ name = "ftlog_3_level_off"
 path = "benches/ftlog/3_level_off.rs"
 
 [[example]]
-name = "06_compatible_with_log_crate"
+name = "06_log_crate"
 required-features = ["log"]
 [[example]]
-name = "07_async_pool_sink"
+name = "07_async"
 required-features = ["multi-thread"]

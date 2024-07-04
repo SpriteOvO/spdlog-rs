@@ -10,28 +10,28 @@ use crate::{
 };
 
 #[rustfmt::skip]
-/// A full info log records formatter.
+/// Full information logs formatter.
 ///
-/// It is the default formatter for sinks.
+/// It is the default formatter for most sinks.
 ///
 /// Log messages formatted by it look like:
 ///
 ///  - Default:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [<font color="#11D116">info</font>] hello, world!
+///    [2022-11-02 09:23:12.263] [<font color="#0DBC79">info</font>] hello, world!
 ///    </pre>
 ///
 ///  - If the logger has a name:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#11D116">info</font>] hello, world!
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] hello, world!
 ///    </pre>
 /// 
 ///  - If crate feature `source-location` is enabled:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [<font color="#11D116">info</font>] [mod::path, src/main.rs:4] hello, world!
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] [mod::path, src/main.rs:4] hello, world!
 ///    </pre>
 #[derive(Clone)]
 pub struct FullFormatter {

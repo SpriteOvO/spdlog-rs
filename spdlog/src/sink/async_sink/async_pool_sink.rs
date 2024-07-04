@@ -6,11 +6,31 @@ use crate::{
     Error, ErrorHandler, LevelFilter, Record, RecordOwned, Result, ThreadPool,
 };
 
-/// A [combined sink], logging and flushing [asynchronously]
-/// (thread-pool-based).
+/// A [combined sink], logging and flushing asynchronously (thread-pool-based).
 ///
-/// This sink sends `log` and `flush` operations to the inside thread pool for
-/// asynchronous processing.
+/// Expensive operations (such as `log` and `flush`) on asynchronous sinks will
+/// be performed asynchronously on other threads.
+///
+/// Since there is no waiting, errors that occur while performing asynchronous
+/// operations will not be returned to the upper level, and instead the error
+/// handler of the sink will be called.
+///
+/// Users should only use asynchronous combined sinks to wrap actual sinks that
+/// require a long time for operations (e.g., file sinks that are frequently
+/// flushed, sinks involving networks), otherwise they will not get a
+/// performance boost or even worse.
+///
+/// Since the thread pool has a capacity limit, the queue may be full in some
+/// cases. When users encounter this situation, they have the following options:
+///
+///  - Adjust to a larger capacity via [`ThreadPoolBuilder::capacity`].
+///
+///  - Adjust the overflow policy via [`AsyncPoolSinkBuilder::overflow_policy`].
+///
+///  - Set up an error handler on asynchronous combined sinks via
+///    [`AsyncPoolSinkBuilder::error_handler`]. The handler will be called when
+///    a record is dropped or an operation has failed.
+///
 ///
 /// # Note
 ///
@@ -22,7 +42,7 @@ use crate::{
 /// See [./examples] directory.
 ///
 /// [combined sink]: index.html#combined-sink
-/// [asynchronously]: index.html#asynchronous-combined-sink
+/// [`ThreadPoolBuilder::capacity`]: crate::ThreadPoolBuilder::capacity
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
 // The names `AsyncSink` and `AsyncRuntimeSink` is reserved for future use.
 pub struct AsyncPoolSink {
@@ -33,7 +53,20 @@ pub struct AsyncPoolSink {
 }
 
 impl AsyncPoolSink {
-    /// Constructs a builder of `AsyncPoolSink`.
+    /// Constructs a builder of `AsyncPoolSink` with default parameters:
+    ///
+    /// | Parameter         | Default Value                       |
+    /// |-------------------|-------------------------------------|
+    /// | [level_filter]    | `All`                               |
+    /// | [error_handler]   | [default error handler]             |
+    /// | [overflow_policy] | `Block`                             |
+    /// | [thread_pool]     | internal shared default thread pool |
+    ///
+    /// [level_filter]: AsyncPoolSinkBuilder::level_filter
+    /// [error_handler]: AsyncPoolSinkBuilder::error_handler
+    /// [default error handler]: error/index.html#default-error-handler
+    /// [overflow_policy]: AsyncPoolSinkBuilder::overflow_policy
+    /// [thread_pool]: AsyncPoolSinkBuilder::thread_pool
     #[must_use]
     pub fn builder() -> AsyncPoolSinkBuilder {
         AsyncPoolSinkBuilder {
@@ -109,7 +142,7 @@ impl Sink for AsyncPoolSink {
     }
 }
 
-/// The builder of [`AsyncPoolSink`].
+#[allow(missing_docs)]
 pub struct AsyncPoolSinkBuilder {
     level_filter: LevelFilter,
     sinks: Sinks,
@@ -138,10 +171,10 @@ impl AsyncPoolSinkBuilder {
 
     /// Specifies a overflow policy.
     ///
-    /// This parameter is **optional**, and defaults to
-    /// [`OverflowPolicy::Block`].
+    /// This parameter is **optional**.
     ///
-    /// For more details, see the documentation of [`OverflowPolicy`].
+    /// When the channel is full, an incoming operation is handled according to
+    /// the specified policy.
     #[must_use]
     pub fn overflow_policy(mut self, overflow_policy: OverflowPolicy) -> Self {
         self.overflow_policy = overflow_policy;
@@ -150,10 +183,7 @@ impl AsyncPoolSinkBuilder {
 
     /// Specifies a custom thread pool.
     ///
-    /// This parameter is **optional**, and defaults to the built-in thread
-    /// pool.
-    ///
-    /// For more details, see the documentation of [`AsyncPoolSinkBuilder`].
+    /// This parameter is **optional**.
     #[must_use]
     pub fn thread_pool(mut self, thread_pool: Arc<ThreadPool>) -> Self {
         self.thread_pool = Some(thread_pool);

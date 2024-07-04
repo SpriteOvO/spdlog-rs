@@ -5,24 +5,25 @@
 [![](https://img.shields.io/badge/docs.rs-spdlog--rs-ff69b4?style=flat-square&logo=rust)](https://docs.rs/spdlog-rs)
 [![](https://img.shields.io/github/actions/workflow/status/SpriteOvO/spdlog-rs/ci.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white)](https://github.com/SpriteOvO/spdlog-rs/actions/workflows/ci.yml)
  
-A fast and combinable Rust logging crate, inspired by the C++ logging library [spdlog].
+Fast, highly configurable Rust logging crate, inspired by the C++ logging library [spdlog].
 
 ## Features
 
  - Very fast (see [Benchmarks]).
- - Various log targets:
-    - Standard streams with optional colors.
-    - Files.
-    - Rotating log files by file size.
-    - Rotating log files hourly.
-    - Rotating log files daily.
-    - ... (more targets are implementing, PRs are welcome)
-    - Extendable with custom log targets.
- - Compatible with [log crate] (optional).
  - Asynchronous support.
- - Configured via environment variable.
- - Custom formatting.
- - Log filtering - log levels can be modified in runtime as well as in compile time.
+ - Compatible with `log` crate.
+ - Custom log formats:
+   - compile-time zero-cost pattern or runtime pattern;
+   - manually implementing for more flexibility.
+ - Various combinable sinks:
+    - standard streams with optional color support;
+    - files (single file, rotating hourly, daily or by file size);
+    - platform-specific (e.g. `journald` for Linux and `OutputDebugStringW` for Windows);
+    - ... and able to implement one yourself.
+ - Configuring via environment variables or TOML[^1].
+ - More readable level filters.
+
+[^1]: TOML deserialization support is working in progress, tracking issue [#25]
 
 ## Getting started
 
@@ -32,11 +33,11 @@ Add this to `Cargo.toml`:
 spdlog-rs = "0.3"
 ```
 
-The documentation of this crate is hosted on [docs.rs], and you can find examples under [./examples] directory.
+The documentation of this crate is hosted on [docs.rs], and you can learn examples under [./examples] directory along with it.
 
-If you have any questions or need help while using this crate, feel free to [open a discussion]. For feature requests or bug reports, please [open an issue].
+If you have any trouble while using this crate, please don't hesitate to [open a discussion] for help. For feature requests or bug reports, please [open an issue].
 
-## Supported Rust Versions
+## Supported Rust versions
 
 <!--
 When updating this, also update:
@@ -55,22 +56,18 @@ The current minimum supported Rust version is 1.56.
 
 Licensed under either of
 
- * Apache License, Version 2.0
-   ([LICENSE-APACHE](/LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license
-   ([LICENSE-MIT](/LICENSE-MIT) or http://opensource.org/licenses/MIT)
+ * Apache License, Version 2.0 ([LICENSE-APACHE](/LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+ * MIT license ([LICENSE-MIT](/LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.
 
 ## Contribution
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
-dual licensed as above, without any additional terms or conditions.
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 [spdlog]: https://github.com/gabime/spdlog
 [Benchmarks]: https://github.com/SpriteOvO/spdlog-rs/blob/main/spdlog/benches/README.md
-[log crate]: https://crates.io/crates/log
+[#25]: https://github.com/SpriteOvO/spdlog-rs/issues/25
 [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 [docs.rs]: https://docs.rs/spdlog-rs/
 [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new

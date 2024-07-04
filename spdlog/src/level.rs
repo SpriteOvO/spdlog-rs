@@ -1,5 +1,3 @@
-//! Provides stuff related to log levels
-
 use std::{fmt, str::FromStr};
 
 use cfg_if::cfg_if;
@@ -11,24 +9,24 @@ pub(crate) const LOG_LEVEL_NAMES: [&str; Level::count()] =
 
 const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", "T"];
 
-/// An enum representing log levels.
+/// Represents log levels.
 ///
-/// Typical usage includes: specifying the `Level` of [`log!`], and comparing a
-/// `Level` to a [`LevelFilter`] through [`LevelFilter::test`].
+/// Typical usage:
+/// - specifying the `level` parameter of macro [`log!`];
+/// - comparing a `Level` to a [`LevelFilter`] through [`LevelFilter::test`].
 ///
 /// # Note
 ///
-/// Users should never convert variants of this enum to integers for persistent
+/// Users should never cast variants of this enum to integers for persistent
 /// storage (e.g., configuration files), using [`Level::as_str`] instead,
 /// because integers corresponding to variants may change in the future.
 ///
 /// Do **not** do this:
 /// ```
 /// # use spdlog::prelude::*;
-/// # fn save_to_config_file(_: usize) {}
-/// let level: Level = /* ... */
-/// # Level::Info;
-/// let value: usize = level as usize;
+/// # fn save_to_config_file(_: u32) {}
+/// # let level: Level = Level::Info;
+/// let value = level as u32; // Never do numeric casting!
 ///
 /// save_to_config_file(value);
 /// ```
@@ -37,9 +35,8 @@ const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", 
 /// ```
 /// # use spdlog::prelude::*;
 /// # fn save_to_config_file(_: &str) {}
-/// let level: Level = /* ... */
-/// # Level::Info;
-/// let value: &'static str = level.as_str();
+/// # let level: Level = Level::Info;
+/// let value = level.as_str();
 ///
 /// save_to_config_file(value);
 /// ```
@@ -117,7 +114,7 @@ impl Level {
         Level::Trace
     }
 
-    /// Returns the string representation of the `Level`.
+    /// Returns the string representation.
     ///
     /// This returns the same string as the `fmt::Display` implementation.
     #[must_use]
@@ -130,7 +127,7 @@ impl Level {
         LOG_LEVEL_SHORT_NAMES[*self as usize]
     }
 
-    /// Iterate through all supported logging levels.
+    /// Iterates through all logging levels.
     ///
     /// The order of iteration is from more severe to more verbose.
     ///
@@ -182,23 +179,10 @@ impl FromStr for Level {
     }
 }
 
-/// An enum representing log level logical filter conditions.
+/// Represents log level logical filter conditions.
 ///
-/// A `LevelFilter` may be compared to a [`Level`] through
-/// [`LevelFilter::test`].
-///
-/// # Examples
-///
-/// ```
-/// use spdlog::prelude::*;
-///
-/// let level_filter: LevelFilter = LevelFilter::MoreSevere(Level::Info);
-///
-/// assert_eq!(level_filter.test(Level::Trace), false);
-/// assert_eq!(level_filter.test(Level::Info), false);
-/// assert_eq!(level_filter.test(Level::Warn), true);
-/// assert_eq!(level_filter.test(Level::Error), true);
-/// ```
+/// Use [`LevelFilter::test`] method to check if a [`Level`] satisfies the
+/// filter condition.
 #[repr(align(4))]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum LevelFilter {
@@ -234,11 +218,7 @@ cfg_if! {
 }
 
 impl LevelFilter {
-    /// Compares the given level with the logical filter condition
-    ///
-    /// # Examples
-    ///
-    /// See the documentation of [`LevelFilter`].
+    /// Checks the given level if satisfies the filter condition.
     #[deprecated(
         since = "0.4.0",
         note = "it may be removed in the future, use method `test()` instead"
@@ -248,11 +228,20 @@ impl LevelFilter {
         self.__test_const(level)
     }
 
-    /// Tests the given level with the logical filter condition
+    /// Checks the given level if satisfies the filter condition.
     ///
     /// # Examples
     ///
-    /// See the documentation of [`LevelFilter`].
+    /// ```
+    /// use spdlog::prelude::*;
+    ///
+    /// let level_filter = LevelFilter::MoreSevere(Level::Info);
+    ///
+    /// assert_eq!(level_filter.test(Level::Trace), false);
+    /// assert_eq!(level_filter.test(Level::Info), false);
+    /// assert_eq!(level_filter.test(Level::Warn), true);
+    /// assert_eq!(level_filter.test(Level::Error), true);
+    /// ```
     #[must_use]
     pub fn test(&self, level: Level) -> bool {
         self.__test_const(level)

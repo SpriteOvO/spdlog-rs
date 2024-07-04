@@ -2,14 +2,14 @@ use std::time::SystemTime;
 
 use crate::{default_logger, sync::*, Logger, Record};
 
-/// Log crate proxy.
+/// Proxy layer for compatible [log crate].
 ///
-/// It forwards all log messages from `log` crate to [`default_logger`] by
-/// default, and you can set a separate logger for it via
+/// Call [`init_log_crate_proxy`] to initialize the proxy, and then configure
+/// the proxy via [`log_crate_proxy`].
+///
+/// After the proxy is initialized, it will forward all log messages from `log`
+/// crate to the global default logger or the logger set by
 /// [`LogCrateProxy::set_logger`].
-///
-/// If upstream dependencies use `log` crate to output log messages, they may
-/// also be received by `LogCrateProxy`.
 ///
 /// Note that the `log` crate uses a different log level filter and by default
 /// it rejects all log messages. To make `LogCrateProxy` able to receive log
@@ -30,6 +30,9 @@ use crate::{default_logger, sync::*, Logger, Record};
 ///
 /// For more and detailed examples, see [./examples] directory.
 ///
+/// [log crate]: https://crates.io/crates/log
+/// [`init_log_crate_proxy`]: crate::init_log_crate_proxy
+/// [`log_crate_proxy`]: crate::log_crate_proxy()
 /// [`re_export::log::set_max_level`]: crate::re_export::log::set_max_level
 /// [`re_export::log::LevelFilter`]: crate::re_export::log::LevelFilter
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
@@ -44,18 +47,18 @@ impl LogCrateProxy {
         Self::default()
     }
 
-    /// Swaps a logger.
+    /// Sets a logger as the new receiver, and returens the old one.
     ///
-    /// If the argument `logger` is `None`, the return value of
-    /// [`default_logger`] will be used.
+    /// If the argument `logger` is `None`, the global default logger will be
+    /// used.
     pub fn swap_logger(&self, logger: Option<Arc<Logger>>) -> Option<Arc<Logger>> {
         self.logger.swap(logger)
     }
 
-    /// Sets a logger.
+    /// Sets a logger as the new receiver.
     ///
-    /// If the argument `logger` is `None`, the return value of
-    /// [`default_logger`] will be used.
+    /// If the argument `logger` is `None`, the global default logger will be
+    /// used.
     pub fn set_logger(&self, logger: Option<Arc<Logger>>) {
         self.swap_logger(logger);
     }
