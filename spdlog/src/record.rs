@@ -21,6 +21,7 @@ use crate::{Level, SourceLocation};
 // FIXME: `Record` still owns some data and not just a reference, I'm not sure this is necessary and
 // possible to correct.
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Record<'a> {
     logger_name: Option<Cow<'a, str>>,
     payload: Cow<'a, str>,
@@ -28,6 +29,7 @@ pub struct Record<'a> {
 }
 
 #[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 struct RecordInner {
     level: Level,
     source_location: Option<SourceLocation>,

@@ -102,6 +102,11 @@ pub enum Error {
     #[error("{0:?}")]
     Multiple(Vec<Error>),
 
+    /// Returned by [`Formatter`]s when an error occurs in serializing a log.
+    #[cfg(feature = "serde")]
+    #[error("failed to serialize log: {0}")]
+    Serialization(io::Error),
+
     #[cfg(test)]
     #[error("{0}")]
     __ForInternalTestsUseOnly(i32),

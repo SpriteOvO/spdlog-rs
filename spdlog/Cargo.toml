@@ -37,6 +37,7 @@ native = []
 libsystemd = ["libsystemd-sys"]
 multi-thread = ["crossbeam"]
 runtime-pattern = ["spdlog-internal"]
+json-formatter = ["serde", "serde_json"]
 
 [dependencies]
 arc-swap = "1.5.1"
@@ -50,6 +51,8 @@ if_chain = "1.0.2"
 is-terminal = "0.4"
 log = { version = "0.4.8", optional = true }
 once_cell = "1.16.0"
+serde = { version = "1.0.163", optional = true }
+serde_json = { version = "1.0.120", optional = true }
 spdlog-internal = { version = "=0.1.0", path = "../spdlog-internal", optional = true }
 spdlog-macros = { version = "0.1.0", path = "../spdlog-macros" }
 spin = "0.9.8"

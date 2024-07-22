@@ -7,6 +7,7 @@ use std::path;
 ///
 /// [`source_location_current`]: crate::source_location_current
 #[derive(Clone, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SourceLocation {
     module_path: &'static str,
     file: &'static str,
