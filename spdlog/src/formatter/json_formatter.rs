@@ -103,7 +103,7 @@ impl JsonFormatter {
     ) -> Result<FmtExtraInfo, JsonFormatterError> {
         cfg_if! {
             if #[cfg(not(feature = "flexible-string"))] {
-                dest.reserve(RESERVE_SIZE);
+                dest.reserve(crate::string_buf::RESERVE_SIZE);
             }
         }
 
