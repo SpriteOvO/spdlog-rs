@@ -63,9 +63,9 @@ impl FullFormatter {
 
         {
             let mut local_time_cacher = LOCAL_TIME_CACHER.lock();
-            let time = local_time_cacher.get(record.time());
+            let mut time = local_time_cacher.get(record.time());
             dest.write_str("[")?;
-            dest.write_str(&time.full_second_str())?;
+            dest.write_str(time.full_second_str())?;
             dest.write_str(".")?;
             write!(dest, "{:03}", time.millisecond())?;
             dest.write_str("] [")?;
