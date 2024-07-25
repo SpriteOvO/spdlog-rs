@@ -1,7 +1,4 @@
-use std::{
-    cell::{RefCell, RefMut},
-    time::SystemTime,
-};
+use std::time::SystemTime;
 
 use chrono::prelude::*;
 use once_cell::sync::Lazy;
@@ -33,27 +30,27 @@ enum CacheKey {
 struct CacheValues {
     local_time: DateTime<Local>,
     is_leap_second: bool,
-    full_second_str: RefCell<Option<String>>,
-    year: RefCell<Option<i32>>,
-    year_str: RefCell<Option<String>>,
-    year_short_str: RefCell<Option<String>>,
-    month: RefCell<Option<u32>>,
-    month_str: RefCell<Option<String>>,
-    month_name: RefCell<Option<MultiName<&'static str>>>,
-    weekday_name: RefCell<Option<MultiName<&'static str>>>,
-    day: RefCell<Option<u32>>,
-    day_str: RefCell<Option<String>>,
-    hour: RefCell<Option<u32>>,
-    hour_str: RefCell<Option<String>>,
-    hour12: RefCell<Option<(bool, u32)>>,
-    hour12_str: RefCell<Option<String>>,
-    am_pm_str: RefCell<Option<&'static str>>,
-    minute: RefCell<Option<u32>>,
-    minute_str: RefCell<Option<String>>,
-    second: RefCell<Option<u32>>,
-    second_str: RefCell<Option<String>>,
-    tz_offset_str: RefCell<Option<String>>,
-    unix_timestamp_str: RefCell<Option<String>>,
+    full_second_str: Option<String>,
+    year: Option<i32>,
+    year_str: Option<String>,
+    year_short_str: Option<String>,
+    month: Option<u32>,
+    month_str: Option<String>,
+    month_name: Option<MultiName<&'static str>>,
+    weekday_name: Option<MultiName<&'static str>>,
+    day: Option<u32>,
+    day_str: Option<String>,
+    hour: Option<u32>,
+    hour_str: Option<String>,
+    hour12: Option<(bool, u32)>,
+    hour12_str: Option<String>,
+    am_pm_str: Option<&'static str>,
+    minute: Option<u32>,
+    minute_str: Option<String>,
+    second: Option<u32>,
+    second_str: Option<String>,
+    tz_offset_str: Option<String>,
+    unix_timestamp_str: Option<String>,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -105,12 +102,15 @@ impl LocalTimeCacher {
 macro_rules! impl_cache_fields_getter {
     ( $($field:ident: $type:ty),*$(,)? ) => {
         #[must_use]
-        $(pub(crate) fn $field(&self) -> $type {
-            *self
-                .cached
-                .$field
-                .borrow_mut()
-                .get_or_insert_with(|| self.cached.local_time.$field())
+        $(pub(crate) fn $field(&mut self) -> $type {
+            match self.cached.$field {
+                Some(value) => value,
+                None => {
+                    let value = self.cached.local_time.$field();
+                    self.cached.$field = Some(value);
+                    value
+                }
+            }
         })*
     };
 }
@@ -118,12 +118,11 @@ macro_rules! impl_cache_fields_getter {
 macro_rules! impl_cache_fields_str_getter {
     ( $($field:ident => $str_field:ident : $fmt:literal),* $(,)? ) => {
         #[must_use]
-        $(pub(crate) fn $str_field(&self) -> RefMut<str> {
-            let mut value = self.cached.$str_field.borrow_mut();
-            if value.is_none() {
-                *value = Some(format!($fmt, self.cached.local_time.$field()));
+        $(pub(crate) fn $str_field(&mut self) -> &str {
+            if self.cached.$str_field.is_none() {
+                self.cached.$str_field = Some(format!($fmt, self.cached.local_time.$field()));
             }
-            RefMut::map(value, |value| value.as_deref_mut().unwrap())
+            self.cached.$str_field.as_deref().unwrap()
         })*
     };
 }
@@ -138,27 +137,21 @@ impl<'a> TimeDate<'a> {
         }
     }
 
-    // A closed Rust PR "WIP: Downgrading of `RefMut` to `Ref`"
-    // https://github.com/rust-lang/rust/pull/57401
-    // There is nothing like `RefMut::downgrade()` for now, just keep in mind don't
-    // modify the return value :)
     #[must_use]
-    pub(crate) fn full_second_str(&self) -> RefMut<'_, str> {
-        RefMut::map(self.cached.full_second_str.borrow_mut(), |opt| {
-            opt.get_or_insert_with(|| {
-                // `local_time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
-                format!(
-                    "{}-{:02}-{:02} {:02}:{:02}:{:02}",
-                    self.year(),
-                    self.month(),
-                    self.day(),
-                    self.hour(),
-                    self.minute(),
-                    self.second()
-                )
-            })
-            .as_mut()
-        })
+    pub(crate) fn full_second_str(&mut self) -> &str {
+        if self.cached.full_second_str.is_none() {
+            // `local_time.format("%Y-%m-%d %H:%M:%S")` is slower than this way
+            self.cached.full_second_str = Some(format!(
+                "{}-{:02}-{:02} {:02}:{:02}:{:02}",
+                self.year(),
+                self.month(),
+                self.day(),
+                self.hour(),
+                self.minute(),
+                self.second()
+            ));
+        }
+        self.cached.full_second_str.as_deref().unwrap()
     }
 
     impl_cache_fields_getter! {
@@ -181,119 +174,133 @@ impl<'a> TimeDate<'a> {
     }
 
     #[must_use]
-    pub(crate) fn second(&self) -> u32 {
-        *self.cached.second.borrow_mut().get_or_insert_with(|| {
-            if !self.cached.is_leap_second {
-                self.cached.local_time.second()
-            } else {
-                // https://www.itu.int/dms_pubrec/itu-r/rec/tf/R-REC-TF.460-6-200202-I!!PDF-E.pdf
-                60
+    pub(crate) fn second(&mut self) -> u32 {
+        match self.cached.second {
+            Some(value) => value,
+            None => {
+                let value = if !self.cached.is_leap_second {
+                    self.cached.local_time.second()
+                } else {
+                    // https://www.itu.int/dms_pubrec/itu-r/rec/tf/R-REC-TF.460-6-200202-I!!PDF-E.pdf
+                    60
+                };
+                self.cached.second = Some(value);
+                value
             }
-        })
+        }
     }
 
     #[must_use]
-    pub(crate) fn weekday_name(&self) -> MultiName<&'static str> {
-        *self
-            .cached
-            .weekday_name
-            .borrow_mut()
-            .get_or_insert_with(|| {
-                const SHORT: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-                const FULL: [&str; 7] = [
-                    "Monday",
-                    "Tuesday",
-                    "Wednesday",
-                    "Thursday",
-                    "Friday",
-                    "Saturday",
-                    "Sunday",
-                ];
+    pub(crate) fn weekday_name(&mut self) -> MultiName<&'static str> {
+        match self.cached.weekday_name {
+            Some(value) => value,
+            None => {
+                let value = {
+                    const SHORT: [&str; 7] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+                    const FULL: [&str; 7] = [
+                        "Monday",
+                        "Tuesday",
+                        "Wednesday",
+                        "Thursday",
+                        "Friday",
+                        "Saturday",
+                        "Sunday",
+                    ];
 
-                let weekday_from_monday_0 =
-                    self.cached.local_time.weekday().num_days_from_monday() as usize;
+                    let weekday_from_monday_0 =
+                        self.cached.local_time.weekday().num_days_from_monday() as usize;
 
-                MultiName {
-                    short: SHORT[weekday_from_monday_0],
-                    full: FULL[weekday_from_monday_0],
-                }
-            })
-    }
-
-    #[must_use]
-    pub(crate) fn month_name(&self) -> MultiName<&'static str> {
-        *self.cached.month_name.borrow_mut().get_or_insert_with(|| {
-            const SHORT: [&str; 12] = [
-                "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-            ];
-            const FULL: [&str; 12] = [
-                "January",
-                "February",
-                "March",
-                "April",
-                "May",
-                "June",
-                "July",
-                "August",
-                "September",
-                "October",
-                "November",
-                "December",
-            ];
-
-            let month_index = self.cached.local_time.month() as usize - 1;
-
-            MultiName {
-                short: SHORT[month_index],
-                full: FULL[month_index],
+                    MultiName {
+                        short: SHORT[weekday_from_monday_0],
+                        full: FULL[weekday_from_monday_0],
+                    }
+                };
+                self.cached.weekday_name = Some(value);
+                value
             }
-        })
+        }
     }
 
     #[must_use]
-    pub(crate) fn nanosecond(&self) -> u32 {
+    pub(crate) fn month_name(&mut self) -> MultiName<&'static str> {
+        match self.cached.month_name {
+            Some(value) => value,
+            None => {
+                let value = {
+                    const SHORT: [&str; 12] = [
+                        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
+                        "Nov", "Dec",
+                    ];
+                    const FULL: [&str; 12] = [
+                        "January",
+                        "February",
+                        "March",
+                        "April",
+                        "May",
+                        "June",
+                        "July",
+                        "August",
+                        "September",
+                        "October",
+                        "November",
+                        "December",
+                    ];
+
+                    let month_index = self.cached.local_time.month() as usize - 1;
+
+                    MultiName {
+                        short: SHORT[month_index],
+                        full: FULL[month_index],
+                    }
+                };
+                self.cached.month_name = Some(value);
+                value
+            }
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn nanosecond(&mut self) -> u32 {
         self.nanosecond
     }
 
     #[must_use]
-    pub(crate) fn millisecond(&self) -> u32 {
+    pub(crate) fn millisecond(&mut self) -> u32 {
         self.millisecond
     }
 
     #[must_use]
-    pub(crate) fn hour12_str(&self) -> RefMut<str> {
-        let mut value = self.cached.hour12_str.borrow_mut();
-        if value.is_none() {
-            *value = Some(format!("{:02}", self.hour12().1));
+    pub(crate) fn hour12_str(&mut self) -> &str {
+        if self.cached.hour12_str.is_none() {
+            self.cached.hour12_str = Some(format!("{:02}", self.hour12().1));
         }
-        RefMut::map(value, |value| value.as_deref_mut().unwrap())
+        self.cached.hour12_str.as_deref().unwrap()
     }
 
     #[must_use]
-    pub(crate) fn am_pm_str(&self) -> &'static str {
-        self.cached.am_pm_str.borrow_mut().get_or_insert_with(|| {
-            if !self.hour12().0 {
-                "AM"
-            } else {
-                "PM"
+    pub(crate) fn am_pm_str(&mut self) -> &'static str {
+        match self.cached.am_pm_str {
+            Some(value) => value,
+            None => {
+                let value = if !self.hour12().0 { "AM" } else { "PM" };
+                self.cached.am_pm_str = Some(value);
+                value
             }
-        })
-    }
-
-    #[must_use]
-    pub(crate) fn year_short_str(&self) -> RefMut<str> {
-        let mut value = self.cached.year_short_str.borrow_mut();
-        if value.is_none() {
-            *value = Some(format!("{:02}", self.year() % 100));
         }
-        RefMut::map(value, |value| value.as_deref_mut().unwrap())
     }
 
     #[must_use]
-    pub(crate) fn tz_offset_str(&self) -> RefMut<str> {
-        let mut value = self.cached.tz_offset_str.borrow_mut();
-        if value.is_none() {
-            *value = {
+    pub(crate) fn year_short_str(&mut self) -> &str {
+        if self.cached.year_short_str.is_none() {
+            self.cached.year_short_str = Some(format!("{:02}", self.year() % 100));
+        }
+        self.cached.year_short_str.as_deref().unwrap()
+    }
+
+    #[must_use]
+    pub(crate) fn tz_offset_str(&mut self) -> &str {
+        if self.cached.tz_offset_str.is_none() {
+            self.cached.tz_offset_str = {
                 let offset_secs = self.cached.local_time.offset().local_minus_utc();
                 let offset_secs_abs = offset_secs.abs();
 
@@ -307,7 +314,7 @@ impl<'a> TimeDate<'a> {
                 ))
             };
         }
-        RefMut::map(value, |value| value.as_deref_mut().unwrap())
+        self.cached.tz_offset_str.as_deref().unwrap()
     }
 }
 
@@ -329,27 +336,27 @@ impl CacheValues {
         CacheValues {
             local_time: utc_time.into(),
             is_leap_second,
-            full_second_str: RefCell::new(None),
-            year: RefCell::new(None),
-            year_str: RefCell::new(None),
-            year_short_str: RefCell::new(None),
-            month: RefCell::new(None),
-            month_str: RefCell::new(None),
-            month_name: RefCell::new(None),
-            weekday_name: RefCell::new(None),
-            day: RefCell::new(None),
-            day_str: RefCell::new(None),
-            hour: RefCell::new(None),
-            hour_str: RefCell::new(None),
-            hour12: RefCell::new(None),
-            hour12_str: RefCell::new(None),
-            am_pm_str: RefCell::new(None),
-            minute: RefCell::new(None),
-            minute_str: RefCell::new(None),
-            second: RefCell::new(None),
-            second_str: RefCell::new(None),
-            tz_offset_str: RefCell::new(None),
-            unix_timestamp_str: RefCell::new(None),
+            full_second_str: None,
+            year: None,
+            year_str: None,
+            year_short_str: None,
+            month: None,
+            month_str: None,
+            month_name: None,
+            weekday_name: None,
+            day: None,
+            day_str: None,
+            hour: None,
+            hour_str: None,
+            hour12: None,
+            hour12_str: None,
+            am_pm_str: None,
+            minute: None,
+            minute_str: None,
+            second: None,
+            second_str: None,
+            tz_offset_str: None,
+            unix_timestamp_str: None,
         }
     }
 }
@@ -405,7 +412,7 @@ mod tests {
 
             println!(" => checking '{datetime}'");
 
-            let result = cacher.get_inner(datetime.and_local_timezone(Utc).unwrap());
+            let mut result = cacher.get_inner(datetime.and_local_timezone(Utc).unwrap());
             assert_eq!(result.cached.is_leap_second, leap);
             assert_eq!(result.second(), if !leap { 59 } else { 60 });
         }
