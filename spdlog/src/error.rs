@@ -98,14 +98,14 @@ pub enum Error {
     #[error("failed to build pattern at runtime: {0}")]
     BuildPattern(BuildPatternError),
 
-    /// Returned when multiple errors occurred.
-    #[error("{0:?}")]
-    Multiple(Vec<Error>),
-
     /// Returned by [`Formatter`]s when an error occurs in serializing a log.
     #[cfg(feature = "serde")]
     #[error("failed to serialize log: {0}")]
-    Serialization(io::Error),
+    SerializeRecord(io::Error),
+
+    /// Returned when multiple errors occurred.
+    #[error("{0:?}")]
+    Multiple(Vec<Error>),
 
     #[cfg(test)]
     #[error("{0}")]

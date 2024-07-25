@@ -1,4 +1,7 @@
-use std::fmt::{self, Write};
+use std::{
+    fmt::{self, Write},
+    marker::PhantomData,
+};
 
 use cfg_if::cfg_if;
 use serde::{ser::SerializeStruct, Serialize};
@@ -27,7 +30,7 @@ impl<'a> Serialize for JsonRecord<'a> {
                 "time",
                 local_time_cacher
                     .get(self.0.time())
-                    .full_second_str()
+                    .unix_timestamp_str()
                     .as_ref(),
             )?;
         }
@@ -35,7 +38,7 @@ impl<'a> Serialize for JsonRecord<'a> {
         record.serialize_field("payload", self.0.payload())?;
 
         if let Some(src_loc) = src_loc {
-            record.serialize_field("source_location", src_loc)?;
+            record.serialize_field("source", src_loc)?;
         }
 
         record.end()
@@ -69,31 +72,33 @@ impl From<JsonFormatterError> for crate::Error {
     fn from(value: JsonFormatterError) -> Self {
         match value {
             JsonFormatterError::Fmt(e) => Error::FormatRecord(e),
-            JsonFormatterError::Serialization(e) => Error::Serialization(e.into()),
+            JsonFormatterError::Serialization(e) => Error::SerializeRecord(e.into()),
         }
     }
 }
 
+#[rustfmt::skip]
 /// JSON logs formatter
 ///
 /// Output format:
 ///
 ///   ```json
 ///   {"level":"info","time":"2024-01-01
-/// 12:00:00","tid":123456,"payload":"test"}
+///   12:00:00","tid":123456,"payload":"test"}
 ///
 ///   // with source location
 ///   {"level":"info","time":"2024-01-01
-/// 12:00:00","tid":123456,"payload":"test","source_location":{"module_path":"
-/// module","file":"file.rs","line":42}}
+///   12:00:00","tid":123456,"payload":"test","source_location":{"module_path":"
+///   module","file":"file.rs","line":42}}
 ///   ```
 #[derive(Clone)]
-pub struct JsonFormatter;
+pub struct JsonFormatter(PhantomData<()>);
 
 impl JsonFormatter {
     /// Create a `JsonFormatter`
+    #[must_use]
     pub fn new() -> JsonFormatter {
-        JsonFormatter
+        JsonFormatter(PhantomData)
     }
 
     fn format_impl(
@@ -150,7 +155,7 @@ mod tests {
             dest.to_string(),
             format!(
                 r#"{{"level":"Info","time":"{}","tid":{},"payload":"{}"}}{}"#,
-                local_time.format("%Y-%m-%d %H:%M:%S"),
+                local_time.timestamp(),
                 record.tid(),
                 "payload",
                 __EOL
@@ -173,8 +178,8 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","time":"{}","tid":{},"payload":"{}","source_location":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
-                local_time.format("%Y-%m-%d %H:%M:%S"),
+                r#"{{"level":"Info","time":"{}","tid":{},"payload":"{}","source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
+                local_time.timestamp(),
                 record.tid(),
                 "payload",
                 __EOL
