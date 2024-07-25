@@ -99,6 +99,8 @@ pub enum Error {
     BuildPattern(BuildPatternError),
 
     /// Returned by [`Formatter`]s when an error occurs in serializing a log.
+    ///
+    /// [`Formatter`]: crate::formatter::Formatter
     #[cfg(feature = "serde")]
     #[error("failed to serialize log: {0}")]
     SerializeRecord(io::Error),
