@@ -3,13 +3,13 @@ name: CI
 on:
   push:
     paths-ignore:
-      - '**.md'
-      - 'LICENSE'
+      - "**.md"
+      - "LICENSE"
 
   pull_request:
     paths-ignore:
-      - '**.md'
-      - 'LICENSE'
+      - "**.md"
+      - "LICENSE"
 
   workflow_dispatch:
 
@@ -31,201 +31,202 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Disable bench dependencies
-      run: ./.github/workflows/disable-bench-deps.sh
-    - name: Install Rust nightly
-      run: |
-        rustup toolchain install nightly
-        rustup component add rustfmt --toolchain nightly
-    - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v2
-    - name: Check formatting
-      run: cargo +nightly fmt --all --verbose -- --check
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Disable bench dependencies
+        run: ./.github/workflows/disable-bench-deps.sh
+      - name: Install Rust nightly
+        run: |
+          rustup toolchain install nightly
+          rustup component add rustfmt --toolchain nightly
+      - name: Restore cargo caches
+        uses: Swatinem/rust-cache@v2
+      - name: Check formatting
+        run: cargo +nightly fmt --all --verbose -- --check
 
   test:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        fn_features: ['', 'log native libsystemd multi-thread runtime-pattern json-formatter']
-        cfg_feature: ['', 'flexible-string', 'source-location']
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        fn_features:
+          ["", "log native libsystemd multi-thread runtime-pattern serde_json"]
+        cfg_feature: ["", "flexible-string", "source-location"]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Disable bench dependencies
-      run: ./.github/workflows/disable-bench-deps.sh
-    - name: Install dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v2
-    - name: Run tests
-      run: cargo test --features "${{ matrix.fn_features }} ${{ matrix.cfg_feature }}" --verbose
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Disable bench dependencies
+        run: ./.github/workflows/disable-bench-deps.sh
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo bash ./.github/workflows/install-deps.sh
+      - name: Restore cargo caches
+        uses: Swatinem/rust-cache@v2
+      - name: Run tests
+        run: cargo test --features "${{ matrix.fn_features }} ${{ matrix.cfg_feature }}" --verbose
 
   clippy:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Install dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust nightly (latest and stable date version)
-      id: install-rust
-      run: |
-        STABLE_DATE=$(cargo clippy --version | perl -ne 'print $& if /\b\d{4}-\d{2}-\d{2}\b/')
-        echo "stable_date=$STABLE_DATE" >> $GITHUB_OUTPUT
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo bash ./.github/workflows/install-deps.sh
+      - name: Install Rust nightly (latest and stable date version)
+        id: install-rust
+        run: |
+          STABLE_DATE=$(cargo clippy --version | perl -ne 'print $& if /\b\d{4}-\d{2}-\d{2}\b/')
+          echo "stable_date=$STABLE_DATE" >> $GITHUB_OUTPUT
 
-        rustup toolchain install nightly
-        rustup component add clippy --toolchain nightly
-        rustup toolchain install nightly-$STABLE_DATE
-        rustup component add clippy --toolchain nightly-$STABLE_DATE
+          rustup toolchain install nightly
+          rustup component add clippy --toolchain nightly
+          rustup toolchain install nightly-$STABLE_DATE
+          rustup component add clippy --toolchain nightly-$STABLE_DATE
 
-        echo "Stable version: $(cargo clippy --version)"
-        echo "Nightly version: $(cargo +nightly clippy --version)"
-        echo "Near stable nightly version: $(cargo +nightly-$STABLE_DATE clippy --version)"
-    - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v2
-    - name: Run clippy 
-      run: cargo clippy --all-features --tests --examples -- -D warnings
-    - name: Run clippy nightly-${{ steps.install-rust.outputs.stable_date }} for benches
-      run: cargo +nightly-${{ steps.install-rust.outputs.stable_date }} clippy --all-features --benches -- -D warnings -A clippy::incompatible_msrv
-    - name: Run clippy nightly-latest without denying warnings
-      run: |
-        cargo +nightly clippy --all-features --tests --examples
+          echo "Stable version: $(cargo clippy --version)"
+          echo "Nightly version: $(cargo +nightly clippy --version)"
+          echo "Near stable nightly version: $(cargo +nightly-$STABLE_DATE clippy --version)"
+      - name: Restore cargo caches
+        uses: Swatinem/rust-cache@v2
+      - name: Run clippy
+        run: cargo clippy --all-features --tests --examples -- -D warnings
+      - name: Run clippy nightly-${{ steps.install-rust.outputs.stable_date }} for benches
+        run: cargo +nightly-${{ steps.install-rust.outputs.stable_date }} clippy --all-features --benches -- -D warnings -A clippy::incompatible_msrv
+      - name: Run clippy nightly-latest without denying warnings
+        run: |
+          cargo +nightly clippy --all-features --tests --examples
 
-        echo "## clippy nightly output" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        # Run it again so there is no noise like "Compiling xxx" and "Checking xxx" in the output.
-        CARGO_TERM_COLOR=never cargo +nightly clippy --all-features --tests --examples 2>> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "## clippy nightly output" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          # Run it again so there is no noise like "Compiling xxx" and "Checking xxx" in the output.
+          CARGO_TERM_COLOR=never cargo +nightly clippy --all-features --tests --examples 2>> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
   check:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        target: ['', 'x86_64-apple-ios']
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        target: ["", "x86_64-apple-ios"]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Disable bench dependencies
-      run: ./.github/workflows/disable-bench-deps.sh
-    - name: Install dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust target
-      if: matrix.target != ''
-      run: rustup target add ${{ matrix.target }}
-    - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v2
-    - name: Run check
-      run: |
-        if [[ -z "${{ matrix.target }}" ]]; then
-          cargo check --all-features
-        else
-          cargo check --all-features --target ${{ matrix.target }}
-        fi
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Disable bench dependencies
+        run: ./.github/workflows/disable-bench-deps.sh
+      - name: Install dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo bash ./.github/workflows/install-deps.sh
+      - name: Install Rust target
+        if: matrix.target != ''
+        run: rustup target add ${{ matrix.target }}
+      - name: Restore cargo caches
+        uses: Swatinem/rust-cache@v2
+      - name: Run check
+        run: |
+          if [[ -z "${{ matrix.target }}" ]]; then
+            cargo check --all-features
+          else
+            cargo check --all-features --target ${{ matrix.target }}
+          fi
 
   check-doc:
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Disable bench dependencies
-      run: ./.github/workflows/disable-bench-deps.sh
-    - name: Install dependencies
-      run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust nightly (stable date version)
-      id: install-rust
-      run: |
-        STABLE_DATE=$(rustdoc --version | perl -ne 'print $& if /\b\d{4}-\d{2}-\d{2}\b/')
-        echo "stable_date=$STABLE_DATE" >> $GITHUB_OUTPUT
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Disable bench dependencies
+        run: ./.github/workflows/disable-bench-deps.sh
+      - name: Install dependencies
+        run: sudo bash ./.github/workflows/install-deps.sh
+      - name: Install Rust nightly (stable date version)
+        id: install-rust
+        run: |
+          STABLE_DATE=$(rustdoc --version | perl -ne 'print $& if /\b\d{4}-\d{2}-\d{2}\b/')
+          echo "stable_date=$STABLE_DATE" >> $GITHUB_OUTPUT
 
-        rustup toolchain install nightly-$STABLE_DATE
+          rustup toolchain install nightly-$STABLE_DATE
 
-        echo "Stable version: $(rustdoc --version)"
-        echo "Near stable nightly version: $(rustdoc +nightly-$STABLE_DATE --version)"
-    - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v2
-    - name: Run rustdoc nightly-${{ steps.install-rust.outputs.stable_date }}
-      run: |
-        cd spdlog
-        cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
-        cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --all-features --verbose -- -D warnings
-        cd ../spdlog-macros
-        cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
-        cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --all-features --verbose -- -D warnings
+          echo "Stable version: $(rustdoc --version)"
+          echo "Near stable nightly version: $(rustdoc +nightly-$STABLE_DATE --version)"
+      - name: Restore cargo caches
+        uses: Swatinem/rust-cache@v2
+      - name: Run rustdoc nightly-${{ steps.install-rust.outputs.stable_date }}
+        run: |
+          cd spdlog
+          cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
+          cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --all-features --verbose -- -D warnings
+          cd ../spdlog-macros
+          cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
+          cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --all-features --verbose -- -D warnings
 
   check-msrv:
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
     runs-on: ${{ matrix.os }}
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Disable bench dependencies
-      run: ./.github/workflows/disable-bench-deps.sh
-    - name: Install dependencies (Linux)
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust nightly
-      run: rustup toolchain install nightly
-    - name: Install Rust ${{ env.rust_minver }}
-      run: rustup toolchain install ${{ env.rust_minver }}
-    - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v2
-    - name: Avoid dev-dependencies
-      run: |
-        # Some dev-dependencies require a newer version of Rust, but it doesn't matter for MSRV check
-        # This is a workaround for the cargo nightly option `-Z avoid-dev-deps`
-        perl -pi -e 's/\[dev-dependencies]/[workaround-avoid-dev-deps]/g' ./spdlog/Cargo.toml
-    - name: Downgrade dependencies to minimal versions
-      run: cargo +nightly update -Z minimal-versions
-    - name: Check MSRV for core with Rust ${{ env.rust_minver }}
-      run: cargo +${{ env.rust_minver }} check --locked --all-features --verbose
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Disable bench dependencies
+        run: ./.github/workflows/disable-bench-deps.sh
+      - name: Install dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo bash ./.github/workflows/install-deps.sh
+      - name: Install Rust nightly
+        run: rustup toolchain install nightly
+      - name: Install Rust ${{ env.rust_minver }}
+        run: rustup toolchain install ${{ env.rust_minver }}
+      - name: Restore cargo caches
+        uses: Swatinem/rust-cache@v2
+      - name: Avoid dev-dependencies
+        run: |
+          # Some dev-dependencies require a newer version of Rust, but it doesn't matter for MSRV check
+          # This is a workaround for the cargo nightly option `-Z avoid-dev-deps`
+          perl -pi -e 's/\[dev-dependencies]/[workaround-avoid-dev-deps]/g' ./spdlog/Cargo.toml
+      - name: Downgrade dependencies to minimal versions
+        run: cargo +nightly update -Z minimal-versions
+      - name: Check MSRV for core with Rust ${{ env.rust_minver }}
+        run: cargo +${{ env.rust_minver }} check --locked --all-features --verbose
 
   bench:
     needs: [test, check]
     strategy:
       fail-fast: false
-    runs-on: 'ubuntu-latest'
+    runs-on: "ubuntu-latest"
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    - name: Disable bench dependencies
-      run: ./.github/workflows/disable-bench-deps.sh
-    - name: Install Rust nightly
-      run: rustup toolchain install nightly
-    - name: Restore cargo caches
-      uses: Swatinem/rust-cache@v2
-    - name: Run benchmark
-      run: cargo +nightly bench --features "multi-thread,runtime-pattern" --bench spdlog_rs --bench spdlog_rs_pattern | tee bench-results.txt
-    - name: Discard irrelevant changes
-      run: git checkout -- spdlog/Cargo.toml
-    - name: Process results
-      uses: benchmark-action/github-action-benchmark@v1
-      with:
-        name: spdlog-rs on Linux
-        tool: cargo
-        output-file-path: bench-results.txt
-        benchmark-data-dir-path: docs/dev/benchmarks
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        summary-always: true
-        comment-on-alert: true
-        alert-comment-cc-users: '@SpriteOvO'
-    - name: Push results to GitHub Pages branch
-      if: github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'main-dev')
-      run: git push 'https://${{ github.repository_owner }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git' gh-pages:gh-pages
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Disable bench dependencies
+        run: ./.github/workflows/disable-bench-deps.sh
+      - name: Install Rust nightly
+        run: rustup toolchain install nightly
+      - name: Restore cargo caches
+        uses: Swatinem/rust-cache@v2
+      - name: Run benchmark
+        run: cargo +nightly bench --features "multi-thread,runtime-pattern" --bench spdlog_rs --bench spdlog_rs_pattern | tee bench-results.txt
+      - name: Discard irrelevant changes
+        run: git checkout -- spdlog/Cargo.toml
+      - name: Process results
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: spdlog-rs on Linux
+          tool: cargo
+          output-file-path: bench-results.txt
+          benchmark-data-dir-path: docs/dev/benchmarks
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          summary-always: true
+          comment-on-alert: true
+          alert-comment-cc-users: "@SpriteOvO"
+      - name: Push results to GitHub Pages branch
+        if: github.event_name != 'pull_request' && (github.ref_name == 'main' || github.ref_name == 'main-dev')
+        run: git push 'https://${{ github.repository_owner }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git' gh-pages:gh-pages

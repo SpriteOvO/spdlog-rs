@@ -54,7 +54,7 @@ mod full_formatter;
     all(doc, not(doctest))
 ))]
 mod journald_formatter;
-#[cfg(feature = "json-formatter")]
+#[cfg(feature = "serde_json")]
 mod json_formatter;
 mod local_time_cacher;
 mod pattern_formatter;
@@ -68,7 +68,7 @@ pub use full_formatter::*;
     all(doc, not(doctest))
 ))]
 pub(crate) use journald_formatter::*;
-#[cfg(feature = "json-formatter")]
+#[cfg(feature = "serde_json")]
 pub use json_formatter::*;
 pub(crate) use local_time_cacher::*;
 pub use pattern_formatter::*;
