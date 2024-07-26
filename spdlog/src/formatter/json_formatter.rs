@@ -1,13 +1,14 @@
 use std::{
     fmt::{self, Write},
     marker::PhantomData,
+    time::SystemTime,
 };
 
 use cfg_if::cfg_if;
 use serde::{ser::SerializeStruct, Serialize};
 
 use crate::{
-    formatter::{FmtExtraInfo, Formatter, LOCAL_TIME_CACHER},
+    formatter::{FmtExtraInfo, Formatter},
     Error, Record, StringBuf, __EOL,
 };
 
@@ -24,16 +25,16 @@ impl<'a> Serialize for JsonRecord<'a> {
             serializer.serialize_struct("JsonRecord", if src_loc.is_none() { 4 } else { 5 })?;
 
         record.serialize_field("level", &self.0.level())?;
-        {
-            let mut local_time_cacher = LOCAL_TIME_CACHER.lock();
-            record.serialize_field::<str>(
-                "time",
-                local_time_cacher
-                    .get(self.0.time())
-                    .unix_timestamp_str()
-                    .as_ref(),
-            )?;
-        }
+        record.serialize_field(
+            "timestamp",
+            &self
+                .0
+                .time()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .expect("invalid timestamp")
+                .as_secs()
+                .to_string(),
+        )?;
         record.serialize_field("tid", &self.0.tid())?;
         record.serialize_field("payload", self.0.payload())?;
 
@@ -83,11 +84,11 @@ impl From<JsonFormatterError> for crate::Error {
 /// Output format:
 ///
 ///   ```json
-///   {"level":"info","time":"2024-01-01
+///   {"level":"info","timestamp":"2024-01-01
 ///   12:00:00","tid":123456,"payload":"test"}
 ///
 ///   // with source location
-///   {"level":"info","time":"2024-01-01
+///   {"level":"info","timestamp":"2024-01-01
 ///   12:00:00","tid":123456,"payload":"test","source_location":{"module_path":"
 ///   module","file":"file.rs","line":42}}
 ///   ```
@@ -154,7 +155,7 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","time":"{}","tid":{},"payload":"{}"}}{}"#,
+                r#"{{"level":"Info","timestamp":"{}","tid":{},"payload":"{}"}}{}"#,
                 local_time.timestamp(),
                 record.tid(),
                 "payload",
@@ -178,7 +179,7 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","time":"{}","tid":{},"payload":"{}","source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
+                r#"{{"level":"Info","timestamp":"{}","tid":{},"payload":"{}","source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
                 local_time.timestamp(),
                 record.tid(),
                 "payload",
