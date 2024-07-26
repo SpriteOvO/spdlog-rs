@@ -292,7 +292,7 @@ fn get_current_tid() -> u64 {
     }
 
     thread_local! {
-        static TID: RefCell<Option<u64>> = RefCell::new(None);
+        static TID: RefCell<Option<u64>> = const { RefCell::new(None)} ;
     }
 
     TID.with(|tid| *tid.borrow_mut().get_or_insert_with(get_current_tid_inner))
