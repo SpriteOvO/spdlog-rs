@@ -19,7 +19,7 @@ env:
   # - src/lib.rs
   # - Cargo.toml
   # - README.md
-  rust_minver: 1.56.0
+  rust_minver: 1.60.0
 
 defaults:
   run:
