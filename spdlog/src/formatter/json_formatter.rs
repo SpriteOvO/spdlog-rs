@@ -31,9 +31,10 @@ impl<'a> Serialize for JsonRecord<'a> {
                 .0
                 .time()
                 .duration_since(SystemTime::UNIX_EPOCH)
-                .expect("invalid timestamp")
-                .as_secs()
-                .to_string(),
+                .ok()
+                // https://github.com/SpriteOvO/spdlog-rs/pull/69#discussion_r1694063293
+                .and_then(|dur| u64::try_from(dur.as_millis()).ok())
+                .expect("invalid timestamp"),
         )?;
         record.serialize_field("tid", &self.0.tid())?;
         record.serialize_field("payload", self.0.payload())?;
@@ -155,8 +156,8 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","timestamp":"{}","tid":{},"payload":"{}"}}{}"#,
-                local_time.timestamp(),
+                r#"{{"level":"Info","timestamp":{},"tid":{},"payload":"{}"}}{}"#,
+                local_time.timestamp_millis(),
                 record.tid(),
                 "payload",
                 __EOL
@@ -179,8 +180,8 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","timestamp":"{}","tid":{},"payload":"{}","source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
-                local_time.timestamp(),
+                r#"{{"level":"Info","timestamp":{},"tid":{},"payload":"{}","source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
+                local_time.timestamp_millis(),
                 record.tid(),
                 "payload",
                 __EOL
