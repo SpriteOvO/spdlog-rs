@@ -67,6 +67,16 @@ pub enum Level {
     Trace,
 }
 
+#[cfg(feature = "serde")]
+impl serde::Serialize for Level {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
+}
+
 cfg_if! {
     if #[cfg(test)] {
         crate::utils::const_assert!(atomic::Atomic::<Level>::is_lock_free());

@@ -98,6 +98,13 @@ pub enum Error {
     #[error("failed to build pattern at runtime: {0}")]
     BuildPattern(BuildPatternError),
 
+    /// Returned by [`Formatter`]s when an error occurs in serializing a log.
+    ///
+    /// [`Formatter`]: crate::formatter::Formatter
+    #[cfg(feature = "serde")]
+    #[error("failed to serialize log: {0}")]
+    SerializeRecord(io::Error),
+
     /// Returned when multiple errors occurred.
     #[error("{0:?}")]
     Multiple(Vec<Error>),

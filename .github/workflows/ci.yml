@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        fn_features: ['', 'log native libsystemd multi-thread runtime-pattern']
+        fn_features: ['', 'log native libsystemd multi-thread runtime-pattern serde_json']
         cfg_feature: ['', 'flexible-string', 'source-location']
     runs-on: ${{ matrix.os }}
     steps:
@@ -212,7 +212,7 @@ jobs:
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
     - name: Run benchmark
-      run: cargo +nightly bench --features "multi-thread,runtime-pattern" --bench spdlog_rs --bench spdlog_rs_pattern | tee bench-results.txt
+      run: cargo +nightly bench --features "multi-thread,runtime-pattern,serde_json" --bench spdlog_rs --bench spdlog_rs_pattern | tee bench-results.txt
     - name: Discard irrelevant changes
       run: git checkout -- spdlog/Cargo.toml
     - name: Process results
