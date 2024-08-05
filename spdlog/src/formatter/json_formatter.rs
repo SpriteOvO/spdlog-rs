@@ -37,6 +37,9 @@ impl<'a> Serialize for JsonRecord<'a> {
                 .expect("invalid timestamp"),
         )?;
         record.serialize_field("payload", self.0.payload())?;
+        if let Some(logger_name) = self.0.logger_name() {
+            record.serialize_field("logger", logger_name)?;
+        }
         record.serialize_field("tid", &self.0.tid())?;
         if let Some(src_loc) = src_loc {
             record.serialize_field("source", src_loc)?;
@@ -156,6 +159,30 @@ mod tests {
             dest.to_string(),
             format!(
                 r#"{{"level":"Info","timestamp":{},"payload":"{}","tid":{}}}{}"#,
+                local_time.timestamp_millis(),
+                "payload",
+                record.tid(),
+                __EOL
+            )
+        );
+    }
+
+    #[test]
+    fn should_format_json_with_logger_name() {
+        let mut dest = StringBuf::new();
+        let formatter = JsonFormatter::new();
+        let record = Record::builder(Level::Info, "payload")
+            .logger_name("my-component")
+            .build();
+        let extra_info = formatter.format(&record, &mut dest).unwrap();
+
+        let local_time: DateTime<Local> = record.time().into();
+
+        assert_eq!(extra_info.style_range, None);
+        assert_eq!(
+            dest.to_string(),
+            format!(
+                r#"{{"level":"Info","timestamp":{},"payload":"{}","logger":"my-component","tid":{}}}{}"#,
                 local_time.timestamp_millis(),
                 "payload",
                 record.tid(),
