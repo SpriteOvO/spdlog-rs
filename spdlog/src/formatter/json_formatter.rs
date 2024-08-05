@@ -155,6 +155,10 @@ impl JsonFormatter {
 
         let json_record: JsonRecord = record.into();
 
+        // TODO: https://github.com/serde-rs/json/issues/863
+        //
+        // The performance can be significantly optimized here if the issue can be
+        // solved.
         dest.write_str(&serde_json::to_string(&json_record)?)?;
 
         dest.write_str(__EOL)?;

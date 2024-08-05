@@ -5,6 +5,8 @@ extern crate test;
 use std::{cell::RefCell, sync::Arc};
 
 use paste::paste;
+#[cfg(feature = "serde_json")]
+use spdlog::formatter::JsonFormatter;
 use spdlog::{
     formatter::{pattern, Formatter, FullFormatter, Pattern, PatternFormatter},
     prelude::*,
@@ -102,6 +104,12 @@ fn bench_full_pattern(bencher: &mut Bencher, pattern: impl Pattern + Clone + 'st
 #[bench]
 fn bench_1_full_formatter(bencher: &mut Bencher) {
     bench_formatter(bencher, FullFormatter::new())
+}
+
+#[cfg(feature = "serde_json")]
+#[bench]
+fn bench_1_json_formatter(bencher: &mut Bencher) {
+    bench_formatter(bencher, JsonFormatter::new())
 }
 
 #[bench]

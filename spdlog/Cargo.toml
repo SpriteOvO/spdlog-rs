@@ -109,6 +109,7 @@ harness = false
 [[bench]]
 name = "spdlog_rs_pattern"
 path = "benches/spdlog-rs/pattern.rs"
+required-features = ["runtime-pattern", "serde_json"]
 [[bench]]
 name = "fast_log"
 path = "benches/fast_log/main.rs"
