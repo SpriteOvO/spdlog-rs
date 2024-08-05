@@ -52,7 +52,6 @@ const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", 
 /// [`log!`]: crate::log!
 #[repr(u16)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum Level {
     /// Designates critical errors.
     Critical = 0,
@@ -66,6 +65,16 @@ pub enum Level {
     Debug,
     /// Designates very low priority, often extremely verbose, information.
     Trace,
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Level {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.as_str())
+    }
 }
 
 cfg_if! {

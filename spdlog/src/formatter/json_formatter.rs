@@ -158,7 +158,7 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","timestamp":{},"payload":"{}","tid":{}}}{}"#,
+                r#"{{"level":"info","timestamp":{},"payload":"{}","tid":{}}}{}"#,
                 local_time.timestamp_millis(),
                 "payload",
                 record.tid(),
@@ -182,7 +182,7 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","timestamp":{},"payload":"{}","logger":"my-component","tid":{}}}{}"#,
+                r#"{{"level":"info","timestamp":{},"payload":"{}","logger":"my-component","tid":{}}}{}"#,
                 local_time.timestamp_millis(),
                 "payload",
                 record.tid(),
@@ -206,7 +206,7 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","timestamp":{},"payload":"{}","tid":{},"source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
+                r#"{{"level":"info","timestamp":{},"payload":"{}","tid":{},"source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
                 local_time.timestamp_millis(),
                 "payload",
                 record.tid(),
