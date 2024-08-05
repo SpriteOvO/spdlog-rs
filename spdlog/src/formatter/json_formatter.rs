@@ -82,24 +82,61 @@ impl From<JsonFormatterError> for crate::Error {
 }
 
 #[rustfmt::skip]
-/// JSON logs formatter
+/// JSON logs formatter.
+/// 
+/// Each log will be serialized into a single line of JSON object with the following schema.
+/// 
+/// ## Schema
+/// 
+/// | Field       | Type         | Description                                                                                                                    |
+/// |-------------|--------------|--------------------------------------------------------------------------------------------------------------------------------|
+/// | `level`     | String       | The level of the log. Same as the return of [`Level::as_str`].                                                                 |
+/// | `timestamp` | Integer(u64) | The timestamp when the log was generated, in milliseconds since January 1, 1970 00:00:00 UTC.                                  |
+/// | `payload`   | String       | The contents of the log.                                                                                                       |
+/// | `logger`    | String/Null  | The name of the logger. Null if the logger has no name.                                                                        |
+/// | `tid`       | Integer(u64) | The thread ID when the log was generated.                                                                                      |
+/// | `source`    | Object/Null  | The source location of the log. See [`SourceLocation`] for its schema. Null if crate feature `source-location` is not enabled. |
+/// 
+/// <div class="warning">
+/// 
+/// - If the type of a field is Null, the field will not be present or be `null`.
+/// 
+/// - The order of the fields is not guaranteed.
+/// 
+/// </div>
+/// 
+/// ---
+/// 
+/// ## Examples
 ///
-/// Output format:
-///
-///   ```json
-///   {"level":"info","timestamp":"2024-01-01
-///   12:00:00","tid":123456,"payload":"test"}
-///
-///   // with source location
-///   {"level":"info","timestamp":"2024-01-01
-///   12:00:00","tid":123456,"payload":"test","source_location":{"module_path":"
-///   module","file":"file.rs","line":42}}
-///   ```
+///  - Default:
+/// 
+///    ```json
+///    {"level":"Info","timestamp":1722817424798,"payload":"hello, world!","tid":3472525}
+///    {"level":"Error","timestamp":1722817424798,"payload":"something went wrong","tid":3472525}
+///    ```
+/// 
+///  - If the logger has a name:
+/// 
+///    ```json
+///    {"level":"Info","timestamp":1722817541459,"payload":"hello, world!","logger":"app-component","tid":3478045}
+///    {"level":"Error","timestamp":1722817541459,"payload":"something went wrong","logger":"app-component","tid":3478045}
+///    ```
+/// 
+///  - If crate feature `source-location` is enabled:
+/// 
+///    ```json
+///    {"level":"Info","timestamp":1722817572709,"payload":"hello, world!","tid":3479856,"source":{"module_path":"my_app::say_hi","file":"src/say_hi.rs","line":4,"column":5}}
+///    {"level":"Error","timestamp":1722817572709,"payload":"something went wrong","tid":3479856,"source":{"module_path":"my_app::say_hi","file":"src/say_hi.rs","line":5,"column":5}}
+///    ```
+/// 
+/// [`Level::as_str`]: crate::Level::as_str
+/// [`SourceLocation`]: crate::SourceLocation
 #[derive(Clone)]
 pub struct JsonFormatter(PhantomData<()>);
 
 impl JsonFormatter {
-    /// Create a `JsonFormatter`
+    /// Constructs a `JsonFormatter`.
     #[must_use]
     pub fn new() -> JsonFormatter {
         JsonFormatter(PhantomData)

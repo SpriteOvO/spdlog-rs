@@ -5,6 +5,18 @@ use std::path;
 /// Usually users don't need to construct it manually, but if you do, use macro
 /// [`source_location_current`].
 ///
+/// ## Schema
+///
+/// This struct is implemented [`serde::Serialize`] if crate feature `serde` is
+/// enabled.
+///
+/// | Field         | Type   |
+/// |---------------|--------|
+/// | `module_path` | String |
+/// | `file`        | String |
+/// | `line`        | u32    |
+/// | `column`      | u32    |
+///
 /// [`source_location_current`]: crate::source_location_current
 #[derive(Clone, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
