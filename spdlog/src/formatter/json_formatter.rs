@@ -36,9 +36,8 @@ impl<'a> Serialize for JsonRecord<'a> {
                 .and_then(|dur| u64::try_from(dur.as_millis()).ok())
                 .expect("invalid timestamp"),
         )?;
-        record.serialize_field("tid", &self.0.tid())?;
         record.serialize_field("payload", self.0.payload())?;
-
+        record.serialize_field("tid", &self.0.tid())?;
         if let Some(src_loc) = src_loc {
             record.serialize_field("source", src_loc)?;
         }
@@ -156,10 +155,10 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","timestamp":{},"tid":{},"payload":"{}"}}{}"#,
+                r#"{{"level":"Info","timestamp":{},"payload":"{}","tid":{}}}{}"#,
                 local_time.timestamp_millis(),
-                record.tid(),
                 "payload",
+                record.tid(),
                 __EOL
             )
         );
@@ -180,10 +179,10 @@ mod tests {
         assert_eq!(
             dest.to_string(),
             format!(
-                r#"{{"level":"Info","timestamp":{},"tid":{},"payload":"{}","source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
+                r#"{{"level":"Info","timestamp":{},"payload":"{}","tid":{},"source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
                 local_time.timestamp_millis(),
-                record.tid(),
                 "payload",
+                record.tid(),
                 __EOL
             )
         );
