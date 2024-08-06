@@ -112,22 +112,22 @@ impl From<JsonFormatterError> for crate::Error {
 ///  - Default:
 /// 
 ///    ```json
-///    {"level":"Info","timestamp":1722817424798,"payload":"hello, world!","tid":3472525}
-///    {"level":"Error","timestamp":1722817424798,"payload":"something went wrong","tid":3472525}
+///    {"level":"info","timestamp":1722817424798,"payload":"hello, world!","tid":3472525}
+///    {"level":"error","timestamp":1722817424798,"payload":"something went wrong","tid":3472525}
 ///    ```
 /// 
 ///  - If the logger has a name:
 /// 
 ///    ```json
-///    {"level":"Info","timestamp":1722817541459,"payload":"hello, world!","logger":"app-component","tid":3478045}
-///    {"level":"Error","timestamp":1722817541459,"payload":"something went wrong","logger":"app-component","tid":3478045}
+///    {"level":"info","timestamp":1722817541459,"payload":"hello, world!","logger":"app-component","tid":3478045}
+///    {"level":"error","timestamp":1722817541459,"payload":"something went wrong","logger":"app-component","tid":3478045}
 ///    ```
 /// 
 ///  - If crate feature `source-location` is enabled:
 /// 
 ///    ```json
-///    {"level":"Info","timestamp":1722817572709,"payload":"hello, world!","tid":3479856,"source":{"module_path":"my_app::say_hi","file":"src/say_hi.rs","line":4,"column":5}}
-///    {"level":"Error","timestamp":1722817572709,"payload":"something went wrong","tid":3479856,"source":{"module_path":"my_app::say_hi","file":"src/say_hi.rs","line":5,"column":5}}
+///    {"level":"info","timestamp":1722817572709,"payload":"hello, world!","tid":3479856,"source":{"module_path":"my_app::say_hi","file":"src/say_hi.rs","line":4,"column":5}}
+///    {"level":"error","timestamp":1722817572709,"payload":"something went wrong","tid":3479856,"source":{"module_path":"my_app::say_hi","file":"src/say_hi.rs","line":5,"column":5}}
 ///    ```
 /// 
 /// [`Level::as_str`]: crate::Level::as_str
