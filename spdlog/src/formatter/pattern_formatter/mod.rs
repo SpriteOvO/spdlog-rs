@@ -375,6 +375,12 @@ where
         dest: &mut StringBuf,
         fmt_ctx: &mut FormatterContext,
     ) -> crate::Result<()> {
+        cfg_if::cfg_if! {
+            if #[cfg(not(feature = "flexible-string"))] {
+                dest.reserve(crate::string_buf::RESERVE_SIZE);
+            }
+        };
+
         let mut pat_ctx = PatternContext::new(fmt_ctx);
         self.pattern.format(record, dest, &mut pat_ctx)?;
         Ok(())
