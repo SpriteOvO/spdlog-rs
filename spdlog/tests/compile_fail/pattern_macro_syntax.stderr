@@ -4,7 +4,7 @@ error: unexpected end of input, expected identifier
 8 |     pattern!("{logger} {$custom_pat}", {$custom_pat} => custom_pat_creator, {$} => custom_pat_creator);
   |                                                                               ^
 
-error: unexpected token
+error: unexpected token, expected `}`
  --> tests/compile_fail/pattern_macro_syntax.rs:9:85
   |
 9 |     pattern!("{logger} {$custom_pat}", {$custom_pat} => custom_pat_creator, {$custom-pat2} => custom_pat_creator);
