@@ -34,7 +34,7 @@ fn impl_manually() {
     use std::fmt::Write;
 
     use spdlog::{
-        formatter::{FmtExtraInfo, Formatter},
+        formatter::{Formatter, FormatterContext},
         prelude::*,
         Record, StringBuf,
     };
@@ -43,7 +43,12 @@ fn impl_manually() {
     struct MyFormatter;
 
     impl Formatter for MyFormatter {
-        fn format(&self, record: &Record, dest: &mut StringBuf) -> spdlog::Result<FmtExtraInfo> {
+        fn format(
+            &self,
+            record: &Record,
+            dest: &mut StringBuf,
+            ctx: &mut FormatterContext,
+        ) -> spdlog::Result<()> {
             let style_range_begin = dest.len();
 
             dest.write_str(&record.level().as_str().to_ascii_uppercase())
@@ -53,9 +58,8 @@ fn impl_manually() {
 
             writeln!(dest, " {}", record.payload()).map_err(spdlog::Error::FormatRecord)?;
 
-            Ok(FmtExtraInfo::builder()
-                .style_range(style_range_begin..style_range_end)
-                .build())
+            ctx.set_style_range(Some(style_range_begin..style_range_end));
+            Ok(())
         }
     }
 

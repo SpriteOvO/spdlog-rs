@@ -8,7 +8,7 @@ use std::fmt::{self, Write};
 use cfg_if::cfg_if;
 
 use crate::{
-    formatter::{FmtExtraInfo, Formatter},
+    formatter::{Formatter, FormatterContext},
     Error, Record, StringBuf, __EOL,
 };
 
@@ -25,7 +25,8 @@ impl JournaldFormatter {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-    ) -> Result<FmtExtraInfo, fmt::Error> {
+        ctx: &mut FormatterContext,
+    ) -> Result<(), fmt::Error> {
         cfg_if! {
             if #[cfg(not(feature = "flexible-string"))] {
                 dest.reserve(crate::string_buf::RESERVE_SIZE);
@@ -49,15 +50,20 @@ impl JournaldFormatter {
         dest.write_str(record.payload())?;
         dest.write_str(__EOL)?;
 
-        Ok(FmtExtraInfo {
-            style_range: Some(style_range_begin..style_range_end),
-        })
+        ctx.set_style_range(Some(style_range_begin..style_range_end));
+        Ok(())
     }
 }
 
 impl Formatter for JournaldFormatter {
-    fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
-        self.format_impl(record, dest).map_err(Error::FormatRecord)
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        ctx: &mut FormatterContext,
+    ) -> crate::Result<()> {
+        self.format_impl(record, dest, ctx)
+            .map_err(Error::FormatRecord)
     }
 }
 

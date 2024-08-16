@@ -8,7 +8,7 @@ use cfg_if::cfg_if;
 use serde::{ser::SerializeStruct, Serialize};
 
 use crate::{
-    formatter::{FmtExtraInfo, Formatter},
+    formatter::{Formatter, FormatterContext},
     Error, Record, StringBuf, __EOL,
 };
 
@@ -146,7 +146,8 @@ impl JsonFormatter {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-    ) -> Result<FmtExtraInfo, JsonFormatterError> {
+        _ctx: &mut FormatterContext,
+    ) -> Result<(), JsonFormatterError> {
         cfg_if! {
             if #[cfg(not(feature = "flexible-string"))] {
                 dest.reserve(crate::string_buf::RESERVE_SIZE);
@@ -163,13 +164,18 @@ impl JsonFormatter {
 
         dest.write_str(__EOL)?;
 
-        Ok(FmtExtraInfo { style_range: None })
+        Ok(())
     }
 }
 
 impl Formatter for JsonFormatter {
-    fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
-        self.format_impl(record, dest).map_err(Into::into)
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        ctx: &mut FormatterContext,
+    ) -> crate::Result<()> {
+        self.format_impl(record, dest, ctx).map_err(Into::into)
     }
 }
 
@@ -191,11 +197,12 @@ mod tests {
         let mut dest = StringBuf::new();
         let formatter = JsonFormatter::new();
         let record = Record::builder(Level::Info, "payload").build();
-        let extra_info = formatter.format(&record, &mut dest).unwrap();
+        let mut ctx = FormatterContext::new();
+        formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
         let local_time: DateTime<Local> = record.time().into();
 
-        assert_eq!(extra_info.style_range, None);
+        assert_eq!(ctx.style_range(), None);
         assert_eq!(
             dest.to_string(),
             format!(
@@ -215,11 +222,12 @@ mod tests {
         let record = Record::builder(Level::Info, "payload")
             .logger_name("my-component")
             .build();
-        let extra_info = formatter.format(&record, &mut dest).unwrap();
+        let mut ctx = FormatterContext::new();
+        formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
         let local_time: DateTime<Local> = record.time().into();
 
-        assert_eq!(extra_info.style_range, None);
+        assert_eq!(ctx.style_range(), None);
         assert_eq!(
             dest.to_string(),
             format!(
@@ -239,11 +247,12 @@ mod tests {
         let record = Record::builder(Level::Info, "payload")
             .source_location(Some(SourceLocation::__new("module", "file.rs", 1, 2)))
             .build();
-        let extra_info = formatter.format(&record, &mut dest).unwrap();
+        let mut ctx = FormatterContext::new();
+        formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
         let local_time: DateTime<Local> = record.time().into();
 
-        assert_eq!(extra_info.style_range, None);
+        assert_eq!(ctx.style_range(), None);
         assert_eq!(
             dest.to_string(),
             format!(

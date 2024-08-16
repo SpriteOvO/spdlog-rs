@@ -10,7 +10,7 @@ use regex::Regex;
 use spdlog::formatter::runtime_pattern;
 use spdlog::{
     error,
-    formatter::{pattern, Formatter, Pattern, PatternFormatter},
+    formatter::{pattern, Formatter, FormatterContext, Pattern, PatternFormatter},
     prelude::*,
     sink::Sink,
     Error, StringBuf, __EOL,
@@ -138,9 +138,12 @@ impl Sink for MockSink {
     fn log(&self, record: &spdlog::Record) -> spdlog::Result<()> {
         let mut buf = StringBuf::new();
         let fmt = self.formatter.lock().unwrap();
-        let extra_info = fmt.as_ref().unwrap().format(record, &mut buf).unwrap();
-        *self.last_msg.lock().unwrap() =
-            Some((String::from(buf.as_str()), extra_info.style_range()));
+        let mut ctx = FormatterContext::new();
+        fmt.as_ref()
+            .unwrap()
+            .format(record, &mut buf, &mut ctx)
+            .unwrap();
+        *self.last_msg.lock().unwrap() = Some((String::from(buf.as_str()), ctx.style_range()));
         Ok(())
     }
 

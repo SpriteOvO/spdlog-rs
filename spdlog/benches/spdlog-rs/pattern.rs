@@ -8,7 +8,7 @@ use paste::paste;
 #[cfg(feature = "serde_json")]
 use spdlog::formatter::JsonFormatter;
 use spdlog::{
-    formatter::{pattern, Formatter, FullFormatter, Pattern, PatternFormatter},
+    formatter::{pattern, Formatter, FormatterContext, FullFormatter, Pattern, PatternFormatter},
     prelude::*,
     sink::Sink,
     Record, StringBuf,
@@ -22,10 +22,10 @@ include!(concat!(
 ));
 use test_utils::*;
 
-#[derive(Clone)]
 struct BenchSink<F> {
     formatter: F,
     buffer: RefCell<StringBuf>,
+    ctx: RefCell<FormatterContext>,
 }
 
 impl<F: Formatter> BenchSink<F> {
@@ -33,6 +33,7 @@ impl<F: Formatter> BenchSink<F> {
         Self {
             formatter,
             buffer: RefCell::new(StringBuf::with_capacity(512)),
+            ctx: RefCell::new(FormatterContext::new()),
         }
     }
 }
@@ -43,8 +44,11 @@ unsafe impl<F> Sync for BenchSink<F> {}
 
 impl<F: Formatter> Sink for BenchSink<F> {
     fn log(&self, record: &Record) -> spdlog::Result<()> {
-        self.formatter
-            .format(record, &mut self.buffer.borrow_mut())?;
+        self.formatter.format(
+            record,
+            &mut self.buffer.borrow_mut(),
+            &mut self.ctx.borrow_mut(),
+        )?;
         Ok(())
     }
 

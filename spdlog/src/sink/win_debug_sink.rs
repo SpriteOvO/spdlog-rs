@@ -1,6 +1,7 @@
 use std::{ffi::OsStr, iter::once};
 
 use crate::{
+    formatter::FormatterContext,
     sink::{helper, Sink},
     Record, Result, StringBuf,
 };
@@ -48,10 +49,11 @@ impl Sink for WinDebugSink {
         use std::os::windows::ffi::OsStrExt;
 
         let mut string_buf = StringBuf::new();
+        let mut ctx = FormatterContext::new();
         self.common_impl
             .formatter
             .read()
-            .format(record, &mut string_buf)?;
+            .format(record, &mut string_buf, &mut ctx)?;
 
         let wide: Vec<u16> = OsStr::new(&string_buf)
             .encode_wide()

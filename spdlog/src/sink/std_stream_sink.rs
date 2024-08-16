@@ -8,6 +8,7 @@ use std::{
 use if_chain::if_chain;
 
 use crate::{
+    formatter::FormatterContext,
     sink::{helper, Sink},
     terminal_style::{LevelStyles, Style, StyleMode},
     Error, Level, Record, Result, StringBuf,
@@ -161,18 +162,18 @@ impl StdStreamSink {
 impl Sink for StdStreamSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
-        let extra_info = self
-            .common_impl
+        let mut ctx = FormatterContext::new();
+        self.common_impl
             .formatter
             .read()
-            .format(record, &mut string_buf)?;
+            .format(record, &mut string_buf, &mut ctx)?;
 
         let mut dest = self.dest.lock();
 
         (|| {
             if_chain! {
                 if self.should_render_style;
-                if let Some(style_range) = extra_info.style_range();
+                if let Some(style_range) = ctx.style_range();
                 then {
                     let style = self.level_styles.style(record.level());
 

@@ -5,14 +5,14 @@ pub mod __pattern;
 #[cfg(feature = "runtime-pattern")]
 mod runtime;
 
-use std::{fmt::Write, ops::Range, sync::Arc};
+use std::{fmt::Write, sync::Arc};
 
 use dyn_clone::*;
 #[cfg(feature = "runtime-pattern")]
 pub use runtime::*;
 
 use crate::{
-    formatter::{FmtExtraInfo, FmtExtraInfoBuilder, Formatter},
+    formatter::{Formatter, FormatterContext},
     Error, Record, StringBuf,
 };
 
@@ -369,36 +369,31 @@ impl<P> Formatter for PatternFormatter<P>
 where
     P: 'static + Clone + Pattern,
 {
-    fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
-        let mut ctx = PatternContext::new(FmtExtraInfoBuilder::default());
-        self.pattern.format(record, dest, &mut ctx)?;
-        Ok(ctx.fmt_info_builder.build())
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        fmt_ctx: &mut FormatterContext,
+    ) -> crate::Result<()> {
+        let mut pat_ctx = PatternContext::new(fmt_ctx);
+        self.pattern.format(record, dest, &mut pat_ctx)?;
+        Ok(())
     }
 }
 
 /// Provides context for patterns.
 ///
 /// There is nothing to set up here at the moment, reserved for future use.
-#[derive(Clone, Debug)]
-pub struct PatternContext {
-    fmt_info_builder: FmtExtraInfoBuilder,
+#[derive(Debug)]
+pub struct PatternContext<'a> {
+    fmt_ctx: &'a mut FormatterContext,
 }
 
-impl PatternContext {
+impl<'a> PatternContext<'a> {
     /// Creates a new `PatternContext` object.
     #[must_use]
-    fn new(fmt_info_builder: FmtExtraInfoBuilder) -> Self {
-        Self { fmt_info_builder }
-    }
-
-    /// Sets the style range of the log message written by the patterns.
-    ///
-    /// This function is reserved for use by the style range pattern. Other
-    /// built-in patterns should not use this function. User-defined
-    /// patterns cannot use this function due to type privacy.
-    fn set_style_range(&mut self, style_range: Range<usize>) {
-        let builder = std::mem::take(&mut self.fmt_info_builder);
-        self.fmt_info_builder = builder.style_range(style_range);
+    fn new(fmt_ctx: &'a mut FormatterContext) -> Self {
+        Self { fmt_ctx }
     }
 }
 
@@ -1196,6 +1191,8 @@ tuple_pattern! {
 
 #[cfg(test)]
 pub mod tests {
+    use std::ops::Range;
+
     use super::*;
     use crate::{Level, SourceLocation};
 
@@ -1217,15 +1214,14 @@ pub mod tests {
     {
         let record = get_mock_record();
         let mut output = StringBuf::new();
-        let mut ctx = PatternContext::new(FmtExtraInfoBuilder::default());
+        let mut fmt_ctx = FormatterContext::new();
+        let mut pat_ctx = PatternContext::new(&mut fmt_ctx);
 
-        let format_result = pattern.format(&record, &mut output, &mut ctx);
+        let format_result = pattern.format(&record, &mut output, &mut pat_ctx);
         assert!(format_result.is_ok());
 
         assert_eq!(output.as_str(), formatted.as_ref());
-
-        let fmt_info = ctx.fmt_info_builder.build();
-        assert_eq!(fmt_info.style_range(), style_range);
+        assert_eq!(fmt_ctx.style_range(), style_range);
     }
 
     #[test]

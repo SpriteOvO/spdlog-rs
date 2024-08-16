@@ -16,7 +16,7 @@ use std::{
 
 use atomic::Atomic;
 use spdlog::{
-    formatter::{FmtExtraInfo, Formatter, Pattern, PatternFormatter},
+    formatter::{Formatter, FormatterContext, Pattern, PatternFormatter},
     sink::{Sink, WriteSink, WriteSinkBuilder},
     Error, ErrorHandler, LevelFilter, Logger, LoggerBuilder, Record, RecordOwned, Result,
     StringBuf,
@@ -193,11 +193,15 @@ impl NoModFormatter {
 }
 
 impl Formatter for NoModFormatter {
-    fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo> {
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        _ctx: &mut FormatterContext,
+    ) -> Result<()> {
         dest.write_str(record.payload())
             .map_err(Error::FormatRecord)?;
-
-        Ok(FmtExtraInfo::new())
+        Ok(())
     }
 }
 

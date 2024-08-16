@@ -84,27 +84,33 @@ use crate::{Record, Result, StringBuf};
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub trait Formatter: Send + Sync + DynClone {
     /// Formats a log record.
-    fn format(&self, record: &Record, dest: &mut StringBuf) -> Result<FmtExtraInfo>;
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        ctx: &mut FormatterContext,
+    ) -> Result<()>;
 }
 clone_trait_object!(Formatter);
 
-/// Extra information for formatted text.
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
-pub struct FmtExtraInfo {
+/// Provides context for formatters.
+#[derive(Debug, Default)]
+pub struct FormatterContext {
     style_range: Option<Range<usize>>,
 }
 
-impl FmtExtraInfo {
-    /// Constructs a `FmtExtraInfo`.
+impl FormatterContext {
+    /// Constructs a `FormatterContext`.
     #[must_use]
-    pub fn new() -> FmtExtraInfo {
-        FmtExtraInfo::default()
+    pub fn new() -> Self {
+        Self { style_range: None }
     }
 
-    /// Gets a [`FmtExtraInfoBuilder`].
-    #[must_use]
-    pub fn builder() -> FmtExtraInfoBuilder {
-        FmtExtraInfoBuilder::new()
+    /// Sets style range (in bytes) of the formatted text.
+    ///
+    /// Users must ensure that indexes are correctly UTF-8 boundary.
+    pub fn set_style_range(&mut self, range: Option<Range<usize>>) {
+        self.style_range = range;
     }
 
     /// A style range (in bytes) of the formatted text.
@@ -118,37 +124,5 @@ impl FmtExtraInfo {
     #[must_use]
     pub fn style_range(&self) -> Option<Range<usize>> {
         self.style_range.clone() // This clone is cheap
-    }
-}
-
-#[allow(missing_docs)]
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
-pub struct FmtExtraInfoBuilder {
-    info: FmtExtraInfo,
-}
-
-impl FmtExtraInfoBuilder {
-    /// Constructs a `FmtExtraInfoBuilder`.
-    ///
-    /// The default value of [`FmtExtraInfo`] is the same as
-    /// [`FmtExtraInfo::new`].
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Sets style range (in bytes) of the formatted text.
-    ///
-    /// Users must ensure that indexes are correctly UTF-8 boundary.
-    #[must_use]
-    pub fn style_range(mut self, range: Range<usize>) -> Self {
-        self.info.style_range = Some(range);
-        self
-    }
-
-    /// Builds a [`FmtExtraInfo`].
-    #[must_use]
-    pub fn build(self) -> FmtExtraInfo {
-        self.info
     }
 }

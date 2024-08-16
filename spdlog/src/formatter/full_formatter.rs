@@ -5,7 +5,7 @@ use std::fmt::{self, Write};
 use cfg_if::cfg_if;
 
 use crate::{
-    formatter::{FmtExtraInfo, Formatter, LOCAL_TIME_CACHER},
+    formatter::{Formatter, FormatterContext, LOCAL_TIME_CACHER},
     Error, Record, StringBuf, __EOL,
 };
 
@@ -54,7 +54,8 @@ impl FullFormatter {
         &self,
         record: &Record,
         dest: &mut StringBuf,
-    ) -> Result<FmtExtraInfo, fmt::Error> {
+        ctx: &mut FormatterContext,
+    ) -> Result<(), fmt::Error> {
         cfg_if! {
             if #[cfg(not(feature = "flexible-string"))] {
                 dest.reserve(crate::string_buf::RESERVE_SIZE);
@@ -98,15 +99,20 @@ impl FullFormatter {
             dest.write_str(__EOL)?;
         }
 
-        Ok(FmtExtraInfo {
-            style_range: Some(style_range_begin..style_range_end),
-        })
+        ctx.set_style_range(Some(style_range_begin..style_range_end));
+        Ok(())
     }
 }
 
 impl Formatter for FullFormatter {
-    fn format(&self, record: &Record, dest: &mut StringBuf) -> crate::Result<FmtExtraInfo> {
-        self.format_impl(record, dest).map_err(Error::FormatRecord)
+    fn format(
+        &self,
+        record: &Record,
+        dest: &mut StringBuf,
+        ctx: &mut FormatterContext,
+    ) -> crate::Result<()> {
+        self.format_impl(record, dest, ctx)
+            .map_err(Error::FormatRecord)
     }
 }
 
@@ -127,7 +133,10 @@ mod tests {
     fn format() {
         let record = Record::new(Level::Warn, "test log content");
         let mut buf = StringBuf::new();
-        let extra_info = FullFormatter::new().format(&record, &mut buf).unwrap();
+        let mut ctx = FormatterContext::new();
+        FullFormatter::new()
+            .format(&record, &mut buf, &mut ctx)
+            .unwrap();
 
         let local_time: DateTime<Local> = record.time().into();
         assert_eq!(
@@ -138,6 +147,6 @@ mod tests {
             ),
             buf
         );
-        assert_eq!(Some(27..31), extra_info.style_range());
+        assert_eq!(Some(27..31), ctx.style_range());
     }
 }

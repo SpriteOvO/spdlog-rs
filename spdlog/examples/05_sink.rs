@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use atomic::{Atomic, Ordering};
 use spdlog::{
-    formatter::{Formatter, FullFormatter},
+    formatter::{Formatter, FormatterContext, FullFormatter},
     prelude::*,
     sink::Sink,
     ErrorHandler, Record, StringBuf,
@@ -34,7 +34,10 @@ impl CollectVecSink {
 impl Sink for CollectVecSink {
     fn log(&self, record: &Record) -> spdlog::Result<()> {
         let mut string_buf = StringBuf::new();
-        self.formatter.read().format(record, &mut string_buf)?;
+        let mut ctx = FormatterContext::new();
+        self.formatter
+            .read()
+            .format(record, &mut string_buf, &mut ctx)?;
         self.collected.lock().push(string_buf.to_string());
         Ok(())
     }

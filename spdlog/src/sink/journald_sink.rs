@@ -1,7 +1,7 @@
 use std::{io, os::raw::c_int};
 
 use crate::{
-    formatter::JournaldFormatter,
+    formatter::{FormatterContext, JournaldFormatter},
     sink::{helper, Sink},
     Error, Level, Record, Result, StdResult, StringBuf,
 };
@@ -117,10 +117,11 @@ impl JournaldSink {
 impl Sink for JournaldSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
+        let mut ctx = FormatterContext::new();
         self.common_impl
             .formatter
             .read()
-            .format(record, &mut string_buf)?;
+            .format(record, &mut string_buf, &mut ctx)?;
 
         let kvs = [
             format!("MESSAGE={}", string_buf),

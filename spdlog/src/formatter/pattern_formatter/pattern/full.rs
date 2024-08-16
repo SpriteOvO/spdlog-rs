@@ -30,13 +30,14 @@ impl Pattern for Full {
         dest: &mut StringBuf,
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let extra_info = self.full_formatter.format(record, dest)?;
-        if let Some(style_range) = extra_info.style_range {
-            // Before we support multiple style ranges, if there is already a style range
-            // set, we don't override it.
-            if ctx.fmt_info_builder.info.style_range.is_none() {
-                ctx.set_style_range(style_range)
-            }
+        let saved_style_range = ctx.fmt_ctx.style_range.clone();
+
+        self.full_formatter.format(record, dest, ctx.fmt_ctx)?;
+
+        // TODO: Before we support multiple style ranges, if there is already a style
+        // range set, we don't override it.
+        if let Some(saved_style_range) = saved_style_range {
+            ctx.fmt_ctx.set_style_range(Some(saved_style_range));
         }
         Ok(())
     }

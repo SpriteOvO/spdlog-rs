@@ -16,6 +16,7 @@ use chrono::prelude::*;
 
 use crate::{
     error::InvalidArgumentError,
+    formatter::FormatterContext,
     sink::{helper, Sink},
     sync::*,
     utils, Error, Record, Result, StringBuf,
@@ -230,10 +231,11 @@ impl RotatingFileSink {
 impl Sink for RotatingFileSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
+        let mut ctx = FormatterContext::new();
         self.common_impl
             .formatter
             .read()
-            .format(record, &mut string_buf)?;
+            .format(record, &mut string_buf, &mut ctx)?;
 
         self.rotator.log(record, &string_buf)
     }

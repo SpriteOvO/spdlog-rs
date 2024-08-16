@@ -36,7 +36,8 @@ where
         self.inner.format(record, dest, ctx)?;
 
         let style_range_end = dest.len();
-        ctx.set_style_range(style_range_start..style_range_end);
+        ctx.fmt_ctx
+            .set_style_range(Some(style_range_start..style_range_end));
 
         Ok(())
     }
