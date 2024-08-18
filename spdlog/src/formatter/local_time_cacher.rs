@@ -21,7 +21,7 @@ where
 
 #[derive(Clone)]
 pub(crate) struct LocalTimeCacher {
-    stored_key: CacheKey,
+    stored_key: i64,
     cache_values: Option<CacheValues>,
 }
 
@@ -32,15 +32,8 @@ pub(crate) struct TimeDate<'a> {
 }
 
 #[derive(Clone, Eq, PartialEq)]
-enum CacheKey {
-    NonLeap(i64),
-    Leap(i64),
-}
-
-#[derive(Clone, Eq, PartialEq)]
 struct CacheValues {
     local_time: DateTime<Local>,
-    is_leap_second: bool,
     full_second_str: Option<String>,
     year: Option<i32>,
     year_str: Option<String>,
@@ -74,7 +67,7 @@ impl LocalTimeCacher {
     #[must_use]
     fn new() -> LocalTimeCacher {
         LocalTimeCacher {
-            stored_key: CacheKey::NonLeap(0),
+            stored_key: 0,
             cache_values: None,
         }
     }
@@ -96,9 +89,9 @@ impl LocalTimeCacher {
         };
         let millisecond = reduced_nanosecond / 1_000_000;
 
-        let cache_key = CacheKey::new(&utc_time, is_leap_second);
+        let cache_key = utc_time.timestamp();
         if self.cache_values.is_none() || self.stored_key != cache_key {
-            self.cache_values = Some(CacheValues::new(utc_time, is_leap_second));
+            self.cache_values = Some(CacheValues::new(utc_time));
             self.stored_key = cache_key;
         }
 
@@ -163,6 +156,7 @@ impl<'a> TimeDate<'a> {
         hour: u32,
         hour12: (bool, u32),
         minute: u32,
+        second: u32,
     }
 
     impl_cache_fields_str_getter! {
@@ -173,23 +167,6 @@ impl<'a> TimeDate<'a> {
         minute => minute_str : "{:02}",
         second => second_str : "{:02}",
         timestamp => unix_timestamp_str : "{}",
-    }
-
-    #[must_use]
-    pub(crate) fn second(&mut self) -> u32 {
-        match self.cached.second {
-            Some(value) => value,
-            None => {
-                let value = if !self.cached.is_leap_second {
-                    self.cached.local_time.second()
-                } else {
-                    // https://www.itu.int/dms_pubrec/itu-r/rec/tf/R-REC-TF.460-6-200202-I!!PDF-E.pdf
-                    60
-                };
-                self.cached.second = Some(value);
-                value
-            }
-        }
     }
 
     #[must_use]
@@ -320,24 +297,11 @@ impl<'a> TimeDate<'a> {
     }
 }
 
-impl CacheKey {
-    #[must_use]
-    fn new(utc_time: &DateTime<Utc>, is_leap_second: bool) -> Self {
-        let timestamp = utc_time.timestamp();
-        if !is_leap_second {
-            Self::NonLeap(timestamp)
-        } else {
-            Self::Leap(timestamp)
-        }
-    }
-}
-
 impl CacheValues {
     #[must_use]
-    fn new(utc_time: DateTime<Utc>, is_leap_second: bool) -> Self {
+    fn new(utc_time: DateTime<Utc>) -> Self {
         CacheValues {
             local_time: utc_time.into(),
-            is_leap_second,
             full_second_str: None,
             year: None,
             year_str: None,
@@ -406,63 +370,5 @@ impl fmt::Debug for TimeDateLazyLocked<'_> {
         f.debug_struct("TimeDateLazyLocked")
             .field("time", &self.time)
             .finish()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn leap_second() {
-        let (date_2015, date_2022) = (
-            NaiveDate::from_ymd_opt(2015, 6, 30).unwrap(),
-            NaiveDate::from_ymd_opt(2022, 6, 30).unwrap(),
-        );
-
-        enum Kind {
-            NonLeap,
-            Leap,
-        }
-
-        let datetimes = [
-            (
-                Kind::NonLeap,
-                date_2015.and_hms_nano_opt(23, 59, 59, 100_000_000).unwrap(),
-            ),
-            (
-                Kind::Leap,
-                date_2015
-                    .and_hms_nano_opt(23, 59, 59, 1_000_000_000)
-                    .unwrap(),
-            ),
-            (
-                Kind::Leap,
-                date_2015
-                    .and_hms_nano_opt(23, 59, 59, 1_100_000_000)
-                    .unwrap(),
-            ),
-            (Kind::NonLeap, date_2022.and_hms_opt(23, 59, 59).unwrap()),
-            (
-                Kind::NonLeap,
-                date_2022.and_hms_nano_opt(23, 59, 59, 100_000_000).unwrap(),
-            ),
-        ];
-
-        let mut cacher = LocalTimeCacher::new();
-
-        for datetime in datetimes {
-            let leap = match datetime.0 {
-                Kind::NonLeap => false,
-                Kind::Leap => true,
-            };
-            let datetime = datetime.1;
-
-            println!(" => checking '{datetime}'");
-
-            let mut result = cacher.get_inner(datetime.and_local_timezone(Utc).unwrap());
-            assert_eq!(result.cached.is_leap_second, leap);
-            assert_eq!(result.second(), if !leap { 59 } else { 60 });
-        }
     }
 }
