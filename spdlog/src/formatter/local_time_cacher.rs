@@ -21,7 +21,7 @@ where
 
 #[derive(Clone)]
 pub(crate) struct LocalTimeCacher {
-    stored_key: i64,
+    stored_key: u64,
     cache_values: Option<CacheValues>,
 }
 
@@ -74,30 +74,19 @@ impl LocalTimeCacher {
 
     #[must_use]
     pub(crate) fn get(&mut self, system_time: SystemTime) -> TimeDate {
-        self.get_inner(system_time.into())
-    }
+        let since_epoch = system_time.duration_since(SystemTime::UNIX_EPOCH).unwrap();
+        let nanosecond = since_epoch.subsec_nanos();
+        let millisecond = nanosecond / 1_000_000;
 
-    fn get_inner(&mut self, utc_time: DateTime<Utc>) -> TimeDate {
-        const LEAP_BOUNDARY: u32 = 1_000_000_000;
-
-        let nanosecond = utc_time.nanosecond();
-        let is_leap_second = nanosecond >= LEAP_BOUNDARY;
-        let reduced_nanosecond = if is_leap_second {
-            nanosecond - LEAP_BOUNDARY
-        } else {
-            nanosecond
-        };
-        let millisecond = reduced_nanosecond / 1_000_000;
-
-        let cache_key = utc_time.timestamp();
+        let cache_key = since_epoch.as_secs(); // Unix timestamp
         if self.cache_values.is_none() || self.stored_key != cache_key {
-            self.cache_values = Some(CacheValues::new(utc_time));
+            self.cache_values = Some(CacheValues::new(system_time));
             self.stored_key = cache_key;
         }
 
         TimeDate {
             cached: self.cache_values.as_mut().unwrap(),
-            nanosecond: reduced_nanosecond,
+            nanosecond,
             millisecond,
         }
     }
@@ -299,9 +288,9 @@ impl<'a> TimeDate<'a> {
 
 impl CacheValues {
     #[must_use]
-    fn new(utc_time: DateTime<Utc>) -> Self {
+    fn new(system_time: SystemTime) -> Self {
         CacheValues {
-            local_time: utc_time.into(),
+            local_time: system_time.into(),
             full_second_str: None,
             year: None,
             year_str: None,
@@ -370,5 +359,32 @@ impl fmt::Debug for TimeDateLazyLocked<'_> {
         f.debug_struct("TimeDateLazyLocked")
             .field("time", &self.time)
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn validation() {
+        let mut cacher = LocalTimeCacher::new();
+
+        let begin = SystemTime::now();
+        loop {
+            let now = SystemTime::now();
+            if now.duration_since(begin).unwrap().as_secs() >= 3 {
+                break;
+            }
+            let from_cache = cacher.get(now);
+            let from_chrono = DateTime::<Local>::from(now);
+
+            assert_eq!(
+                from_cache.cached.local_time.with_nanosecond(0),
+                from_chrono.with_nanosecond(0)
+            );
+            assert_eq!(from_cache.nanosecond, from_chrono.nanosecond());
+            assert_eq!(from_cache.millisecond, from_chrono.nanosecond() / 1_000_000);
+        }
     }
 }
