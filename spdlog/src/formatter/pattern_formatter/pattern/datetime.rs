@@ -1,10 +1,7 @@
 use std::{fmt::Write, marker::PhantomData};
 
 use crate::{
-    formatter::{
-        local_time_cacher::LOCAL_TIME_CACHER,
-        pattern_formatter::{Pattern, PatternContext},
-    },
+    formatter::pattern_formatter::{Pattern, PatternContext},
     Error, Record, StringBuf,
 };
 
@@ -16,17 +13,12 @@ pub struct AbbrWeekdayName;
 impl Pattern for AbbrWeekdayName {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let name = LOCAL_TIME_CACHER
-            .lock()
-            .get(record.time())
-            .weekday_name()
-            .short;
-
-        dest.write_str(name).map_err(Error::FormatRecord)
+        dest.write_str(ctx.time_date().weekday_name().short)
+            .map_err(Error::FormatRecord)
     }
 }
 
@@ -38,17 +30,12 @@ pub struct WeekdayName;
 impl Pattern for WeekdayName {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let name = LOCAL_TIME_CACHER
-            .lock()
-            .get(record.time())
-            .weekday_name()
-            .full;
-
-        dest.write_str(name).map_err(Error::FormatRecord)
+        dest.write_str(ctx.time_date().weekday_name().full)
+            .map_err(Error::FormatRecord)
     }
 }
 
@@ -60,17 +47,12 @@ pub struct AbbrMonthName;
 impl Pattern for AbbrMonthName {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let name = LOCAL_TIME_CACHER
-            .lock()
-            .get(record.time())
-            .month_name()
-            .short;
-
-        dest.write_str(name).map_err(Error::FormatRecord)
+        dest.write_str(ctx.time_date().month_name().short)
+            .map_err(Error::FormatRecord)
     }
 }
 
@@ -82,17 +64,12 @@ pub struct MonthName;
 impl Pattern for MonthName {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let name = LOCAL_TIME_CACHER
-            .lock()
-            .get(record.time())
-            .month_name()
-            .full;
-
-        dest.write_str(name).map_err(Error::FormatRecord)
+        dest.write_str(ctx.time_date().month_name().full)
+            .map_err(Error::FormatRecord)
     }
 }
 
@@ -104,27 +81,24 @@ pub struct FullDateTime;
 impl Pattern for FullDateTime {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
-        let mut cached_time = time_cacher_lock.get(record.time());
-
         (|| {
-            dest.write_str(cached_time.weekday_name().short)?;
+            dest.write_str(ctx.time_date().weekday_name().short)?;
             dest.write_char(' ')?;
-            dest.write_str(cached_time.month_name().short)?;
+            dest.write_str(ctx.time_date().month_name().short)?;
             dest.write_char(' ')?;
-            dest.write_str(cached_time.day_str())?;
+            dest.write_str(ctx.time_date().day_str())?;
             dest.write_char(' ')?;
-            dest.write_str(cached_time.hour_str())?;
+            dest.write_str(ctx.time_date().hour_str())?;
             dest.write_char(':')?;
-            dest.write_str(cached_time.minute_str())?;
+            dest.write_str(ctx.time_date().minute_str())?;
             dest.write_char(':')?;
-            dest.write_str(cached_time.second_str())?;
+            dest.write_str(ctx.time_date().second_str())?;
             dest.write_char(' ')?;
-            dest.write_str(cached_time.year_str())
+            dest.write_str(ctx.time_date().year_str())
         })()
         .map_err(Error::FormatRecord)
     }
@@ -138,11 +112,11 @@ pub struct ShortYear;
 impl Pattern for ShortYear {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).year_short_str())
+        dest.write_str(ctx.time_date().year_short_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -155,11 +129,11 @@ pub struct Year;
 impl Pattern for Year {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).year_str())
+        dest.write_str(ctx.time_date().year_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -172,19 +146,16 @@ pub struct Date;
 impl Pattern for Date {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let mut local_cacher_lock = LOCAL_TIME_CACHER.lock();
-        let mut cached_time = local_cacher_lock.get(record.time());
-
         (|| {
-            dest.write_str(cached_time.year_str())?;
+            dest.write_str(ctx.time_date().year_str())?;
             dest.write_char('-')?;
-            dest.write_str(cached_time.month_str())?;
+            dest.write_str(ctx.time_date().month_str())?;
             dest.write_char('-')?;
-            dest.write_str(cached_time.day_str())
+            dest.write_str(ctx.time_date().day_str())
         })()
         .map_err(Error::FormatRecord)
     }
@@ -198,19 +169,16 @@ pub struct ShortDate;
 impl Pattern for ShortDate {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let mut local_cacher_lock = LOCAL_TIME_CACHER.lock();
-        let mut cached_time = local_cacher_lock.get(record.time());
-
         (|| {
-            dest.write_str(cached_time.month_str())?;
+            dest.write_str(ctx.time_date().month_str())?;
             dest.write_char('/')?;
-            dest.write_str(cached_time.day_str())?;
+            dest.write_str(ctx.time_date().day_str())?;
             dest.write_char('/')?;
-            dest.write_str(cached_time.year_short_str())
+            dest.write_str(ctx.time_date().year_short_str())
         })()
         .map_err(Error::FormatRecord)
     }
@@ -224,11 +192,11 @@ pub struct Month;
 impl Pattern for Month {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).month_str())
+        dest.write_str(ctx.time_date().month_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -241,11 +209,11 @@ pub struct Day;
 impl Pattern for Day {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).day_str())
+        dest.write_str(ctx.time_date().day_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -258,11 +226,11 @@ pub struct Hour;
 impl Pattern for Hour {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).hour_str())
+        dest.write_str(ctx.time_date().hour_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -275,11 +243,11 @@ pub struct Hour12;
 impl Pattern for Hour12 {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).hour12_str())
+        dest.write_str(ctx.time_date().hour12_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -292,11 +260,11 @@ pub struct Minute;
 impl Pattern for Minute {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).minute_str())
+        dest.write_str(ctx.time_date().minute_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -309,11 +277,11 @@ pub struct Second;
 impl Pattern for Second {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).second_str())
+        dest.write_str(ctx.time_date().second_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -330,12 +298,11 @@ pub struct Millisecond {
 impl Pattern for Millisecond {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let millisecond = LOCAL_TIME_CACHER.lock().get(record.time()).millisecond();
-        write!(dest, "{:03}", millisecond).map_err(Error::FormatRecord)
+        write!(dest, "{:03}", ctx.time_date().millisecond()).map_err(Error::FormatRecord)
     }
 }
 
@@ -347,11 +314,11 @@ pub struct Microsecond;
 impl Pattern for Microsecond {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let nanosecond = LOCAL_TIME_CACHER.lock().get(record.time()).nanosecond();
+        let nanosecond = ctx.time_date().nanosecond();
         write!(dest, "{:06}", nanosecond / 1_000).map_err(Error::FormatRecord)
     }
 }
@@ -364,12 +331,11 @@ pub struct Nanosecond;
 impl Pattern for Nanosecond {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let nanosecond = LOCAL_TIME_CACHER.lock().get(record.time()).nanosecond();
-        write!(dest, "{:09}", nanosecond).map_err(Error::FormatRecord)
+        write!(dest, "{:09}", ctx.time_date().nanosecond()).map_err(Error::FormatRecord)
     }
 }
 
@@ -381,12 +347,12 @@ pub struct AmPm;
 impl Pattern for AmPm {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let am_pm_str = LOCAL_TIME_CACHER.lock().get(record.time()).am_pm_str();
-        dest.write_str(am_pm_str).map_err(Error::FormatRecord)
+        dest.write_str(ctx.time_date().am_pm_str())
+            .map_err(Error::FormatRecord)
     }
 }
 
@@ -398,21 +364,18 @@ pub struct Time12;
 impl Pattern for Time12 {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
-        let mut cached_time = time_cacher_lock.get(record.time());
-
         (|| {
-            dest.write_str(cached_time.hour12_str())?;
+            dest.write_str(ctx.time_date().hour12_str())?;
             dest.write_char(':')?;
-            dest.write_str(cached_time.minute_str())?;
+            dest.write_str(ctx.time_date().minute_str())?;
             dest.write_char(':')?;
-            dest.write_str(cached_time.second_str())?;
+            dest.write_str(ctx.time_date().second_str())?;
             dest.write_str(" ")?;
-            dest.write_str(cached_time.am_pm_str())
+            dest.write_str(ctx.time_date().am_pm_str())
         })()
         .map_err(Error::FormatRecord)
     }
@@ -426,17 +389,14 @@ pub struct ShortTime;
 impl Pattern for ShortTime {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
-        let mut cached_time = time_cacher_lock.get(record.time());
-
         (|| {
-            dest.write_str(cached_time.hour_str())?;
+            dest.write_str(ctx.time_date().hour_str())?;
             dest.write_char(':')?;
-            dest.write_str(cached_time.minute_str())
+            dest.write_str(ctx.time_date().minute_str())
         })()
         .map_err(Error::FormatRecord)
     }
@@ -450,19 +410,16 @@ pub struct Time;
 impl Pattern for Time {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        let mut time_cacher_lock = LOCAL_TIME_CACHER.lock();
-        let mut cached_time = time_cacher_lock.get(record.time());
-
         (|| {
-            dest.write_str(cached_time.hour_str())?;
+            dest.write_str(ctx.time_date().hour_str())?;
             dest.write_char(':')?;
-            dest.write_str(cached_time.minute_str())?;
+            dest.write_str(ctx.time_date().minute_str())?;
             dest.write_char(':')?;
-            dest.write_str(cached_time.second_str())
+            dest.write_str(ctx.time_date().second_str())
         })()
         .map_err(Error::FormatRecord)
     }
@@ -476,11 +433,11 @@ pub struct TzOffset;
 impl Pattern for TzOffset {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(LOCAL_TIME_CACHER.lock().get(record.time()).tz_offset_str())
+        dest.write_str(ctx.time_date().tz_offset_str())
             .map_err(Error::FormatRecord)
     }
 }
@@ -493,16 +450,11 @@ pub struct UnixTimestamp;
 impl Pattern for UnixTimestamp {
     fn format(
         &self,
-        record: &Record,
+        _record: &Record,
         dest: &mut StringBuf,
-        _ctx: &mut PatternContext,
+        ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(
-            LOCAL_TIME_CACHER
-                .lock()
-                .get(record.time())
-                .unix_timestamp_str(),
-        )
-        .map_err(Error::FormatRecord)
+        dest.write_str(ctx.time_date().unix_timestamp_str())
+            .map_err(Error::FormatRecord)
     }
 }

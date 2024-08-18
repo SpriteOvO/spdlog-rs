@@ -22,13 +22,13 @@ include!(concat!(
 ));
 use test_utils::*;
 
-struct BenchSink<F> {
+struct BenchSink<'a, F> {
     formatter: F,
     buffer: RefCell<StringBuf>,
-    ctx: RefCell<FormatterContext>,
+    ctx: RefCell<FormatterContext<'a>>,
 }
 
-impl<F: Formatter> BenchSink<F> {
+impl<F: Formatter> BenchSink<'_, F> {
     fn new(formatter: F) -> Self {
         Self {
             formatter,
@@ -40,9 +40,9 @@ impl<F: Formatter> BenchSink<F> {
 
 // I think we're just testing benchmarks here, and they should not be executed
 // in parallel, so the data race from `buffer` shouldn't be an problem?
-unsafe impl<F> Sync for BenchSink<F> {}
+unsafe impl<F> Sync for BenchSink<'_, F> {}
 
-impl<F: Formatter> Sink for BenchSink<F> {
+impl<F: Formatter> Sink for BenchSink<'_, F> {
     fn log(&self, record: &Record) -> spdlog::Result<()> {
         self.formatter.format(
             record,

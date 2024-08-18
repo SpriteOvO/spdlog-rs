@@ -1,12 +1,23 @@
-use std::time::SystemTime;
+use std::{fmt, time::SystemTime};
 
 use chrono::prelude::*;
 use once_cell::sync::Lazy;
 
-use crate::sync::*;
+use crate::{formatter::FormatterContext, sync::*, Record};
 
-pub(crate) static LOCAL_TIME_CACHER: Lazy<SpinMutex<LocalTimeCacher>> =
+static LOCAL_TIME_CACHER: Lazy<SpinMutex<LocalTimeCacher>> =
     Lazy::new(|| SpinMutex::new(LocalTimeCacher::new()));
+
+pub(crate) fn fmt_with_time<R, F>(ctx: &mut FormatterContext, record: &Record, mut callback: F) -> R
+where
+    F: FnMut(TimeDate) -> R,
+{
+    if let Some(time_date) = ctx.locked_time_date.as_mut() {
+        callback(time_date.get())
+    } else {
+        callback(LOCAL_TIME_CACHER.lock().get(record.time()))
+    }
+}
 
 #[derive(Clone)]
 pub(crate) struct LocalTimeCacher {
@@ -91,11 +102,11 @@ impl LocalTimeCacher {
             self.stored_key = cache_key;
         }
 
-        TimeDate::new(
-            self.cache_values.as_mut().unwrap(),
-            reduced_nanosecond,
+        TimeDate {
+            cached: self.cache_values.as_mut().unwrap(),
+            nanosecond: reduced_nanosecond,
             millisecond,
-        )
+        }
     }
 }
 
@@ -128,15 +139,6 @@ macro_rules! impl_cache_fields_str_getter {
 }
 
 impl<'a> TimeDate<'a> {
-    #[must_use]
-    fn new(cached: &'a mut CacheValues, nanosecond: u32, millisecond: u32) -> Self {
-        Self {
-            cached,
-            nanosecond,
-            millisecond,
-        }
-    }
-
     #[must_use]
     pub(crate) fn full_second_str(&mut self) -> &str {
         if self.cached.full_second_str.is_none() {
@@ -358,6 +360,52 @@ impl CacheValues {
             tz_offset_str: None,
             unix_timestamp_str: None,
         }
+    }
+}
+
+struct TimeDateLocked<'a> {
+    cached: SpinMutexGuard<'a, LocalTimeCacher>,
+    nanosecond: u32,
+    millisecond: u32,
+}
+
+pub(crate) struct TimeDateLazyLocked<'a> {
+    time: SystemTime,
+    locked: Option<TimeDateLocked<'a>>,
+}
+
+impl<'a> TimeDateLazyLocked<'a> {
+    #[must_use]
+    pub(crate) fn new(time: SystemTime) -> Self {
+        Self { time, locked: None }
+    }
+
+    #[must_use]
+    pub(crate) fn get(&mut self) -> TimeDate<'_> {
+        let locked = self.locked.get_or_insert_with(|| {
+            let mut cached = LOCAL_TIME_CACHER.lock();
+            let time_date = cached.get(self.time);
+            let (nanosecond, millisecond) = (time_date.nanosecond, time_date.millisecond);
+            TimeDateLocked {
+                cached,
+                nanosecond,
+                millisecond,
+            }
+        });
+
+        TimeDate {
+            cached: locked.cached.cache_values.as_mut().unwrap(),
+            nanosecond: locked.nanosecond,
+            millisecond: locked.millisecond,
+        }
+    }
+}
+
+impl fmt::Debug for TimeDateLazyLocked<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TimeDateLazyLocked")
+            .field("time", &self.time)
+            .finish()
     }
 }
 

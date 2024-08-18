@@ -95,15 +95,20 @@ clone_trait_object!(Formatter);
 
 /// Provides context for formatters.
 #[derive(Debug, Default)]
-pub struct FormatterContext {
+pub struct FormatterContext<'a> {
     style_range: Option<Range<usize>>,
+    // Set to `Some` if the cached date time is locked in the upper caller.
+    locked_time_date: Option<TimeDateLazyLocked<'a>>,
 }
 
-impl FormatterContext {
+impl FormatterContext<'_> {
     /// Constructs a `FormatterContext`.
     #[must_use]
     pub fn new() -> Self {
-        Self { style_range: None }
+        Self {
+            style_range: None,
+            locked_time_date: None,
+        }
     }
 
     /// Sets style range (in bytes) of the formatted text.

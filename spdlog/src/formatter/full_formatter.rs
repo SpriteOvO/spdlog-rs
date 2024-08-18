@@ -5,7 +5,7 @@ use std::fmt::{self, Write};
 use cfg_if::cfg_if;
 
 use crate::{
-    formatter::{Formatter, FormatterContext, LOCAL_TIME_CACHER},
+    formatter::{fmt_with_time, Formatter, FormatterContext, TimeDate},
     Error, Record, StringBuf, __EOL,
 };
 
@@ -62,15 +62,14 @@ impl FullFormatter {
             }
         }
 
-        {
-            let mut local_time_cacher = LOCAL_TIME_CACHER.lock();
-            let mut time = local_time_cacher.get(record.time());
+        fmt_with_time(ctx, record, |mut time: TimeDate| {
             dest.write_str("[")?;
             dest.write_str(time.full_second_str())?;
             dest.write_str(".")?;
             write!(dest, "{:03}", time.millisecond())?;
             dest.write_str("] [")?;
-        }
+            Ok(())
+        })?;
 
         if let Some(logger_name) = record.logger_name() {
             dest.write_str(logger_name)?;

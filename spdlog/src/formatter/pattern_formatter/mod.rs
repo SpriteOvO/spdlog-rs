@@ -12,7 +12,7 @@ use dyn_clone::*;
 pub use runtime::*;
 
 use crate::{
-    formatter::{Formatter, FormatterContext},
+    formatter::{Formatter, FormatterContext, TimeDate, TimeDateLazyLocked},
     Error, Record, StringBuf,
 };
 
@@ -381,8 +381,12 @@ where
             }
         };
 
-        let mut pat_ctx = PatternContext::new(fmt_ctx);
-        self.pattern.format(record, dest, &mut pat_ctx)?;
+        fmt_ctx.locked_time_date = Some(TimeDateLazyLocked::new(record.time()));
+        {
+            let mut pat_ctx = PatternContext { fmt_ctx };
+            self.pattern.format(record, dest, &mut pat_ctx)?;
+        }
+        fmt_ctx.locked_time_date = None;
         Ok(())
     }
 }
@@ -391,15 +395,14 @@ where
 ///
 /// There is nothing to set up here at the moment, reserved for future use.
 #[derive(Debug)]
-pub struct PatternContext<'a> {
-    fmt_ctx: &'a mut FormatterContext,
+pub struct PatternContext<'a, 'b> {
+    fmt_ctx: &'a mut FormatterContext<'b>,
 }
 
-impl<'a> PatternContext<'a> {
-    /// Creates a new `PatternContext` object.
+impl PatternContext<'_, '_> {
     #[must_use]
-    fn new(fmt_ctx: &'a mut FormatterContext) -> Self {
-        Self { fmt_ctx }
+    fn time_date(&mut self) -> TimeDate {
+        self.fmt_ctx.locked_time_date.as_mut().unwrap().get()
     }
 }
 
@@ -1221,10 +1224,12 @@ pub mod tests {
         let record = get_mock_record();
         let mut output = StringBuf::new();
         let mut fmt_ctx = FormatterContext::new();
-        let mut pat_ctx = PatternContext::new(&mut fmt_ctx);
-
-        let format_result = pattern.format(&record, &mut output, &mut pat_ctx);
-        assert!(format_result.is_ok());
+        fmt_ctx.locked_time_date = Some(TimeDateLazyLocked::new(record.time()));
+        let mut pat_ctx = PatternContext {
+            fmt_ctx: &mut fmt_ctx,
+        };
+        pattern.format(&record, &mut output, &mut pat_ctx).unwrap();
+        fmt_ctx.locked_time_date = None;
 
         assert_eq!(output.as_str(), formatted.as_ref());
         assert_eq!(fmt_ctx.style_range(), style_range);
