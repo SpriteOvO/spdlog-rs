@@ -12,6 +12,10 @@ use crate::{
     Error, Record, StringBuf, __EOL,
 };
 
+fn opt_to_num<T>(opt: Option<T>) -> usize {
+    opt.map_or(0, |_| 1)
+}
+
 struct JsonRecord<'a>(&'a Record<'a>);
 
 impl<'a> Serialize for JsonRecord<'a> {
@@ -19,10 +23,9 @@ impl<'a> Serialize for JsonRecord<'a> {
     where
         S: serde::Serializer,
     {
-        let src_loc = self.0.source_location();
-
-        let mut record =
-            serializer.serialize_struct("JsonRecord", if src_loc.is_none() { 4 } else { 5 })?;
+        let fields_len =
+            4 + opt_to_num(self.0.logger_name()) + opt_to_num(self.0.source_location());
+        let mut record = serializer.serialize_struct("JsonRecord", fields_len)?;
 
         record.serialize_field("level", &self.0.level())?;
         record.serialize_field(
@@ -41,7 +44,7 @@ impl<'a> Serialize for JsonRecord<'a> {
             record.serialize_field("logger", logger_name)?;
         }
         record.serialize_field("tid", &self.0.tid())?;
-        if let Some(src_loc) = src_loc {
+        if let Some(src_loc) = self.0.source_location() {
             record.serialize_field("source", src_loc)?;
         }
 
