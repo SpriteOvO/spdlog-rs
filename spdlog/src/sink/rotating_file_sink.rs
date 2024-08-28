@@ -450,12 +450,13 @@ impl RotatorFileSizeInner {
 
 impl RotatorTimePoint {
     fn new(
+        override_now: Option<SystemTime>,
         base_path: PathBuf,
         time_point: TimePoint,
         max_files: usize,
         truncate: bool,
     ) -> Result<Self> {
-        let now = SystemTime::now();
+        let now = override_now.unwrap_or_else(SystemTime::now);
         let file_path = Self::calc_file_path(base_path.as_path(), time_point, now);
         let file = utils::open_file(file_path, truncate)?;
 
@@ -500,8 +501,8 @@ impl RotatorTimePoint {
     // constructor.
     #[must_use]
     fn next_rotation_time_point(time_point: TimePoint, now: SystemTime) -> SystemTime {
-        let now: DateTime<Utc> = now.into();
-        let mut rotation_time: DateTime<Utc> = now;
+        let now: DateTime<Local> = now.into();
+        let mut rotation_time = now;
 
         match time_point {
             TimePoint::Daily { hour, minute } => {
@@ -768,6 +769,10 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
     /// the file, [`Error::CreateDirectory`] or [`Error::OpenFile`] will be
     /// returned.
     pub fn build(self) -> Result<RotatingFileSink> {
+        self.build_with_initial_time(None)
+    }
+
+    fn build_with_initial_time(self, override_now: Option<SystemTime>) -> Result<RotatingFileSink> {
         self.rotation_policy
             .validate()
             .map_err(|err| Error::InvalidArgument(InvalidArgumentError::RotationPolicy(err)))?;
@@ -781,6 +786,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
             )?),
             RotationPolicy::Daily { hour, minute } => {
                 RotatorKind::TimePoint(RotatorTimePoint::new(
+                    override_now,
                     self.base_path,
                     TimePoint::Daily { hour, minute },
                     self.max_files,
@@ -788,6 +794,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 )?)
             }
             RotationPolicy::Hourly => RotatorKind::TimePoint(RotatorTimePoint::new(
+                override_now,
                 self.base_path,
                 TimePoint::Hourly,
                 self.max_files,
@@ -811,7 +818,7 @@ mod tests {
 
     static BASE_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
         let path = TEST_LOGS_PATH.join("rotating_file_sink");
-        fs::create_dir(&path).unwrap();
+        _ = fs::create_dir(&path);
         path
     });
 
@@ -1036,9 +1043,31 @@ mod tests {
 
         static LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
             let path = BASE_LOGS_PATH.join("policy_time_point");
+            _ = fs::remove_dir_all(&path);
             fs::create_dir_all(&path).unwrap();
             path
         });
+
+        const SECOND_1: Duration = Duration::from_secs(1);
+        const HOUR_1: Duration = Duration::from_secs(60 * 60);
+        const DAY_1: Duration = Duration::from_secs(60 * 60 * 24);
+
+        #[track_caller]
+        fn assert_files_count(file_name_prefix: &str, expected: usize) {
+            let paths = fs::read_dir(LOGS_PATH.clone()).unwrap();
+
+            let mut filenames = Vec::new();
+            let actual = paths.fold(0_usize, |mut count, entry| {
+                let filename = entry.unwrap().file_name();
+                if filename.to_string_lossy().starts_with(file_name_prefix) {
+                    count += 1;
+                    filenames.push(filename);
+                }
+                count
+            });
+            println!("found files: {:?}", filenames);
+            assert_eq!(actual, expected)
+        }
 
         #[test]
         fn calc_file_path() {
@@ -1087,9 +1116,6 @@ mod tests {
         #[test]
         fn rotate() {
             let build = |rotate_on_open| {
-                fs::remove_dir_all(LOGS_PATH.as_path()).unwrap();
-                fs::create_dir(LOGS_PATH.as_path()).unwrap();
-
                 let hourly_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("hourly.log"))
                     .rotation_policy(RotationPolicy::Hourly)
@@ -1114,61 +1140,128 @@ mod tests {
                 logger
             };
 
-            let exist_files = |file_name_prefix| {
-                let paths = fs::read_dir(LOGS_PATH.clone()).unwrap();
-
-                paths.fold(0_usize, |count, entry| {
-                    if entry
-                        .unwrap()
-                        .file_name()
-                        .to_string_lossy()
-                        .starts_with(file_name_prefix)
-                    {
-                        count + 1
-                    } else {
-                        count
-                    }
-                })
-            };
-
-            let exist_hourly_files = || exist_files("hourly");
-            let exist_daily_files = || exist_files("daily");
-
-            const SECOND_1: Duration = Duration::from_secs(1);
-            const HOUR_1: Duration = Duration::from_secs(60 * 60);
-            const DAY_1: Duration = Duration::from_secs(60 * 60 * 24);
-
             {
                 let logger = build(true);
                 let mut record = Record::new(Level::Info, "test log message");
                 let initial_time = record.time();
 
-                assert_eq!(exist_hourly_files(), 1);
-                assert_eq!(exist_daily_files(), 1);
+                assert_files_count("hourly", 1);
+                assert_files_count("daily", 1);
 
                 logger.log(&record);
-                assert_eq!(exist_hourly_files(), 1);
-                assert_eq!(exist_daily_files(), 1);
-
-                record.set_time(record.time() + HOUR_1 + SECOND_1);
-                logger.log(&record);
-                assert_eq!(exist_hourly_files(), 2);
-                assert_eq!(exist_daily_files(), 1);
+                assert_files_count("hourly", 1);
+                assert_files_count("daily", 1);
 
                 record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
-                assert_eq!(exist_hourly_files(), 3);
-                assert_eq!(exist_daily_files(), 1);
+                assert_files_count("hourly", 2);
+                assert_files_count("daily", 1);
+
+                record.set_time(record.time() + HOUR_1 + SECOND_1);
+                logger.log(&record);
+                assert_files_count("hourly", 3);
+                assert_files_count("daily", 1);
 
                 record.set_time(record.time() + SECOND_1);
                 logger.log(&record);
-                assert_eq!(exist_hourly_files(), 3);
-                assert_eq!(exist_daily_files(), 1);
+                assert_files_count("hourly", 3);
+                assert_files_count("daily", 1);
 
                 record.set_time(initial_time + DAY_1 + SECOND_1);
                 logger.log(&record);
-                assert_eq!(exist_hourly_files(), 4);
-                assert_eq!(exist_daily_files(), 2);
+                assert_files_count("hourly", 4);
+                assert_files_count("daily", 2);
+            }
+        }
+
+        // This test may only detect issues if the system time zone is not UTC.
+        #[test]
+        fn respect_local_tz() {
+            let prefix = "respect_local_tz";
+
+            let initial_time = Local // FixedOffset::east_opt(8 * 3600).unwrap()
+                .with_ymd_and_hms(2024, 8, 29, 11, 45, 14)
+                .unwrap();
+
+            let logger = {
+                let daily_sink = RotatingFileSink::builder()
+                    .base_path(LOGS_PATH.join(format!("{prefix}.log")))
+                    .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
+                    .rotate_on_open(true)
+                    .build_with_initial_time(Some(initial_time.to_utc().into()))
+                    .unwrap();
+
+                build_test_logger(|b| b.sink(Arc::new(daily_sink)).level_filter(LevelFilter::All))
+            };
+
+            {
+                let mut record = Record::new(Level::Info, "test log message");
+
+                assert_files_count(prefix, 1);
+
+                record.set_time(initial_time.to_utc().into());
+                logger.log(&record);
+                assert_files_count(prefix, 1);
+
+                record.set_time(record.time() + HOUR_1 + SECOND_1);
+                logger.log(&record);
+                assert_files_count(prefix, 1);
+
+                record.set_time(record.time() + HOUR_1 + SECOND_1);
+                logger.log(&record);
+                assert_files_count(prefix, 1);
+
+                record.set_time(
+                    initial_time
+                        .with_day(30)
+                        .unwrap()
+                        .with_hour(0)
+                        .unwrap()
+                        .with_minute(1)
+                        .unwrap()
+                        .to_utc()
+                        .into(),
+                );
+                logger.log(&record);
+                assert_files_count(prefix, 2);
+
+                record.set_time(record.time() + HOUR_1 + SECOND_1);
+                logger.log(&record);
+                assert_files_count(prefix, 2);
+
+                record.set_time(
+                    initial_time
+                        .with_day(30)
+                        .unwrap()
+                        .with_hour(8)
+                        .unwrap()
+                        .with_minute(2)
+                        .unwrap()
+                        .to_utc()
+                        .into(),
+                );
+                logger.log(&record);
+                assert_files_count(prefix, 2);
+
+                record.set_time(record.time() + HOUR_1 + SECOND_1);
+                logger.log(&record);
+                assert_files_count(prefix, 2);
+
+                record.set_time(
+                    initial_time
+                        .with_day(31)
+                        .unwrap()
+                        .with_hour(0)
+                        .unwrap()
+                        .to_utc()
+                        .into(),
+                );
+                logger.log(&record);
+                assert_files_count(prefix, 3);
+
+                record.set_time(record.time() + HOUR_1 + SECOND_1);
+                logger.log(&record);
+                assert_files_count(prefix, 3);
             }
         }
     }

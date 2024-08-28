@@ -55,6 +55,12 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+    - name: Set a non-UTC timezone # for detecting issues related to the local timezone
+      uses: szenius/set-timezone@v2.0
+      with:
+        timezoneLinux: "Asia/Shanghai"
+        timezoneMacos: "Asia/Shanghai"
+        timezoneWindows: "China Standard Time"
     - name: Disable bench dependencies
       run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
