@@ -149,7 +149,7 @@ fn main() {
         .iter()
         .for_each(|sink| sink.set_formatter(formatter.clone()));
 
-    const SLOT_SIZE: usize = spdlog::RecordOwned::__SIZE_OF;
+    const SLOT_SIZE: usize = std::mem::size_of::<spdlog::RecordOwned>();
     let queue_size = args.queue_size.unwrap();
 
     info!("--------------------------------------------");

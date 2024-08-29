@@ -170,10 +170,6 @@ pub struct RecordOwned {
 }
 
 impl RecordOwned {
-    // For internal (benchmark) use only.
-    #[doc(hidden)]
-    pub const __SIZE_OF: usize = std::mem::size_of::<Self>();
-
     /// References as [`Record`] cheaply.
     #[must_use]
     pub fn as_ref(&self) -> Record {
