@@ -45,6 +45,9 @@ use crate::{
 ///
 /// // Rotating every hour.
 /// RotationPolicy::Hourly;
+///
+/// // Rotrating every duration
+/// RotationPolicy::Duration { hours: 1, minutes: 2, seconds: 3};
 /// ```
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RotationPolicy {
@@ -63,6 +66,15 @@ pub enum RotationPolicy {
     },
     /// Rotating to a new log file at minute 0 of each hour.
     Hourly,
+    /// Rotating to a new log file at a specified duration.
+    Duration {
+        /// Hours to the next rotation.
+        hours: u32,
+        /// Minutes to the next rotation.
+        minutes: u32,
+        /// Seconds to the next rotation.
+        seconds: u32,
+    },
 }
 
 trait Rotator {
@@ -102,6 +114,7 @@ struct RotatorTimePoint {
 enum TimePoint {
     Daily { hour: u32, minute: u32 },
     Hourly,
+    Duration { hours: u32, minutes: u32, seconds: u32 },
 }
 
 struct RotatorTimePointInner {
@@ -182,8 +195,8 @@ impl RotatingFileSink {
     /// deleted on the next rotation. Pass `0` for no limit.
     ///
     /// The parameter `rotate_on_open` specifies whether to rotate files once
-    /// when constructing `RotatingFileSink`. For the [`RotationPolicy::Daily`]
-    /// and [`RotationPolicy::Hourly`] rotation policies, it may truncate the
+    /// when constructing `RotatingFileSink`. For the [`RotationPolicy::Daily`],
+    /// [`RotationPolicy::Hourly`], and [`RotationPolicy::Duration`] rotation policies, it may truncate the
     /// contents of the existing file if the parameter is `true`, since the file
     /// name is a time point and not an index.
     ///
@@ -276,6 +289,20 @@ impl RotationPolicy {
                 }
             }
             Self::Hourly => {}
+            Self::Duration {
+                hours,
+                minutes,
+                seconds,
+            } => {
+                if *hours == 0 && *minutes == 0 && *seconds == 0
+                    || *minutes > 59
+                    || *seconds > 59 {
+                    return Err(format!(
+                        "policy 'duration' expect `(hours, minutes, seconds)` to be ([0, u32::MAX], [0, 59], [0, 59]) and greater then (0, 0, 0) but got ({}, {}, {})",
+                        *hours, *minutes, *seconds
+                    ));
+                }
+            }
         }
         Ok(())
     }
@@ -525,9 +552,10 @@ impl RotatorTimePoint {
                     .with_nanosecond(0)
                     .unwrap()
             }
+            TimePoint::Duration {..} => {}
         };
 
-        if rotation_time < now {
+        if rotation_time <= now {
             rotation_time = rotation_time
                 .checked_add_signed(time_point.delta_chrono())
                 .unwrap();
@@ -589,6 +617,18 @@ impl RotatorTimePoint {
                     local_time.hour()
                 ));
             }
+            TimePoint::Duration { .. } => {
+                // append y-m-d_h-m-s
+                file_name.push(format!(
+                    "_{}-{:02}-{:02}_{:02}-{:02}-{:02}",
+                    local_time.year(),
+                    local_time.month(),
+                    local_time.day(),
+                    local_time.hour(),
+                    local_time.minute(),
+                    local_time.second()
+                ));
+            }
         }
 
         let mut path = base_path.to_owned();
@@ -640,12 +680,22 @@ impl Rotator for RotatorTimePoint {
 impl TimePoint {
     #[must_use]
     fn delta_std(&self) -> Duration {
-        const HOUR_1: Duration = Duration::from_secs(60 * 60);
-        const DAY_1: Duration = Duration::from_secs(60 * 60 * 24);
+        const SECONDS_PER_MINUTE: u64 = 60;
+        const SECONDS_PER_HOUR: u64 = 60 * 60;
+        const SECONDS_PER_DAY: u64 = 60 * 60 * 24;
+        const HOUR_1: Duration = Duration::from_secs(SECONDS_PER_HOUR);
+        const DAY_1: Duration = Duration::from_secs(SECONDS_PER_DAY);
 
         match self {
             Self::Daily { .. } => DAY_1,
             Self::Hourly { .. } => HOUR_1,
+            Self::Duration {
+                hours,
+                minutes,
+                seconds,
+            } => Duration::from_secs(
+                (*hours as u64) * SECONDS_PER_HOUR + (*minutes as u64) * SECONDS_PER_MINUTE + *seconds as u64,
+            ),
         }
     }
 
@@ -654,6 +704,13 @@ impl TimePoint {
         match self {
             Self::Daily { .. } => chrono::Duration::days(1),
             Self::Hourly { .. } => chrono::Duration::hours(1),
+            Self::Duration {
+                hours,
+                minutes,
+                seconds,
+            } => chrono::Duration::hours(*hours as i64)
+                + chrono::Duration::minutes(*minutes as i64)
+                + chrono::Duration::seconds(*seconds as i64),
         }
     }
 }
@@ -727,7 +784,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// Specifies whether to rotate files once when constructing
     /// `RotatingFileSink`.
     ///
-    /// For the [`RotationPolicy::Daily`] and [`RotationPolicy::Hourly`]
+    /// For the [`RotationPolicy::Daily`], [`RotationPolicy::Hourly`], and [`RotationPolicy::Duration`]
     /// rotation policies, it may truncate the contents of the existing file if
     /// the parameter is `true`, since the file name is a time point and not an
     /// index.
@@ -797,6 +854,20 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 override_now,
                 self.base_path,
                 TimePoint::Hourly,
+                self.max_files,
+                self.rotate_on_open,
+            )?),
+            RotationPolicy::Duration {
+                hours,
+                minutes,
+                seconds,
+            } => RotatorKind::TimePoint(RotatorTimePoint::new(
+                self.base_path,
+                TimePoint::Duration {
+                    hours,
+                    minutes,
+                    seconds,
+                },
                 self.max_files,
                 self.rotate_on_open,
             )?),
