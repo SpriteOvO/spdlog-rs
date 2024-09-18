@@ -66,13 +66,13 @@ pub enum RotationPolicy {
     },
     /// Rotating to a new log file at minute 0 of each hour.
     Hourly,
-    /// Rotating to a new log file at a specified duration.
+    /// Rotating to a new log file after given duration (greater then {0, 0, 0}) is passed.
     Duration {
-        /// Hours to the next rotation.
+        /// Hours to the next rotation.. Range: [0, u32::MAX].
         hours: u32,
-        /// Minutes to the next rotation.
+        /// Minutes to the next rotation. Range: [0, 59].
         minutes: u32,
-        /// Seconds to the next rotation.
+        /// Seconds to the next rotation. Range: [0, 59].
         seconds: u32,
     },
 }
