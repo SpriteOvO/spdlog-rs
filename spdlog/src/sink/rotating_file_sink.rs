@@ -882,7 +882,9 @@ mod tests {
 
     static BASE_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
         let path = TEST_LOGS_PATH.join("rotating_file_sink");
-        fs::create_dir(&path).unwrap();
+        if !path.exists() {
+            fs::create_dir(&path).unwrap();
+        }
         path
     });
 
@@ -938,7 +940,9 @@ mod tests {
             let build = |clean, rotate_on_open| {
                 if clean {
                     fs::remove_dir_all(LOGS_PATH.as_path()).unwrap();
-                    fs::create_dir(LOGS_PATH.as_path()).unwrap();
+                    if !LOGS_PATH.exists() {
+                        fs::create_dir(LOGS_PATH.as_path()).unwrap();
+                    }
                 }
 
                 let formatter = Box::new(NoModFormatter::new());
@@ -1133,6 +1137,21 @@ mod tests {
                     .to_string()
             };
 
+            let calc_duration = |base_path| {
+                RotatorTimePoint::calc_file_path(
+                    base_path,
+                    TimePoint::Duration {
+                        hours: 1,
+                        minutes: 2,
+                        seconds: 3,
+                    },
+                    system_time,
+                )
+                .to_str()
+                .unwrap()
+                .to_string()
+            };
+
             #[cfg(not(windows))]
             let run = || {
                 assert_eq!(calc_daily("/tmp/test.log"), "/tmp/test_2012-03-04.log");
@@ -1140,6 +1159,9 @@ mod tests {
 
                 assert_eq!(calc_hourly("/tmp/test.log"), "/tmp/test_2012-03-04_05.log");
                 assert_eq!(calc_hourly("/tmp/test"), "/tmp/test_2012-03-04_05");
+
+                assert_eq!(calc_duration("/tmp/test.log"), "/tmp/test_2012-03-04_05-06-07.log");
+                assert_eq!(calc_duration("/tmp/test"), "/tmp/test_2012-03-04_05-06-07");
             };
 
             #[cfg(windows)]
@@ -1150,6 +1172,9 @@ mod tests {
 
                 assert_eq!(calc_hourly("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05.txt");
                 assert_eq!(calc_hourly("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05");
+
+                assert_eq!(calc_duration("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05-06-07.txt");
+                assert_eq!(calc_duration("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05-06-07");
             };
 
             run();
@@ -1159,11 +1184,24 @@ mod tests {
         fn rotate() {
             let build = |rotate_on_open| {
                 fs::remove_dir_all(LOGS_PATH.as_path()).unwrap();
-                fs::create_dir(LOGS_PATH.as_path()).unwrap();
+                if !LOGS_PATH.exists() {
+                    fs::create_dir(LOGS_PATH.as_path()).unwrap();
+                }
 
                 let hourly_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("hourly.log"))
                     .rotation_policy(RotationPolicy::Hourly)
+                    .rotate_on_open(rotate_on_open)
+                    .build()
+                    .unwrap();
+
+                let duration_sink = RotatingFileSink::builder()
+                    .base_path(LOGS_PATH.join("duration.log"))
+                    .rotation_policy(RotationPolicy::Duration {
+                        hours: 1,
+                        minutes: 2,
+                        seconds: 3,
+                    })
                     .rotate_on_open(rotate_on_open)
                     .build()
                     .unwrap();
@@ -1179,7 +1217,7 @@ mod tests {
                     .build()
                     .unwrap();
 
-                let sinks: [Arc<dyn Sink>; 2] = [Arc::new(hourly_sink), Arc::new(daily_sink)];
+                let sinks: [Arc<dyn Sink>; 3] = [Arc::new(hourly_sink), Arc::new(duration_sink), Arc::new(daily_sink)];
                 let logger = build_test_logger(|b| b.sinks(sinks));
                 logger.set_level_filter(LevelFilter::All);
                 logger
@@ -1203,6 +1241,7 @@ mod tests {
             };
 
             let exist_hourly_files = || exist_files("hourly");
+            let exist_duration_files = || exist_files("duration");
             let exist_daily_files = || exist_files("daily");
 
             const SECOND_1: Duration = Duration::from_secs(1);
@@ -1215,30 +1254,36 @@ mod tests {
                 let initial_time = record.time();
 
                 assert_eq!(exist_hourly_files(), 1);
+                assert_eq!(exist_duration_files(), 1);
                 assert_eq!(exist_daily_files(), 1);
 
                 logger.log(&record);
                 assert_eq!(exist_hourly_files(), 1);
+                assert_eq!(exist_duration_files(), 1);
                 assert_eq!(exist_daily_files(), 1);
 
                 record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
                 assert_eq!(exist_hourly_files(), 2);
+                assert_eq!(exist_duration_files(), 1);
                 assert_eq!(exist_daily_files(), 1);
 
                 record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
                 assert_eq!(exist_hourly_files(), 3);
+                assert_eq!(exist_duration_files(), 2);
                 assert_eq!(exist_daily_files(), 1);
 
                 record.set_time(record.time() + SECOND_1);
                 logger.log(&record);
                 assert_eq!(exist_hourly_files(), 3);
+                assert_eq!(exist_duration_files(), 2);
                 assert_eq!(exist_daily_files(), 1);
 
                 record.set_time(initial_time + DAY_1 + SECOND_1);
                 logger.log(&record);
                 assert_eq!(exist_hourly_files(), 4);
+                assert_eq!(exist_duration_files(), 3);
                 assert_eq!(exist_daily_files(), 2);
             }
         }
@@ -1285,6 +1330,13 @@ mod tests {
         fn daily(hour: u32, minute: u32) -> RotationPolicy {
             Daily { hour, minute }
         }
+        fn duration(hours: u32, minutes: u32, seconds: u32) -> RotationPolicy {
+            Duration {
+                hours,
+                minutes,
+                seconds,
+            }
+        }
 
         assert!(FileSize(1).validate().is_ok());
         assert!(FileSize(1024).validate().is_ok());
@@ -1297,5 +1349,16 @@ mod tests {
         assert!(daily(24, 59).validate().is_err());
         assert!(daily(23, 60).validate().is_err());
         assert!(daily(24, 60).validate().is_err());
+
+        assert!(duration(0, 0, 0).validate().is_err());
+        assert!(duration(0, 0, 1).validate().is_ok());
+        assert!(duration(0, 1, 0).validate().is_ok());
+        assert!(duration(1, 0, 0).validate().is_ok());
+        assert!(duration(1, 1, 1).validate().is_ok());
+        assert!(duration(1, 1, 60).validate().is_err());
+        assert!(duration(1, 60, 1).validate().is_err());
+        assert!(duration(1, 60, 60).validate().is_err());
+        assert!(duration(60, 1, 1).validate().is_ok());
+
     }
 }
