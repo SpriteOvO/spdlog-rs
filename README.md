@@ -17,7 +17,7 @@ Fast, highly configurable Rust logging crate, inspired by the C++ logging librar
    - manually implementing for more flexibility.
  - Various combinable sinks:
     - standard streams with optional color support;
-    - files (single file, rotating hourly, daily, by duration or by file size);
+    - files (single file, rotating hourly, daily, periodically or by file size);
     - platform-specific (e.g. `journald` for Linux and `OutputDebugStringW` for Windows);
     - ... and able to implement one yourself.
  - Configuring via environment variables or TOML[^1].

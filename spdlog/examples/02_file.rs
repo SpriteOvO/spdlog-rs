@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     configure_rotating_daily_file_logger()?;
     configure_rotating_size_file_logger()?;
     configure_rotating_hourly_file_logger()?;
-    configure_rotating_duration_file_logger()?;
+    configure_rotating_period_file_logger()?;
 
     Ok(())
 }
@@ -78,19 +78,19 @@ fn configure_rotating_hourly_file_logger() -> Result<(), Box<dyn std::error::Err
     Ok(())
 }
 
-fn configure_rotating_duration_file_logger() -> Result<(), Box<dyn std::error::Error>> {
-    let path = env::current_exe()?.with_file_name("rotating_duration.log");
+fn configure_rotating_period_file_logger() -> Result<(), Box<dyn std::error::Error>> {
+    let path = env::current_exe()?.with_file_name("rotating_period.log");
 
     let file_sink = Arc::new(
         RotatingFileSink::builder()
             .base_path(path)
-            .rotation_policy(RotationPolicy::Duration { hours: 1, minutes: 2, seconds: 3 })
+            .rotation_policy(RotationPolicy::Period { hours: 1, minutes: 2, seconds: 3 })
             .build()?,
     );
     let new_logger = Arc::new(Logger::builder().sink(file_sink).build()?);
     spdlog::set_default_logger(new_logger);
 
-    info!("this log will be written to the file `rotating_duration.log`, and the file will be rotated every hour, 2 minutes, and 3 seconds");
+    info!("this log will be written to the file `rotating_period.log`, and the file will be rotated every hour, 2 minutes, and 3 seconds");
 
     Ok(())
 }

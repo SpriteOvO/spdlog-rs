@@ -100,7 +100,7 @@ fn bench_rotating_inner(bencher: &mut Bencher, rotation_policy: RotationPolicy) 
                 RotationPolicy::FileSize(_) => "rotating_file_size",
                 RotationPolicy::Daily { .. } => "rotating_daily",
                 RotationPolicy::Hourly => "rotating_hourly",
-                RotationPolicy::Duration { .. } => "rotating_duration",
+                RotationPolicy::Period { .. } => "rotating_period",
             }))
             .rotation_policy(rotation_policy)
             .max_files(common::ROTATING_FILES)
