@@ -1213,6 +1213,7 @@ mod tests {
         #[test]
         fn rotate() {
             let build = |rotate_on_open| {
+
                 let hourly_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("hourly.log"))
                     .rotation_policy(RotationPolicy::Hourly)
@@ -1247,6 +1248,7 @@ mod tests {
                 logger.set_level_filter(LevelFilter::All);
                 logger
             };
+
 
             {
                 let logger = build(true);
@@ -1376,6 +1378,7 @@ mod tests {
                 record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
                 assert_files_count(prefix, 3);
+
             }
         }
     }
