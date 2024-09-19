@@ -1,7 +1,7 @@
 use spdlog::formatter::{pattern, Pattern};
 
 fn custom_pat_creator() -> impl Pattern {
-    unimplemented!()
+    ()
 }
 
 fn pattern() {
