@@ -47,7 +47,7 @@ use crate::{
 /// RotationPolicy::Hourly;
 ///
 /// // Rotating periodically
-/// RotationPolicy::Period { hours: 1, minutes: 2, seconds: 3};
+/// RotationPolicy::Period { duration: std::time::Duration::from_secs(3 * 60 * 60 + 6) };
 /// ```
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RotationPolicy {
@@ -66,15 +66,28 @@ pub enum RotationPolicy {
     },
     /// Rotating to a new log file at minute 0 of each hour.
     Hourly,
-    /// Rotating to a new log file after given period (greater then {0, 0, 0}) is passed.
+    /// Rotating to a new log file after given period (greater then 1 minute) is passed.
     Period {
-        /// Hours to the next rotation.. Range: [0, u32::MAX].
-        hours: u32,
-        /// Minutes to the next rotation. Range: [0, 59].
-        minutes: u32,
-        /// Seconds to the next rotation. Range: [0, 59].
-        seconds: u32,
+        /// Period to the next rotation. Range: [1 minute, Duration::MAX].
+        duration: Duration,
     },
+}
+
+fn minutes(minutes: u64) ->Duration {
+    chrono::Duration::minutes(minutes as i64).to_std().expect(format!("Failed to create Duration::minutes({}", minutes).as_str())
+}
+
+fn hours(hours: u64) -> Duration {
+    chrono::Duration::hours(hours as i64).to_std().expect(format!("Failed to create Duration::hours({}", hours).as_str())
+}
+
+fn days(days: u64) -> Duration {
+    chrono::Duration::days(days as i64).to_std().expect(format!("Failed to create Duration::days({}", days).as_str())
+}
+
+git
+fn weeks(weeks: u64) -> Duration {
+    chrono::Duration::weeks(weeks as i64).to_std().expect(format!("Failed to create Duration::weeks({}", weeks).as_str())
 }
 
 trait Rotator {
@@ -114,7 +127,7 @@ struct RotatorTimePoint {
 enum TimePoint {
     Daily { hour: u32, minute: u32 },
     Hourly,
-    Period { hours: u32, minutes: u32, seconds: u32 },
+    Period { duration: Duration },
 }
 
 struct RotatorTimePointInner {
@@ -290,16 +303,12 @@ impl RotationPolicy {
             }
             Self::Hourly => {}
             Self::Period {
-                hours,
-                minutes,
-                seconds,
+                duration
             } => {
-                if *hours == 0 && *minutes == 0 && *seconds == 0
-                    || *minutes > 59
-                    || *seconds > 59 {
+                if *duration < minutes(1) {
                     return Err(format!(
-                        "policy 'period' expect `(hours, minutes, seconds)` to be ([0, u32::MAX], [0, 59], [0, 59]) and greater then (0, 0, 0) but got ({}, {}, {})",
-                        *hours, *minutes, *seconds
+                        "policy 'period' expect duration greater then 1 minute but got {:?}",
+                        *duration
                     ));
                 }
             }
@@ -618,15 +627,14 @@ impl RotatorTimePoint {
                 ));
             }
             TimePoint::Period { .. } => {
-                // append y-m-d_h-m-s
+                // append y-m-d_h-m
                 file_name.push(format!(
-                    "_{}-{:02}-{:02}_{:02}-{:02}-{:02}",
+                    "_{}-{:02}-{:02}_{:02}-{:02}",
                     local_time.year(),
                     local_time.month(),
                     local_time.day(),
                     local_time.hour(),
-                    local_time.minute(),
-                    local_time.second()
+                    local_time.minute()
                 ));
             }
         }
@@ -680,22 +688,10 @@ impl Rotator for RotatorTimePoint {
 impl TimePoint {
     #[must_use]
     fn delta_std(&self) -> Duration {
-        const SECONDS_PER_MINUTE: u64 = 60;
-        const SECONDS_PER_HOUR: u64 = 60 * 60;
-        const SECONDS_PER_DAY: u64 = 60 * 60 * 24;
-        const HOUR_1: Duration = Duration::from_secs(SECONDS_PER_HOUR);
-        const DAY_1: Duration = Duration::from_secs(SECONDS_PER_DAY);
-
         match self {
-            Self::Daily { .. } => DAY_1,
-            Self::Hourly { .. } => HOUR_1,
-            Self::Period {
-                hours,
-                minutes,
-                seconds,
-            } => Duration::from_secs(
-                (*hours as u64) * SECONDS_PER_HOUR + (*minutes as u64) * SECONDS_PER_MINUTE + *seconds as u64,
-            ),
+            Self::Daily { .. } => days(1),
+            Self::Hourly { .. } => hours(1),
+            Self::Period { duration } => *duration,
         }
     }
 
@@ -704,13 +700,7 @@ impl TimePoint {
         match self {
             Self::Daily { .. } => chrono::Duration::days(1),
             Self::Hourly { .. } => chrono::Duration::hours(1),
-            Self::Period {
-                hours,
-                minutes,
-                seconds,
-            } => chrono::Duration::hours(*hours as i64)
-                + chrono::Duration::minutes(*minutes as i64)
-                + chrono::Duration::seconds(*seconds as i64),
+            Self::Period { duration } => chrono::Duration::from_std(*duration).unwrap(),
         }
     }
 }
@@ -857,21 +847,15 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 self.max_files,
                 self.rotate_on_open,
             )?),
-            RotationPolicy::Period {
-                hours,
-                minutes,
-                seconds,
-            } => RotatorKind::TimePoint(RotatorTimePoint::new(
-                override_now,
-                self.base_path,
-                TimePoint::Period {
-                    hours,
-                    minutes,
-                    seconds,
-                },
-                self.max_files,
-                self.rotate_on_open,
-            )?),
+            RotationPolicy::Period { duration } => {
+                RotatorKind::TimePoint(RotatorTimePoint::new(
+                    override_now,
+                    self.base_path,
+                    TimePoint::Period { duration },
+                    self.max_files,
+                    self.rotate_on_open,
+                )?)
+            }
         };
 
         let res = RotatingFileSink {
@@ -1171,9 +1155,7 @@ mod tests {
                 RotatorTimePoint::calc_file_path(
                     base_path,
                     TimePoint::Period {
-                        hours: 1,
-                        minutes: 2,
-                        seconds: 3,
+                        duration: minutes(10),
                     },
                     system_time,
                 )
@@ -1190,8 +1172,8 @@ mod tests {
                 assert_eq!(calc_hourly("/tmp/test.log"), "/tmp/test_2012-03-04_05.log");
                 assert_eq!(calc_hourly("/tmp/test"), "/tmp/test_2012-03-04_05");
 
-                assert_eq!(calc_period("/tmp/test.log"), "/tmp/test_2012-03-04_05-06-07.log");
-                assert_eq!(calc_period("/tmp/test"), "/tmp/test_2012-03-04_05-06-07");
+                assert_eq!(calc_period("/tmp/test.log"), "/tmp/test_2012-03-04_05-06.log");
+                assert_eq!(calc_period("/tmp/test"), "/tmp/test_2012-03-04_05-06");
             };
 
             #[cfg(windows)]
@@ -1203,8 +1185,8 @@ mod tests {
                 assert_eq!(calc_hourly("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05.txt");
                 assert_eq!(calc_hourly("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05");
 
-                assert_eq!(calc_period("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05-06-07.txt");
-                assert_eq!(calc_period("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05-06-07");
+                assert_eq!(calc_period("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05-06.txt");
+                assert_eq!(calc_period("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05-06");
             };
 
             run();
@@ -1224,9 +1206,9 @@ mod tests {
                 let period_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("period.log"))
                     .rotation_policy(RotationPolicy::Period {
-                        hours: 1,
-                        minutes: 2,
-                        seconds: 3,
+                        duration: (hours( 1) +
+                                  minutes(2) +
+                                  Duration::from_secs(3)),
                     })
                     .rotate_on_open(rotate_on_open)
                     .build()
@@ -1424,12 +1406,8 @@ mod tests {
         fn daily(hour: u32, minute: u32) -> RotationPolicy {
             Daily { hour, minute }
         }
-        fn period(hours: u32, minutes: u32, seconds: u32) -> RotationPolicy {
-            Period {
-                hours,
-                minutes,
-                seconds,
-            }
+        fn period(duration: Duration) -> RotationPolicy {
+            Period { duration }
         }
 
         assert!(FileSize(1).validate().is_ok());
@@ -1444,15 +1422,15 @@ mod tests {
         assert!(daily(23, 60).validate().is_err());
         assert!(daily(24, 60).validate().is_err());
 
-        assert!(period(0, 0, 0).validate().is_err());
-        assert!(period(0, 0, 1).validate().is_ok());
-        assert!(period(0, 1, 0).validate().is_ok());
-        assert!(period(1, 0, 0).validate().is_ok());
-        assert!(period(1, 1, 1).validate().is_ok());
-        assert!(period(1, 1, 60).validate().is_err());
-        assert!(period(1, 60, 1).validate().is_err());
-        assert!(period(1, 60, 60).validate().is_err());
-        assert!(period(60, 1, 1).validate().is_ok());
+        assert!(period(Duration::from_secs(0)).validate().is_err());
+        assert!(period(Duration::from_secs(1)).validate().is_err());
+        assert!(period(Duration::from_secs(59)).validate().is_err());
+        assert!(period(minutes(1)).validate().is_ok());
+        assert!(period(hours( 1)).validate().is_ok());
+        assert!(period(hours( 1) + minutes(1) + Duration::from_secs(1)).validate().is_ok());
+        assert!(period(hours( 60) + minutes(1) + Duration::from_secs(1)).validate().is_ok());
+        assert!(period(days( 2) + hours( 60) + minutes(1) + Duration::from_secs(1)).validate().is_ok());
+        assert!(period(weeks( 2) + hours( 60) + minutes(1) + Duration::from_secs(1)).validate().is_ok());
 
     }
 }
