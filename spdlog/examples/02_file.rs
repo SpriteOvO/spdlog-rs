@@ -85,14 +85,14 @@ fn configure_rotating_period_file_logger() -> Result<(), Box<dyn std::error::Err
         RotatingFileSink::builder()
             .base_path(path)
             .rotation_policy(RotationPolicy::Period(Duration::from_secs(
-                60 * 60 * 2 + 60 * 4 + 5,
+                60 * 90, // 90 minutes
             )))
             .build()?,
     );
     let new_logger = Arc::new(Logger::builder().sink(file_sink).build()?);
     spdlog::set_default_logger(new_logger);
 
-    info!("this log will be written to the file `rotating_period.log`, and the file will be rotated every hour, 2 minutes, and 3 seconds");
+    info!("this log will be written to the file `rotating_period.log`, and the file will be rotated every 1.5 hours");
 
     Ok(())
 }

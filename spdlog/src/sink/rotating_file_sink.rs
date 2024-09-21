@@ -46,8 +46,9 @@ use crate::{
 /// // Rotating every hour.
 /// RotationPolicy::Hourly;
 ///
-/// // Rotating periodically
-/// RotationPolicy::Period(std::time::Duration::from_secs(3 * 60 * 60 + 6));
+/// // Rotating every 6 hour.
+/// # use std::time::Duration;
+/// RotationPolicy::Period(Duration::from_secs(6 * 60 * 60));
 /// ```
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RotationPolicy {
@@ -73,23 +74,12 @@ pub enum RotationPolicy {
     ),
 }
 
-fn minutes(minutes: u64) -> Duration {
-    chrono::Duration::minutes(minutes as i64)
-        .to_std()
-        .expect(format!("Failed to create Duration::minutes({}", minutes).as_str())
-}
-
-fn hours(hours: u64) -> Duration {
-    chrono::Duration::hours(hours as i64)
-        .to_std()
-        .expect(format!("Failed to create Duration::hours({}", hours).as_str())
-}
-
-fn days(days: u64) -> Duration {
-    chrono::Duration::days(days as i64)
-        .to_std()
-        .expect(format!("Failed to create Duration::days({}", days).as_str())
-}
+const SECONDS_PER_MINUTE: u64 = 60;
+const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
+const SECONDS_PER_DAY: u64 = 24 * SECONDS_PER_HOUR;
+const MINUTE_1: Duration = Duration::from_secs(SECONDS_PER_MINUTE);
+const HOUR_1: Duration = Duration::from_secs(SECONDS_PER_HOUR);
+const DAY_1: Duration = Duration::from_secs(SECONDS_PER_DAY);
 
 trait Rotator {
     #[allow(clippy::ptr_arg)]
@@ -304,7 +294,7 @@ impl RotationPolicy {
             }
             Self::Hourly => {}
             Self::Period(duration) => {
-                if *duration < minutes(1) {
+                if *duration < MINUTE_1 {
                     return Err(format!(
                         "policy 'period' expect duration greater then 1 minute but got {:?}",
                         *duration
@@ -688,8 +678,8 @@ impl TimePoint {
     #[must_use]
     fn delta_std(&self) -> Duration {
         match self {
-            Self::Daily { .. } => days(1),
-            Self::Hourly { .. } => hours(1),
+            Self::Daily { .. } => DAY_1,
+            Self::Hourly { .. } => HOUR_1,
             Self::Period(duration) => *duration,
         }
     }
@@ -876,6 +866,8 @@ mod tests {
         }
         path
     });
+
+    const SECOND_1: Duration = Duration::from_secs(1);
 
     mod policy_file_size {
         use super::*;
@@ -1105,10 +1097,6 @@ mod tests {
             path
         });
 
-        const SECOND_1: Duration = Duration::from_secs(1);
-        const HOUR_1: Duration = Duration::from_secs(60 * 60);
-        const DAY_1: Duration = Duration::from_secs(60 * 60 * 24);
-
         #[track_caller]
         fn assert_files_count(file_name_prefix: &str, expected: usize) {
             let paths = fs::read_dir(LOGS_PATH.clone()).unwrap();
@@ -1151,7 +1139,7 @@ mod tests {
             let calc_period = |base_path| {
                 RotatorTimePoint::calc_file_path(
                     base_path,
-                    TimePoint::Period(minutes(10)),
+                    TimePoint::Period(10 * MINUTE_1),
                     system_time,
                 )
                 .to_str()
@@ -1202,9 +1190,7 @@ mod tests {
 
                 let period_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("period.log"))
-                    .rotation_policy(RotationPolicy::Period(
-                        hours(1) + minutes(2) + Duration::from_secs(3),
-                    ))
+                    .rotation_policy(RotationPolicy::Period(HOUR_1 + 2 * MINUTE_1 + 3 * SECOND_1))
                     .rotate_on_open(rotate_on_open)
                     .build()
                     .unwrap();
@@ -1420,20 +1406,14 @@ mod tests {
         assert!(daily(24, 60).validate().is_err());
 
         assert!(period(Duration::from_secs(0)).validate().is_err());
-        assert!(period(Duration::from_secs(1)).validate().is_err());
-        assert!(period(Duration::from_secs(59)).validate().is_err());
-        assert!(period(minutes(1)).validate().is_ok());
-        assert!(period(hours(1)).validate().is_ok());
-        assert!(period(hours(1) + minutes(1) + Duration::from_secs(1))
+        assert!(period(SECOND_1).validate().is_err());
+        assert!(period(59 * SECOND_1).validate().is_err());
+        assert!(period(MINUTE_1).validate().is_ok());
+        assert!(period(HOUR_1).validate().is_ok());
+        assert!(period(HOUR_1 + MINUTE_1 + SECOND_1).validate().is_ok());
+        assert!(period(60 * HOUR_1 + MINUTE_1 + SECOND_1).validate().is_ok());
+        assert!(period(2 * DAY_1 + 60 * HOUR_1 + MINUTE_1 + SECOND_1)
             .validate()
             .is_ok());
-        assert!(period(hours(60) + minutes(1) + Duration::from_secs(1))
-            .validate()
-            .is_ok());
-        assert!(
-            period(days(2) + hours(60) + minutes(1) + Duration::from_secs(1))
-                .validate()
-                .is_ok()
-        );
     }
 }
