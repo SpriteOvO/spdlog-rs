@@ -85,7 +85,6 @@ fn days(days: u64) -> Duration {
     chrono::Duration::days(days as i64).to_std().expect(format!("Failed to create Duration::days({}", days).as_str())
 }
 
-git
 fn weeks(weeks: u64) -> Duration {
     chrono::Duration::weeks(weeks as i64).to_std().expect(format!("Failed to create Duration::weeks({}", weeks).as_str())
 }
