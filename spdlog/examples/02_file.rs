@@ -84,13 +84,13 @@ fn configure_rotating_period_file_logger() -> Result<(), Box<dyn std::error::Err
     let file_sink = Arc::new(
         RotatingFileSink::builder()
             .base_path(path)
-            .rotation_policy(RotationPolicy::Period {
-                duration: (chrono::Duration::hours(1)
+            .rotation_policy(RotationPolicy::Period(
+                (chrono::Duration::hours(1)
                     + chrono::Duration::minutes(2)
                     + chrono::Duration::seconds(3))
                 .to_std()
                 .unwrap(),
-            })
+            ))
             .build()?,
     );
     let new_logger = Arc::new(Logger::builder().sink(file_sink).build()?);

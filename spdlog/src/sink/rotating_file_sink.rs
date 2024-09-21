@@ -47,7 +47,7 @@ use crate::{
 /// RotationPolicy::Hourly;
 ///
 /// // Rotating periodically
-/// RotationPolicy::Period { duration: std::time::Duration::from_secs(3 * 60 * 60 + 6) };
+/// RotationPolicy::Period(std::time::Duration::from_secs(3 * 60 * 60 + 6));
 /// ```
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RotationPolicy {
@@ -67,10 +67,10 @@ pub enum RotationPolicy {
     /// Rotating to a new log file at minute 0 of each hour.
     Hourly,
     /// Rotating to a new log file after given period (greater then 1 minute) is passed.
-    Period {
+    Period(
         /// Period to the next rotation. Range: [1 minute, Duration::MAX].
-        duration: Duration,
-    },
+        Duration,
+    ),
 }
 
 fn minutes(minutes: u64) -> Duration {
@@ -91,6 +91,7 @@ fn days(days: u64) -> Duration {
         .expect(format!("Failed to create Duration::days({}", days).as_str())
 }
 
+#[allow(dead_code)]
 fn weeks(weeks: u64) -> Duration {
     chrono::Duration::weeks(weeks as i64)
         .to_std()
@@ -134,7 +135,7 @@ struct RotatorTimePoint {
 enum TimePoint {
     Daily { hour: u32, minute: u32 },
     Hourly,
-    Period { duration: Duration },
+    Period(Duration),
 }
 
 struct RotatorTimePointInner {
@@ -309,7 +310,7 @@ impl RotationPolicy {
                 }
             }
             Self::Hourly => {}
-            Self::Period { duration } => {
+            Self::Period(duration) => {
                 if *duration < minutes(1) {
                     return Err(format!(
                         "policy 'period' expect duration greater then 1 minute but got {:?}",
@@ -696,7 +697,7 @@ impl TimePoint {
         match self {
             Self::Daily { .. } => days(1),
             Self::Hourly { .. } => hours(1),
-            Self::Period { duration } => *duration,
+            Self::Period(duration) => *duration,
         }
     }
 
@@ -705,7 +706,7 @@ impl TimePoint {
         match self {
             Self::Daily { .. } => chrono::Duration::days(1),
             Self::Hourly { .. } => chrono::Duration::hours(1),
-            Self::Period { duration } => chrono::Duration::from_std(*duration).unwrap(),
+            Self::Period(duration) => chrono::Duration::from_std(*duration).unwrap(),
         }
     }
 }
@@ -852,10 +853,10 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 self.max_files,
                 self.rotate_on_open,
             )?),
-            RotationPolicy::Period { duration } => RotatorKind::TimePoint(RotatorTimePoint::new(
+            RotationPolicy::Period(duration) => RotatorKind::TimePoint(RotatorTimePoint::new(
                 override_now,
                 self.base_path,
-                TimePoint::Period { duration },
+                TimePoint::Period(duration),
                 self.max_files,
                 self.rotate_on_open,
             )?),
@@ -1157,9 +1158,7 @@ mod tests {
             let calc_period = |base_path| {
                 RotatorTimePoint::calc_file_path(
                     base_path,
-                    TimePoint::Period {
-                        duration: minutes(10),
-                    },
+                    TimePoint::Period(minutes(10)),
                     system_time,
                 )
                 .to_str()
@@ -1210,9 +1209,9 @@ mod tests {
 
                 let period_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("period.log"))
-                    .rotation_policy(RotationPolicy::Period {
-                        duration: (hours(1) + minutes(2) + Duration::from_secs(3)),
-                    })
+                    .rotation_policy(RotationPolicy::Period(
+                        hours(1) + minutes(2) + Duration::from_secs(3),
+                    ))
                     .rotate_on_open(rotate_on_open)
                     .build()
                     .unwrap();
@@ -1412,7 +1411,7 @@ mod tests {
             Daily { hour, minute }
         }
         fn period(duration: Duration) -> RotationPolicy {
-            Period { duration }
+            Period(duration)
         }
 
         assert!(FileSize(1).validate().is_ok());
