@@ -67,7 +67,8 @@ pub enum RotationPolicy {
     },
     /// Rotating to a new log file at minute 0 of each hour.
     Hourly,
-    /// Rotating to a new log file after given period (greater then 1 minute) is passed.
+    /// Rotating to a new log file after given period (greater then 1 minute) is
+    /// passed.
     Period(
         /// Period to the next rotation. Range: [1 minute, Duration::MAX].
         Duration,
@@ -200,9 +201,10 @@ impl RotatingFileSink {
     ///
     /// The parameter `rotate_on_open` specifies whether to rotate files once
     /// when constructing `RotatingFileSink`. For the [`RotationPolicy::Daily`],
-    /// [`RotationPolicy::Hourly`], and [`RotationPolicy::Period`] rotation policies, it may truncate the
-    /// contents of the existing file if the parameter is `true`, since the file
-    /// name is a time point and not an index.
+    /// [`RotationPolicy::Hourly`], and [`RotationPolicy::Period`] rotation
+    /// policies, it may truncate the contents of the existing file if the
+    /// parameter is `true`, since the file name is a time point and not an
+    /// index.
     ///
     /// # Error
     ///
@@ -763,10 +765,10 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// Specifies whether to rotate files once when constructing
     /// `RotatingFileSink`.
     ///
-    /// For the [`RotationPolicy::Daily`], [`RotationPolicy::Hourly`], and [`RotationPolicy::Period`]
-    /// rotation policies, it may truncate the contents of the existing file if
-    /// the parameter is `true`, since the file name is a time point and not an
-    /// index.
+    /// For the [`RotationPolicy::Daily`], [`RotationPolicy::Hourly`], and
+    /// [`RotationPolicy::Period`] rotation policies, it may truncate the
+    /// contents of the existing file if the parameter is `true`, since the
+    /// file name is a time point and not an index.
     ///
     /// This parameter is **optional**.
     #[must_use]
