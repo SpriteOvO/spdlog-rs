@@ -73,20 +73,28 @@ pub enum RotationPolicy {
     },
 }
 
-fn minutes(minutes: u64) ->Duration {
-    chrono::Duration::minutes(minutes as i64).to_std().expect(format!("Failed to create Duration::minutes({}", minutes).as_str())
+fn minutes(minutes: u64) -> Duration {
+    chrono::Duration::minutes(minutes as i64)
+        .to_std()
+        .expect(format!("Failed to create Duration::minutes({}", minutes).as_str())
 }
 
 fn hours(hours: u64) -> Duration {
-    chrono::Duration::hours(hours as i64).to_std().expect(format!("Failed to create Duration::hours({}", hours).as_str())
+    chrono::Duration::hours(hours as i64)
+        .to_std()
+        .expect(format!("Failed to create Duration::hours({}", hours).as_str())
 }
 
 fn days(days: u64) -> Duration {
-    chrono::Duration::days(days as i64).to_std().expect(format!("Failed to create Duration::days({}", days).as_str())
+    chrono::Duration::days(days as i64)
+        .to_std()
+        .expect(format!("Failed to create Duration::days({}", days).as_str())
 }
 
 fn weeks(weeks: u64) -> Duration {
-    chrono::Duration::weeks(weeks as i64).to_std().expect(format!("Failed to create Duration::weeks({}", weeks).as_str())
+    chrono::Duration::weeks(weeks as i64)
+        .to_std()
+        .expect(format!("Failed to create Duration::weeks({}", weeks).as_str())
 }
 
 trait Rotator {
@@ -301,9 +309,7 @@ impl RotationPolicy {
                 }
             }
             Self::Hourly => {}
-            Self::Period {
-                duration
-            } => {
+            Self::Period { duration } => {
                 if *duration < minutes(1) {
                     return Err(format!(
                         "policy 'period' expect duration greater then 1 minute but got {:?}",
@@ -560,7 +566,7 @@ impl RotatorTimePoint {
                     .with_nanosecond(0)
                     .unwrap()
             }
-            TimePoint::Period {..} => {}
+            TimePoint::Period { .. } => {}
         };
 
         if rotation_time <= now {
@@ -846,15 +852,13 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 self.max_files,
                 self.rotate_on_open,
             )?),
-            RotationPolicy::Period { duration } => {
-                RotatorKind::TimePoint(RotatorTimePoint::new(
-                    override_now,
-                    self.base_path,
-                    TimePoint::Period { duration },
-                    self.max_files,
-                    self.rotate_on_open,
-                )?)
-            }
+            RotationPolicy::Period { duration } => RotatorKind::TimePoint(RotatorTimePoint::new(
+                override_now,
+                self.base_path,
+                TimePoint::Period { duration },
+                self.max_files,
+                self.rotate_on_open,
+            )?),
         };
 
         let res = RotatingFileSink {
@@ -1171,7 +1175,10 @@ mod tests {
                 assert_eq!(calc_hourly("/tmp/test.log"), "/tmp/test_2012-03-04_05.log");
                 assert_eq!(calc_hourly("/tmp/test"), "/tmp/test_2012-03-04_05");
 
-                assert_eq!(calc_period("/tmp/test.log"), "/tmp/test_2012-03-04_05-06.log");
+                assert_eq!(
+                    calc_period("/tmp/test.log"),
+                    "/tmp/test_2012-03-04_05-06.log"
+                );
                 assert_eq!(calc_period("/tmp/test"), "/tmp/test_2012-03-04_05-06");
             };
 
@@ -1194,7 +1201,6 @@ mod tests {
         #[test]
         fn rotate() {
             let build = |rotate_on_open| {
-
                 let hourly_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("hourly.log"))
                     .rotation_policy(RotationPolicy::Hourly)
@@ -1205,9 +1211,7 @@ mod tests {
                 let period_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("period.log"))
                     .rotation_policy(RotationPolicy::Period {
-                        duration: (hours( 1) +
-                                  minutes(2) +
-                                  Duration::from_secs(3)),
+                        duration: (hours(1) + minutes(2) + Duration::from_secs(3)),
                     })
                     .rotate_on_open(rotate_on_open)
                     .build()
@@ -1224,12 +1228,15 @@ mod tests {
                     .build()
                     .unwrap();
 
-                let sinks: [Arc<dyn Sink>; 3] = [Arc::new(hourly_sink), Arc::new(period_sink), Arc::new(daily_sink)];
+                let sinks: [Arc<dyn Sink>; 3] = [
+                    Arc::new(hourly_sink),
+                    Arc::new(period_sink),
+                    Arc::new(daily_sink),
+                ];
                 let logger = build_test_logger(|b| b.sinks(sinks));
                 logger.set_level_filter(LevelFilter::All);
                 logger
             };
-
 
             {
                 let logger = build(true);
@@ -1359,7 +1366,6 @@ mod tests {
                 record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
                 assert_files_count(prefix, 3);
-
             }
         }
     }
@@ -1425,11 +1431,22 @@ mod tests {
         assert!(period(Duration::from_secs(1)).validate().is_err());
         assert!(period(Duration::from_secs(59)).validate().is_err());
         assert!(period(minutes(1)).validate().is_ok());
-        assert!(period(hours( 1)).validate().is_ok());
-        assert!(period(hours( 1) + minutes(1) + Duration::from_secs(1)).validate().is_ok());
-        assert!(period(hours( 60) + minutes(1) + Duration::from_secs(1)).validate().is_ok());
-        assert!(period(days( 2) + hours( 60) + minutes(1) + Duration::from_secs(1)).validate().is_ok());
-        assert!(period(weeks( 2) + hours( 60) + minutes(1) + Duration::from_secs(1)).validate().is_ok());
-
+        assert!(period(hours(1)).validate().is_ok());
+        assert!(period(hours(1) + minutes(1) + Duration::from_secs(1))
+            .validate()
+            .is_ok());
+        assert!(period(hours(60) + minutes(1) + Duration::from_secs(1))
+            .validate()
+            .is_ok());
+        assert!(
+            period(days(2) + hours(60) + minutes(1) + Duration::from_secs(1))
+                .validate()
+                .is_ok()
+        );
+        assert!(
+            period(weeks(2) + hours(60) + minutes(1) + Duration::from_secs(1))
+                .validate()
+                .is_ok()
+        );
     }
 }
