@@ -91,13 +91,6 @@ fn days(days: u64) -> Duration {
         .expect(format!("Failed to create Duration::days({}", days).as_str())
 }
 
-#[allow(dead_code)]
-fn weeks(weeks: u64) -> Duration {
-    chrono::Duration::weeks(weeks as i64)
-        .to_std()
-        .expect(format!("Failed to create Duration::weeks({}", weeks).as_str())
-}
-
 trait Rotator {
     #[allow(clippy::ptr_arg)]
     fn log(&self, record: &Record, string_buf: &StringBuf) -> Result<()>;
@@ -1439,11 +1432,6 @@ mod tests {
             .is_ok());
         assert!(
             period(days(2) + hours(60) + minutes(1) + Duration::from_secs(1))
-                .validate()
-                .is_ok()
-        );
-        assert!(
-            period(weeks(2) + hours(60) + minutes(1) + Duration::from_secs(1))
                 .validate()
                 .is_ok()
         );
