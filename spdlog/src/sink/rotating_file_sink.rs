@@ -45,6 +45,10 @@ use crate::{
 ///
 /// // Rotating every hour.
 /// RotationPolicy::Hourly;
+///
+/// // Rotating every 6 hour.
+/// # use std::time::Duration;
+/// RotationPolicy::Period(Duration::from_secs(6 * 60 * 60));
 /// ```
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum RotationPolicy {
@@ -63,7 +67,20 @@ pub enum RotationPolicy {
     },
     /// Rotating to a new log file at minute 0 of each hour.
     Hourly,
+    /// Rotating to a new log file after given period (greater then 1 minute) is
+    /// passed.
+    Period(
+        /// Period to the next rotation. Range: [1 minute, Duration::MAX].
+        Duration,
+    ),
 }
+
+const SECONDS_PER_MINUTE: u64 = 60;
+const SECONDS_PER_HOUR: u64 = 60 * SECONDS_PER_MINUTE;
+const SECONDS_PER_DAY: u64 = 24 * SECONDS_PER_HOUR;
+const MINUTE_1: Duration = Duration::from_secs(SECONDS_PER_MINUTE);
+const HOUR_1: Duration = Duration::from_secs(SECONDS_PER_HOUR);
+const DAY_1: Duration = Duration::from_secs(SECONDS_PER_DAY);
 
 trait Rotator {
     #[allow(clippy::ptr_arg)]
@@ -102,6 +119,7 @@ struct RotatorTimePoint {
 enum TimePoint {
     Daily { hour: u32, minute: u32 },
     Hourly,
+    Period(Duration),
 }
 
 struct RotatorTimePointInner {
@@ -182,10 +200,11 @@ impl RotatingFileSink {
     /// deleted on the next rotation. Pass `0` for no limit.
     ///
     /// The parameter `rotate_on_open` specifies whether to rotate files once
-    /// when constructing `RotatingFileSink`. For the [`RotationPolicy::Daily`]
-    /// and [`RotationPolicy::Hourly`] rotation policies, it may truncate the
-    /// contents of the existing file if the parameter is `true`, since the file
-    /// name is a time point and not an index.
+    /// when constructing `RotatingFileSink`. For the [`RotationPolicy::Daily`],
+    /// [`RotationPolicy::Hourly`], and [`RotationPolicy::Period`] rotation
+    /// policies, it may truncate the contents of the existing file if the
+    /// parameter is `true`, since the file name is a time point and not an
+    /// index.
     ///
     /// # Error
     ///
@@ -276,6 +295,14 @@ impl RotationPolicy {
                 }
             }
             Self::Hourly => {}
+            Self::Period(duration) => {
+                if *duration < MINUTE_1 {
+                    return Err(format!(
+                        "policy 'period' expect duration greater then 1 minute but got {:?}",
+                        *duration
+                    ));
+                }
+            }
         }
         Ok(())
     }
@@ -525,9 +552,10 @@ impl RotatorTimePoint {
                     .with_nanosecond(0)
                     .unwrap()
             }
+            TimePoint::Period { .. } => {}
         };
 
-        if rotation_time < now {
+        if rotation_time <= now {
             rotation_time = rotation_time
                 .checked_add_signed(time_point.delta_chrono())
                 .unwrap();
@@ -589,6 +617,17 @@ impl RotatorTimePoint {
                     local_time.hour()
                 ));
             }
+            TimePoint::Period { .. } => {
+                // append y-m-d_h-m
+                file_name.push(format!(
+                    "_{}-{:02}-{:02}_{:02}-{:02}",
+                    local_time.year(),
+                    local_time.month(),
+                    local_time.day(),
+                    local_time.hour(),
+                    local_time.minute()
+                ));
+            }
         }
 
         let mut path = base_path.to_owned();
@@ -640,12 +679,10 @@ impl Rotator for RotatorTimePoint {
 impl TimePoint {
     #[must_use]
     fn delta_std(&self) -> Duration {
-        const HOUR_1: Duration = Duration::from_secs(60 * 60);
-        const DAY_1: Duration = Duration::from_secs(60 * 60 * 24);
-
         match self {
             Self::Daily { .. } => DAY_1,
             Self::Hourly { .. } => HOUR_1,
+            Self::Period(duration) => *duration,
         }
     }
 
@@ -654,6 +691,7 @@ impl TimePoint {
         match self {
             Self::Daily { .. } => chrono::Duration::days(1),
             Self::Hourly { .. } => chrono::Duration::hours(1),
+            Self::Period(duration) => chrono::Duration::from_std(*duration).unwrap(),
         }
     }
 }
@@ -727,10 +765,10 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// Specifies whether to rotate files once when constructing
     /// `RotatingFileSink`.
     ///
-    /// For the [`RotationPolicy::Daily`] and [`RotationPolicy::Hourly`]
-    /// rotation policies, it may truncate the contents of the existing file if
-    /// the parameter is `true`, since the file name is a time point and not an
-    /// index.
+    /// For the [`RotationPolicy::Daily`], [`RotationPolicy::Hourly`], and
+    /// [`RotationPolicy::Period`] rotation policies, it may truncate the
+    /// contents of the existing file if the parameter is `true`, since the
+    /// file name is a time point and not an index.
     ///
     /// This parameter is **optional**.
     #[must_use]
@@ -800,6 +838,13 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 self.max_files,
                 self.rotate_on_open,
             )?),
+            RotationPolicy::Period(duration) => RotatorKind::TimePoint(RotatorTimePoint::new(
+                override_now,
+                self.base_path,
+                TimePoint::Period(duration),
+                self.max_files,
+                self.rotate_on_open,
+            )?),
         };
 
         let res = RotatingFileSink {
@@ -818,9 +863,13 @@ mod tests {
 
     static BASE_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
         let path = TEST_LOGS_PATH.join("rotating_file_sink");
-        _ = fs::create_dir(&path);
+        if !path.exists() {
+            _ = fs::create_dir(&path);
+        }
         path
     });
+
+    const SECOND_1: Duration = Duration::from_secs(1);
 
     mod policy_file_size {
         use super::*;
@@ -874,7 +923,9 @@ mod tests {
             let build = |clean, rotate_on_open| {
                 if clean {
                     fs::remove_dir_all(LOGS_PATH.as_path()).unwrap();
-                    fs::create_dir(LOGS_PATH.as_path()).unwrap();
+                    if !LOGS_PATH.exists() {
+                        fs::create_dir(LOGS_PATH.as_path()).unwrap();
+                    }
                 }
 
                 let formatter = Box::new(NoModFormatter::new());
@@ -1048,10 +1099,6 @@ mod tests {
             path
         });
 
-        const SECOND_1: Duration = Duration::from_secs(1);
-        const HOUR_1: Duration = Duration::from_secs(60 * 60);
-        const DAY_1: Duration = Duration::from_secs(60 * 60 * 24);
-
         #[track_caller]
         fn assert_files_count(file_name_prefix: &str, expected: usize) {
             let paths = fs::read_dir(LOGS_PATH.clone()).unwrap();
@@ -1091,6 +1138,17 @@ mod tests {
                     .to_string()
             };
 
+            let calc_period = |base_path| {
+                RotatorTimePoint::calc_file_path(
+                    base_path,
+                    TimePoint::Period(10 * MINUTE_1),
+                    system_time,
+                )
+                .to_str()
+                .unwrap()
+                .to_string()
+            };
+
             #[cfg(not(windows))]
             let run = || {
                 assert_eq!(calc_daily("/tmp/test.log"), "/tmp/test_2012-03-04.log");
@@ -1098,6 +1156,12 @@ mod tests {
 
                 assert_eq!(calc_hourly("/tmp/test.log"), "/tmp/test_2012-03-04_05.log");
                 assert_eq!(calc_hourly("/tmp/test"), "/tmp/test_2012-03-04_05");
+
+                assert_eq!(
+                    calc_period("/tmp/test.log"),
+                    "/tmp/test_2012-03-04_05-06.log"
+                );
+                assert_eq!(calc_period("/tmp/test"), "/tmp/test_2012-03-04_05-06");
             };
 
             #[cfg(windows)]
@@ -1108,6 +1172,9 @@ mod tests {
 
                 assert_eq!(calc_hourly("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05.txt");
                 assert_eq!(calc_hourly("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05");
+
+                assert_eq!(calc_period("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05-06.txt");
+                assert_eq!(calc_period("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05-06");
             };
 
             run();
@@ -1123,6 +1190,13 @@ mod tests {
                     .build()
                     .unwrap();
 
+                let period_sink = RotatingFileSink::builder()
+                    .base_path(LOGS_PATH.join("period.log"))
+                    .rotation_policy(RotationPolicy::Period(HOUR_1 + 2 * MINUTE_1 + 3 * SECOND_1))
+                    .rotate_on_open(rotate_on_open)
+                    .build()
+                    .unwrap();
+
                 let local_time_now = Local::now();
                 let daily_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("daily.log"))
@@ -1134,7 +1208,11 @@ mod tests {
                     .build()
                     .unwrap();
 
-                let sinks: [Arc<dyn Sink>; 2] = [Arc::new(hourly_sink), Arc::new(daily_sink)];
+                let sinks: [Arc<dyn Sink>; 3] = [
+                    Arc::new(hourly_sink),
+                    Arc::new(period_sink),
+                    Arc::new(daily_sink),
+                ];
                 let logger = build_test_logger(|b| b.sinks(sinks));
                 logger.set_level_filter(LevelFilter::All);
                 logger
@@ -1146,30 +1224,36 @@ mod tests {
                 let initial_time = record.time();
 
                 assert_files_count("hourly", 1);
+                assert_files_count("period", 1);
                 assert_files_count("daily", 1);
 
                 logger.log(&record);
                 assert_files_count("hourly", 1);
+                assert_files_count("period", 1);
                 assert_files_count("daily", 1);
 
                 record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
                 assert_files_count("hourly", 2);
+                assert_files_count("period", 1);
                 assert_files_count("daily", 1);
 
                 record.set_time(record.time() + HOUR_1 + SECOND_1);
                 logger.log(&record);
                 assert_files_count("hourly", 3);
+                assert_files_count("period", 2);
                 assert_files_count("daily", 1);
 
                 record.set_time(record.time() + SECOND_1);
                 logger.log(&record);
                 assert_files_count("hourly", 3);
+                assert_files_count("period", 2);
                 assert_files_count("daily", 1);
 
                 record.set_time(initial_time + DAY_1 + SECOND_1);
                 logger.log(&record);
                 assert_files_count("hourly", 4);
+                assert_files_count("period", 3);
                 assert_files_count("daily", 2);
             }
         }
@@ -1307,6 +1391,9 @@ mod tests {
         fn daily(hour: u32, minute: u32) -> RotationPolicy {
             Daily { hour, minute }
         }
+        fn period(duration: Duration) -> RotationPolicy {
+            Period(duration)
+        }
 
         assert!(FileSize(1).validate().is_ok());
         assert!(FileSize(1024).validate().is_ok());
@@ -1319,5 +1406,16 @@ mod tests {
         assert!(daily(24, 59).validate().is_err());
         assert!(daily(23, 60).validate().is_err());
         assert!(daily(24, 60).validate().is_err());
+
+        assert!(period(Duration::from_secs(0)).validate().is_err());
+        assert!(period(SECOND_1).validate().is_err());
+        assert!(period(59 * SECOND_1).validate().is_err());
+        assert!(period(MINUTE_1).validate().is_ok());
+        assert!(period(HOUR_1).validate().is_ok());
+        assert!(period(HOUR_1 + MINUTE_1 + SECOND_1).validate().is_ok());
+        assert!(period(60 * HOUR_1 + MINUTE_1 + SECOND_1).validate().is_ok());
+        assert!(period(2 * DAY_1 + 60 * HOUR_1 + MINUTE_1 + SECOND_1)
+            .validate()
+            .is_ok());
     }
 }

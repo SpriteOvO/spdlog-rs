@@ -12,6 +12,8 @@ use crate::sync::*;
 
 pub static TEST_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
     let path = Path::new(env!("OUT_DIR")).join("test_logs");
-    _ = fs::create_dir(&path);
+    if !path.exists() {
+        _ = fs::create_dir(&path);
+    }
     path
 });
