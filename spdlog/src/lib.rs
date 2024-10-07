@@ -26,7 +26,7 @@
 //! Add this to `Cargo.toml`:
 //! ```toml
 //! [dependencies]
-//! spdlog-rs = "0.3"
+//! spdlog-rs = "0.4"
 //! ```
 //!
 //! `spdlog-rs` is highly configurable, and also works out-of-the-box for

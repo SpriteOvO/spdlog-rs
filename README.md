@@ -30,7 +30,7 @@ Fast, highly configurable Rust logging crate, inspired by the C++ logging librar
 Add this to `Cargo.toml`:
 ```toml
 [dependencies]
-spdlog-rs = "0.3"
+spdlog-rs = "0.4"
 ```
 
 The documentation of this crate is hosted on [docs.rs], and you can learn examples under [./examples] directory along with it.
