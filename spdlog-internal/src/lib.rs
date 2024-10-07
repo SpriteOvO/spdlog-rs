@@ -1,3 +1,10 @@
+//! Internal private common code for crate [`spdlog-rs`].
+//!
+//! `spdlog-macros` should never be used as a standalone dependency, use
+//! [`spdlog-rs`] instead.
+//!
+//! [`spdlog-rs`]: https://crates.io/crates/spdlog-rs
+
 pub mod pattern_parser;
 
 #[macro_export]
