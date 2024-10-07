@@ -1199,7 +1199,7 @@ tuple_pattern! {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use std::ops::Range;
 
     use super::*;
@@ -1209,14 +1209,14 @@ pub mod tests {
     // them pub in test builds.
 
     #[must_use]
-    pub fn get_mock_record() -> Record<'static> {
+    fn get_mock_record() -> Record<'static> {
         Record::builder(Level::Info, "record_payload")
             .logger_name("logger_name")
             .source_location(Some(SourceLocation::__new("module", "file", 10, 20)))
             .build()
     }
 
-    pub fn test_pattern<P, T>(pattern: P, formatted: T, style_range: Option<Range<usize>>)
+    fn test_pattern<P, T>(pattern: P, formatted: T, style_range: Option<Range<usize>>)
     where
         P: Pattern,
         T: AsRef<str>,

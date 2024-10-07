@@ -110,6 +110,7 @@ pub enum Error {
     Multiple(Vec<Error>),
 
     #[cfg(test)]
+    #[doc(hidden)]
     #[error("{0}")]
     __ForInternalTestsUseOnly(i32),
 }
