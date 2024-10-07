@@ -210,6 +210,12 @@ impl RecordOwned {
         self.inner.time
     }
 
+    /// Gets the TID when the record was created.
+    #[must_use]
+    pub fn tid(&self) -> u64 {
+        self.inner.tid
+    }
+
     // When adding more getters, also add to `Record`
 }
 
