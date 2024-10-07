@@ -10,7 +10,10 @@ use std::time::Duration;
 use fast_log::{
     config::Config,
     consts::LogSize,
-    plugin::{file_split::KeepType, packer::LogPacker},
+    plugin::{
+        file_split::{KeepType, Rolling, RollingType},
+        packer::LogPacker,
+    },
 };
 use log::info;
 use test::Bencher;
@@ -24,7 +27,8 @@ fn bench_4_rotating_daily_async(bencher: &mut Bencher) {
                     .join("rotating_daily_async.log")
                     .to_str()
                     .unwrap(),
-                LogSize::EB(1), // There is no unlimited option, so we use a large size
+                // There is no unlimited option, so we use a large size
+                Rolling::new(RollingType::BySize(LogSize::EB(1))),
                 KeepType::KeepTime(Duration::from_secs(24 * 3600)),
                 LogPacker {},
             )
