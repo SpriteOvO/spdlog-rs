@@ -38,15 +38,3 @@ fn bench_4_rotating_daily_async(bencher: &mut Bencher) {
 
     bencher.iter(|| info!(bench_log_message!()))
 }
-
-// #[bench]
-// fn bench_5_level_off(bencher: &mut Bencher) {
-//     let _guard = tracing::dispatcher::set_default(
-//         &tracing_subscriber::fmt()
-//             .with_max_level(LevelFilter::OFF)
-//             .finish()
-//             .into(),
-//     );
-//
-//     bencher.iter(|| info!(bench_log_message!()))
-// }
