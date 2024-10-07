@@ -127,6 +127,7 @@ impl ThreadPoolBuilder {
     /// # Panics
     ///
     /// Panics if the value is zero.
+    #[must_use]
     pub fn capacity(&mut self, capacity: usize) -> &mut Self {
         self.capacity = capacity;
         self
@@ -137,6 +138,7 @@ impl ThreadPoolBuilder {
     //
     // If it is ready to be made public in the future, please don't forget to
     // replace the `panic!` in the `build` function with a recoverable error.
+    #[must_use]
     #[allow(dead_code)]
     fn threads(&mut self, threads: usize) -> &mut Self {
         self.threads = threads;
@@ -146,6 +148,7 @@ impl ThreadPoolBuilder {
     /// Provide a function that will be called on each thread of the thread pool
     /// immediately after it is spawned. This can, for example, be used to set
     /// core affinity for each thread.
+    #[must_use]
     pub fn on_thread_spawn<F>(&mut self, f: F) -> &mut Self
     where
         F: Fn() + Send + Sync + 'static,
@@ -156,6 +159,7 @@ impl ThreadPoolBuilder {
 
     /// Provide a function that will be called on each thread of the thread pool
     /// just before the thread finishes.
+    #[must_use]
     pub fn on_thread_finish<F>(&mut self, f: F) -> &mut Self
     where
         F: Fn() + Send + Sync + 'static,
