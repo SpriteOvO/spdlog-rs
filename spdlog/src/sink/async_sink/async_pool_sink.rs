@@ -43,7 +43,7 @@ use crate::{
 ///
 /// [combined sink]: index.html#combined-sink
 /// [`ThreadPoolBuilder::capacity`]: crate::ThreadPoolBuilder::capacity
-/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/examples
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 // The names `AsyncSink` and `AsyncRuntimeSink` is reserved for future use.
 pub struct AsyncPoolSink {
     level_filter: Atomic<LevelFilter>,
