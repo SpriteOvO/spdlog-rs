@@ -37,28 +37,22 @@ struct RecordInner {
 
 impl<'a> Record<'a> {
     #[must_use]
-    pub(crate) fn new<S>(level: Level, payload: S) -> Record<'a>
-    where
-        S: Into<Cow<'a, str>>,
-    {
+    pub(crate) fn new(
+        level: Level,
+        payload: impl Into<Cow<'a, str>>,
+        srcloc: Option<SourceLocation>,
+        logger_name: Option<&'a str>,
+    ) -> Record<'a> {
         Record {
-            logger_name: None,
+            logger_name: logger_name.map(Cow::Borrowed),
             payload: payload.into(),
             inner: Cow::Owned(RecordInner {
                 level,
-                source_location: None,
+                source_location: srcloc,
                 time: SystemTime::now(),
                 tid: get_current_tid(),
             }),
         }
-    }
-
-    #[must_use]
-    pub(crate) fn builder<S>(level: Level, payload: S) -> RecordBuilder<'a>
-    where
-        S: Into<Cow<'a, str>>,
-    {
-        RecordBuilder::new(level, payload)
     }
 
     /// Creates a [`RecordOwned`] that doesn't have lifetimes.
@@ -217,53 +211,6 @@ impl RecordOwned {
     }
 
     // When adding more getters, also add to `Record`
-}
-
-#[allow(missing_docs)]
-#[derive(Clone, Debug)]
-pub(crate) struct RecordBuilder<'a> {
-    record: Record<'a>,
-}
-
-impl<'a> RecordBuilder<'a> {
-    /// Constructs a `RecordBuilder`.
-    ///
-    /// The default value of [`Record`] is the same as [`Record::new()`].
-    ///
-    /// Typically users should only use it for testing [`Sink`].
-    ///
-    /// [`Sink`]: crate::sink::Sink
-    #[must_use]
-    pub(crate) fn new<S>(level: Level, payload: S) -> Self
-    where
-        S: Into<Cow<'a, str>>,
-    {
-        Self {
-            record: Record::new(level, payload),
-        }
-    }
-
-    /// Sets the logger name.
-    #[must_use]
-    pub(crate) fn logger_name(mut self, logger_name: &'a str) -> Self {
-        self.record.logger_name = Some(Cow::Borrowed(logger_name));
-        self
-    }
-
-    /// Sets the source location.
-    // `Option` in the parameter is for the convenience of passing the result of
-    // the macro `source_location_current` directly.
-    #[must_use]
-    pub(crate) fn source_location(mut self, srcloc: Option<SourceLocation>) -> Self {
-        self.record.inner.to_mut().source_location = srcloc;
-        self
-    }
-
-    /// Builds a [`Record`].
-    #[must_use]
-    pub(crate) fn build(self) -> Record<'a> {
-        self.record
-    }
 }
 
 fn get_current_tid() -> u64 {

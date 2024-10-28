@@ -199,7 +199,7 @@ mod tests {
     fn should_format_json() {
         let mut dest = StringBuf::new();
         let formatter = JsonFormatter::new();
-        let record = Record::builder(Level::Info, "payload").build();
+        let record = Record::new(Level::Info, "payload", None, None);
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
@@ -222,9 +222,7 @@ mod tests {
     fn should_format_json_with_logger_name() {
         let mut dest = StringBuf::new();
         let formatter = JsonFormatter::new();
-        let record = Record::builder(Level::Info, "payload")
-            .logger_name("my-component")
-            .build();
+        let record = Record::new(Level::Info, "payload", None, Some("my-component"));
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
@@ -247,9 +245,12 @@ mod tests {
     fn should_format_json_with_src_loc() {
         let mut dest = StringBuf::new();
         let formatter = JsonFormatter::new();
-        let record = Record::builder(Level::Info, "payload")
-            .source_location(Some(SourceLocation::__new("module", "file.rs", 1, 2)))
-            .build();
+        let record = Record::new(
+            Level::Info,
+            "payload",
+            Some(SourceLocation::__new("module", "file.rs", 1, 2)),
+            None,
+        );
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 

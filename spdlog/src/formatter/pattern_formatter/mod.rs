@@ -1210,10 +1210,12 @@ mod tests {
 
     #[must_use]
     fn get_mock_record() -> Record<'static> {
-        Record::builder(Level::Info, "record_payload")
-            .logger_name("logger_name")
-            .source_location(Some(SourceLocation::__new("module", "file", 10, 20)))
-            .build()
+        Record::new(
+            Level::Info,
+            "record_payload",
+            Some(SourceLocation::__new("module", "file", 10, 20)),
+            Some("logger_name"),
+        )
     }
 
     fn test_pattern<P, T>(pattern: P, formatted: T, style_range: Option<Range<usize>>)

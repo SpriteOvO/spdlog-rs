@@ -320,9 +320,10 @@ pub mod prelude {
 }
 
 use std::{
+    borrow::Cow,
     env::{self, VarError},
     ffi::OsStr,
-    panic,
+    fmt, panic,
     result::Result as StdResult,
 };
 
@@ -783,19 +784,15 @@ pub fn __log(
     logger: &Logger,
     level: Level,
     srcloc: Option<SourceLocation>,
-    fmt_args: std::fmt::Arguments,
+    fmt_args: fmt::Arguments,
 ) {
-    // use `Cow` to avoid allocation as much as we can
-    let payload: std::borrow::Cow<str> = match fmt_args.as_str() {
-        Some(literal_str) => literal_str.into(), // no format arguments, so it is a `&'static str`
-        None => fmt_args.to_string().into(),
-    };
-
-    let mut builder = Record::builder(level, payload).source_location(srcloc);
-    if let Some(logger_name) = logger.name() {
-        builder = builder.logger_name(logger_name);
-    }
-    logger.log(&builder.build());
+    // Use `Cow` to avoid allocation as much as we can
+    let payload: Cow<str> = fmt_args
+        .as_str()
+        .map(Cow::Borrowed) // No format arguments, so it is a `&'static str`
+        .unwrap_or_else(|| Cow::Owned(fmt_args.to_string()));
+    let record = Record::new(level, payload, srcloc, logger.name());
+    logger.log(&record);
 }
 
 #[cfg(test)]
