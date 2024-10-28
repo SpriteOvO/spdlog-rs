@@ -120,7 +120,7 @@ macro_rules! impl_cache_fields_str_getter {
     };
 }
 
-impl<'a> TimeDate<'a> {
+impl TimeDate<'_> {
     #[must_use]
     pub(crate) fn full_second_str(&mut self) -> &str {
         if self.cached.full_second_str.is_none() {
@@ -327,7 +327,7 @@ pub(crate) struct TimeDateLazyLocked<'a> {
     locked: Option<TimeDateLocked<'a>>,
 }
 
-impl<'a> TimeDateLazyLocked<'a> {
+impl TimeDateLazyLocked<'_> {
     #[must_use]
     pub(crate) fn new(time: SystemTime) -> Self {
         Self { time, locked: None }

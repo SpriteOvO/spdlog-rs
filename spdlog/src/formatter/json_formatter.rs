@@ -18,7 +18,7 @@ fn opt_to_num<T>(opt: Option<T>) -> usize {
 
 struct JsonRecord<'a>(&'a Record<'a>);
 
-impl<'a> Serialize for JsonRecord<'a> {
+impl Serialize for JsonRecord<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,

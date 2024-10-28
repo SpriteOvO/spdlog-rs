@@ -461,7 +461,7 @@ impl Pattern for str {
     }
 }
 
-impl<'a, T> Pattern for &'a T
+impl<T> Pattern for &T
 where
     T: ?Sized + Pattern,
 {
