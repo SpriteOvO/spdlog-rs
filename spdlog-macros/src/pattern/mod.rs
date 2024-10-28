@@ -67,7 +67,6 @@ pub fn runtime_pattern_impl(runtime_pattern: RuntimePattern) -> Result<TokenStre
 ///
 /// A [`Pattern`] gives a structural representation of a pattern parsed from the
 /// token stream given to the `pattern` macro.
-
 pub struct Pattern {
     /// The template string included in the pattern.
     template: Option<(&'static String, Template<'static>)>,
