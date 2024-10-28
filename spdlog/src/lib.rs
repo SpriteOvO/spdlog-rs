@@ -207,6 +207,8 @@
 //!  - `runtime-pattern` enables the ability to build patterns with runtime
 //!    template string. See [`RuntimePattern`] for more details.
 //!
+//!  - `serde_json` enables [`formatter::JsonFormatter`].
+//!
 //! # Supported Rust versions
 //!
 //! <!--
