@@ -1,0 +1,7 @@
+error: macro `runtime_pattern` required to enable crate feature `runtime-pattern` for spdlog-rs
+ --> tests/compile_fail/pattern_runtime_disabled.rs:4:5
+  |
+4 |     runtime_pattern!("{logger}");
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `runtime_pattern` (in Nightly builds, run with -Z macro-backtrace for more info)

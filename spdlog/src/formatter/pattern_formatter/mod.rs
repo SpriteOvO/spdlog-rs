@@ -342,6 +342,21 @@ use crate::{
 /// [`FullFormatter`]: crate::formatter::FullFormatter
 pub use ::spdlog_macros::pattern;
 
+// Emit a compile error if the feature is not enabled.
+#[cfg(not(feature = "runtime-pattern"))]
+pub use crate::__runtime_pattern_disabled as runtime_pattern;
+
+#[cfg(not(feature = "runtime-pattern"))]
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __runtime_pattern_disabled {
+    ($($_:tt)*) => {
+        compile_error!(
+            "macro `runtime_pattern` required to enable crate feature `runtime-pattern` for spdlog-rs"
+        );
+    };
+}
+
 /// Formats logs according to a specified pattern.
 #[derive(Clone)]
 pub struct PatternFormatter<P> {
