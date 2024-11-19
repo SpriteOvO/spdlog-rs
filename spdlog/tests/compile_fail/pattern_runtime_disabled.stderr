@@ -1,0 +1,7 @@
+error: proc macro panicked
+ --> tests/compile_fail/pattern_runtime_disabled.rs:4:5
+  |
+4 |     runtime_pattern!("{logger}");
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: message: macro `runtime_pattern` required to enable crate feature `runtime-pattern` for spdlog-rs

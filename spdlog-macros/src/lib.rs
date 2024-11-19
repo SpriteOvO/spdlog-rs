@@ -26,6 +26,13 @@ pub fn runtime_pattern(input: TokenStream) -> TokenStream {
     into_or_error(pattern::runtime_pattern_impl(runtime_pattern))
 }
 
+#[proc_macro]
+pub fn runtime_pattern_disabled(_: TokenStream) -> TokenStream {
+    panic!(
+        "macro `runtime_pattern` required to enable crate feature `runtime-pattern` for spdlog-rs"
+    );
+}
+
 fn into_or_error(result: Result<TokenStream2>) -> TokenStream {
     match result {
         Ok(stream) => stream.into(),
