@@ -4,7 +4,7 @@ use std::{
     time::SystemTime,
 };
 
-use crate::{Level, SourceLocation};
+use crate::{kv, Level, SourceLocation};
 
 /// Represents a log record.
 ///
@@ -24,6 +24,7 @@ use crate::{Level, SourceLocation};
 pub struct Record<'a> {
     logger_name: Option<Cow<'a, str>>,
     payload: Cow<'a, str>,
+    kvs: Cow<'a, [kv::Pair<'a>]>,
     inner: Cow<'a, RecordInner>,
 }
 
@@ -42,10 +43,12 @@ impl<'a> Record<'a> {
         payload: impl Into<Cow<'a, str>>,
         srcloc: Option<SourceLocation>,
         logger_name: Option<&'a str>,
+        kvs: &'a [(kv::Key<'a>, kv::Value<'a>)],
     ) -> Record<'a> {
         Record {
             logger_name: logger_name.map(Cow::Borrowed),
             payload: payload.into(),
+            kvs: Cow::Borrowed(kvs),
             inner: Cow::Owned(RecordInner {
                 level,
                 source_location: srcloc,
@@ -61,6 +64,11 @@ impl<'a> Record<'a> {
         RecordOwned {
             logger_name: self.logger_name.clone().map(|n| n.into_owned()),
             payload: self.payload.to_string(),
+            kvs: self
+                .kvs
+                .iter()
+                .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                .collect(),
             inner: self.inner.clone().into_owned(),
         }
     }
@@ -101,6 +109,12 @@ impl<'a> Record<'a> {
         self.inner.tid
     }
 
+    #[must_use]
+    pub fn key_values(&self) -> impl IntoIterator<Item = (kv::Key, kv::Value)> {
+        // The 2 clones should be cheap
+        self.kvs.iter().map(|(k, v)| (k.clone(), v.clone()))
+    }
+
     // When adding more getters, also add to `RecordOwned`
 
     #[must_use]
@@ -108,6 +122,7 @@ impl<'a> Record<'a> {
         Self {
             logger_name: self.logger_name.clone(),
             payload: new.into(),
+            kvs: self.kvs.clone(),
             inner: Cow::Borrowed(&self.inner),
         }
     }
@@ -116,7 +131,7 @@ impl<'a> Record<'a> {
     #[must_use]
     pub(crate) fn from_log_crate_record(
         logger: &'a crate::Logger,
-        record: &log::Record,
+        record: &'a log::Record,
         time: SystemTime,
     ) -> Self {
         let args = record.args();
@@ -132,6 +147,12 @@ impl<'a> Record<'a> {
                     Some(Cow::Owned(String::from(log_target)))
                 }
             }),
+            kvs: {
+                let kvs = record.key_values();
+                let mut cvt = kv::LogCrateConverter::new(kvs.count());
+                assert!(kvs.visit(&mut cvt).is_ok());
+                cvt.finalize()
+            },
             payload: match args.as_str() {
                 Some(literal_str) => literal_str.into(),
                 None => args.to_string().into(),
@@ -160,6 +181,7 @@ impl<'a> Record<'a> {
 pub struct RecordOwned {
     logger_name: Option<String>,
     payload: String,
+    kvs: Vec<(kv::KeyOwned, kv::ValueOwned)>,
     inner: RecordInner,
 }
 
@@ -170,6 +192,12 @@ impl RecordOwned {
         Record {
             logger_name: self.logger_name.as_deref().map(Cow::Borrowed),
             payload: Cow::Borrowed(&self.payload),
+            kvs: Cow::Owned(
+                self.kvs
+                    .iter()
+                    .map(|(k, v)| (k.as_ref(), v.by_ref()))
+                    .collect::<Vec<_>>(),
+            ),
             inner: Cow::Borrowed(&self.inner),
         }
     }
@@ -208,6 +236,11 @@ impl RecordOwned {
     #[must_use]
     pub fn tid(&self) -> u64 {
         self.inner.tid
+    }
+
+    #[must_use]
+    pub fn key_values(&self) -> impl IntoIterator<Item = (kv::Key, kv::Value)> {
+        self.kvs.iter().map(|(k, v)| (k.as_ref(), v.by_ref()))
     }
 
     // When adding more getters, also add to `Record`

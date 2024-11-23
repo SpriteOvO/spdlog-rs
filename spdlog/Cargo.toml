@@ -49,7 +49,7 @@ dyn-clone = "1.0.14"
 flexible-string = { version = "0.1.0", optional = true }
 if_chain = "1.0.2"
 is-terminal = "0.4"
-log = { version = "0.4.8", optional = true }
+log = { version = "0.4.21", optional = true, features = ["kv"] }
 once_cell = "1.16.0"
 serde = { version = "1.0.163", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.120", optional = true }
@@ -57,6 +57,7 @@ spdlog-internal = { version = "=0.1.0", path = "../spdlog-internal", optional = 
 spdlog-macros = { version = "=0.2.0", path = "../spdlog-macros" }
 spin = "0.9.8"
 thiserror = "1.0.37"
+value-bag = { version = "1.10.0", features = ["owned"] }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["consoleapi", "debugapi", "handleapi", "processenv", "processthreadsapi", "winbase", "wincon"] }

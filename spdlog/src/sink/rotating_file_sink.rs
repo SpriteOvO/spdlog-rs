@@ -1220,7 +1220,7 @@ mod tests {
 
             {
                 let logger = build(true);
-                let mut record = Record::new(Level::Info, "test log message", None, None);
+                let mut record = Record::new(Level::Info, "test log message", None, None, &[]);
                 let initial_time = record.time();
 
                 assert_files_count("hourly", 1);
@@ -1279,7 +1279,7 @@ mod tests {
             };
 
             {
-                let mut record = Record::new(Level::Info, "test log message", None, None);
+                let mut record = Record::new(Level::Info, "test log message", None, None, &[]);
 
                 assert_files_count(prefix, 1);
 
