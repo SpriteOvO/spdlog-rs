@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn format() {
-        let record = Record::new(Level::Warn, "test log content", None, None);
+        let record = Record::new(Level::Warn, "test log content", None, None, &[]);
         let mut buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
         FullFormatter::new()

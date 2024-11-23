@@ -26,7 +26,7 @@ macro_rules! log {
         const LEVEL: $crate::Level = $level;
         const SHOULD_LOG: bool = $crate::STATIC_LEVEL_FILTER.__test_const(LEVEL);
         if SHOULD_LOG && logger.should_log(LEVEL) {
-            $crate::__log(logger, LEVEL, $crate::source_location_current!(), format_args!($($arg)+));
+            $crate::__log(logger, LEVEL, $crate::source_location_current!(), &[], format_args!($($arg)+));
         }
     });
     ($level:expr, $($arg:tt)+) => ($crate::log!(logger: $crate::default_logger(), $level, $($arg)+))
