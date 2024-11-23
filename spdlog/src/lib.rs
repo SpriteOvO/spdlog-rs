@@ -291,8 +291,7 @@ pub mod re_export;
 mod record;
 pub mod sink;
 mod source_location;
-#[doc(hidden)]
-pub mod string_buf;
+mod string_buf;
 mod sync;
 pub mod terminal_style;
 #[cfg(test)]
