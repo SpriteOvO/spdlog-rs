@@ -1219,6 +1219,7 @@ mod tests {
             "record_payload",
             Some(SourceLocation::__new("module", "file", 10, 20)),
             Some("logger_name"),
+            &[],
         )
     }
 

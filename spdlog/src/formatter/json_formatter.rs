@@ -16,9 +16,9 @@ fn opt_to_num<T>(opt: Option<T>) -> usize {
     opt.map_or(0, |_| 1)
 }
 
-struct JsonRecord<'a>(&'a Record<'a>);
+struct JsonRecord<'a, 'b>(&'a Record<'b>);
 
-impl Serialize for JsonRecord<'_> {
+impl Serialize for JsonRecord<'_, '_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -49,12 +49,6 @@ impl Serialize for JsonRecord<'_> {
         }
 
         record.end()
-    }
-}
-
-impl<'a> From<&'a Record<'a>> for JsonRecord<'a> {
-    fn from(value: &'a Record<'a>) -> Self {
-        JsonRecord(value)
     }
 }
 
@@ -157,13 +151,11 @@ impl JsonFormatter {
             }
         }
 
-        let json_record: JsonRecord = record.into();
-
         // TODO: https://github.com/serde-rs/json/issues/863
         //
         // The performance can be significantly optimized here if the issue can be
         // solved.
-        dest.write_str(&serde_json::to_string(&json_record)?)?;
+        dest.write_str(&serde_json::to_string(&JsonRecord(record))?)?;
 
         dest.write_str(__EOL)?;
 
@@ -199,7 +191,7 @@ mod tests {
     fn should_format_json() {
         let mut dest = StringBuf::new();
         let formatter = JsonFormatter::new();
-        let record = Record::new(Level::Info, "payload", None, None);
+        let record = Record::new(Level::Info, "payload", None, None, &[]);
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
@@ -222,7 +214,7 @@ mod tests {
     fn should_format_json_with_logger_name() {
         let mut dest = StringBuf::new();
         let formatter = JsonFormatter::new();
-        let record = Record::new(Level::Info, "payload", None, Some("my-component"));
+        let record = Record::new(Level::Info, "payload", None, Some("my-component"), &[]);
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
@@ -250,6 +242,7 @@ mod tests {
             "payload",
             Some(SourceLocation::__new("module", "file.rs", 1, 2)),
             None,
+            &[],
         );
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
