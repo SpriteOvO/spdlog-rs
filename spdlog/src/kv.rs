@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, marker::PhantomData};
 
 use value_bag::{OwnedValueBag, ValueBag};
 
@@ -11,6 +11,15 @@ pub(crate) enum KeyInner<'a> {
 // TODO: PartialEq
 #[derive(Debug, Clone)]
 pub struct Key<'a>(KeyInner<'a>);
+
+impl Key<'_> {
+    pub fn as_str(&self) -> &str {
+        match &self.0 {
+            KeyInner::Str(s) => s,
+            KeyInner::StaticStr(s) => s,
+        }
+    }
+}
 
 impl<'a> Key<'a> {
     #[doc(hidden)]
@@ -58,6 +67,50 @@ impl KeyOwned {
 
 pub type Value<'a> = ValueBag<'a>;
 pub(crate) type ValueOwned = OwnedValueBag;
+
+pub struct KeyValuesIter<'a, I> {
+    iter: I,
+    len: usize,
+    phantom: PhantomData<&'a ()>,
+}
+
+impl<I> KeyValuesIter<'_, I> {
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+}
+
+impl<'a, I> KeyValuesIter<'a, I>
+where
+    I: Iterator<Item = (Key<'a>, Value<'a>)>,
+{
+    pub(crate) fn new(iter: I, len: usize) -> Self {
+        Self {
+            iter,
+            len,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, I> Iterator for KeyValuesIter<'a, I>
+where
+    I: Iterator<Item = (Key<'a>, Value<'a>)>,
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.iter.size_hint()
+    }
+}
 
 pub(crate) type Pair<'a> = (Key<'a>, Value<'a>);
 
