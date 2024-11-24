@@ -62,14 +62,18 @@ impl FullFormatter {
             }
         }
 
-        fmt_with_time(ctx, record, |mut time: TimeDate| {
-            dest.write_str("[")?;
-            dest.write_str(time.full_second_str())?;
-            dest.write_str(".")?;
-            write!(dest, "{:03}", time.millisecond())?;
-            dest.write_str("] [")?;
-            Ok(())
-        })?;
+        fmt_with_time(
+            ctx,
+            record,
+            |mut time: TimeDate| -> Result<(), fmt::Error> {
+                dest.write_str("[")?;
+                dest.write_str(time.full_second_str())?;
+                dest.write_str(".")?;
+                write!(dest, "{:03}", time.millisecond())?;
+                dest.write_str("] [")?;
+                Ok(())
+            },
+        )?;
 
         if let Some(logger_name) = record.logger_name() {
             dest.write_str(logger_name)?;
