@@ -2,16 +2,18 @@ use std::borrow::Cow;
 
 use value_bag::{OwnedValueBag, ValueBag};
 
-#[derive(Debug, Clone)]
-enum KeyInner<'a> {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum KeyInner<'a> {
     Str(&'a str),
     StaticStr(&'static str),
 }
 
+// TODO: PartialEq
 #[derive(Debug, Clone)]
 pub struct Key<'a>(KeyInner<'a>);
 
 impl<'a> Key<'a> {
+    #[doc(hidden)]
     pub fn __from_static_str(key: &'static str) -> Self {
         Key(KeyInner::StaticStr(key))
     }
@@ -26,6 +28,11 @@ impl<'a> Key<'a> {
             KeyInner::StaticStr(s) => KeyOwnedInner::CowStr(Cow::Borrowed(s)),
         };
         KeyOwned(inner)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn inner(&self) -> KeyInner<'a> {
+        self.0.clone()
     }
 }
 
