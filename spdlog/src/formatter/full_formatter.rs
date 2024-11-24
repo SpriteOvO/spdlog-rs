@@ -19,19 +19,19 @@ use crate::{
 ///  - Default:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [<font color="#0DBC79">info</font>] hello, world!
+///    [2022-11-02 09:23:12.263] [<font color="#0DBC79">info</font>] hello, world! { key1=value1, key2=value2 }
 ///    </pre>
 ///
 ///  - If the logger has a name:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] hello, world!
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] hello, world! { key1=value1, key2=value2 }
 ///    </pre>
 /// 
 ///  - If crate feature `source-location` is enabled:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] [mod::path, src/main.rs:4] hello, world!
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] [mod::path, src/main.rs:4] hello, world! { key1=value1, key2=value2 }
 ///    </pre>
 #[derive(Clone)]
 pub struct FullFormatter {
@@ -94,6 +94,22 @@ impl FullFormatter {
         dest.write_str("] ")?;
         dest.write_str(record.payload())?;
 
+        let kvs = record.key_values();
+        if !kvs.is_empty() {
+            dest.write_str(" { ")?;
+
+            let mut iter = kvs.peekable();
+            while let Some((key, value)) = iter.next() {
+                dest.write_str(key.as_str())?;
+                dest.write_str("=")?;
+                write!(dest, "{}", value)?;
+                if iter.peek().is_some() {
+                    dest.write_str(", ")?;
+                }
+            }
+            dest.write_str(" }")?;
+        }
+
         if self.with_eol {
             dest.write_str(__EOL)?;
         }
@@ -126,11 +142,15 @@ mod tests {
     use chrono::prelude::*;
 
     use super::*;
-    use crate::{Level, __EOL};
+    use crate::{kv, Level, __EOL};
 
     #[test]
     fn format() {
-        let record = Record::new(Level::Warn, "test log content", None, None, &[]);
+        let kvs = [
+            (kv::Key::__from_static_str("k1"), kv::Value::from(114)),
+            (kv::Key::__from_static_str("k2"), kv::Value::from("514")),
+        ];
+        let record = Record::new(Level::Warn, "test log content", None, None, &kvs);
         let mut buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
         FullFormatter::new()
@@ -140,7 +160,7 @@ mod tests {
         let local_time: DateTime<Local> = record.time().into();
         assert_eq!(
             format!(
-                "[{}] [warn] test log content{}",
+                "[{}] [warn] test log content {{ k1=114, k2=514 }}{}",
                 local_time.format("%Y-%m-%d %H:%M:%S.%3f"),
                 __EOL
             ),
