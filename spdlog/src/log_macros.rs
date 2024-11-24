@@ -320,7 +320,6 @@ mod tests {
                 (
                     record
                         .key_values()
-                        .into_iter()
                         .map(|(k, v)| (k.inner(), v.to_i64().unwrap()))
                         .collect::<Vec<_>>(),
                     record.level(),

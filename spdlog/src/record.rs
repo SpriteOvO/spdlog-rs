@@ -110,9 +110,12 @@ impl<'a> Record<'a> {
     }
 
     #[must_use]
-    pub fn key_values(&self) -> impl IntoIterator<Item = (kv::Key, kv::Value)> {
-        // The 2 clones should be cheap
-        self.kvs.iter().map(|(k, v)| (k.clone(), v.clone()))
+    pub fn key_values(&self) -> kv::KeyValuesIter<impl Iterator<Item = (kv::Key, kv::Value)>> {
+        kv::KeyValuesIter::new(
+            // The 2 clones should be cheap
+            self.kvs.iter().map(|(k, v)| (k.clone(), v.clone())),
+            self.kvs.len(),
+        )
     }
 
     // When adding more getters, also add to `RecordOwned`
@@ -239,8 +242,11 @@ impl RecordOwned {
     }
 
     #[must_use]
-    pub fn key_values(&self) -> impl IntoIterator<Item = (kv::Key, kv::Value)> {
-        self.kvs.iter().map(|(k, v)| (k.as_ref(), v.by_ref()))
+    pub fn key_values(&self) -> kv::KeyValuesIter<impl Iterator<Item = (kv::Key, kv::Value)>> {
+        kv::KeyValuesIter::new(
+            self.kvs.iter().map(|(k, v)| (k.as_ref(), v.by_ref())),
+            self.kvs.len(),
+        )
     }
 
     // When adding more getters, also add to `Record`
