@@ -37,7 +37,7 @@ native = []
 libsystemd = ["libsystemd-sys"]
 multi-thread = ["crossbeam"]
 runtime-pattern = ["spdlog-internal"]
-serde_json = ["serde", "dep:serde_json"]
+serde_json = ["serde", "dep:serde_json", "value-bag/serde1"]
 
 [dependencies]
 arc-swap = "1.5.1"
