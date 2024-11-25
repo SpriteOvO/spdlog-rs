@@ -212,7 +212,7 @@ fn test_builtin_patterns() {
             .build()
             .unwrap();
 
-        info!(logger: logger, "test payload");
+        info!(logger: logger, kv: { a=true, b="text" }, "test payload");
 
         sink.clone_string()
     }
@@ -416,7 +416,7 @@ fn test_builtin_patterns() {
         if #[cfg(feature = "source-location")] {
             check!(
                 "{full}",
-                Some([format!("[0000-00-00 00:00:00.000] [logger-name] [info] [pattern, {}:000] test payload", file!())]),
+                Some([format!("[0000-00-00 00:00:00.000] [logger-name] [info] [pattern, {}:000] test payload {{ a=true, b=text }}", file!())]),
                 vec![
                     YEAR_RANGE,
                     MONTH_RANGE,
@@ -431,7 +431,7 @@ fn test_builtin_patterns() {
         } else {
             check!(
                 "{full}",
-                Some(["[0000-00-00 00:00:00.000] [logger-name] [info] test payload"]),
+                Some(["[0000-00-00 00:00:00.000] [logger-name] [info] test payload { a=true, b=text }"]),
                 vec![
                     YEAR_RANGE,
                     MONTH_RANGE,
@@ -466,6 +466,7 @@ fn test_builtin_patterns() {
     }
     check!("{logger}", Some(["logger-name"]), vec![]);
     check!("{payload}", Some(["test payload"]), vec![]);
+    check!("{kv}", Some(["{ a=true, b=text }"]), vec![]);
     check!("{pid}", None as Option<Vec<&str>>, vec![OS_ID_RANGE]);
     check!("{tid}", None as Option<Vec<&str>>, vec![OS_ID_RANGE]);
     check!("{eol}", Some(["{eol}"]), vec![]);

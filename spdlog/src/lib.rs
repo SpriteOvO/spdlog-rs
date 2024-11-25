@@ -281,6 +281,7 @@
 mod env_level;
 pub mod error;
 pub mod formatter;
+pub mod kv;
 mod level;
 #[cfg(feature = "log")]
 mod log_crate_proxy;
@@ -783,6 +784,7 @@ pub fn __log(
     logger: &Logger,
     level: Level,
     srcloc: Option<SourceLocation>,
+    kvs: &[(kv::Key, kv::Value)],
     fmt_args: fmt::Arguments,
 ) {
     // Use `Cow` to avoid allocation as much as we can
@@ -790,7 +792,7 @@ pub fn __log(
         .as_str()
         .map(Cow::Borrowed) // No format arguments, so it is a `&'static str`
         .unwrap_or_else(|| Cow::Owned(fmt_args.to_string()));
-    let record = Record::new(level, payload, srcloc, logger.name());
+    let record = Record::new(level, payload, srcloc, logger.name(), kvs);
     logger.log(&record);
 }
 
