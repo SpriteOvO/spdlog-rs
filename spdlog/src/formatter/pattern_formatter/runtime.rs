@@ -253,6 +253,7 @@ fn build_builtin_pattern(builtin: &BuiltInFormatter) -> Box<dyn Pattern> {
         SourceModulePath,
         LoggerName,
         Payload,
+        KV,
         ProcessId,
         ThreadId,
         Eol

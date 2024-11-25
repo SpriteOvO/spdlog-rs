@@ -3,6 +3,7 @@
 mod datetime;
 mod eol;
 mod full;
+mod kv;
 mod level;
 mod logger_name;
 mod payload;
@@ -14,6 +15,7 @@ mod thread_id;
 pub use datetime::*;
 pub use eol::*;
 pub use full::*;
+pub use kv::*;
 pub use level::*;
 pub use logger_name::*;
 pub use payload::*;
