@@ -239,26 +239,21 @@ macro_rules! __kv {
         $crate::__kv!(@{} $($ttm)+)
     };
 
-    (@{$($done:tt)*} $k:ident    = $v:expr $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [  ] = $v,} $($($rest)*)?));
-    (@{$($done:tt)*} $k:ident :  = $v:expr $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [: ] = $v,} $($($rest)*)?));
-    (@{$($done:tt)*} $k:ident :? = $v:expr $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [:?] = $v,} $($($rest)*)?));
-    (@{$( $k:ident [$($modifier:tt)*] = $v:expr ),+ $(,)?}) => {
-        &[$(($crate::kv::Key::__from_static_str(stringify!($k)), $crate::__kv_value!($($modifier)* = $v))),+]
+    (@{$($done:tt)*} $k:ident    $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [  ] $(= $v)?,} $($($rest)*)?));
+    (@{$($done:tt)*} $k:ident :  $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [: ] $(= $v)?,} $($($rest)*)?));
+    (@{$($done:tt)*} $k:ident :? $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [:?] $(= $v)?,} $($($rest)*)?));
+    (@{$( $k:ident [$($modifier:tt)*] $(= $v:expr)? ),+ $(,)?}) => {
+        &[$(($crate::kv::Key::__from_static_str(stringify!($k)), $crate::__kv_value!($k [$($modifier)*] $(= $v)?))),+]
     };
 }
 
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __kv_value {
-    (= $v:expr) => {
-        $crate::kv::Value::from(&$v)
-    };
-    (: = $v:expr) => {
-        $crate::kv::Value::from_display(&$v)
-    };
-    (:? = $v:expr) => {
-        $crate::kv::Value::from_debug(&$v)
-    };
+    ($k:ident [$($modifier:tt)*]) => { $crate::__kv_value!($k [$($modifier)*] = $k) };
+    ($k:ident [  ] = $v:expr) => { $crate::kv::Value::from(&$v) };
+    ($k:ident [: ] = $v:expr) => { $crate::kv::Value::from_display(&$v) };
+    ($k:ident [:?] = $v:expr) => { $crate::kv::Value::from_debug(&$v) };
 }
 
 #[cfg(test)]
@@ -306,12 +301,36 @@ mod tests {
                 Level::Critical,
                 "logger, kv(2)".to_string(),
             ),
+            (
+                vec![(KeyInner::StaticStr("n"), "114514".to_string())],
+                Level::Trace,
+                "logger, kv(1,vref)".to_string(),
+            ),
+            (
+                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                Level::Debug,
+                "logger, kv(mod,vref)".to_string(),
+            ),
+            (
+                vec![
+                    (KeyInner::StaticStr("n"), "114514".to_string()),
+                    (KeyInner::StaticStr("mod_di"), "display".to_string()),
+                    (KeyInner::StaticStr("mod_de"), "debug".to_string()),
+                ],
+                Level::Info,
+                "logger, kv(s,mod,vref)".to_string(),
+            ),
         ];
 
         log!(logger: test, Level::Info, "logger");
         log!(logger: test, kv: {}, Level::Error, "logger, kv(0)");
         log!(logger: test, kv: { kn = 114514 }, Level::Warn, "logger, kv(1)");
         log!(logger: test, kv: { kn = 114514, kdi: = Mods, kde:? = Mods }, Level::Critical, "logger, kv(2)");
+
+        let (n, mod_di, mod_de) = (114514, Mods, Mods);
+        log!(logger: test, kv: { n }, Level::Trace, "logger, kv(1,vref)");
+        log!(logger: test, kv: { mod_di: }, Level::Debug, "logger, kv(mod,vref)");
+        log!(logger: test, kv: { n, mod_di:, mod_de:? }, Level::Info, "logger, kv(s,mod,vref)");
 
         macro_rules! add_records {
             ( $($level:ident => $variant:ident),+ ) => {
@@ -338,6 +357,31 @@ mod tests {
                         ],
                         Level::$variant,
                         format!("{}: logger, kv(s,mod)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, kv: { n }, "{}: logger, kv(1,vref)", stringify!($level));
+                    check.push((
+                        vec![(KeyInner::StaticStr("n"), "114514".to_string())],
+                        Level::$variant,
+                        format!("{}: logger, kv(1,vref)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, kv: { mod_di: }, "{}: logger, kv(mod,vref)", stringify!($level));
+                    check.push((
+                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                        Level::$variant,
+                        format!("{}: logger, kv(mod,vref)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, kv: { n, mod_di:, mod_de:? }, "{}: logger, kv(s,mod,vref)", stringify!($level));
+                    check.push((
+                        vec![
+                            (KeyInner::StaticStr("n"), "114514".to_string()),
+                            (KeyInner::StaticStr("mod_di"), "display".to_string()),
+                            (KeyInner::StaticStr("mod_de"), "debug".to_string()),
+                        ],
+                        Level::$variant,
+                        format!("{}: logger, kv(s,mod,vref)", stringify!($level))
                     ));
                 )+
             };
