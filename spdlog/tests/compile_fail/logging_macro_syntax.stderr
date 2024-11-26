@@ -1,0 +1,17 @@
+error: unknown optional parameter 'unknown'
+ --> tests/compile_fail/logging_macro_syntax.rs:6:10
+  |
+6 |     log!(unknown: 1, Level::Info, "unknown optional arg");
+  |          ^^^^^^^
+
+error: optional arguments cannot occur in the middle of regular arguments
+ --> tests/compile_fail/logging_macro_syntax.rs:7:23
+  |
+7 |     log!(Level::Info, logger: logger, "optional arg in the middle");
+  |                       ^^^^^^
+
+error: found duplicate optional argument 'logger'
+ --> tests/compile_fail/logging_macro_syntax.rs:8:66
+  |
+8 |     log!(logger: logger, Level::Info, "duplicate optional args", logger: logger);
+  |                                                                  ^^^^^^
