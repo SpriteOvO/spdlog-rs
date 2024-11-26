@@ -21,6 +21,14 @@
 /// [`Level`]: crate::Level
 #[macro_export]
 macro_rules! log {
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}], $($input)+)
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __log_impl {
     (logger: $logger:expr, kv: $kv:tt, $level:expr, $($arg:tt)+) => ({
         let logger = &$logger;
         const LEVEL: $crate::Level = $level;
@@ -29,9 +37,6 @@ macro_rules! log {
             $crate::__log(logger, LEVEL, $crate::source_location_current!(), $crate::__kv!($kv), format_args!($($arg)+));
         }
     });
-    (logger: $logger:expr, $level:expr, $($arg:tt)+) => ($crate::log!(logger: $logger, kv: {}, $level, $($arg)+));
-    (kv: $kv:tt, $level:expr, $($arg:tt)+) => ($crate::log!(logger: $crate::default_logger(), kv: $kv, $level, $($arg)+));
-    ($level:expr, $($arg:tt)+) => ($crate::log!(logger: $crate::default_logger(), kv: {}, $level, $($arg)+));
 }
 
 /// Logs a message at the critical level.
@@ -52,18 +57,9 @@ macro_rules! log {
 /// ```
 #[macro_export]
 macro_rules! critical {
-    (logger: $logger:expr, kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, kv: $kv, $crate::Level::Critical, $($arg)+)
-    );
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Critical, $($arg)+)
-    );
-    (kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(kv: $kv, $crate::Level::Critical, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Critical, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Critical], $($input)+)
+    };
 }
 
 /// Logs a message at the error level.
@@ -84,18 +80,9 @@ macro_rules! critical {
 /// ```
 #[macro_export]
 macro_rules! error {
-    (logger: $logger:expr, kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, kv: $kv, $crate::Level::Error, $($arg)+)
-    );
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Error, $($arg)+)
-    );
-    (kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(kv: $kv, $crate::Level::Error, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Error, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Error], $($input)+)
+    };
 }
 
 /// Logs a message at the warn level.
@@ -116,18 +103,9 @@ macro_rules! error {
 /// ```
 #[macro_export]
 macro_rules! warn {
-    (logger: $logger:expr, kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, kv: $kv, $crate::Level::Warn, $($arg)+)
-    );
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Warn, $($arg)+)
-    );
-    (kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(kv: $kv, $crate::Level::Warn, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Warn, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Warn], $($input)+)
+    };
 }
 
 /// Logs a message at the info level.
@@ -149,18 +127,9 @@ macro_rules! warn {
 /// ```
 #[macro_export]
 macro_rules! info {
-    (logger: $logger:expr, kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, kv: $kv, $crate::Level::Info, $($arg)+)
-    );
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Info, $($arg)+)
-    );
-    (kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(kv: $kv, $crate::Level::Info, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Info, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Info], $($input)+)
+    };
 }
 
 /// Logs a message at the debug level.
@@ -182,18 +151,9 @@ macro_rules! info {
 /// ```
 #[macro_export]
 macro_rules! debug {
-    (logger: $logger:expr, kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, kv: $kv, $crate::Level::Debug, $($arg)+)
-    );
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Debug, $($arg)+)
-    );
-    (kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(kv: $kv, $crate::Level::Debug, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Debug, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Debug], $($input)+)
+    };
 }
 
 /// Logs a message at the trace level.
@@ -217,18 +177,9 @@ macro_rules! debug {
 /// ```
 #[macro_export]
 macro_rules! trace {
-    (logger: $logger:expr, kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, kv: $kv, $crate::Level::Trace, $($arg)+)
-    );
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Trace, $($arg)+)
-    );
-    (kv: $kv:tt, $($arg:tt)+) => (
-        $crate::log!(kv: $kv, $crate::Level::Trace, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Trace, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Trace], $($input)+)
+    };
 }
 
 #[doc(hidden)]
@@ -320,6 +271,16 @@ mod tests {
                 Level::Info,
                 "logger, kv(s,mod,vref)".to_string(),
             ),
+            (
+                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                Level::Debug,
+                "arbitrary order = logger, fmt, kv".to_string(),
+            ),
+            (
+                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                Level::Debug,
+                "arbitrary order = fmt, logger, kv".to_string(),
+            ),
         ];
 
         log!(logger: test, Level::Info, "logger");
@@ -331,6 +292,8 @@ mod tests {
         log!(logger: test, kv: { n }, Level::Trace, "logger, kv(1,vref)");
         log!(logger: test, kv: { mod_di: }, Level::Debug, "logger, kv(mod,vref)");
         log!(logger: test, kv: { n, mod_di:, mod_de:? }, Level::Info, "logger, kv(s,mod,vref)");
+        log!(logger: test, Level::Debug, "arbitrary order = logger, fmt, kv", kv: { mod_di: });
+        log!(Level::Debug, "arbitrary order = fmt, logger, kv", logger: test, kv: { mod_di: });
 
         macro_rules! add_records {
             ( $($level:ident => $variant:ident),+ ) => {
@@ -382,6 +345,20 @@ mod tests {
                         ],
                         Level::$variant,
                         format!("{}: logger, kv(s,mod,vref)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, "{}: arbitrary order = logger, fmt, kv", stringify!($level), kv: { mod_di: });
+                    check.push((
+                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                        Level::$variant,
+                        format!("{}: arbitrary order = logger, fmt, kv", stringify!($level))
+                    ));
+
+                    $level!("{}: arbitrary order = fmt, logger, kv", stringify!($level), logger: test, kv: { mod_di: });
+                    check.push((
+                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                        Level::$variant,
+                        format!("{}: arbitrary order = fmt, logger, kv", stringify!($level))
                     ));
                 )+
             };
