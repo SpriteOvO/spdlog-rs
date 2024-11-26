@@ -278,6 +278,10 @@
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 
+// Used for referencing from proc-macros
+// Credits: https://stackoverflow.com/a/57049687
+extern crate self as spdlog;
+
 mod env_level;
 pub mod error;
 pub mod formatter;
@@ -308,6 +312,8 @@ pub use log_crate_proxy::*;
 pub use logger::*;
 pub use record::*;
 pub use source_location::*;
+#[doc(hidden)]
+pub use spdlog_macros::normalize_forward as __normalize_forward;
 pub use string_buf::StringBuf;
 #[cfg(feature = "multi-thread")]
 pub use thread_pool::*;
