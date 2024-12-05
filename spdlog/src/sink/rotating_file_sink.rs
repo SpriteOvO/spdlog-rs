@@ -112,6 +112,7 @@ struct RotatorTimePoint {
     base_path: PathBuf,
     time_point: TimePoint,
     max_files: usize,
+    time_format_path: bool,
     inner: SpinMutex<RotatorTimePointInner>,
 }
 
@@ -158,6 +159,7 @@ pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
     rotation_policy: ArgRP,
     max_files: usize,
     rotate_on_open: bool,
+    time_format_path: bool,
 }
 
 impl RotatingFileSink {
@@ -173,6 +175,7 @@ impl RotatingFileSink {
     /// | [rotation_policy] | *must be specified*     |
     /// | [max_files]       | `0`                     |
     /// | [rotate_on_open]  | `false`                 |
+    /// | [time_format_path]| `false`                 |
     ///
     /// [level_filter]: RotatingFileSinkBuilder::level_filter
     /// [formatter]: RotatingFileSinkBuilder::formatter
@@ -182,6 +185,7 @@ impl RotatingFileSink {
     /// [rotation_policy]: RotatingFileSinkBuilder::rotation_policy
     /// [max_files]: RotatingFileSinkBuilder::max_files
     /// [rotate_on_open]: RotatingFileSinkBuilder::rotate_on_open
+    /// [time_format_path]: RotatingFileSinkBuilder::time_format_path
     #[must_use]
     pub fn builder() -> RotatingFileSinkBuilder<(), ()> {
         RotatingFileSinkBuilder {
@@ -190,6 +194,7 @@ impl RotatingFileSink {
             rotation_policy: (),
             max_files: 0,
             rotate_on_open: false,
+            time_format_path: false,
         }
     }
 
@@ -481,10 +486,12 @@ impl RotatorTimePoint {
         base_path: PathBuf,
         time_point: TimePoint,
         max_files: usize,
+        time_format_path: bool,
         truncate: bool,
     ) -> Result<Self> {
         let now = override_now.unwrap_or_else(SystemTime::now);
-        let file_path = Self::calc_file_path(base_path.as_path(), time_point, now);
+        let file_path =
+            Self::calc_file_path(base_path.as_path(), time_point, now, time_format_path);
         let file = utils::open_file(file_path, truncate)?;
 
         let inner = RotatorTimePointInner {
@@ -497,6 +504,7 @@ impl RotatorTimePoint {
             base_path,
             time_point,
             max_files,
+            time_format_path,
             inner: SpinMutex::new(inner),
         };
 
@@ -510,7 +518,12 @@ impl RotatorTimePoint {
             let mut file_paths = LinkedList::new();
 
             for _ in 0..max_files {
-                let file_path = Self::calc_file_path(&self.base_path, self.time_point, now);
+                let file_path = Self::calc_file_path(
+                    &self.base_path,
+                    self.time_point,
+                    now,
+                    self.time_format_path,
+                );
 
                 if !file_path.exists() {
                     break;
@@ -586,57 +599,65 @@ impl RotatorTimePoint {
         base_path: impl AsRef<Path>,
         time_point: TimePoint,
         system_time: SystemTime,
+        time_format_path: bool,
     ) -> PathBuf {
         let base_path = base_path.as_ref();
         let local_time: DateTime<Local> = system_time.into();
 
-        let mut file_name = base_path
-            .file_stem()
-            .map(|s| s.to_owned())
-            .unwrap_or_else(|| OsString::from(""));
+        if time_format_path {
+            local_time
+                .format(&base_path.to_string_lossy())
+                .to_string()
+                .into()
+        } else {
+            let mut file_name = base_path
+                .file_stem()
+                .map(|s| s.to_owned())
+                .unwrap_or_else(|| OsString::from(""));
 
-        let externsion = base_path.extension();
+            let externsion = base_path.extension();
 
-        match time_point {
-            TimePoint::Daily { .. } => {
-                // append y-m-d
-                file_name.push(format!(
-                    "_{}-{:02}-{:02}",
-                    local_time.year(),
-                    local_time.month(),
-                    local_time.day()
-                ));
+            match time_point {
+                TimePoint::Daily { .. } => {
+                    // append y-m-d
+                    file_name.push(format!(
+                        "_{}-{:02}-{:02}",
+                        local_time.year(),
+                        local_time.month(),
+                        local_time.day()
+                    ));
+                }
+                TimePoint::Hourly => {
+                    // append y-m-d_h
+                    file_name.push(format!(
+                        "_{}-{:02}-{:02}_{:02}",
+                        local_time.year(),
+                        local_time.month(),
+                        local_time.day(),
+                        local_time.hour()
+                    ));
+                }
+                TimePoint::Period { .. } => {
+                    // append y-m-d_h-m
+                    file_name.push(format!(
+                        "_{}-{:02}-{:02}_{:02}-{:02}",
+                        local_time.year(),
+                        local_time.month(),
+                        local_time.day(),
+                        local_time.hour(),
+                        local_time.minute()
+                    ));
+                }
             }
-            TimePoint::Hourly => {
-                // append y-m-d_h
-                file_name.push(format!(
-                    "_{}-{:02}-{:02}_{:02}",
-                    local_time.year(),
-                    local_time.month(),
-                    local_time.day(),
-                    local_time.hour()
-                ));
+
+            let mut path = base_path.to_owned();
+            path.set_file_name(file_name);
+            if let Some(externsion) = externsion {
+                path.set_extension(externsion);
             }
-            TimePoint::Period { .. } => {
-                // append y-m-d_h-m
-                file_name.push(format!(
-                    "_{}-{:02}-{:02}_{:02}-{:02}",
-                    local_time.year(),
-                    local_time.month(),
-                    local_time.day(),
-                    local_time.hour(),
-                    local_time.minute()
-                ));
-            }
+
+            path
         }
-
-        let mut path = base_path.to_owned();
-        path.set_file_name(file_name);
-        if let Some(externsion) = externsion {
-            path.set_extension(externsion);
-        }
-
-        path
     }
 }
 
@@ -653,6 +674,7 @@ impl Rotator for RotatorTimePoint {
                 &self.base_path,
                 self.time_point,
                 record_time,
+                self.time_format_path,
             ));
             inner.file = BufWriter::new(utils::open_file(file_path.as_ref().unwrap(), true)?);
             inner.rotation_time_point =
@@ -728,6 +750,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
             rotation_policy: self.rotation_policy,
             max_files: self.max_files,
             rotate_on_open: self.rotate_on_open,
+            time_format_path: self.time_format_path,
         }
     }
 
@@ -745,6 +768,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
             rotation_policy,
             max_files: self.max_files,
             rotate_on_open: self.rotate_on_open,
+            time_format_path: self.time_format_path,
         }
     }
 
@@ -774,6 +798,17 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     #[must_use]
     pub fn rotate_on_open(mut self, rotate_on_open: bool) -> Self {
         self.rotate_on_open = rotate_on_open;
+        self
+    }
+
+    /// Specifies whether the base path provided should be formatted with time,
+    /// rather than appending the time to the file name. Has no impact for
+    /// [`RotationPolicy::FileSize`].
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn time_format_path(mut self, time_format_path: bool) -> Self {
+        self.time_format_path = time_format_path;
         self
     }
 
@@ -828,6 +863,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                     self.base_path,
                     TimePoint::Daily { hour, minute },
                     self.max_files,
+                    self.time_format_path,
                     self.rotate_on_open,
                 )?)
             }
@@ -836,6 +872,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 self.base_path,
                 TimePoint::Hourly,
                 self.max_files,
+                self.time_format_path,
                 self.rotate_on_open,
             )?),
             RotationPolicy::Period(duration) => RotatorKind::TimePoint(RotatorTimePoint::new(
@@ -843,6 +880,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 self.base_path,
                 TimePoint::Period(duration),
                 self.max_files,
+                self.time_format_path,
                 self.rotate_on_open,
             )?),
         };
@@ -1120,29 +1158,36 @@ mod tests {
         fn calc_file_path() {
             let system_time = Local.with_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap().into();
 
-            let calc_daily = |base_path| {
+            let calc_daily = |base_path, time_format_path| {
                 RotatorTimePoint::calc_file_path(
                     base_path,
                     TimePoint::Daily { hour: 8, minute: 9 },
                     system_time,
+                    time_format_path,
                 )
                 .to_str()
                 .unwrap()
                 .to_string()
             };
 
-            let calc_hourly = |base_path| {
-                RotatorTimePoint::calc_file_path(base_path, TimePoint::Hourly, system_time)
-                    .to_str()
-                    .unwrap()
-                    .to_string()
+            let calc_hourly = |base_path, time_format_path| {
+                RotatorTimePoint::calc_file_path(
+                    base_path,
+                    TimePoint::Hourly,
+                    system_time,
+                    time_format_path,
+                )
+                .to_str()
+                .unwrap()
+                .to_string()
             };
 
-            let calc_period = |base_path| {
+            let calc_period = |base_path, time_format_path| {
                 RotatorTimePoint::calc_file_path(
                     base_path,
                     TimePoint::Period(10 * MINUTE_1),
                     system_time,
+                    time_format_path,
                 )
                 .to_str()
                 .unwrap()
@@ -1151,30 +1196,54 @@ mod tests {
 
             #[cfg(not(windows))]
             let run = || {
-                assert_eq!(calc_daily("/tmp/test.log"), "/tmp/test_2012-03-04.log");
-                assert_eq!(calc_daily("/tmp/test"), "/tmp/test_2012-03-04");
-
-                assert_eq!(calc_hourly("/tmp/test.log"), "/tmp/test_2012-03-04_05.log");
-                assert_eq!(calc_hourly("/tmp/test"), "/tmp/test_2012-03-04_05");
+                assert_eq!(
+                    calc_daily("/tmp/test.log", false),
+                    "/tmp/test_2012-03-04.log"
+                );
+                assert_eq!(calc_daily("/tmp/test", false), "/tmp/test_2012-03-04");
+                assert_eq!(
+                    calc_daily("/tmp/%Y/%m/%d/test.log", true),
+                    "/tmp/2012/03/04/test.log"
+                );
 
                 assert_eq!(
-                    calc_period("/tmp/test.log"),
+                    calc_hourly("/tmp/test.log", false),
+                    "/tmp/test_2012-03-04_05.log"
+                );
+                assert_eq!(calc_hourly("/tmp/test", false), "/tmp/test_2012-03-04_05");
+                assert_eq!(
+                    calc_hourly("/tmp/%Y/%m/%d/test_%H.log", true),
+                    "/tmp/2012/03/04/test_05.log"
+                );
+
+                assert_eq!(
+                    calc_period("/tmp/test.log", false),
                     "/tmp/test_2012-03-04_05-06.log"
                 );
-                assert_eq!(calc_period("/tmp/test"), "/tmp/test_2012-03-04_05-06");
+                assert_eq!(
+                    calc_period("/tmp/test", false),
+                    "/tmp/test_2012-03-04_05-06"
+                );
+                assert_eq!(
+                    calc_period("/tmp/%Y/%m/%d/test_%H-%M.log", true),
+                    "/tmp/2012/03/04/test_05-06.log"
+                );
             };
 
             #[cfg(windows)]
             #[rustfmt::skip]
             let run = || {
-                assert_eq!(calc_daily("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04.txt");
-                assert_eq!(calc_daily("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04");
+                assert_eq!(calc_daily("D:\\tmp\\test.txt", false), "D:\\tmp\\test_2012-03-04.txt");
+                assert_eq!(calc_daily("D:\\tmp\\test", false), "D:\\tmp\\test_2012-03-04");
+                assert_eq!(calc_daily("D:\\tmp\\%Y\\%m\\%d\\test.txt", true), "D:\\tmp\\2012\\03\\04\\test.txt");
 
-                assert_eq!(calc_hourly("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05.txt");
-                assert_eq!(calc_hourly("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05");
+                assert_eq!(calc_hourly("D:\\tmp\\test.txt", false), "D:\\tmp\\test_2012-03-04_05.txt");
+                assert_eq!(calc_hourly("D:\\tmp\\test", false), "D:\\tmp\\test_2012-03-04_05");
+                assert_eq!(calc_hourly("D:\\tmp\\%Y\\%m\\%d\\test_%H.txt", true), "D:\\tmp\\2012\\03\\04\\test_05.txt");
 
-                assert_eq!(calc_period("D:\\tmp\\test.txt"), "D:\\tmp\\test_2012-03-04_05-06.txt");
-                assert_eq!(calc_period("D:\\tmp\\test"), "D:\\tmp\\test_2012-03-04_05-06");
+                assert_eq!(calc_period("D:\\tmp\\test.txt", false), "D:\\tmp\\test_2012-03-04_05-06.txt");
+                assert_eq!(calc_period("D:\\tmp\\test", false), "D:\\tmp\\test_2012-03-04_05-06");
+                assert_eq!(calc_period("D:\\tmp\\%Y\\%m\\%d\\test_%H-%M.txt", true), "D:\\tmp\\2012\\03\\04\\test_05-06.txt");
             };
 
             run();
