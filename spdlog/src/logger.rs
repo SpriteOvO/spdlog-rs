@@ -1,4 +1,4 @@
-use std::{result::Result as StdResult, time::Duration};
+use std::{fmt::Debug, result::Result as StdResult, time::Duration};
 
 use crate::{
     env_level,
@@ -113,6 +113,36 @@ pub struct Logger {
     flush_level_filter: Atomic<LevelFilter>,
     error_handler: SpinRwLock<Option<ErrorHandler>>,
     periodic_flusher: Mutex<Option<(Duration, PeriodicWorker)>>,
+}
+
+impl Debug for Logger {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Logger")
+            .field("name", &self.name)
+            .field("level_filter", &self.level_filter())
+            .field(
+                "sinks",
+                &self
+                    .sinks
+                    .iter()
+                    .map(|sink| sink.level_filter())
+                    .collect::<Vec<_>>(),
+            )
+            .field("flush_level_filter", &self.flush_level_filter())
+            .field("error_handler", &self.error_handler.read())
+            .field(
+                "periodic_flusher",
+                &self
+                    .periodic_flusher
+                    .lock()
+                    .as_deref()
+                    .map(|opt| opt.as_ref().map(|(dur, _)| *dur))
+                    .as_ref()
+                    .map(|dur| dur as &dyn Debug)
+                    .unwrap_or(&"*lock is poisoned*"),
+            )
+            .finish()
+    }
 }
 
 impl Logger {
@@ -665,9 +695,8 @@ mod tests {
     use crate::{prelude::*, test_utils::*};
 
     #[test]
-    fn send_sync() {
-        assert_send::<Logger>();
-        assert_sync::<Logger>();
+    fn logger_traits() {
+        assert_trait!(Logger: Send + Sync + Debug);
     }
 
     #[test]
