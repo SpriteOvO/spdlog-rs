@@ -220,9 +220,16 @@ pub fn build_test_logger(cb: impl FnOnce(&mut LoggerBuilder) -> &mut LoggerBuild
     builder.build().unwrap()
 }
 
-pub fn assert_send<T: Send>() {}
-
-pub fn assert_sync<T: Sync>() {}
+#[doc(hidden)]
+#[macro_export]
+macro_rules! assert_trait {
+    ($type:ty: $($traits:tt)+) => {{
+        fn __assert_trait<T: $($traits)+>() {}
+        __assert_trait::<$type>();
+    }};
+}
+#[allow(unused_imports)]
+pub use assert_trait;
 
 #[must_use]
 pub fn echo_logger_from_pattern(
