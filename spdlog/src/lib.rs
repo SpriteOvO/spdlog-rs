@@ -328,7 +328,7 @@ use std::{
 
 use cfg_if::cfg_if;
 use error::EnvLevelError;
-use sink::{Sink, StdStream, StdStreamSink};
+use sink::{Sink, StdStreamSink};
 use sync::*;
 
 /// The statically resolved log level filter.
@@ -388,13 +388,13 @@ static DEFAULT_LOGGER: OnceCell<ArcSwap<Logger>> = OnceCell::new();
 fn default_logger_ref() -> &'static ArcSwap<Logger> {
     DEFAULT_LOGGER.get_or_init(|| {
         let stdout = StdStreamSink::builder()
-            .std_stream(StdStream::Stdout)
+            .stdout()
             .level_filter(LevelFilter::MoreVerbose(Level::Warn))
             .build()
             .unwrap();
 
         let stderr = StdStreamSink::builder()
-            .std_stream(StdStream::Stderr)
+            .stderr()
             .level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
             .build()
             .unwrap();

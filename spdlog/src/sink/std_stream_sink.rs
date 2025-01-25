@@ -217,6 +217,22 @@ pub struct StdStreamSinkBuilder<ArgSS> {
 }
 
 impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
+    /// Specifies the target standard stream as stdout.
+    ///
+    /// This is equivalent to `std_stream(StdStream::Stdout)`.
+    #[must_use]
+    pub fn stdout(self) -> StdStreamSinkBuilder<StdStream> {
+        self.std_stream(StdStream::Stdout)
+    }
+
+    /// Specifies the target standard stream as stderr.
+    ///
+    /// This is equivalent to `std_stream(StdStream::Stderr)`.
+    #[must_use]
+    pub fn stderr(self) -> StdStreamSinkBuilder<StdStream> {
+        self.std_stream(StdStream::Stderr)
+    }
+
     /// Specifies the target standard stream.
     ///
     /// This parameter is **required**.
