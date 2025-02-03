@@ -225,6 +225,20 @@ fn get_current_tid() -> u64 {
         tid as u64
     }
 
+    #[cfg(target_os = "freebsd")]
+    #[must_use]
+    fn get_current_tid_inner() -> u64 {
+        let tid = unsafe { libc::pthread_getthreadid_np() };
+        tid as u64
+    }
+
+    #[cfg(target_os = "illumos")]
+    #[must_use]
+    fn get_current_tid_inner() -> u64 {
+        let tid = unsafe { libc::thr_self() };
+        tid as u64
+    }
+
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     #[must_use]
     fn get_current_tid_inner() -> u64 {
