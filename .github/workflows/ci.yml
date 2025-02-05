@@ -113,32 +113,69 @@ jobs:
         CARGO_TERM_COLOR=never cargo +nightly clippy --all-features --tests --examples 2>> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
 
+  check-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      targets_matrix: ${{ steps.gen-matrix.outputs.targets_matrix }}
+    steps:
+    - name: Install Rust nightly
+      run: rustup toolchain install nightly
+    - name: Generate matrix for all tier 1 and tier 2 targets
+      id: gen-matrix
+      run: |
+        TARGETS=$(rustc +nightly --print all-target-specs-json -Z unstable-options \
+          | jq -c "map_values(.metadata.tier) \
+            | to_entries \
+            | map({tier: .value, triplet: .key} \
+            | select(.tier == 1 or .tier == 2)) \
+            | sort_by(.tier)")
+        echo "targets_matrix=$TARGETS" >> "$GITHUB_OUTPUT"
+        echo $TARGETS | jq
+
   check:
+    needs: check-matrix
     strategy:
       fail-fast: false
       matrix:
-        os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        target: ['', 'x86_64-apple-ios']
-    runs-on: ${{ matrix.os }}
+        target: ${{ fromJSON(needs.check-matrix.outputs.targets_matrix) }}
+    runs-on: 'ubuntu-latest'
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     - name: Disable bench dependencies
       run: ./.github/workflows/disable-bench-deps.sh
-    - name: Install dependencies
-      if: matrix.os == 'ubuntu-latest'
-      run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust target
-      if: matrix.target != ''
-      run: rustup target add ${{ matrix.target }}
+    - name: Install Rust tier ${{ matrix.target.tier }} target ${{ matrix.target.triplet }}
+      run: rustup target add ${{ matrix.target.triplet }}
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
-    - name: Run check
+    - name: Run check for tier ${{ matrix.target.tier }} target ${{ matrix.target.triplet }}
       run: |
-        if [[ -z "${{ matrix.target }}" ]]; then
-          cargo check --all-features
+        # Exclude dependency features
+        FEATURES=$(cargo metadata --format-version=1 --no-deps \
+          | jq -r ".packages[] \
+            | select(.name == \"spdlog-rs\") \
+            | .features \
+            | keys \
+            | map(select(contains(\"libsystemd\") | not)) \
+            | join(\",\")")
+        echo "Checking with features: $FEATURES"
+
+        # Some upstream crates don't support some targets, so we ignore all errors that don't come from our own crates
+        OUR_ERRORS=$(cargo check --features $FEATURES --target ${{ matrix.target.triplet }} --message-format=json \
+          | jq "select(.reason == \"compiler-message\" \
+            and (.target.name | startswith(\"spdlog\")) \
+            and .message.level == \"error\") \
+            | [.]") || true
+        OUR_ERRORS_COUNT=$(echo ${OUR_ERRORS:=[]} | jq -r length)
+
+        # Rerun for human-readable error outputs
+        cargo check --features $FEATURES --target ${{ matrix.target.triplet }} || true
+
+        if [[ "$OUR_ERRORS_COUNT" != "0" ]]; then
+          echo "Found errors from our crates. Fail!"
+          exit 1
         else
-          cargo check --all-features --target ${{ matrix.target }}
+          echo "No error found from our crates. Pass!"
         fi
 
   check-doc:
