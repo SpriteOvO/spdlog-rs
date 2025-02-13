@@ -121,6 +121,9 @@ name = "spdlog_rs_log_crate_proxy"
 path = "benches/spdlog-rs/log_crate_proxy.rs"
 required-features = ["log"]
 [[bench]]
+name = "spdlog_rs_kv"
+path = "benches/spdlog-rs/kv.rs"
+[[bench]]
 name = "fast_log"
 path = "benches/fast_log/main.rs"
 harness = false
