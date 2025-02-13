@@ -98,21 +98,7 @@ impl FullFormatter {
         dest.write_str("] ")?;
         dest.write_str(record.payload())?;
 
-        let kvs = record.key_values();
-        if !kvs.is_empty() {
-            dest.write_str(" { ")?;
-
-            let mut iter = kvs.peekable();
-            while let Some((key, value)) = iter.next() {
-                dest.write_str(key.as_str())?;
-                dest.write_str("=")?;
-                write!(dest, "{}", value)?;
-                if iter.peek().is_some() {
-                    dest.write_str(", ")?;
-                }
-            }
-            dest.write_str(" }")?;
-        }
+        record.key_values().write_to(dest, true)?;
 
         if self.with_eol {
             dest.write_str(__EOL)?;
