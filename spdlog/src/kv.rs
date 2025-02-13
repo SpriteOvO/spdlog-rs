@@ -8,7 +8,6 @@ pub(crate) enum KeyInner<'a> {
     StaticStr(&'static str),
 }
 
-// TODO: PartialEq
 #[derive(Debug, Clone)]
 pub struct Key<'a>(KeyInner<'a>);
 
@@ -42,6 +41,12 @@ impl<'a> Key<'a> {
     #[cfg(test)]
     pub(crate) fn inner(&self) -> KeyInner<'a> {
         self.0.clone()
+    }
+}
+
+impl PartialEq for Key<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_str() == other.as_str()
     }
 }
 
@@ -171,5 +176,16 @@ impl<'a> log::kv::VisitSource<'a> for LogCrateConverter<'a> {
             todo!("convert `lov::kv::Value` to `Value`"),
         ));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn key_partial_eq() {
+        assert_eq!(Key::from_str("a"), Key::__from_static_str("a"));
+        assert_ne!(Key::from_str("a"), Key::__from_static_str("b"));
     }
 }
