@@ -1,4 +1,4 @@
-use std::{borrow::Cow, marker::PhantomData};
+use std::{borrow::Cow, fmt, marker::PhantomData};
 
 use value_bag::{OwnedValueBag, ValueBag};
 
@@ -94,6 +94,37 @@ where
             len,
             phantom: PhantomData,
         }
+    }
+
+    pub(crate) fn write_to(
+        mut self,
+        dest: &mut impl fmt::Write,
+        leading_space: bool,
+    ) -> fmt::Result {
+        let first = self.next();
+        if let Some((key, value)) = first {
+            if leading_space {
+                dest.write_str(" { ")?;
+            } else {
+                dest.write_str("{ ")?;
+            }
+
+            // Reduce branch prediction misses for performance
+            // So we manually process the first KV pair
+            dest.write_str(key.as_str())?;
+            dest.write_str("=")?;
+            write!(dest, "{}", value)?;
+
+            for (key, value) in self {
+                dest.write_str(", ")?;
+                dest.write_str(key.as_str())?;
+                dest.write_str("=")?;
+                write!(dest, "{}", value)?;
+            }
+
+            dest.write_str(" }")?;
+        }
+        Ok(())
     }
 }
 
