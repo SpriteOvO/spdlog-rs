@@ -111,7 +111,7 @@ impl Formatter for FullFormatter {
         ctx: &mut FormatterContext,
     ) -> crate::Result<()> {
         self.format_impl(record, dest, ctx)
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 

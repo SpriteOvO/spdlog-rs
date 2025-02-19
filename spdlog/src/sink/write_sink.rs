@@ -109,13 +109,15 @@ where
 
         self.lock_target()
             .write_all(string_buf.as_bytes())
-            .map_err(Error::WriteRecord)?;
+            .map_err(|err| Error::WriteRecord(err.into()))?;
 
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.lock_target().flush().map_err(Error::FlushBuffer)
+        self.lock_target()
+            .flush()
+            .map_err(|err| Error::FlushBuffer(err.into()))
     }
 
     helper::common_impl!(@Sink: common_impl);
@@ -126,7 +128,10 @@ where
     W: Write + Send,
 {
     fn drop(&mut self) {
-        let flush_result = self.lock_target().flush().map_err(Error::FlushBuffer);
+        let flush_result = self
+            .lock_target()
+            .flush()
+            .map_err(|err| Error::FlushBuffer(err.into()));
         if let Err(err) = flush_result {
             self.common_impl.non_returnable_error("WriteSink", err)
         }

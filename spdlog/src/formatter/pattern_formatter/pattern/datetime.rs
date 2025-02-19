@@ -18,7 +18,7 @@ impl Pattern for AbbrWeekdayName {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().weekday_name().short)
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -35,7 +35,7 @@ impl Pattern for WeekdayName {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().weekday_name().full)
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -52,7 +52,7 @@ impl Pattern for AbbrMonthName {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().month_name().short)
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -69,7 +69,7 @@ impl Pattern for MonthName {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().month_name().full)
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -100,7 +100,7 @@ impl Pattern for FullDateTime {
             dest.write_char(' ')?;
             dest.write_str(ctx.time_date().year_str())
         })()
-        .map_err(Error::FormatRecord)
+        .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -117,7 +117,7 @@ impl Pattern for ShortYear {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().year_short_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -134,7 +134,7 @@ impl Pattern for Year {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().year_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -157,7 +157,7 @@ impl Pattern for Date {
             dest.write_char('-')?;
             dest.write_str(ctx.time_date().day_str())
         })()
-        .map_err(Error::FormatRecord)
+        .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -180,7 +180,7 @@ impl Pattern for ShortDate {
             dest.write_char('/')?;
             dest.write_str(ctx.time_date().year_short_str())
         })()
-        .map_err(Error::FormatRecord)
+        .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -197,7 +197,7 @@ impl Pattern for Month {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().month_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -214,7 +214,7 @@ impl Pattern for Day {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().day_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -231,7 +231,7 @@ impl Pattern for Hour {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().hour_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -248,7 +248,7 @@ impl Pattern for Hour12 {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().hour12_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -265,7 +265,7 @@ impl Pattern for Minute {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().minute_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -282,7 +282,7 @@ impl Pattern for Second {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().second_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -302,7 +302,8 @@ impl Pattern for Millisecond {
         dest: &mut StringBuf,
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        write!(dest, "{:03}", ctx.time_date().millisecond()).map_err(Error::FormatRecord)
+        write!(dest, "{:03}", ctx.time_date().millisecond())
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -319,7 +320,7 @@ impl Pattern for Microsecond {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let nanosecond = ctx.time_date().nanosecond();
-        write!(dest, "{:06}", nanosecond / 1_000).map_err(Error::FormatRecord)
+        write!(dest, "{:06}", nanosecond / 1_000).map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -335,7 +336,8 @@ impl Pattern for Nanosecond {
         dest: &mut StringBuf,
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        write!(dest, "{:09}", ctx.time_date().nanosecond()).map_err(Error::FormatRecord)
+        write!(dest, "{:09}", ctx.time_date().nanosecond())
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -352,7 +354,7 @@ impl Pattern for AmPm {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().am_pm_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -377,7 +379,7 @@ impl Pattern for Time12 {
             dest.write_str(" ")?;
             dest.write_str(ctx.time_date().am_pm_str())
         })()
-        .map_err(Error::FormatRecord)
+        .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -398,7 +400,7 @@ impl Pattern for ShortTime {
             dest.write_char(':')?;
             dest.write_str(ctx.time_date().minute_str())
         })()
-        .map_err(Error::FormatRecord)
+        .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -421,7 +423,7 @@ impl Pattern for Time {
             dest.write_char(':')?;
             dest.write_str(ctx.time_date().second_str())
         })()
-        .map_err(Error::FormatRecord)
+        .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -438,7 +440,7 @@ impl Pattern for TzOffset {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().tz_offset_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -455,6 +457,6 @@ impl Pattern for UnixTimestamp {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(ctx.time_date().unix_timestamp_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }

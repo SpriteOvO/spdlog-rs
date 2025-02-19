@@ -23,7 +23,7 @@ impl Pattern for Source {
                 dest.write_char(':')?;
                 write!(dest, "{}", loc.line())
             })()
-            .map_err(Error::FormatRecord)?;
+            .map_err(|err| Error::FormatRecord(err.into()))?;
         }
         Ok(())
     }
@@ -43,7 +43,7 @@ impl Pattern for SourceFilename {
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
             dest.write_str(loc.file_name())
-                .map_err(Error::FormatRecord)?;
+                .map_err(|err| Error::FormatRecord(err.into()))?;
         }
         Ok(())
     }
@@ -62,7 +62,8 @@ impl Pattern for SourceFile {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            dest.write_str(loc.file()).map_err(Error::FormatRecord)?;
+            dest.write_str(loc.file())
+                .map_err(|err| Error::FormatRecord(err.into()))?;
         }
         Ok(())
     }
@@ -80,7 +81,7 @@ impl Pattern for SourceLine {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            write!(dest, "{}", loc.line()).map_err(Error::FormatRecord)?;
+            write!(dest, "{}", loc.line()).map_err(|err| Error::FormatRecord(err.into()))?;
         }
         Ok(())
     }
@@ -98,7 +99,7 @@ impl Pattern for SourceColumn {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            write!(dest, "{}", loc.column()).map_err(Error::FormatRecord)?;
+            write!(dest, "{}", loc.column()).map_err(|err| Error::FormatRecord(err.into()))?;
         }
         Ok(())
     }
@@ -118,7 +119,7 @@ impl Pattern for SourceModulePath {
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
             dest.write_str(loc.module_path())
-                .map_err(Error::FormatRecord)?;
+                .map_err(|err| Error::FormatRecord(err.into()))?;
         }
         Ok(())
     }
