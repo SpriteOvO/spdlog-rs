@@ -78,7 +78,7 @@ impl From<serde_json::Error> for JsonFormatterError {
 impl From<JsonFormatterError> for crate::Error {
     fn from(value: JsonFormatterError) -> Self {
         match value {
-            JsonFormatterError::Fmt(e) => Error::FormatRecord(e),
+            JsonFormatterError::Fmt(e) => Error::FormatRecord(e.into()),
             JsonFormatterError::Serialization(e) => Error::SerializeRecord(e.into()),
         }
     }

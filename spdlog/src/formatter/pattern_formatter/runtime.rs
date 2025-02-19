@@ -98,7 +98,7 @@ pub use spdlog_macros::runtime_pattern;
 /// 
 /// impl Pattern for MyPattern {
 ///    fn format(&self, record: &Record, dest: &mut StringBuf, _: &mut PatternContext) -> spdlog::Result<()> {
-///        write!(dest, "My own pattern").map_err(spdlog::Error::FormatRecord)
+///        write!(dest, "My own pattern").map_err(|err| spdlog::Error::FormatRecord(err.into()))
 ///    }
 /// }
 ///

@@ -6,6 +6,7 @@
 //! handler will be used, which will print the error to `stderr`.
 
 use std::{
+    error::Error as StdError,
     fmt::{self, Display},
     io, result,
 };
@@ -18,6 +19,81 @@ use crate::utils::const_assert;
 #[cfg(feature = "multi-thread")]
 use crate::{sink::Task, RecordOwned};
 
+/// Stores an error that can either be typed or erased.
+///
+/// This wrapper is mainly used for returning arbitrary errors from downstream
+/// implementors.
+///
+/// # Examples
+///
+/// ```
+/// use std::{error::Error, fmt, io};
+///
+/// use spdlog::{error::ErasableError, formatter::Formatter, prelude::*, sink::Sink, Record};
+///
+/// #[derive(Debug)]
+/// struct MyError;
+///
+/// impl Error for MyError {}
+///
+/// impl fmt::Display for MyError {
+///     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+///         write!(f, "MyError")
+///     }
+/// }
+///
+/// struct MySink;
+///
+/// impl Sink for MySink {
+///     fn log(&self, record: &Record) -> spdlog::Result<()> {
+///         let err: MyError = /* Something went wrong */
+///             # MyError;
+///         // `err` can not be converted to `io::Error`, so we use `Erased`
+///         Err(spdlog::Error::WriteRecord(ErasableError::erase(MyError)))
+///     }
+///
+///     fn flush(&self) -> spdlog::Result<()> {
+///         let err: io::Error = /* Something went wrong */
+///             # io::Error::new(io::ErrorKind::NotFound, "");
+///         // `err` is a `io::Error`, so we use `Typed`
+///         Err(spdlog::Error::FlushBuffer(err.into()))
+///     }
+///
+///     fn level_filter(&self) -> LevelFilter /* ... */
+///     # { unimplemented!() }
+///     fn set_level_filter(&self, level_filter: LevelFilter) /* ... */
+///     # { unimplemented!() }
+///     fn set_formatter(&self, formatter: Box<dyn Formatter>) /* ... */
+///     # { unimplemented!() }
+///     fn set_error_handler(&self, handler: Option<spdlog::ErrorHandler>) /* ... */
+///     # { unimplemented!() }
+/// }
+/// ```
+#[derive(Error, Debug)]
+pub enum ErasableError<E: StdError> {
+    /// A concrete error type is held, and the user can access it.
+    #[error("{0}")]
+    Typed(E),
+    /// The concrete type may not match, thus it is erased to a basic
+    /// `dyn std::error::Error`.
+    #[error("{0}")]
+    Erased(Box<dyn StdError>),
+}
+
+impl<E: StdError> ErasableError<E> {
+    /// Erase a typed error to a basic `Box<dyn std::error::Error>`.
+    #[must_use]
+    pub fn erase<R: StdError + 'static>(err: R) -> ErasableError<E> {
+        ErasableError::Erased(Box::new(err))
+    }
+}
+
+impl<E: StdError> From<E> for ErasableError<E> {
+    fn from(err: E) -> Self {
+        Self::Typed(err)
+    }
+}
+
 /// Contains most errors of this crate.
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -26,20 +102,20 @@ pub enum Error {
     ///
     /// [`Formatter`]: crate::formatter::Formatter
     #[error("format record error: {0}")]
-    FormatRecord(fmt::Error),
+    FormatRecord(ErasableError<fmt::Error>),
 
     /// Returned by [`Sink`]s when an error occurs in writing a record to the
     /// target.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("write record error: {0}")]
-    WriteRecord(io::Error),
+    WriteRecord(ErasableError<io::Error>),
 
     /// Returned by [`Sink`]s when an error occurs in flushing the buffer.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("flush buffer error: {0}")]
-    FlushBuffer(io::Error),
+    FlushBuffer(ErasableError<io::Error>),
 
     /// Returned by [`Sink`]s when an error occurs in creating a directory.
     ///

@@ -443,7 +443,7 @@ impl Rotator for RotatorFileSize {
             .as_mut()
             .unwrap()
             .write_all(string_buf.as_bytes())
-            .map_err(Error::WriteRecord)
+            .map_err(|err| Error::WriteRecord(err.into()))
     }
 
     fn flush(&self) -> Result<()> {
@@ -452,13 +452,13 @@ impl Rotator for RotatorFileSize {
             .as_mut()
             .unwrap()
             .flush()
-            .map_err(Error::FlushBuffer)
+            .map_err(|err| Error::FlushBuffer(err.into()))
     }
 
     fn drop_flush(&mut self) -> Result<()> {
         let mut inner = self.inner.lock();
         if let Some(file) = inner.file.as_mut() {
-            file.flush().map_err(Error::FlushBuffer)
+            file.flush().map_err(|err| Error::FlushBuffer(err.into()))
         } else {
             Ok(())
         }
@@ -662,7 +662,7 @@ impl Rotator for RotatorTimePoint {
         inner
             .file
             .write_all(string_buf.as_bytes())
-            .map_err(Error::WriteRecord)?;
+            .map_err(|err| Error::WriteRecord(err.into()))?;
 
         if should_rotate && inner.file_paths.is_some() {
             self.push_new_remove_old(file_path.unwrap(), &mut inner)?;
@@ -672,7 +672,11 @@ impl Rotator for RotatorTimePoint {
     }
 
     fn flush(&self) -> Result<()> {
-        self.inner.lock().file.flush().map_err(Error::FlushBuffer)
+        self.inner
+            .lock()
+            .file
+            .flush()
+            .map_err(|err| Error::FlushBuffer(err.into()))
     }
 }
 

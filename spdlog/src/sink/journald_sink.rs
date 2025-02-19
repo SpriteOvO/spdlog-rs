@@ -139,7 +139,8 @@ impl Sink for JournaldSink {
             None => [None, None],
         };
 
-        journal_send(kvs.iter().chain(srcloc_kvs.iter().flatten())).map_err(Error::WriteRecord)
+        journal_send(kvs.iter().chain(srcloc_kvs.iter().flatten()))
+            .map_err(|err| Error::WriteRecord(err.into()))
     }
 
     fn flush(&self) -> Result<()> {

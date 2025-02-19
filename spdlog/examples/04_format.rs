@@ -52,11 +52,12 @@ fn impl_manually() {
             let style_range_begin = dest.len();
 
             dest.write_str(&record.level().as_str().to_ascii_uppercase())
-                .map_err(spdlog::Error::FormatRecord)?;
+                .map_err(|err| spdlog::Error::FormatRecord(err.into()))?;
 
             let style_range_end = dest.len();
 
-            writeln!(dest, " {}", record.payload()).map_err(spdlog::Error::FormatRecord)?;
+            writeln!(dest, " {}", record.payload())
+                .map_err(|err| spdlog::Error::FormatRecord(err.into()))?;
 
             ctx.set_style_range(Some(style_range_begin..style_range_end));
             Ok(())
