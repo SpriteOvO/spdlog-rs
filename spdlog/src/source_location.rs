@@ -141,3 +141,11 @@ macro_rules! __private_source_location_current_inner {
         None
     };
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn option_type_inference() {
+        _ = source_location_current!().is_some();
+    }
+}
