@@ -138,6 +138,16 @@ macro_rules! __private_source_location_current_inner {
 #[cfg(not(feature = "source-location"))]
 macro_rules! __private_source_location_current_inner {
     () => {
-        None
+        Option::<$crate::SourceLocation>::None
     };
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn option_type_inference() {
+        // When feature `source-location` is disabled, the macro must return a full
+        // qualified `None`, otherwise the compiler cannot infer the `Option` type.
+        _ = source_location_current!();
+    }
 }
