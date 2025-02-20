@@ -163,21 +163,21 @@ pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
 impl RotatingFileSink {
     /// Gets a builder of `RotatingFileSink` with default parameters:
     ///
-    /// | Parameter         | Default Value           |
-    /// |-------------------|-------------------------|
-    /// | [level_filter]    | `All`                   |
-    /// | [formatter]       | `FullFormatter`         |
-    /// | [error_handler]   | [default error handler] |
-    /// |                   |                         |
-    /// | [base_path]       | *must be specified*     |
-    /// | [rotation_policy] | *must be specified*     |
-    /// | [max_files]       | `0`                     |
-    /// | [rotate_on_open]  | `false`                 |
+    /// | Parameter         | Default Value               |
+    /// |-------------------|-----------------------------|
+    /// | [level_filter]    | `All`                       |
+    /// | [formatter]       | `FullFormatter`             |
+    /// | [error_handler]   | [`ErrorHandler::default()`] |
+    /// |                   |                             |
+    /// | [base_path]       | *must be specified*         |
+    /// | [rotation_policy] | *must be specified*         |
+    /// | [max_files]       | `0`                         |
+    /// | [rotate_on_open]  | `false`                     |
     ///
     /// [level_filter]: RotatingFileSinkBuilder::level_filter
     /// [formatter]: RotatingFileSinkBuilder::formatter
     /// [error_handler]: RotatingFileSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [base_path]: RotatingFileSinkBuilder::base_path
     /// [rotation_policy]: RotatingFileSinkBuilder::rotation_policy
     /// [max_files]: RotatingFileSinkBuilder::max_files

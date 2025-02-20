@@ -88,19 +88,19 @@ pub struct DedupSink {
 impl DedupSink {
     /// Gets a builder of `DedupSink` with default parameters:
     ///
-    /// | Parameter       | Default Value           |
-    /// |-----------------|-------------------------|
-    /// | [level_filter]  | `All`                   |
-    /// | [formatter]     | `FullFormatter`         |
-    /// | [error_handler] | [default error handler] |
-    /// |                 |                         |
-    /// | [sinks]         | `[]`                    |
-    /// | [skip_duration] | *must be specified*     |
+    /// | Parameter       | Default Value               |
+    /// |-----------------|-----------------------------|
+    /// | [level_filter]  | `All`                       |
+    /// | [formatter]     | `FullFormatter`             |
+    /// | [error_handler] | [`ErrorHandler::default()`] |
+    /// |                 |                             |
+    /// | [sinks]         | `[]`                        |
+    /// | [skip_duration] | *must be specified*         |
     ///
     /// [level_filter]: DedupSinkBuilder::level_filter
     /// [formatter]: DedupSinkBuilder::formatter
     /// [error_handler]: DedupSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [sinks]: DedupSinkBuilder::sink
     /// [skip_duration]: DedupSinkBuilder::skip_duration
     #[must_use]

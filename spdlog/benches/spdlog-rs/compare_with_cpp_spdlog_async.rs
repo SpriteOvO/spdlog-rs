@@ -13,7 +13,7 @@ use spdlog::{
     formatter::{pattern, PatternFormatter},
     prelude::*,
     sink::*,
-    ThreadPool,
+    ErrorHandler, ThreadPool,
 };
 use test::black_box;
 
@@ -48,7 +48,7 @@ fn bench(
                 .thread_pool(thread_pool)
                 .overflow_policy(policy)
                 .sink(file_sink)
-                .error_handler(|err| panic!("an error occurred: {err}"))
+                .error_handler(ErrorHandler::new(|err| panic!("an error occurred: {err}")))
                 .build()
                 .unwrap(),
         );
@@ -56,13 +56,13 @@ fn bench(
         let logger = Logger::builder()
             .sink(async_sink)
             .name("async_logger")
-            .error_handler(|err| {
+            .error_handler(ErrorHandler::new(|err| {
                 if let Error::SendToChannel(SendToChannelError::Full, _dropped_data) = err {
                     // ignore
                 } else {
                     panic!("an error occurred: {err}")
                 }
-            })
+            }))
             .build()
             .unwrap();
 

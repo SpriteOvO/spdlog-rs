@@ -1,10 +1,4 @@
 //! Provides error types.
-//!
-//! # Default error handler
-//!
-//! If a logger or sink does not have an error handler set up, a default error
-//! handler will be used, which will print the error to `stderr`.
-
 use std::{
     error::Error as StdError,
     fmt::{self, Display},
@@ -65,7 +59,7 @@ use crate::{sink::Task, RecordOwned};
 ///     # { unimplemented!() }
 ///     fn set_formatter(&self, formatter: Box<dyn Formatter>) /* ... */
 ///     # { unimplemented!() }
-///     fn set_error_handler(&self, handler: Option<spdlog::ErrorHandler>) /* ... */
+///     fn set_error_handler(&self, handler: spdlog::ErrorHandler) /* ... */
 ///     # { unimplemented!() }
 /// }
 /// ```
@@ -340,11 +334,86 @@ pub struct BuildPatternError(pub(crate) spdlog_internal::pattern_parser::Error);
 /// The result type of this crate.
 pub type Result<T> = result::Result<T, Error>;
 
-/// The error handler function type.
-pub type ErrorHandler = fn(Error);
+/// Represents an error handler.
+///
+/// Call [`ErrorHandler::new`] to construct an error handler with a custom
+/// function.
+///
+/// Call [`ErrorHandler::default`] to construct an empty error handler, when an
+/// error is triggered, a built-in fallback handler will be used which prints
+/// the error to `stderr`.
+#[derive(Copy, Clone, Debug)]
+pub struct ErrorHandler(Option<fn(Error)>);
 
 const_assert!(Atomic::<ErrorHandler>::is_lock_free());
-const_assert!(Atomic::<Option<ErrorHandler>>::is_lock_free());
+
+impl ErrorHandler {
+    /// Constructs an error handler with a custom function.
+    #[must_use]
+    pub fn new(custom: fn(Error)) -> Self {
+        Self(Some(custom))
+    }
+
+    /// Sets the error handler.
+    ///
+    /// Passes `None` to use the built-in fallback handler, which prints errors
+    /// to `stderr`.
+    pub fn set(&mut self, handler: Option<fn(Error)>) {
+        self.0 = handler;
+    }
+
+    /// Calls the error handler with an error.
+    pub fn call(&self, err: Error) {
+        self.call_internal("External", err);
+    }
+
+    pub(crate) fn call_internal(&self, from: impl AsRef<str>, err: Error) {
+        if let Some(handler) = self.0 {
+            handler(err);
+        } else {
+            Self::default_impl(from, err);
+        }
+    }
+
+    fn default_impl(from: impl AsRef<str>, error: Error) {
+        if let Error::Multiple(errs) = error {
+            errs.into_iter()
+                .for_each(|err| Self::default_impl(from.as_ref(), err));
+            return;
+        }
+
+        let date = chrono::Local::now()
+            .format("%Y-%m-%d %H:%M:%S.%3f")
+            .to_string();
+
+        eprintln!(
+            "[*** SPDLOG-RS UNHANDLED ERROR ***] [{}] [{}] {}",
+            date,
+            from.as_ref(),
+            error
+        );
+    }
+}
+
+impl Default for ErrorHandler {
+    /// Constructs an error handler with the built-in handler which prints
+    /// errors to `stderr`.
+    fn default() -> Self {
+        Self(None)
+    }
+}
+
+// FIXME: Doesn't work as expected at the moment
+// https://rust-lang.zulipchat.com/#narrow/channel/219381-t-libs/topic/impl.20From.3Cno-capture-closure.3E.20for.20fn.3F
+//
+// impl<F> From<F> for ErrorHandler
+// where
+//     F: Into<fn(Error)>,
+// {
+//     fn from(handler: F) -> Self {
+//         Self::new(handler.into())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

@@ -12,7 +12,7 @@ use spin::{Mutex, RwLock};
 struct CollectVecSink {
     level_filter: Atomic<LevelFilter>,
     formatter: RwLock<Box<dyn Formatter>>,
-    error_handler: Atomic<Option<ErrorHandler>>,
+    error_handler: Atomic<ErrorHandler>,
     collected: Mutex<Vec<String>>,
 }
 
@@ -21,7 +21,7 @@ impl CollectVecSink {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
             formatter: RwLock::new(Box::new(FullFormatter::new())),
-            error_handler: Atomic::new(None),
+            error_handler: Atomic::new(ErrorHandler::default()),
             collected: Mutex::new(Vec::new()),
         }
     }
@@ -58,7 +58,7 @@ impl Sink for CollectVecSink {
         *self.formatter.write() = formatter;
     }
 
-    fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+    fn set_error_handler(&self, handler: ErrorHandler) {
         self.error_handler.store(handler, Ordering::Relaxed);
     }
 }

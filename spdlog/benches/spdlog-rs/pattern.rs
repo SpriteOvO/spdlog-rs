@@ -68,7 +68,7 @@ impl<F: Formatter> Sink for BenchSink<'_, F> {
         unimplemented!()
     }
 
-    fn set_error_handler(&self, _handler: Option<spdlog::ErrorHandler>) {
+    fn set_error_handler(&self, _handler: spdlog::ErrorHandler) {
         unimplemented!()
     }
 }

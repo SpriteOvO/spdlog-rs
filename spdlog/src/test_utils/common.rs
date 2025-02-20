@@ -114,7 +114,7 @@ impl Sink for TestSink {
         unimplemented!("no-op")
     }
 
-    fn set_error_handler(&self, _handler: Option<ErrorHandler>) {
+    fn set_error_handler(&self, _handler: ErrorHandler) {
         unimplemented!("no-op")
     }
 }
@@ -174,7 +174,7 @@ impl Sink for StringSink {
         self.underlying.set_formatter(formatter)
     }
 
-    fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+    fn set_error_handler(&self, handler: ErrorHandler) {
         self.underlying.set_error_handler(handler)
     }
 }
@@ -216,7 +216,7 @@ impl Default for NoModFormatter {
 #[must_use]
 pub fn build_test_logger(cb: impl FnOnce(&mut LoggerBuilder) -> &mut LoggerBuilder) -> Logger {
     let mut builder = Logger::builder();
-    cb(builder.error_handler(|err| panic!("{}", err)));
+    cb(builder.error_handler(ErrorHandler::new(|err| panic!("{}", err))));
     builder.build().unwrap()
 }
 
