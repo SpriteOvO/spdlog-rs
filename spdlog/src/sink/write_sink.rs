@@ -39,18 +39,18 @@ where
 {
     /// Gets a builder of `WriteSink` with default parameters:
     ///
-    /// | Parameter         | Default Value           |
-    /// |-------------------|-------------------------|
-    /// | [level_filter]    | `All`                   |
-    /// | [formatter]       | `FullFormatter`         |
-    /// | [error_handler]   | [default error handler] |
-    /// |                   |                         |
-    /// | [target]          | *must be specified*     |
+    /// | Parameter         | Default Value               |
+    /// |-------------------|-----------------------------|
+    /// | [level_filter]    | `All`                       |
+    /// | [formatter]       | `FullFormatter`             |
+    /// | [error_handler]   | [`ErrorHandler::default()`] |
+    /// |                   |                             |
+    /// | [target]          | *must be specified*         |
     ///
     /// [level_filter]: WriteSinkBuilder::level_filter
     /// [formatter]: WriteSinkBuilder::formatter
     /// [error_handler]: WriteSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [target]: WriteSinkBuilder::target
     #[must_use]
     pub fn builder() -> WriteSinkBuilder<W, ()> {

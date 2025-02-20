@@ -83,11 +83,8 @@ pub trait Sink: Sync + Send {
     /// returned immediately, this function will be called. For example,
     /// asynchronous errors.
     ///
-    /// If no handler is set, [default error handler] will be used.
-    ///
     /// [`Logger`]: crate::logger::Logger
-    /// [default error handler]: ../error/index.html#default-error-handler
-    fn set_error_handler(&self, handler: Option<ErrorHandler>);
+    fn set_error_handler(&self, handler: ErrorHandler);
 }
 
 /// Container type for [`Sink`]s.

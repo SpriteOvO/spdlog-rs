@@ -57,20 +57,20 @@ impl Mode {
         const PANIC_ERR: fn(Error) = |err| panic!("an error occurred: {err}");
 
         match self {
-            Self::Sync => PANIC_ERR,
-            Self::Async => move |err| {
+            Self::Sync => ErrorHandler::new(PANIC_ERR),
+            Self::Async => ErrorHandler::new(move |err| {
                 if let Error::SendToChannel(SendToChannelError::Full, _dropped_data) = err {
                     // ignore
                 } else {
                     PANIC_ERR(err);
                 }
-            },
+            }),
         }
     }
 }
 
 fn bench_any(bencher: &mut Bencher, mode: Mode, sink: Arc<dyn Sink>) {
-    sink.set_error_handler(Some(|err| panic!("an error occurred: {err}")));
+    sink.set_error_handler(ErrorHandler::new(|err| panic!("an error occurred: {err}")));
 
     let logger = build_test_logger(|b| {
         b.error_handler(mode.error_handler())

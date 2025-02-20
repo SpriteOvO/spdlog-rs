@@ -46,7 +46,7 @@ impl Sink for SetFlagSink {
         unimplemented!()
     }
 
-    fn set_error_handler(&self, _handler: Option<ErrorHandler>) {
+    fn set_error_handler(&self, _handler: ErrorHandler) {
         unimplemented!()
     }
 }

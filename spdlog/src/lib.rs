@@ -758,25 +758,6 @@ fn flush_default_logger_at_exit() {
     }
 }
 
-fn default_error_handler(from: impl AsRef<str>, error: Error) {
-    if let Error::Multiple(errs) = error {
-        errs.into_iter()
-            .for_each(|err| default_error_handler(from.as_ref(), err));
-        return;
-    }
-
-    let date = chrono::Local::now()
-        .format("%Y-%m-%d %H:%M:%S.%3f")
-        .to_string();
-
-    eprintln!(
-        "[*** SPDLOG-RS UNHANDLED ERROR ***] [{}] [{}] {}",
-        date,
-        from.as_ref(),
-        error
-    );
-}
-
 // Used at log macros
 #[doc(hidden)]
 pub fn __log(

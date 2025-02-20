@@ -1,5 +1,5 @@
 use crate::{
-    default_error_handler, default_thread_pool,
+    default_thread_pool,
     formatter::Formatter,
     sink::{helper, OverflowPolicy, Sink, Sinks},
     sync::*,
@@ -58,13 +58,12 @@ impl AsyncPoolSink {
     /// | Parameter         | Default Value                       |
     /// |-------------------|-------------------------------------|
     /// | [level_filter]    | `All`                               |
-    /// | [error_handler]   | [default error handler]             |
+    /// | [error_handler]   | [`ErrorHandler::default()`]         |
     /// | [overflow_policy] | `Block`                             |
     /// | [thread_pool]     | internal shared default thread pool |
     ///
     /// [level_filter]: AsyncPoolSinkBuilder::level_filter
     /// [error_handler]: AsyncPoolSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
     /// [overflow_policy]: AsyncPoolSinkBuilder::overflow_policy
     /// [thread_pool]: AsyncPoolSinkBuilder::thread_pool
     #[must_use]
@@ -74,7 +73,7 @@ impl AsyncPoolSink {
             overflow_policy: OverflowPolicy::Block,
             sinks: Sinks::new(),
             thread_pool: None,
-            error_handler: None,
+            error_handler: ErrorHandler::default(),
         }
     }
 
@@ -85,7 +84,7 @@ impl AsyncPoolSink {
     }
 
     /// Sets a error handler.
-    pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+    pub fn set_error_handler(&self, handler: ErrorHandler) {
         self.backend.error_handler.swap(handler, Ordering::Relaxed);
     }
 
@@ -148,7 +147,7 @@ pub struct AsyncPoolSinkBuilder {
     sinks: Sinks,
     overflow_policy: OverflowPolicy,
     thread_pool: Option<Arc<ThreadPool>>,
-    error_handler: Option<ErrorHandler>,
+    error_handler: ErrorHandler,
 }
 
 impl AsyncPoolSinkBuilder {
@@ -239,7 +238,7 @@ impl Backend {
     fn handle_error(&self, err: Error) {
         self.error_handler
             .load(Ordering::Relaxed)
-            .unwrap_or(|err| default_error_handler("AsyncPoolSink", err))(err);
+            .call_internal("AsyncPoolSink", err);
     }
 }
 

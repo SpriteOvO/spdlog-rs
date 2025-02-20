@@ -7,7 +7,7 @@ use crate::{
     Error, ErrorHandler,
 };
 
-pub(crate) type SinkErrorHandler = Atomic<Option<ErrorHandler>>;
+pub(crate) type SinkErrorHandler = Atomic<ErrorHandler>;
 
 cfg_if! {
     if #[cfg(test)] {
@@ -47,22 +47,21 @@ impl CommonImpl {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
             formatter: SpinRwLock::new(formatter),
-            error_handler: Atomic::new(None),
+            error_handler: Atomic::new(ErrorHandler::default()),
         }
     }
 
     pub(crate) fn non_returnable_error(&self, from: impl AsRef<str>, err: Error) {
-        match self.error_handler.load(Ordering::Relaxed) {
-            Some(handler) => handler(err),
-            None => crate::default_error_handler(from, err),
-        }
+        self.error_handler
+            .load(Ordering::Relaxed)
+            .call_internal(from, err)
     }
 }
 
 pub(crate) struct CommonBuilderImpl {
     pub(crate) level_filter: LevelFilter,
     pub(crate) formatter: Option<Box<dyn Formatter>>,
-    pub(crate) error_handler: Option<ErrorHandler>,
+    pub(crate) error_handler: ErrorHandler,
 }
 
 impl CommonBuilderImpl {
@@ -71,7 +70,7 @@ impl CommonBuilderImpl {
         Self {
             level_filter: SINK_DEFAULT_LEVEL_FILTER,
             formatter: None,
-            error_handler: None,
+            error_handler: ErrorHandler::default(),
         }
     }
 }
@@ -113,7 +112,7 @@ macro_rules! common_impl {
     };
     ( @SinkCustomInner@error_handler: None ) => {};
     ( @SinkCustomInner@error_handler: $($field:ident).+ ) => {
-        fn set_error_handler(&self, handler: Option<$crate::ErrorHandler>) {
+        fn set_error_handler(&self, handler: $crate::ErrorHandler) {
             self.$($field).+.store(handler, $crate::sync::Ordering::Relaxed);
         }
     };
@@ -180,8 +179,11 @@ macro_rules! common_impl {
     ( $(#[$attr:meta])* @SinkBuilderCustomInner@error_handler: $($field:ident).+ ) => {
         $(#[$attr])*
         #[must_use]
-        pub fn error_handler(mut self, handler: $crate::ErrorHandler) -> Self {
-            self.$($field).+ = Some(handler);
+        pub fn error_handler<H>(mut self, handler: H) -> Self
+        where
+            H: Into<$crate::ErrorHandler>
+        {
+            self.$($field).+ = handler.into();
             self
         }
     };

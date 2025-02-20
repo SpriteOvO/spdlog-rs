@@ -18,7 +18,9 @@ use test_utils::*;
 fn init() {
     if spdlog::init_log_crate_proxy().is_ok() {
         spdlog::set_default_logger(Arc::new(build_test_logger(|b| {
-            b.error_handler(|err| panic!("an error occurred: {err}"))
+            b.error_handler(spdlog::ErrorHandler::new(|err| {
+                panic!("an error occurred: {err}")
+            }))
         })));
     }
     log::set_max_level(log::LevelFilter::max());
