@@ -86,6 +86,8 @@ pub enum BuiltInFormatterInner {
     LoggerName,
     #[strum(serialize = "payload")]
     Payload,
+    #[strum(serialize = "kv")]
+    KV,
     #[strum(serialize = "pid")]
     ProcessId,
     #[strum(serialize = "tid")]

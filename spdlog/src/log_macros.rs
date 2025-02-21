@@ -21,15 +21,22 @@
 /// [`Level`]: crate::Level
 #[macro_export]
 macro_rules! log {
-    (logger: $logger:expr, $level:expr, $($arg:tt)+) => ({
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}], $($input)+)
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __log_impl {
+    (logger: $logger:expr, kv: $kv:tt, $level:expr, $($arg:tt)+) => ({
         let logger = &$logger;
         const LEVEL: $crate::Level = $level;
         const SHOULD_LOG: bool = $crate::STATIC_LEVEL_FILTER.__test_const(LEVEL);
         if SHOULD_LOG && logger.should_log(LEVEL) {
-            $crate::__log(logger, LEVEL, $crate::source_location_current!(), format_args!($($arg)+));
+            $crate::__log(logger, LEVEL, $crate::source_location_current!(), $crate::__kv!($kv), format_args!($($arg)+));
         }
     });
-    ($level:expr, $($arg:tt)+) => ($crate::log!(logger: $crate::default_logger(), $level, $($arg)+))
 }
 
 /// Logs a message at the critical level.
@@ -50,12 +57,9 @@ macro_rules! log {
 /// ```
 #[macro_export]
 macro_rules! critical {
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Critical, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Critical, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Critical], $($input)+)
+    };
 }
 
 /// Logs a message at the error level.
@@ -76,12 +80,9 @@ macro_rules! critical {
 /// ```
 #[macro_export]
 macro_rules! error {
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Error, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Error, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Error], $($input)+)
+    };
 }
 
 /// Logs a message at the warn level.
@@ -102,12 +103,9 @@ macro_rules! error {
 /// ```
 #[macro_export]
 macro_rules! warn {
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Warn, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Warn, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Warn], $($input)+)
+    };
 }
 
 /// Logs a message at the info level.
@@ -129,12 +127,9 @@ macro_rules! warn {
 /// ```
 #[macro_export]
 macro_rules! info {
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Info, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Info, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Info], $($input)+)
+    };
 }
 
 /// Logs a message at the debug level.
@@ -156,12 +151,9 @@ macro_rules! info {
 /// ```
 #[macro_export]
 macro_rules! debug {
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Debug, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Debug, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Debug], $($input)+)
+    };
 }
 
 /// Logs a message at the trace level.
@@ -185,10 +177,217 @@ macro_rules! debug {
 /// ```
 #[macro_export]
 macro_rules! trace {
-    (logger: $logger:expr, $($arg:tt)+) => (
-        $crate::log!(logger: $logger, $crate::Level::Trace, $($arg)+)
-    );
-    ($($arg:tt)+) => (
-        $crate::log!($crate::Level::Trace, $($arg)+)
-    )
+    ($($input:tt)+) => {
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Trace], $($input)+)
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __kv {
+    ({}) => (&[]);
+    ({ $($ttm:tt)+ }) => {
+        $crate::__kv!(@{} $($ttm)+)
+    };
+
+    (@{$($done:tt)*} $k:ident    $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [  ] $(= $v)?,} $($($rest)*)?));
+    (@{$($done:tt)*} $k:ident :  $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [: ] $(= $v)?,} $($($rest)*)?));
+    (@{$($done:tt)*} $k:ident :? $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [:?] $(= $v)?,} $($($rest)*)?));
+    (@{$( $k:ident [$($modifier:tt)*] $(= $v:expr)? ),+ $(,)?}) => {
+        &[$(($crate::kv::Key::__from_static_str(stringify!($k)), $crate::__kv_value!($k [$($modifier)*] $(= $v)?))),+]
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __kv_value {
+    ($k:ident [$($modifier:tt)*]) => { $crate::__kv_value!($k [$($modifier)*] = $k) };
+    ($k:ident [  ] = $v:expr) => { $crate::kv::Value::from(&$v) };
+    ($k:ident [: ] = $v:expr) => { $crate::kv::Value::from_display(&$v) };
+    ($k:ident [:?] = $v:expr) => { $crate::kv::Value::from_debug(&$v) };
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        fmt::{self, Debug, Display},
+        sync::Arc,
+    };
+
+    use crate::{kv::KeyInner, prelude::*, test_utils::*};
+
+    #[test]
+    fn syntax_and_records() {
+        let test_sink = Arc::new(TestSink::new());
+        let test = Arc::new(build_test_logger(|b| {
+            b.sink(test_sink.clone()).level_filter(LevelFilter::All)
+        }));
+
+        struct Mods;
+        impl Debug for Mods {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "debug")
+            }
+        }
+        impl Display for Mods {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                write!(f, "display")
+            }
+        }
+
+        let mut check = vec![
+            (vec![], Level::Info, "logger".to_string()),
+            (vec![], Level::Error, "logger, kv(0)".to_string()),
+            (
+                vec![(KeyInner::StaticStr("kn"), "114514".to_string())],
+                Level::Warn,
+                "logger, kv(1)".to_string(),
+            ),
+            (
+                vec![
+                    (KeyInner::StaticStr("kn"), "114514".to_string()),
+                    (KeyInner::StaticStr("kdi"), "display".to_string()),
+                    (KeyInner::StaticStr("kde"), "debug".to_string()),
+                ],
+                Level::Critical,
+                "logger, kv(2)".to_string(),
+            ),
+            (
+                vec![(KeyInner::StaticStr("n"), "114514".to_string())],
+                Level::Trace,
+                "logger, kv(1,vref)".to_string(),
+            ),
+            (
+                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                Level::Debug,
+                "logger, kv(mod,vref)".to_string(),
+            ),
+            (
+                vec![
+                    (KeyInner::StaticStr("n"), "114514".to_string()),
+                    (KeyInner::StaticStr("mod_di"), "display".to_string()),
+                    (KeyInner::StaticStr("mod_de"), "debug".to_string()),
+                ],
+                Level::Info,
+                "logger, kv(s,mod,vref)".to_string(),
+            ),
+            (
+                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                Level::Debug,
+                "arbitrary order = logger, fmt, kv".to_string(),
+            ),
+            (
+                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                Level::Debug,
+                "arbitrary order = fmt, logger, kv".to_string(),
+            ),
+        ];
+
+        log!(logger: test, Level::Info, "logger");
+        log!(logger: test, kv: {}, Level::Error, "logger, kv(0)");
+        log!(logger: test, kv: { kn = 114514 }, Level::Warn, "logger, kv(1)");
+        log!(logger: test, kv: { kn = 114514, kdi: = Mods, kde:? = Mods }, Level::Critical, "logger, kv(2)");
+
+        let (n, mod_di, mod_de) = (114514, Mods, Mods);
+        log!(logger: test, kv: { n }, Level::Trace, "logger, kv(1,vref)");
+        log!(logger: test, kv: { mod_di: }, Level::Debug, "logger, kv(mod,vref)");
+        log!(logger: test, kv: { n, mod_di:, mod_de:? }, Level::Info, "logger, kv(s,mod,vref)");
+        log!(logger: test, Level::Debug, "arbitrary order = logger, fmt, kv", kv: { mod_di: });
+        log!(Level::Debug, "arbitrary order = fmt, logger, kv", logger: test, kv: { mod_di: });
+
+        macro_rules! add_records {
+            ( $($level:ident => $variant:ident),+ ) => {
+                $(
+                    $level!(logger: test, "{}: logger", stringify!($level));
+                    check.push((vec![], Level::$variant, format!("{}: logger", stringify!($level))));
+
+                    $level!(logger: test, kv: {}, "{}: logger, kv(0)", stringify!($level));
+                    check.push((vec![], Level::$variant, format!("{}: logger, kv(0)", stringify!($level))));
+
+                    $level!(logger: test, kv: { kn = 114514 }, "{}: logger, kv(1)", stringify!($level));
+                    check.push((
+                        vec![(KeyInner::StaticStr("kn"), "114514".to_string())],
+                        Level::$variant,
+                        format!("{}: logger, kv(1)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, kv: { kn = 114514, kdi: = Mods, kde:? = Mods }, "{}: logger, kv(s,mod)", stringify!($level));
+                    check.push((
+                        vec![
+                            (KeyInner::StaticStr("kn"), "114514".to_string()),
+                            (KeyInner::StaticStr("kdi"), "display".to_string()),
+                            (KeyInner::StaticStr("kde"), "debug".to_string()),
+                        ],
+                        Level::$variant,
+                        format!("{}: logger, kv(s,mod)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, kv: { n }, "{}: logger, kv(1,vref)", stringify!($level));
+                    check.push((
+                        vec![(KeyInner::StaticStr("n"), "114514".to_string())],
+                        Level::$variant,
+                        format!("{}: logger, kv(1,vref)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, kv: { mod_di: }, "{}: logger, kv(mod,vref)", stringify!($level));
+                    check.push((
+                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                        Level::$variant,
+                        format!("{}: logger, kv(mod,vref)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, kv: { n, mod_di:, mod_de:? }, "{}: logger, kv(s,mod,vref)", stringify!($level));
+                    check.push((
+                        vec![
+                            (KeyInner::StaticStr("n"), "114514".to_string()),
+                            (KeyInner::StaticStr("mod_di"), "display".to_string()),
+                            (KeyInner::StaticStr("mod_de"), "debug".to_string()),
+                        ],
+                        Level::$variant,
+                        format!("{}: logger, kv(s,mod,vref)", stringify!($level))
+                    ));
+
+                    $level!(logger: test, "{}: arbitrary order = logger, fmt, kv", stringify!($level), kv: { mod_di: });
+                    check.push((
+                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                        Level::$variant,
+                        format!("{}: arbitrary order = logger, fmt, kv", stringify!($level))
+                    ));
+
+                    $level!("{}: arbitrary order = fmt, logger, kv", stringify!($level), logger: test, kv: { mod_di: });
+                    check.push((
+                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
+                        Level::$variant,
+                        format!("{}: arbitrary order = fmt, logger, kv", stringify!($level))
+                    ));
+                )+
+            };
+        }
+        add_records!(
+            critical => Critical,
+            error => Error,
+            warn => Warn,
+            info => Info,
+            debug => Debug,
+            trace => Trace
+        );
+
+        let records = test_sink.records();
+        let from_sink = records
+            .iter()
+            .map(|record| {
+                (
+                    record
+                        .key_values()
+                        .into_iter()
+                        .map(|(k, v)| (k.inner(), v.to_string()))
+                        .collect::<Vec<_>>(),
+                    record.level(),
+                    record.payload().to_string(),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        assert_eq!(check, from_sink);
+    }
 }
