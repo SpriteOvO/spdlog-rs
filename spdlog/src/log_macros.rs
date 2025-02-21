@@ -379,6 +379,7 @@ mod tests {
                 (
                     record
                         .key_values()
+                        .into_iter()
                         .map(|(k, v)| (k.inner(), v.to_string()))
                         .collect::<Vec<_>>(),
                     record.level(),
