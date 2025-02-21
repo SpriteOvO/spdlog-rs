@@ -110,12 +110,8 @@ impl<'a> Record<'a> {
     }
 
     #[must_use]
-    pub fn key_values(&self) -> kv::KeyValuesIter<impl Iterator<Item = (kv::Key, kv::Value)>> {
-        kv::KeyValuesIter::new(
-            // The 2 clones should be cheap
-            self.kvs.iter().map(|(k, v)| (k.clone(), v.clone())),
-            self.kvs.len(),
-        )
+    pub fn key_values(&self) -> kv::KeyValues {
+        kv::KeyValues::with_borrowed(&self.kvs)
     }
 
     // When adding more getters, also add to `RecordOwned`
@@ -242,11 +238,8 @@ impl RecordOwned {
     }
 
     #[must_use]
-    pub fn key_values(&self) -> kv::KeyValuesIter<impl Iterator<Item = (kv::Key, kv::Value)>> {
-        kv::KeyValuesIter::new(
-            self.kvs.iter().map(|(k, v)| (k.as_ref(), v.by_ref())),
-            self.kvs.len(),
-        )
+    pub fn key_values(&self) -> kv::KeyValues {
+        kv::KeyValues::with_owned(&self.kvs)
     }
 
     // When adding more getters, also add to `Record`

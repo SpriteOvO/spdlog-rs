@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt, marker::PhantomData};
+use std::{borrow::Cow, fmt, slice};
 
 use value_bag::{OwnedValueBag, ValueBag};
 
@@ -73,40 +73,50 @@ impl KeyOwned {
 pub type Value<'a> = ValueBag<'a>;
 pub(crate) type ValueOwned = OwnedValueBag;
 
-pub struct KeyValuesIter<'a, I> {
-    iter: I,
-    len: usize,
-    phantom: PhantomData<&'a ()>,
+enum KeyValuesInner<'a> {
+    Borrowed(&'a [Pair<'a>]),
+    Owned(&'a [(KeyOwned, ValueOwned)]),
+}
+enum KeyValuesIterInner<'a> {
+    Borrowed(slice::Iter<'a, Pair<'a>>),
+    Owned(slice::Iter<'a, (KeyOwned, ValueOwned)>),
 }
 
-impl<I> KeyValuesIter<'_, I> {
+pub struct KeyValues<'a>(KeyValuesInner<'a>);
+
+impl<'a> KeyValues<'a> {
     pub fn len(&self) -> usize {
-        self.len
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-}
-
-impl<'a, I> KeyValuesIter<'a, I>
-where
-    I: Iterator<Item = (Key<'a>, Value<'a>)>,
-{
-    pub(crate) fn new(iter: I, len: usize) -> Self {
-        Self {
-            iter,
-            len,
-            phantom: PhantomData,
+        match self.0 {
+            KeyValuesInner::Borrowed(p) => p.len(),
+            KeyValuesInner::Owned(p) => p.len(),
         }
     }
 
-    pub(crate) fn write_to(
-        mut self,
-        dest: &mut impl fmt::Write,
-        leading_space: bool,
-    ) -> fmt::Result {
-        let first = self.next();
+    pub fn is_empty(&self) -> bool {
+        match self.0 {
+            KeyValuesInner::Borrowed(p) => p.is_empty(),
+            KeyValuesInner::Owned(p) => p.is_empty(),
+        }
+    }
+
+    pub fn iter(&self) -> KeyValuesIter<'a> {
+        match &self.0 {
+            KeyValuesInner::Borrowed(p) => KeyValuesIter(KeyValuesIterInner::Borrowed(p.iter())),
+            KeyValuesInner::Owned(p) => KeyValuesIter(KeyValuesIterInner::Owned(p.iter())),
+        }
+    }
+
+    pub(crate) fn with_borrowed(pairs: &'a [Pair<'a>]) -> Self {
+        Self(KeyValuesInner::Borrowed(pairs))
+    }
+
+    pub(crate) fn with_owned(pairs: &'a [(KeyOwned, ValueOwned)]) -> Self {
+        Self(KeyValuesInner::Owned(pairs))
+    }
+
+    pub(crate) fn write_to(&self, dest: &mut impl fmt::Write, leading_space: bool) -> fmt::Result {
+        let mut iter = self.iter();
+        let first = iter.next();
         if let Some((key, value)) = first {
             if leading_space {
                 dest.write_str(" { ")?;
@@ -120,7 +130,7 @@ where
             dest.write_str("=")?;
             write!(dest, "{}", value)?;
 
-            for (key, value) in self {
+            for (key, value) in iter {
                 dest.write_str(", ")?;
                 dest.write_str(key.as_str())?;
                 dest.write_str("=")?;
@@ -133,18 +143,33 @@ where
     }
 }
 
-impl<'a, I> Iterator for KeyValuesIter<'a, I>
-where
-    I: Iterator<Item = (Key<'a>, Value<'a>)>,
-{
-    type Item = I::Item;
+impl<'a> IntoIterator for KeyValues<'a> {
+    type Item = Pair<'a>;
+    type IntoIter = KeyValuesIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.iter()
+    }
+}
+
+pub struct KeyValuesIter<'a>(KeyValuesIterInner<'a>);
+
+impl<'a> Iterator for KeyValuesIter<'a> {
+    type Item = Pair<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next()
+        match &mut self.0 {
+            // The 2 clones should be cheap
+            KeyValuesIterInner::Borrowed(iter) => iter.next().map(|(k, v)| (k.clone(), v.clone())),
+            KeyValuesIterInner::Owned(iter) => iter.next().map(|(k, v)| (k.as_ref(), v.by_ref())),
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        match &self.0 {
+            KeyValuesIterInner::Borrowed(iter) => iter.size_hint(),
+            KeyValuesIterInner::Owned(iter) => iter.size_hint(),
+        }
     }
 }
 
