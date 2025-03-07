@@ -74,8 +74,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("collected:\n{collected:#?}");
 
     assert_eq!(collected.len(), 2);
-    assert!(collected[0].ends_with(" [info] Hello, world!\n"));
-    assert!(collected[1].ends_with(" [warn] Meow~\n"));
+    assert!(collected[0].contains("[info]") && collected[0].contains("Hello, world!"));
+    assert!(collected[1].contains("[warn]") && collected[1].contains("Meow~"));
 
     Ok(())
 }

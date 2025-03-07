@@ -70,6 +70,12 @@ jobs:
       uses: Swatinem/rust-cache@v2
     - name: Run tests
       run: cargo test --features "${{ matrix.fn_features }} ${{ matrix.cfg_feature }}" --verbose
+    - name: Run examples
+      if: matrix.fn_features != ''
+      run: |
+        for example in `ls spdlog/examples/*.rs | xargs basename --suffix=.rs`; do
+          cargo run --features "${{ matrix.fn_features }} ${{ matrix.cfg_feature }}" --example ${example};
+        done
 
   clippy:
     strategy:
