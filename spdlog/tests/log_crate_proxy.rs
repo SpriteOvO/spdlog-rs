@@ -49,3 +49,22 @@ fn test_target() {
     log::info!(target: "MyLogger", "body");
     assert_eq!(sink.clone_string(), format!("[MyLogger] body{__EOL}"));
 }
+
+#[cfg(feature = "log")]
+#[test]
+fn test_kv() {
+    let formatter = Box::new(PatternFormatter::new(pattern!("{payload} {kv}{eol}")));
+    let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
+    let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
+
+    let _guard = GLOBAL_LOG_CRATE_PROXY_MUTEX.lock().unwrap();
+    spdlog::init_log_crate_proxy().ok();
+    spdlog::log_crate_proxy().set_logger(Some(logger));
+    log::set_max_level(log::LevelFilter::Trace);
+
+    log::info!(key1 = 42, key2 = true; "a {} event", "log");
+    assert_eq!(
+        sink.clone_string(),
+        format!("a log event {{ key1=42, key2=true }}{__EOL}")
+    );
+}

@@ -26,7 +26,7 @@ impl<'a> Key<'a> {
         Key(KeyInner::StaticStr(key))
     }
 
-    fn from_str(key: &'a str) -> Self {
+    pub(crate) fn from_str(key: &'a str) -> Self {
         Key(KeyInner::Str(key))
     }
 
@@ -176,7 +176,7 @@ impl<'a> Iterator for KeyValuesIter<'a> {
 pub(crate) type Pair<'a> = (Key<'a>, Value<'a>);
 
 #[cfg(feature = "log")]
-pub(crate) struct LogCrateConverter<'a>(Vec<(Key<'a>, Value<'a>)>);
+pub(crate) struct LogCrateConverter<'a>(Vec<(log::kv::Key<'a>, ValueOwned)>);
 
 #[cfg(feature = "log")]
 impl<'a> LogCrateConverter<'a> {
@@ -184,8 +184,8 @@ impl<'a> LogCrateConverter<'a> {
         Self(Vec::with_capacity(capacity))
     }
 
-    pub(crate) fn finalize(self) -> Cow<'a, [Pair<'a>]> {
-        Cow::Owned(self.0)
+    pub(crate) fn finalize(self) -> Vec<(log::kv::Key<'a>, ValueOwned)> {
+        self.0
     }
 }
 
@@ -196,10 +196,46 @@ impl<'a> log::kv::VisitSource<'a> for LogCrateConverter<'a> {
         key: log::kv::Key<'a>,
         value: log::kv::Value<'a>,
     ) -> Result<(), log::kv::Error> {
-        self.0.push((
-            Key::from_str(key.as_str()),
-            todo!("convert `lov::kv::Value` to `Value`"),
-        ));
+        struct Visitor(Option<ValueOwned>);
+
+        macro_rules! visit_fn {
+            ( $($fn:ident: $ty:ty => $from:ident),+$(,)? ) => {
+                $(fn $fn(&mut self, value: $ty) -> Result<(), log::kv::Error> {
+                    self.0 = Some(Value::$from(value).to_owned());
+                    Ok(())
+                })+
+            };
+        }
+
+        impl log::kv::VisitValue<'_> for Visitor {
+            fn visit_any(&mut self, value: log::kv::Value) -> Result<(), log::kv::Error> {
+                // Since we have no way to extract the underlying `&dyn Display`, we have to
+                // `to_owned()` here
+                self.0 = Some(Value::from_display(&value).to_owned());
+                Ok(())
+            }
+
+            fn visit_null(&mut self) -> Result<(), log::kv::Error> {
+                self.0 = Some(Value::empty().to_owned());
+                Ok(())
+            }
+
+            visit_fn! {
+                visit_u64: u64 => from_u64,
+                visit_i64: i64 => from_i64,
+                visit_u128: u128 => from_u128,
+                visit_i128: i128 => from_i128,
+                visit_f64: f64 => from_f64,
+                visit_bool: bool => from_bool,
+                visit_str: &str => from_str,
+                visit_borrowed_str: &str => from_str,
+                visit_char: char => from_char,
+            }
+        }
+
+        let mut visitor = Visitor(None);
+        value.visit(&mut visitor)?;
+        self.0.push((key, visitor.0.unwrap()));
         Ok(())
     }
 }
