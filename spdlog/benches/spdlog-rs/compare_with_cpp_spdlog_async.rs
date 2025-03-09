@@ -17,8 +17,6 @@ use spdlog::{
 };
 use test::black_box;
 
-required_multi_thread_feature!();
-
 fn bench(
     policy: OverflowPolicy,
     file_name: &str,

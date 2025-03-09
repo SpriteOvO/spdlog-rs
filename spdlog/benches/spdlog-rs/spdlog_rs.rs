@@ -21,8 +21,6 @@ include!(concat!(
 ));
 use test_utils::*;
 
-required_multi_thread_feature!();
-
 enum Mode {
     Sync,
     Async,

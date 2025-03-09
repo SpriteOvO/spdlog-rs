@@ -46,14 +46,6 @@ macro_rules! unavailable_bench {
 }
 
 #[macro_export]
-macro_rules! required_multi_thread_feature {
-    () => {
-        #[cfg(not(feature = "multi-thread"))]
-        compile_error!("please rerun `cargo bench` with `--features multi-thread`");
-    };
-}
-
-#[macro_export]
 macro_rules! aggregate_bench_main {
     () => {
         fn main() {
