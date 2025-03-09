@@ -111,6 +111,10 @@ name = "spdlog_rs_pattern"
 path = "benches/spdlog-rs/pattern.rs"
 required-features = ["runtime-pattern", "serde_json"]
 [[bench]]
+name = "spdlog_rs_log_crate_proxy"
+path = "benches/spdlog-rs/log_crate_proxy.rs"
+required-features = ["log"]
+[[bench]]
 name = "fast_log"
 path = "benches/fast_log/main.rs"
 harness = false

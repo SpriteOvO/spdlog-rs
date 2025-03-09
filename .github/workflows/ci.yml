@@ -224,7 +224,12 @@ jobs:
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
     - name: Run benchmark
-      run: cargo +nightly bench --features "multi-thread,runtime-pattern,serde_json" --bench spdlog_rs --bench spdlog_rs_pattern | tee bench-results.txt
+      run: |
+        cargo +nightly bench --features "multi-thread,runtime-pattern,serde_json,log" \
+          --bench spdlog_rs \
+          --bench spdlog_rs_pattern \
+          --bench spdlog_rs_log_crate_proxy \
+          | tee bench-results.txt
     - name: Discard irrelevant changes
       run: git checkout -- spdlog/Cargo.toml
     - name: Process results
