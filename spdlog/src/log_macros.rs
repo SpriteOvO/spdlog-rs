@@ -193,6 +193,8 @@ macro_rules! __kv {
     (@{$($done:tt)*} $k:ident    $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [  ] $(= $v)?,} $($($rest)*)?));
     (@{$($done:tt)*} $k:ident :  $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [: ] $(= $v)?,} $($($rest)*)?));
     (@{$($done:tt)*} $k:ident :? $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [:?] $(= $v)?,} $($($rest)*)?));
+    (@{$($done:tt)*} $k:ident :sval $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [:sval] $(= $v)?,} $($($rest)*)?));
+    (@{$($done:tt)*} $k:ident :serde $(= $v:expr)? $(,$($rest:tt)*)?) => ($crate::__kv!(@{$($done)* $k [:serde] $(= $v)?,} $($($rest)*)?));
     (@{$( $k:ident [$($modifier:tt)*] $(= $v:expr)? ),+ $(,)?}) => {
         &[$(($crate::kv::Key::__from_static_str(stringify!($k)), $crate::__kv_value!($k [$($modifier)*] $(= $v)?))),+]
     };
@@ -203,8 +205,10 @@ macro_rules! __kv {
 macro_rules! __kv_value {
     ($k:ident [$($modifier:tt)*]) => { $crate::__kv_value!($k [$($modifier)*] = $k) };
     ($k:ident [  ] = $v:expr) => { $crate::kv::Value::from(&$v) };
-    ($k:ident [: ] = $v:expr) => { $crate::kv::Value::from_display(&$v) };
-    ($k:ident [:?] = $v:expr) => { $crate::kv::Value::from_debug(&$v) };
+    ($k:ident [: ] = $v:expr) => { $crate::kv::Value::capture_display(&$v) };
+    ($k:ident [:?] = $v:expr) => { $crate::kv::Value::capture_debug(&$v) };
+    ($k:ident [:sval] = $v:expr) => { $crate::kv::Value::capture_sval2(&$v) };
+    ($k:ident [:serde] = $v:expr) => { $crate::kv::Value::capture_serde1(&$v) };
 }
 
 #[cfg(test)]
@@ -212,9 +216,17 @@ mod tests {
     use std::{
         fmt::{self, Debug, Display},
         sync::Arc,
+        vec,
     };
 
-    use crate::{kv::KeyInner, prelude::*, test_utils::*};
+    use crate::{
+        formatter::Formatter,
+        kv::{Key, KeyInner},
+        prelude::*,
+        sink::Sink,
+        test_utils::{self, *},
+        ErrorHandler, Record,
+    };
 
     #[test]
     fn syntax_and_records() {
@@ -389,5 +401,73 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert_eq!(check, from_sink);
+    }
+
+    #[test]
+    fn kv_types() {
+        struct Asserter;
+
+        impl Sink for Asserter {
+            fn should_log(&self, _: Level) -> bool {
+                true
+            }
+            fn flush(&self) -> crate::Result<()> {
+                Ok(())
+            }
+            fn level_filter(&self) -> LevelFilter {
+                LevelFilter::All
+            }
+            fn set_level_filter(&self, _: LevelFilter) {
+                unimplemented!()
+            }
+            fn set_formatter(&self, _: Box<dyn Formatter>) {
+                unimplemented!()
+            }
+            fn set_error_handler(&self, _: Option<ErrorHandler>) {
+                unimplemented!()
+            }
+
+            fn log(&self, record: &Record) -> crate::Result<()> {
+                let kvs = record.key_values();
+                let value = kvs.get(Key::from_str("v")).unwrap();
+                assert_eq!(kvs.len(), 1);
+
+                match record.payload() {
+                    "1" => assert!(value.to_i64().is_some()),
+                    "2" => assert!(value.to_str().is_some()),
+                    "3" => assert!(value.to_i64().is_some()),
+                    "4" => assert!(value.to_i64().is_some()),
+                    "5" => assert!(value.is::<Vec<i32>>()),
+                    "6" => assert!(value.is::<Data>()),
+                    "7" => assert!(value.is::<Data>()),
+                    _ => panic!(),
+                }
+                Ok(())
+            }
+        }
+
+        let asserter = test_utils::build_test_logger(|b| b.sink(Arc::new(Asserter)));
+
+        #[cfg_attr(feature = "sval", derive(sval_derive::Value))]
+        #[cfg_attr(feature = "serde", derive(serde::Serialize))]
+        struct Data {
+            i: i32,
+            v: Vec<i32>,
+        }
+        let data = Data {
+            i: 1,
+            v: vec![1, 2],
+        };
+
+        info!(logger: asserter, "1", kv: { v = 1 });
+        info!(logger: asserter, "2", kv: { v = "string" });
+        info!(logger: asserter, "3", kv: { v: = 1 });
+        info!(logger: asserter, "4", kv: { v:? = 1 });
+        #[cfg(feature = "sval")]
+        info!(logger: asserter, "5", kv: { v:sval = vec![1, 2] });
+        #[cfg(feature = "sval")]
+        info!(logger: asserter, "6", kv: { v:sval = data });
+        #[cfg(feature = "serde")]
+        info!(logger: asserter, "7", kv: { v:serde = data });
     }
 }

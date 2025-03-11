@@ -99,6 +99,22 @@ impl<'a> KeyValues<'a> {
         }
     }
 
+    pub fn get(&self, key: Key) -> Option<Value<'a>> {
+        match self.0 {
+            KeyValuesInner::Borrowed(p) => {
+                p.iter()
+                    .find_map(|(k, v)| if k == &key { Some(v.clone()) } else { None })
+            }
+            KeyValuesInner::Owned(p) => p.iter().find_map(|(k, v)| {
+                if k.as_ref() == key {
+                    Some(v.by_ref())
+                } else {
+                    None
+                }
+            }),
+        }
+    }
+
     pub fn iter(&self) -> KeyValuesIter<'a> {
         match &self.0 {
             KeyValuesInner::Borrowed(p) => KeyValuesIter(KeyValuesIterInner::Borrowed(p.iter())),
