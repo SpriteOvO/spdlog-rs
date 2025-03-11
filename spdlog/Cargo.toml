@@ -37,7 +37,9 @@ native = []
 libsystemd = ["libsystemd-sys"]
 multi-thread = ["crossbeam"]
 runtime-pattern = ["spdlog-internal"]
-serde_json = ["serde", "dep:serde_json", "value-bag/serde1"]
+serde = ["dep:serde", "value-bag/serde"]
+serde_json = ["serde", "dep:serde_json"]
+sval = ["value-bag/sval"]
 
 [dependencies]
 arc-swap = "1.5.1"
@@ -74,6 +76,8 @@ crossbeam = "0.8.2"
 regex = "1.7.0"
 paste = "1.0.14"
 trybuild = "1.0.90"
+sval = "2.14.0"
+sval_derive = "2.14.0"
 
 # [bench-dependencies]
 log = "=0.4.22"

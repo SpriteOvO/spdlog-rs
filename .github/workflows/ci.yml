@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        fn_features: ['', 'log native libsystemd multi-thread runtime-pattern serde_json']
+        fn_features: ['', 'log native libsystemd multi-thread runtime-pattern serde serde_json sval']
         cfg_feature: ['', 'flexible-string', 'source-location']
     runs-on: ${{ matrix.os }}
     steps:
