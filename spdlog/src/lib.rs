@@ -16,10 +16,12 @@
 //!   - [Configured via environment variable](init_env_level)
 //!   - [Compile-time and runtime pattern formatter]
 //!   - [Asynchronous support]
+//!   - [Structured logging]
 //!   - [Compatible with log crate](LogCrateProxy)
 //!
 //! [Compile-time and runtime pattern formatter]: formatter/index.html#compile-time-and-runtime-pattern-formatter
 //! [Asynchronous support]: crate::sink::AsyncPoolSink
+//! [Structured logging]: crate::kv
 //!
 //! # Getting started
 //!

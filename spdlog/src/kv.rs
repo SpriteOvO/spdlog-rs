@@ -1,3 +1,93 @@
+//! Structured logging.
+//!
+//! Structured logging enhances traditional text-based log records with
+//! user-defined attributes. Structured logs can be analyzed using a variety of
+//! data processing techniques, without needing to find and parse attributes
+//! from unstructured text first.
+//!
+//! [`Key`]s are strings and [`Value`]s are a datum of any type that can be
+//! formatted or serialized. Simple types like strings, booleans, and numbers
+//! are supported, as well as arbitrarily complex structures involving nested
+//! objects and sequences.
+//!
+//! [`Value`] uses [_value-bag_ crate] as the backend, which is an alias of
+//! [`value_bag::ValueBag`].
+//!
+//! KVs will be passed into a [`Record`] to be processed by [`Formatter`]s via
+//! [`Record::key_values`] method.
+//!
+//! ## Examples
+//!
+//! #### Basic syntax
+//!
+//! In logging macros, an optional named parameter `kv` (like `logger`) is used
+//! to add key-values to a log.
+//!
+//! ```
+//! # use spdlog::prelude::*;
+//! info!("program started", kv: { pid = std::process::id() });
+//!
+//! # let telemetry = spdlog::default_logger();
+//! trace!(logger: telemetry, "user logged in", kv: { username = "John" });
+//!
+//! let ip = "1.1.1.1";
+//! trace!("DNS setup", kv: { ip });
+//! //                        ^^ Shorthand syntax, equivalent to `ip = ip`
+//! ```
+//!
+//! #### Modifier
+//!
+//! A value is stored directly with its type by default (after erasure, of
+//! course), using _modifier_ if you want it to be stored in another format.
+//!
+//! | Modifier | Description                                                                           |
+//! |----------|---------------------------------------------------------------------------------------|
+//! |          | No modifier, capture the value directly                                               |
+//! | `:`      | Capture the value using [`Display`] trait                                             |
+//! | `:?`     | Capture the value using [`Debug`] trait                                               |
+//! | `:sval`  | Capture the value using [`sval::Value`] trait, crate feature `sval` is required       |
+//! | `:serde` | Capture the value using [`serde::Serialize`] trait, crate feature `serde` is required |
+//!
+//! ```
+//! # use spdlog::prelude::*;
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # struct Url;
+//! # impl Url { fn parse(_: &str) -> Result<Self, Box<dyn std::error::Error>> { Ok(Self) } }
+//! # impl std::fmt::Display for Url {
+//! #     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//! #         write!(f, "")
+//! #     }
+//! # }
+//! let url = Url::parse("https://example.com")?;
+//! trace!("user browsed website", kv: { url: });
+//! //                                      ^ Capture the value using `Display` trait
+//! //                                   ^^^^ Shorthand syntax, equivalent to `url: = url`
+//!
+//! let orders = vec!["coffee", "pizza", "soup"];
+//! info!("order received", kv: { orders:? });
+//! //                                  ^^ Capture the value using `Debug` trait
+//! //                            ^^^^^^^^ Shorthand syntax, equivalent to `orders:? = orders`
+//!
+//! #[derive(sval_derive::Value)]
+//! struct Point { x: f32, y: f32 }
+//!
+//! let pos = Point { x: 11.4, y: 5.14 };
+//! # #[cfg(feature = "sval")]
+//! trace!("user clicked", kv: { pos:sval });
+//! //                              ^^^^^ Capture the value using `sval::Value` trait
+//! //                           ^^^^^^^^ Shorthand syntax, equivalent to `pos:sval = pos`
+//! # Ok(()) }
+//! ```
+//! [_value-bag_ crate]: https://crates.io/crates/value-bag
+//! [`Record`]: crate::Record
+//! [`Formatter`]: crate::formatter::Formatter
+//! [`Display`]: std::fmt::Display
+//! [`Record::key_values`]: crate::Record::key_values
+//!
+//! [`sval::Value`]: https://docs.rs/sval/latest/sval/trait.Value.html
+// TODO: This above link annotation is unnecessary, but Rustdoc has bug:
+//       https://github.com/rust-lang/cargo/issues/3475
+//       Remove it when the bug is fixed.
 use std::{borrow::Cow, fmt, slice};
 
 use value_bag::{OwnedValueBag, ValueBag};
@@ -8,10 +98,12 @@ pub(crate) enum KeyInner<'a> {
     StaticStr(&'static str),
 }
 
+/// Represents a key in a key-value pair.
 #[derive(Debug, Clone)]
 pub struct Key<'a>(KeyInner<'a>);
 
 impl Key<'_> {
+    /// Gets the key string.
     pub fn as_str(&self) -> &str {
         match &self.0 {
             KeyInner::Str(s) => s,
@@ -70,6 +162,7 @@ impl KeyOwned {
     }
 }
 
+/// Represents a value in a key-value pair.
 pub type Value<'a> = ValueBag<'a>;
 pub(crate) type ValueOwned = OwnedValueBag;
 
@@ -82,9 +175,40 @@ enum KeyValuesIterInner<'a> {
     Owned(slice::Iter<'a, (KeyOwned, ValueOwned)>),
 }
 
+/// Represents a collection of key-value pairs.
+///
+/// ## Examples
+///
+/// ```
+/// use std::fmt::Write;
+/// use spdlog::{
+///     formatter::{Formatter, FormatterContext},
+///     Record, StringBuf,
+/// };
+///
+/// #[derive(Clone)]
+/// struct MyFormatter;
+///
+/// impl Formatter for MyFormatter {
+///     fn format(
+///         &self,
+///         record: &Record,
+///         dest: &mut StringBuf,
+///         ctx: &mut FormatterContext,
+///     ) -> spdlog::Result<()> {
+///         dest.write_str(record.payload())
+///             .map_err(spdlog::Error::FormatRecord)?;
+///         for (key, value) in record.key_values() {
+///             write!(dest, " {}={}", key.as_str(), value).map_err(spdlog::Error::FormatRecord)?;
+///         }
+///         Ok(())
+///     }
+/// }
+/// ```
 pub struct KeyValues<'a>(KeyValuesInner<'a>);
 
 impl<'a> KeyValues<'a> {
+    /// Gets the number of key-value pairs.
     pub fn len(&self) -> usize {
         match self.0 {
             KeyValuesInner::Borrowed(p) => p.len(),
@@ -92,6 +216,7 @@ impl<'a> KeyValues<'a> {
         }
     }
 
+    /// Checks if there are no key-value pairs.
     pub fn is_empty(&self) -> bool {
         match self.0 {
             KeyValuesInner::Borrowed(p) => p.is_empty(),
@@ -99,6 +224,7 @@ impl<'a> KeyValues<'a> {
         }
     }
 
+    /// Gets the value of the specified key.
     pub fn get(&self, key: Key) -> Option<Value<'a>> {
         match self.0 {
             KeyValuesInner::Borrowed(p) => {
@@ -115,6 +241,7 @@ impl<'a> KeyValues<'a> {
         }
     }
 
+    /// Gets an iterator over the key-value pairs.
     pub fn iter(&self) -> KeyValuesIter<'a> {
         match &self.0 {
             KeyValuesInner::Borrowed(p) => KeyValuesIter(KeyValuesIterInner::Borrowed(p.iter())),
@@ -168,6 +295,7 @@ impl<'a> IntoIterator for KeyValues<'a> {
     }
 }
 
+/// Represents an iterator over key-value pairs.
 pub struct KeyValuesIter<'a>(KeyValuesIterInner<'a>);
 
 impl<'a> Iterator for KeyValuesIter<'a> {

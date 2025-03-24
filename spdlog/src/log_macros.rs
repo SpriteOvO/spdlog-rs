@@ -2,7 +2,7 @@
 ///
 /// This macro will generically log with the specified [`Level`] and `format!`
 /// based argument list.
-#[doc = include_str!("./include/doc/log-macro-nameed-opt-params.md")]
+#[doc = include_str!("./include/doc/log-macro-named-opt-params.md")]
 /// # Examples
 ///
 /// ```
@@ -12,10 +12,10 @@
 /// let data = (42, "Forty-two");
 ///
 /// // Using the global default logger
-/// log!(Level::Info, "Received data: {}, {}", data.0, data.1);
+/// log!(Level::Info, "received data: {}, {}", data.0, data.1);
 ///
-/// // Or using the specified logger
-/// log!(logger: app_events, Level::Info, "Received data: {}, {}", data.0, data.1);
+/// // Or using the specified logger, and structured logging
+/// log!(logger: app_events, Level::Info, "received data", kv: { data:? });
 /// ```
 ///
 /// [`Level`]: crate::Level
@@ -40,7 +40,7 @@ macro_rules! __log_impl {
 }
 
 /// Logs a message at the critical level.
-#[doc = include_str!("./include/doc/log-macro-nameed-opt-params.md")]
+#[doc = include_str!("./include/doc/log-macro-named-opt-params.md")]
 /// # Examples
 ///
 /// ```
@@ -50,10 +50,10 @@ macro_rules! __log_impl {
 /// let (left, right) = (true, false);
 ///
 /// // Using the global default logger
-/// critical!("Runtime assertion failed. Left: `{}`, Right: `{}`", left, right);
+/// critical!("runtime assertion failed. Left: `{}`, Right: `{}`", left, right);
 ///
-/// // Or using the specified logger
-/// critical!(logger: app_events, "Runtime assertion failed. Left: `{}`, Right: `{}`", left, right);
+/// // Or using the specified logger, and structured logging
+/// critical!(logger: app_events, "runtime assertion failed.", kv: { left, right });
 /// ```
 #[macro_export]
 macro_rules! critical {
@@ -63,7 +63,7 @@ macro_rules! critical {
 }
 
 /// Logs a message at the error level.
-#[doc = include_str!("./include/doc/log-macro-nameed-opt-params.md")]
+#[doc = include_str!("./include/doc/log-macro-named-opt-params.md")]
 /// # Examples
 ///
 /// ```
@@ -73,10 +73,10 @@ macro_rules! critical {
 /// let (err_info, port) = ("No connection", 22);
 ///
 /// // Using the global default logger
-/// error!("Error: {} on port {}", err_info, port);
+/// error!("error: {} on port {}", err_info, port);
 ///
-/// // Or using the specified logger
-/// error!(logger: app_events, "App Error: {}, Port: {}", err_info, port);
+/// // Or using the specified logger, and structured logging
+/// error!(logger: app_events, "app error", kv: { reason = err_info, port });
 /// ```
 #[macro_export]
 macro_rules! error {
@@ -86,7 +86,7 @@ macro_rules! error {
 }
 
 /// Logs a message at the warn level.
-#[doc = include_str!("./include/doc/log-macro-nameed-opt-params.md")]
+#[doc = include_str!("./include/doc/log-macro-named-opt-params.md")]
 /// # Examples
 ///
 /// ```
@@ -96,10 +96,10 @@ macro_rules! error {
 /// let warn_description = "Invalid Input";
 ///
 /// // Using the global default logger
-/// warn!("Warning! {}!", warn_description);
+/// warn!("warning! {}!", warn_description);
 ///
-/// // Or using the specified logger
-/// warn!(logger: input_events, "App received warning: {}", warn_description);
+/// // Or using the specified logger, and structured logging
+/// warn!(logger: input_events, "app received warning", kv: { reason = warn_description });
 /// ```
 #[macro_export]
 macro_rules! warn {
@@ -109,7 +109,7 @@ macro_rules! warn {
 }
 
 /// Logs a message at the info level.
-#[doc = include_str!("./include/doc/log-macro-nameed-opt-params.md")]
+#[doc = include_str!("./include/doc/log-macro-named-opt-params.md")]
 /// # Examples
 ///
 /// ```
@@ -120,10 +120,10 @@ macro_rules! warn {
 /// let conn_info = Connection { port: 40, speed: 3.20 };
 ///
 /// // Using the global default logger
-/// info!("Connected to port {} at {} Mb/s", conn_info.port, conn_info.speed);
+/// info!("connected to port {} at {} Mb/s", conn_info.port, conn_info.speed);
 ///
-/// // Or using the specified logger
-/// info!(logger: conn_events, "Successfull connection, port: {}, speed: {}", conn_info.port, conn_info.speed);
+/// // Or using the specified logger, and structured logging
+/// info!(logger: conn_events, "successfull connection", kv: { port = conn_info.port, speed = conn_info.speed });
 /// ```
 #[macro_export]
 macro_rules! info {
@@ -133,7 +133,7 @@ macro_rules! info {
 }
 
 /// Logs a message at the debug level.
-#[doc = include_str!("./include/doc/log-macro-nameed-opt-params.md")]
+#[doc = include_str!("./include/doc/log-macro-named-opt-params.md")]
 /// # Examples
 ///
 /// ```
@@ -144,10 +144,10 @@ macro_rules! info {
 /// let pos = Position { x: 3.234, y: -1.223 };
 ///
 /// // Using the global default logger
-/// debug!("New position: x: {}, y: {}", pos.x, pos.y);
+/// debug!("new position: x: {}, y: {}", pos.x, pos.y);
 ///
-/// // Or using the specified logger
-/// debug!(logger: app_events, "New position: x: {}, y: {}", pos.x, pos.y);
+/// // Or using the specified logger, and structured logging
+/// debug!(logger: app_events, "new position", kv: { x = pos.x, y = pos.y });
 /// ```
 #[macro_export]
 macro_rules! debug {
@@ -157,7 +157,7 @@ macro_rules! debug {
 }
 
 /// Logs a message at the trace level.
-#[doc = include_str!("./include/doc/log-macro-nameed-opt-params.md")]
+#[doc = include_str!("./include/doc/log-macro-named-opt-params.md")]
 /// # Examples
 ///
 /// ```
@@ -168,12 +168,10 @@ macro_rules! debug {
 /// let pos = Position { x: 3.234, y: -1.223 };
 ///
 /// // Using the global default logger
-/// trace!("Position is: x: {}, y: {}", pos.x, pos.y);
+/// trace!("position is: x: {}, y: {}", pos.x, pos.y);
 ///
-/// // Or using the specified logger
-/// trace!(logger: app_events, "x is {} and y is {}",
-///        if pos.x >= 0.0 { "positive" } else { "negative" },
-///        if pos.y >= 0.0 { "positive" } else { "negative" });
+/// // Or using the specified logger, and structured logging
+/// trace!(logger: app_events, "position updated", kv: { x = pos.x, y = pos.y });
 /// ```
 #[macro_export]
 macro_rules! trace {
