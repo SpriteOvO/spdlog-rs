@@ -109,6 +109,7 @@ impl<'a> Record<'a> {
         self.inner.tid
     }
 
+    /// Gets the key-values.
     #[must_use]
     pub fn key_values(&self) -> kv::KeyValues {
         kv::KeyValues::with_borrowed(&self.kvs)
@@ -196,6 +197,7 @@ impl RecordOwned {
         self.inner.tid
     }
 
+    /// Gets the key-values.
     #[must_use]
     pub fn key_values(&self) -> kv::KeyValues {
         kv::KeyValues::with_owned(&self.kvs)

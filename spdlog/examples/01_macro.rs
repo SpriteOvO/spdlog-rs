@@ -2,8 +2,8 @@
 use spdlog::prelude::*;
 
 fn main() {
-    // Writes a log at "info" level with the info level, and this log will be
-    // processed by the global default logger - It will be output to `stdout`.
+    // Writes a log at "info" level, and this log will be processed by the global
+    // default logger - It will be output to `stdout`.
     info!("program started");
 
     let file = "config.json";
@@ -17,4 +17,6 @@ fn main() {
     spdlog::default_logger().set_level_filter(LevelFilter::All);
 
     trace!("position x: {}, y: {}", 11.4, -5.14);
+    // Or if you prefer structured logging.
+    trace!("position", kv: { x = 11.4, y = -5.14 });
 }
