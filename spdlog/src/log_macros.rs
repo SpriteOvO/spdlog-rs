@@ -244,161 +244,125 @@ mod tests {
                 write!(f, "display")
             }
         }
+        let (int, mod1, mod2) = (114514, Mods, Mods);
 
-        let mut check = vec![
-            (vec![], Level::Info, "logger".to_string()),
-            (vec![], Level::Error, "logger, kv(0)".to_string()),
-            (
-                vec![(KeyInner::StaticStr("kn"), "114514".to_string())],
-                Level::Warn,
-                "logger, kv(1)".to_string(),
-            ),
-            (
-                vec![
-                    (KeyInner::StaticStr("kn"), "114514".to_string()),
-                    (KeyInner::StaticStr("kdi"), "display".to_string()),
-                    (KeyInner::StaticStr("kde"), "debug".to_string()),
-                ],
-                Level::Critical,
-                "logger, kv(2)".to_string(),
-            ),
-            (
-                vec![(KeyInner::StaticStr("n"), "114514".to_string())],
-                Level::Trace,
-                "logger, kv(1,vref)".to_string(),
-            ),
-            (
-                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
-                Level::Debug,
-                "logger, kv(mod,vref)".to_string(),
-            ),
-            (
-                vec![
-                    (KeyInner::StaticStr("n"), "114514".to_string()),
-                    (KeyInner::StaticStr("mod_di"), "display".to_string()),
-                    (KeyInner::StaticStr("mod_de"), "debug".to_string()),
-                ],
-                Level::Info,
-                "logger, kv(s,mod,vref)".to_string(),
-            ),
-            (
-                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
-                Level::Debug,
-                "arbitrary order = logger, fmt, kv".to_string(),
-            ),
-            (
-                vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
-                Level::Debug,
-                "arbitrary order = fmt, logger, kv".to_string(),
-            ),
-        ];
+        const LEVEL_ARG: Level = Level::Info;
 
-        log!(logger: test, Level::Info, "logger");
-        log!(logger: test, kv: {}, Level::Error, "logger, kv(0)");
-        log!(logger: test, kv: { kn = 114514 }, Level::Warn, "logger, kv(1)");
-        log!(logger: test, kv: { kn = 114514, kdi: = Mods, kde:? = Mods }, Level::Critical, "logger, kv(2)");
+        let assert_records = |kv: &[(&'static str, &str)], payload| {
+            let records = test_sink.records();
+            assert_eq!(records.len(), Level::count() + 1);
+            test_sink.clear();
 
-        let (n, mod_di, mod_de) = (114514, Mods, Mods);
-        log!(logger: test, kv: { n }, Level::Trace, "logger, kv(1,vref)");
-        log!(logger: test, kv: { mod_di: }, Level::Debug, "logger, kv(mod,vref)");
-        log!(logger: test, kv: { n, mod_di:, mod_de:? }, Level::Info, "logger, kv(s,mod,vref)");
-        log!(logger: test, Level::Debug, "arbitrary order = logger, fmt, kv", kv: { mod_di: });
-        log!(Level::Debug, "arbitrary order = fmt, logger, kv", logger: test, kv: { mod_di: });
+            records
+                .into_iter()
+                .zip([
+                    LEVEL_ARG,
+                    Level::Trace,
+                    Level::Debug,
+                    Level::Info,
+                    Level::Warn,
+                    Level::Error,
+                    Level::Critical,
+                ])
+                .for_each(|(record, expected_level)| {
+                    assert_eq!(record.level(), expected_level);
+                    assert_eq!(
+                        record
+                            .key_values()
+                            .into_iter()
+                            .map(|(k, v)| (k.inner(), v.to_string()))
+                            .collect::<Vec<_>>(),
+                        kv.iter()
+                            .map(|(k, v)| (KeyInner::StaticStr(k), v.to_string()))
+                            .collect::<Vec<_>>()
+                    );
+                    assert_eq!(record.payload(), payload);
+                });
+        };
 
-        macro_rules! add_records {
-            ( $($level:ident => $variant:ident),+ ) => {
-                $(
-                    $level!(logger: test, "{}: logger", stringify!($level));
-                    check.push((vec![], Level::$variant, format!("{}: logger", stringify!($level))));
+        log!(logger: test, LEVEL_ARG, "logger param only");
+        trace!(logger: test, "logger param only");
+        debug!(logger: test, "logger param only");
+        info!(logger: test, "logger param only");
+        warn!(logger: test, "logger param only");
+        error!(logger: test, "logger param only");
+        critical!(logger: test, "logger param only");
+        assert_records(&[], "logger param only");
 
-                    $level!(logger: test, kv: {}, "{}: logger, kv(0)", stringify!($level));
-                    check.push((vec![], Level::$variant, format!("{}: logger, kv(0)", stringify!($level))));
+        log!(logger: test, kv: {}, LEVEL_ARG, "empty kv param");
+        trace!(logger: test, kv: {}, "empty kv param");
+        debug!(logger: test, kv: {}, "empty kv param");
+        info!(logger: test, kv: {}, "empty kv param");
+        warn!(logger: test, kv: {}, "empty kv param");
+        error!(logger: test, kv: {}, "empty kv param");
+        critical!(logger: test, kv: {}, "empty kv param");
+        assert_records(&[], "empty kv param");
 
-                    $level!(logger: test, kv: { kn = 114514 }, "{}: logger, kv(1)", stringify!($level));
-                    check.push((
-                        vec![(KeyInner::StaticStr("kn"), "114514".to_string())],
-                        Level::$variant,
-                        format!("{}: logger, kv(1)", stringify!($level))
-                    ));
+        log!(logger: test, kv: { int = 114514 }, LEVEL_ARG, "kv capture value directly");
+        trace!(logger: test, kv: { int = 114514 }, "kv capture value directly");
+        debug!(logger: test, kv: { int = 114514 }, "kv capture value directly");
+        info!(logger: test, kv: { int = 114514 }, "kv capture value directly");
+        warn!(logger: test, kv: { int = 114514 }, "kv capture value directly");
+        error!(logger: test, kv: { int = 114514 }, "kv capture value directly");
+        critical!(logger: test, kv: { int = 114514 }, "kv capture value directly");
+        assert_records(&[("int", "114514")], "kv capture value directly");
 
-                    $level!(logger: test, kv: { kn = 114514, kdi: = Mods, kde:? = Mods }, "{}: logger, kv(s,mod)", stringify!($level));
-                    check.push((
-                        vec![
-                            (KeyInner::StaticStr("kn"), "114514".to_string()),
-                            (KeyInner::StaticStr("kdi"), "display".to_string()),
-                            (KeyInner::StaticStr("kde"), "debug".to_string()),
-                        ],
-                        Level::$variant,
-                        format!("{}: logger, kv(s,mod)", stringify!($level))
-                    ));
-
-                    $level!(logger: test, kv: { n }, "{}: logger, kv(1,vref)", stringify!($level));
-                    check.push((
-                        vec![(KeyInner::StaticStr("n"), "114514".to_string())],
-                        Level::$variant,
-                        format!("{}: logger, kv(1,vref)", stringify!($level))
-                    ));
-
-                    $level!(logger: test, kv: { mod_di: }, "{}: logger, kv(mod,vref)", stringify!($level));
-                    check.push((
-                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
-                        Level::$variant,
-                        format!("{}: logger, kv(mod,vref)", stringify!($level))
-                    ));
-
-                    $level!(logger: test, kv: { n, mod_di:, mod_de:? }, "{}: logger, kv(s,mod,vref)", stringify!($level));
-                    check.push((
-                        vec![
-                            (KeyInner::StaticStr("n"), "114514".to_string()),
-                            (KeyInner::StaticStr("mod_di"), "display".to_string()),
-                            (KeyInner::StaticStr("mod_de"), "debug".to_string()),
-                        ],
-                        Level::$variant,
-                        format!("{}: logger, kv(s,mod,vref)", stringify!($level))
-                    ));
-
-                    $level!(logger: test, "{}: arbitrary order = logger, fmt, kv", stringify!($level), kv: { mod_di: });
-                    check.push((
-                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
-                        Level::$variant,
-                        format!("{}: arbitrary order = logger, fmt, kv", stringify!($level))
-                    ));
-
-                    $level!("{}: arbitrary order = fmt, logger, kv", stringify!($level), logger: test, kv: { mod_di: });
-                    check.push((
-                        vec![(KeyInner::StaticStr("mod_di"), "display".to_string())],
-                        Level::$variant,
-                        format!("{}: arbitrary order = fmt, logger, kv", stringify!($level))
-                    ));
-                )+
-            };
-        }
-        add_records!(
-            critical => Critical,
-            error => Error,
-            warn => Warn,
-            info => Info,
-            debug => Debug,
-            trace => Trace
+        log!(logger: test, kv: { int = 114514, mod1: = Mods, mod2:? = Mods }, LEVEL_ARG, "kv capture value using modifiers");
+        trace!(logger: test, kv: { int = 114514, mod1: = Mods, mod2:? = Mods }, "kv capture value using modifiers");
+        debug!(logger: test, kv: { int = 114514, mod1: = Mods, mod2:? = Mods }, "kv capture value using modifiers");
+        info!(logger: test, kv: { int = 114514, mod1: = Mods, mod2:? = Mods }, "kv capture value using modifiers");
+        warn!(logger: test, kv: { int = 114514, mod1: = Mods, mod2:? = Mods }, "kv capture value using modifiers");
+        error!(logger: test, kv: { int = 114514, mod1: = Mods, mod2:? = Mods }, "kv capture value using modifiers");
+        critical!(logger: test, kv: { int = 114514, mod1: = Mods, mod2:? = Mods }, "kv capture value using modifiers");
+        assert_records(
+            &[("int", "114514"), ("mod1", "display"), ("mod2", "debug")],
+            "kv capture value using modifiers",
         );
 
-        let records = test_sink.records();
-        let from_sink = records
-            .iter()
-            .map(|record| {
-                (
-                    record
-                        .key_values()
-                        .into_iter()
-                        .map(|(k, v)| (k.inner(), v.to_string()))
-                        .collect::<Vec<_>>(),
-                    record.level(),
-                    record.payload().to_string(),
-                )
-            })
-            .collect::<Vec<_>>();
+        log!(logger: test, kv: { int }, LEVEL_ARG, "kv shorthand");
+        trace!(logger: test, kv: { int }, "kv shorthand");
+        debug!(logger: test, kv: { int }, "kv shorthand");
+        info!(logger: test, kv: { int }, "kv shorthand");
+        warn!(logger: test, kv: { int }, "kv shorthand");
+        error!(logger: test, kv: { int }, "kv shorthand");
+        critical!(logger: test, kv: { int }, "kv shorthand");
+        assert_records(&[("int", "114514")], "kv shorthand");
 
-        assert_eq!(check, from_sink);
+        log!(logger: test, kv: { int, mod1:, mod2:? }, LEVEL_ARG, "kv shorthand modifiers");
+        trace!(logger: test, kv: { int, mod1:, mod2:? }, "kv shorthand modifiers");
+        debug!(logger: test, kv: { int, mod1:, mod2:? }, "kv shorthand modifiers");
+        info!(logger: test, kv: { int, mod1:, mod2:? }, "kv shorthand modifiers");
+        warn!(logger: test, kv: { int, mod1:, mod2:? }, "kv shorthand modifiers");
+        error!(logger: test, kv: { int, mod1:, mod2:? }, "kv shorthand modifiers");
+        critical!(logger: test, kv: { int, mod1:, mod2:? }, "kv shorthand modifiers");
+        assert_records(
+            &[("int", "114514"), ("mod1", "display"), ("mod2", "debug")],
+            "kv shorthand modifiers",
+        );
+
+        log!(logger: test, LEVEL_ARG, "params arbitrary order: logger, format, kv", kv: { mod1: });
+        trace!(logger: test, "params arbitrary order: logger, format, kv", kv: { mod1: });
+        debug!(logger: test, "params arbitrary order: logger, format, kv", kv: { mod1: });
+        info!(logger: test, "params arbitrary order: logger, format, kv", kv: { mod1: });
+        warn!(logger: test, "params arbitrary order: logger, format, kv", kv: { mod1: });
+        error!(logger: test, "params arbitrary order: logger, format, kv", kv: { mod1: });
+        critical!(logger: test, "params arbitrary order: logger, format, kv", kv: { mod1: });
+        assert_records(
+            &[("mod1", "display")],
+            "params arbitrary order: logger, format, kv",
+        );
+
+        log!(LEVEL_ARG, "params arbitrary order = format, kv, logger", kv: { mod1:? }, logger: test);
+        trace!("params arbitrary order = format, kv, logger", kv: { mod1:? }, logger: test);
+        debug!("params arbitrary order = format, kv, logger", kv: { mod1:? }, logger: test);
+        info!("params arbitrary order = format, kv, logger", kv: { mod1:? }, logger: test);
+        warn!("params arbitrary order = format, kv, logger", kv: { mod1:? }, logger: test);
+        error!("params arbitrary order = format, kv, logger", kv: { mod1:? }, logger: test);
+        critical!("params arbitrary order = format, kv, logger", kv: { mod1:? }, logger: test);
+        assert_records(
+            &[("mod1", "debug")],
+            "params arbitrary order = format, kv, logger",
+        );
     }
 
     #[test]
