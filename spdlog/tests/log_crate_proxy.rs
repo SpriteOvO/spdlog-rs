@@ -53,7 +53,7 @@ fn test_target() {
 #[cfg(feature = "log")]
 #[test]
 fn test_kv() {
-    let formatter = Box::new(PatternFormatter::new(pattern!("{payload} {kv}{eol}")));
+    let formatter = Box::new(PatternFormatter::new(pattern!("{payload} {{ {kv} }}{eol}")));
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
@@ -65,6 +65,6 @@ fn test_kv() {
     log::info!(key1 = 42, key2 = true; "a {} event", "log");
     assert_eq!(
         sink.clone_string(),
-        format!("a log event {{ key1=42, key2=true }}{__EOL}")
+        format!("a log event {{ key1=42 key2=true }}{__EOL}")
     );
 }
