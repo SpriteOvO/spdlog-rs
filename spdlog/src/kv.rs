@@ -257,14 +257,12 @@ impl<'a> KeyValues<'a> {
         Self(KeyValuesInner::Owned(pairs))
     }
 
-    pub(crate) fn write_to(&self, dest: &mut impl fmt::Write, leading_space: bool) -> fmt::Result {
+    pub(crate) fn write_to(&self, dest: &mut impl fmt::Write, brackets: bool) -> fmt::Result {
         let mut iter = self.iter();
         let first = iter.next();
         if let Some((key, value)) = first {
-            if leading_space {
+            if brackets {
                 dest.write_str(" { ")?;
-            } else {
-                dest.write_str("{ ")?;
             }
 
             // Reduce branch prediction misses for performance
@@ -274,13 +272,15 @@ impl<'a> KeyValues<'a> {
             write!(dest, "{}", value)?;
 
             for (key, value) in iter {
-                dest.write_str(", ")?;
+                dest.write_str(" ")?;
                 dest.write_str(key.as_str())?;
                 dest.write_str("=")?;
                 write!(dest, "{}", value)?;
             }
 
-            dest.write_str(" }")?;
+            if brackets {
+                dest.write_str(" }")?;
+            }
         }
         Ok(())
     }

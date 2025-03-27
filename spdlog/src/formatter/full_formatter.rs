@@ -19,19 +19,19 @@ use crate::{
 ///  - Default:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [<font color="#0DBC79">info</font>] hello, world! { key1=value1, key2=value2 }
+///    [2022-11-02 09:23:12.263] [<font color="#0DBC79">info</font>] hello, world! { key1=value1 key2=value2 }
 ///    </pre>
 ///
 ///  - If the logger has a name:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] hello, world! { key1=value1, key2=value2 }
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] hello, world! { key1=value1 key2=value2 }
 ///    </pre>
 /// 
 ///  - If crate feature `source-location` is enabled:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] [mod::path, src/main.rs:4] hello, world! { key1=value1, key2=value2 }
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] [mod::path, src/main.rs:4] hello, world! { key1=value1 key2=value2 }
 ///    </pre>
 #[derive(Clone)]
 pub struct FullFormatter {
@@ -150,7 +150,7 @@ mod tests {
         let local_time: DateTime<Local> = record.time().into();
         assert_eq!(
             format!(
-                "[{}] [warn] test log content {{ k1=114, k2=514 }}{}",
+                "[{}] [warn] test log content {{ k1=114 k2=514 }}{}",
                 local_time.format("%Y-%m-%d %H:%M:%S.%3f"),
                 __EOL
             ),
