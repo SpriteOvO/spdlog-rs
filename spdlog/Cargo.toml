@@ -94,6 +94,9 @@ rustc_version = "0.4.0"
 name = "global_async_pool_sink"
 harness = false
 required-features = ["multi-thread"]
+[[test]]
+name = "broken_stdio"
+harness = false
 
 [[bench]]
 name = "spdlog_rs"

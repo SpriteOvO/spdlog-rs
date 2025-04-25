@@ -322,7 +322,9 @@ use std::{
     borrow::Cow,
     env::{self, VarError},
     ffi::OsStr,
-    fmt, panic,
+    fmt,
+    io::{self, Write},
+    panic,
     result::Result as StdResult,
 };
 
@@ -769,7 +771,11 @@ fn default_error_handler(from: impl AsRef<str>, error: Error) {
         .format("%Y-%m-%d %H:%M:%S.%3f")
         .to_string();
 
-    eprintln!(
+    // https://github.com/SpriteOvO/spdlog-rs/discussions/87
+    //
+    // Don't use `eprintln!` here, as it may fail to write and then panic.
+    let _ = writeln!(
+        io::stderr(),
         "[*** SPDLOG-RS UNHANDLED ERROR ***] [{}] [{}] {}",
         date,
         from.as_ref(),
