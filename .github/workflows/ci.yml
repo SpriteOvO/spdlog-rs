@@ -89,35 +89,30 @@ jobs:
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust nightly (latest and stable date version)
-      id: install-rust
+    - name: Install Rust nightly
       run: |
-        STABLE_DATE=$(cargo clippy --version | perl -ne 'print $& if /\b\d{4}-\d{2}-\d{2}\b/')
-        echo "stable_date=$STABLE_DATE" >> $GITHUB_OUTPUT
-
         rustup toolchain install nightly
         rustup component add clippy --toolchain nightly
-        rustup toolchain install nightly-$STABLE_DATE
-        rustup component add clippy --toolchain nightly-$STABLE_DATE
-
-        echo "Stable version: $(cargo clippy --version)"
-        echo "Nightly version: $(cargo +nightly clippy --version)"
-        echo "Near stable nightly version: $(cargo +nightly-$STABLE_DATE clippy --version)"
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
     - name: Run clippy 
       run: cargo clippy --all-features --tests --examples -- -D warnings
-    - name: Run clippy nightly-${{ steps.install-rust.outputs.stable_date }} for benches
-      run: cargo +nightly-${{ steps.install-rust.outputs.stable_date }} clippy --all-features --benches -- -D warnings -A clippy::incompatible_msrv
-    - name: Run clippy nightly-latest without denying warnings
+    - name: Run clippy nightly
       run: |
         cargo +nightly clippy --all-features --tests --examples
 
-        echo "## clippy nightly output" >> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-        # Run it again so there is no noise like "Compiling xxx" and "Checking xxx" in the output.
-        CARGO_TERM_COLOR=never cargo +nightly clippy --all-features --tests --examples 2>> $GITHUB_STEP_SUMMARY
-        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        WARNS=$(cargo +nightly clippy --all-features --tests --examples --message-format=json | jq -s '[.[] | select(.reason == "compiler-message")] | length')
+        if [[ $WARNS -ne 0 ]]; then
+          echo "::warning title=nightly clippy::Detected $WARNS warnings"
+        fi
+    - name: Run clippy nightly for benches
+      run: |
+        cargo +nightly clippy --all-features --benches -- -A clippy::incompatible_msrv
+
+        WARNS=$(cargo +nightly clippy --all-features --benches --message-format=json -- -A clippy::incompatible_msrv | jq -s '[.[] | select(.reason == "compiler-message")] | length')
+        if [[ $WARNS -ne 0 ]]; then
+          echo "::warning title=nightly clippy::Detected $WARNS warnings"
+        fi
 
   check:
     strategy:
@@ -158,26 +153,18 @@ jobs:
       run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
       run: sudo bash ./.github/workflows/install-deps.sh
-    - name: Install Rust nightly (stable date version)
-      id: install-rust
-      run: |
-        STABLE_DATE=$(rustdoc --version | perl -ne 'print $& if /\b\d{4}-\d{2}-\d{2}\b/')
-        echo "stable_date=$STABLE_DATE" >> $GITHUB_OUTPUT
-
-        rustup toolchain install nightly-$STABLE_DATE
-
-        echo "Stable version: $(rustdoc --version)"
-        echo "Near stable nightly version: $(rustdoc +nightly-$STABLE_DATE --version)"
+    - name: Install Rust nightly
+      run: rustup toolchain install nightly
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
-    - name: Run rustdoc nightly-${{ steps.install-rust.outputs.stable_date }}
+    - name: Run rustdoc nightly
       run: |
         cd spdlog
-        cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
-        cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --all-features --verbose -- -D warnings
+        cargo +nightly rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
+        cargo +nightly rustdoc --all-features --verbose -- -D warnings
         cd ../spdlog-macros
-        cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
-        cargo +nightly-${{ steps.install-rust.outputs.stable_date }} rustdoc --all-features --verbose -- -D warnings
+        cargo +nightly rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
+        cargo +nightly rustdoc --all-features --verbose -- -D warnings
 
   check-msrv:
     strategy:
