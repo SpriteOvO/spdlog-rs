@@ -96,16 +96,16 @@ impl JournaldSink {
 
     /// Gets a builder of `JournaldSink` with default parameters:
     ///
-    /// | Parameter       | Default Value           |
-    /// |-----------------|-------------------------|
-    /// | [level_filter]  | `All`                   |
-    /// | [formatter]     | `JournaldFormatter`     |
-    /// | [error_handler] | [default error handler] |
+    /// | Parameter       | Default Value               |
+    /// |-----------------|-----------------------------|
+    /// | [level_filter]  | `All`                       |
+    /// | [formatter]     | `JournaldFormatter`         |
+    /// | [error_handler] | [`ErrorHandler::default()`] |
     ///
     /// [level_filter]: JournaldSinkBuilder::level_filter
     /// [formatter]: JournaldSinkBuilder::formatter
     /// [error_handler]: JournaldSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     #[must_use]
     pub fn builder() -> JournaldSinkBuilder {
         JournaldSinkBuilder {
@@ -139,7 +139,8 @@ impl Sink for JournaldSink {
             None => [None, None],
         };
 
-        journal_send(kvs.iter().chain(srcloc_kvs.iter().flatten())).map_err(Error::WriteRecord)
+        journal_send(kvs.iter().chain(srcloc_kvs.iter().flatten()))
+            .map_err(|err| Error::WriteRecord(err.into()))
     }
 
     fn flush(&self) -> Result<()> {

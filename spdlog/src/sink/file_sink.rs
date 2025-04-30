@@ -35,19 +35,19 @@ pub struct FileSink {
 impl FileSink {
     /// Gets a builder of `FileSink` with default parameters:
     ///
-    /// | Parameter       | Default Value           |
-    /// |-----------------|-------------------------|
-    /// | [level_filter]  | `All`                   |
-    /// | [formatter]     | `FullFormatter`         |
-    /// | [error_handler] | [default error handler] |
-    /// |                 |                         |
-    /// | [path]          | *must be specified*     |
-    /// | [truncate]      | `false`                 |
+    /// | Parameter       | Default Value               |
+    /// |-----------------|-----------------------------|
+    /// | [level_filter]  | `All`                       |
+    /// | [formatter]     | `FullFormatter`             |
+    /// | [error_handler] | [`ErrorHandler::default()`] |
+    /// |                 |                             |
+    /// | [path]          | *must be specified*         |
+    /// | [truncate]      | `false`                     |
     ///
     /// [level_filter]: FileSinkBuilder::level_filter
     /// [formatter]: FileSinkBuilder::formatter
     /// [error_handler]: FileSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [path]: FileSinkBuilder::path
     /// [truncate]: FileSinkBuilder::truncate
     #[must_use]
@@ -96,13 +96,16 @@ impl Sink for FileSink {
         self.file
             .lock()
             .write_all(string_buf.as_bytes())
-            .map_err(Error::WriteRecord)?;
+            .map_err(|err| Error::WriteRecord(err.into()))?;
 
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.file.lock().flush().map_err(Error::FlushBuffer)
+        self.file
+            .lock()
+            .flush()
+            .map_err(|err| Error::FlushBuffer(err.into()))
     }
 
     helper::common_impl!(@Sink: common_impl);
@@ -112,7 +115,7 @@ impl Drop for FileSink {
     fn drop(&mut self) {
         if let Err(err) = self.file.lock().flush() {
             self.common_impl
-                .non_returnable_error("FileSink", Error::FlushBuffer(err))
+                .non_returnable_error("FileSink", Error::FlushBuffer(err.into()))
         }
     }
 }

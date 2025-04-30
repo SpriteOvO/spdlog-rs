@@ -18,7 +18,7 @@ impl Pattern for Level {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(record.level().as_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 
@@ -35,6 +35,6 @@ impl Pattern for ShortLevel {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         dest.write_str(record.level().as_short_str())
-            .map_err(Error::FormatRecord)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }

@@ -161,7 +161,7 @@ use crate::{
 ///
 /// impl Pattern for MyPattern {
 ///     fn format(&self, record: &Record, dest: &mut StringBuf, _: &mut PatternContext) -> spdlog::Result<()> {
-///         write!(dest, "My own pattern").map_err(spdlog::Error::FormatRecord)
+///         write!(dest, "My own pattern").map_err(|err| spdlog::Error::FormatRecord(err.into()))
 ///     }
 /// }
 ///
@@ -225,7 +225,7 @@ use crate::{
 ///
 /// impl Pattern for MyPattern {
 ///     fn format(&self, record: &Record, dest: &mut StringBuf, _: &mut PatternContext) -> spdlog::Result<()> {
-///         write!(dest, "{}", self.id).map_err(spdlog::Error::FormatRecord)
+///         write!(dest, "{}", self.id).map_err(|err| spdlog::Error::FormatRecord(err.into()))
 ///     }
 /// }
 ///
@@ -472,7 +472,8 @@ impl Pattern for str {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        dest.write_str(self).map_err(Error::FormatRecord)
+        dest.write_str(self)
+            .map_err(|err| Error::FormatRecord(err.into()))
     }
 }
 

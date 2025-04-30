@@ -1,11 +1,6 @@
 //! Provides error types.
-//!
-//! # Default error handler
-//!
-//! If a logger or sink does not have an error handler set up, a default error
-//! handler will be used, which will print the error to `stderr`.
-
 use std::{
+    error::Error as StdError,
     fmt::{self, Display},
     io, result,
 };
@@ -18,6 +13,81 @@ use crate::utils::const_assert;
 #[cfg(feature = "multi-thread")]
 use crate::{sink::Task, RecordOwned};
 
+/// Stores an error that can either be typed or erased.
+///
+/// This wrapper is mainly used for returning arbitrary errors from downstream
+/// implementors.
+///
+/// # Examples
+///
+/// ```
+/// use std::{error::Error, fmt, io};
+///
+/// use spdlog::{error::ErasableError, formatter::Formatter, prelude::*, sink::Sink, Record};
+///
+/// #[derive(Debug)]
+/// struct MyError;
+///
+/// impl Error for MyError {}
+///
+/// impl fmt::Display for MyError {
+///     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+///         write!(f, "MyError")
+///     }
+/// }
+///
+/// struct MySink;
+///
+/// impl Sink for MySink {
+///     fn log(&self, record: &Record) -> spdlog::Result<()> {
+///         let err: MyError = /* Something went wrong */
+///             # MyError;
+///         // `err` can not be converted to `io::Error`, so we use `Erased`
+///         Err(spdlog::Error::WriteRecord(ErasableError::erase(MyError)))
+///     }
+///
+///     fn flush(&self) -> spdlog::Result<()> {
+///         let err: io::Error = /* Something went wrong */
+///             # io::Error::new(io::ErrorKind::NotFound, "");
+///         // `err` is a `io::Error`, so we use `Typed`
+///         Err(spdlog::Error::FlushBuffer(err.into()))
+///     }
+///
+///     fn level_filter(&self) -> LevelFilter /* ... */
+///     # { unimplemented!() }
+///     fn set_level_filter(&self, level_filter: LevelFilter) /* ... */
+///     # { unimplemented!() }
+///     fn set_formatter(&self, formatter: Box<dyn Formatter>) /* ... */
+///     # { unimplemented!() }
+///     fn set_error_handler(&self, handler: spdlog::ErrorHandler) /* ... */
+///     # { unimplemented!() }
+/// }
+/// ```
+#[derive(Error, Debug)]
+pub enum ErasableError<E: StdError> {
+    /// A concrete error type is held, and the user can access it.
+    #[error("{0}")]
+    Typed(E),
+    /// The concrete type may not match, thus it is erased to a basic
+    /// `dyn std::error::Error`.
+    #[error("{0}")]
+    Erased(Box<dyn StdError>),
+}
+
+impl<E: StdError> ErasableError<E> {
+    /// Erase a typed error to a basic `Box<dyn std::error::Error>`.
+    #[must_use]
+    pub fn erase<R: StdError + 'static>(err: R) -> ErasableError<E> {
+        ErasableError::Erased(Box::new(err))
+    }
+}
+
+impl<E: StdError> From<E> for ErasableError<E> {
+    fn from(err: E) -> Self {
+        Self::Typed(err)
+    }
+}
+
 /// Contains most errors of this crate.
 #[derive(Error, Debug)]
 #[non_exhaustive]
@@ -26,20 +96,20 @@ pub enum Error {
     ///
     /// [`Formatter`]: crate::formatter::Formatter
     #[error("format record error: {0}")]
-    FormatRecord(fmt::Error),
+    FormatRecord(ErasableError<fmt::Error>),
 
     /// Returned by [`Sink`]s when an error occurs in writing a record to the
     /// target.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("write record error: {0}")]
-    WriteRecord(io::Error),
+    WriteRecord(ErasableError<io::Error>),
 
     /// Returned by [`Sink`]s when an error occurs in flushing the buffer.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[error("flush buffer error: {0}")]
-    FlushBuffer(io::Error),
+    FlushBuffer(ErasableError<io::Error>),
 
     /// Returned by [`Sink`]s when an error occurs in creating a directory.
     ///
@@ -264,11 +334,86 @@ pub struct BuildPatternError(pub(crate) spdlog_internal::pattern_parser::Error);
 /// The result type of this crate.
 pub type Result<T> = result::Result<T, Error>;
 
-/// The error handler function type.
-pub type ErrorHandler = fn(Error);
+/// Represents an error handler.
+///
+/// Call [`ErrorHandler::new`] to construct an error handler with a custom
+/// function.
+///
+/// Call [`ErrorHandler::default`] to construct an empty error handler, when an
+/// error is triggered, a built-in fallback handler will be used which prints
+/// the error to `stderr`.
+#[derive(Copy, Clone, Debug)]
+pub struct ErrorHandler(Option<fn(Error)>);
 
 const_assert!(Atomic::<ErrorHandler>::is_lock_free());
-const_assert!(Atomic::<Option<ErrorHandler>>::is_lock_free());
+
+impl ErrorHandler {
+    /// Constructs an error handler with a custom function.
+    #[must_use]
+    pub fn new(custom: fn(Error)) -> Self {
+        Self(Some(custom))
+    }
+
+    /// Sets the error handler.
+    ///
+    /// Passes `None` to use the built-in fallback handler, which prints errors
+    /// to `stderr`.
+    pub fn set(&mut self, handler: Option<fn(Error)>) {
+        self.0 = handler;
+    }
+
+    /// Calls the error handler with an error.
+    pub fn call(&self, err: Error) {
+        self.call_internal("External", err);
+    }
+
+    pub(crate) fn call_internal(&self, from: impl AsRef<str>, err: Error) {
+        if let Some(handler) = self.0 {
+            handler(err);
+        } else {
+            Self::default_impl(from, err);
+        }
+    }
+
+    fn default_impl(from: impl AsRef<str>, error: Error) {
+        if let Error::Multiple(errs) = error {
+            errs.into_iter()
+                .for_each(|err| Self::default_impl(from.as_ref(), err));
+            return;
+        }
+
+        let date = chrono::Local::now()
+            .format("%Y-%m-%d %H:%M:%S.%3f")
+            .to_string();
+
+        eprintln!(
+            "[*** SPDLOG-RS UNHANDLED ERROR ***] [{}] [{}] {}",
+            date,
+            from.as_ref(),
+            error
+        );
+    }
+}
+
+impl Default for ErrorHandler {
+    /// Constructs an error handler with the built-in handler which prints
+    /// errors to `stderr`.
+    fn default() -> Self {
+        Self(None)
+    }
+}
+
+// FIXME: Doesn't work as expected at the moment
+// https://rust-lang.zulipchat.com/#narrow/channel/219381-t-libs/topic/impl.20From.3Cno-capture-closure.3E.20for.20fn.3F
+//
+// impl<F> From<F> for ErrorHandler
+// where
+//     F: Into<fn(Error)>,
+// {
+//     fn from(handler: F) -> Self {
+//         Self::new(handler.into())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {

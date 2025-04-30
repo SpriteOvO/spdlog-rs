@@ -27,6 +27,6 @@ impl Pattern for ThreadId {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        write!(dest, "{}", record.tid()).map_err(Error::FormatRecord)
+        write!(dest, "{}", record.tid()).map_err(|err| Error::FormatRecord(err.into()))
     }
 }

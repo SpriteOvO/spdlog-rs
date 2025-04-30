@@ -3,6 +3,7 @@
 use std::{
     convert::Infallible,
     io::{self, Write},
+    result::Result as StdResult,
 };
 
 use if_chain::if_chain;
@@ -95,19 +96,19 @@ pub struct StdStreamSink {
 impl StdStreamSink {
     /// Gets a builder of `StdStreamSink` with default parameters:
     ///
-    /// | Parameter         | Default Value           |
-    /// |-------------------|-------------------------|
-    /// | [level_filter]    | `All`                   |
-    /// | [formatter]       | `FullFormatter`         |
-    /// | [error_handler]   | [default error handler] |
-    /// |                   |                         |
-    /// | [std_stream]      | *must be specified*     |
-    /// | [style_mode]      | `Auto`                  |
+    /// | Parameter         | Default Value               |
+    /// |-------------------|-----------------------------|
+    /// | [level_filter]    | `All`                       |
+    /// | [formatter]       | `FullFormatter`             |
+    /// | [error_handler]   | [`ErrorHandler::default()`] |
+    /// |                   |                             |
+    /// | [std_stream]      | *must be specified*         |
+    /// | [style_mode]      | `Auto`                      |
     ///
     /// [level_filter]: StdStreamSinkBuilder::level_filter
     /// [formatter]: StdStreamSinkBuilder::formatter
     /// [error_handler]: StdStreamSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [std_stream]: StdStreamSinkBuilder::std_stream
     /// [style_mode]: StdStreamSinkBuilder::style_mode
     #[must_use]
@@ -170,7 +171,7 @@ impl Sink for StdStreamSink {
 
         let mut dest = self.dest.lock();
 
-        (|| {
+        (|| -> StdResult<(), io::Error> {
             if_chain! {
                 if self.should_render_style;
                 if let Some(style_range) = ctx.style_range();
@@ -188,19 +189,22 @@ impl Sink for StdStreamSink {
             }
             Ok(())
         })()
-        .map_err(Error::WriteRecord)?;
+        .map_err(|err| Error::WriteRecord(err.into()))?;
 
         // stderr is not buffered, so we don't need to flush it.
         // https://doc.rust-lang.org/std/io/fn.stderr.html
         if let StdStreamDest::Stdout(_) = dest {
-            dest.flush().map_err(Error::FlushBuffer)?;
+            dest.flush().map_err(|err| Error::FlushBuffer(err.into()))?;
         }
 
         Ok(())
     }
 
     fn flush(&self) -> Result<()> {
-        self.dest.lock().flush().map_err(Error::FlushBuffer)
+        self.dest
+            .lock()
+            .flush()
+            .map_err(|err| Error::FlushBuffer(err.into()))
     }
 
     helper::common_impl!(@Sink: common_impl);

@@ -161,7 +161,7 @@ impl Sink for MockSink {
         *self.formatter.lock().unwrap() = Some(formatter);
     }
 
-    fn set_error_handler(&self, _handler: Option<spdlog::ErrorHandler>) {}
+    fn set_error_handler(&self, _handler: spdlog::ErrorHandler) {}
 
     fn should_log(&self, _level: spdlog::Level) -> bool {
         true
