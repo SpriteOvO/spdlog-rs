@@ -124,9 +124,10 @@ impl ThreadPoolBuilder {
     /// When a new operation is incoming, but the channel is full, it will be
     /// handled by sink according to the [`OverflowPolicy`] that has been set.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the value is zero.
+    /// The `build()` will return [`Error::InvalidArgument`] if the value is
+    /// zero.
     #[must_use]
     pub fn capacity(&mut self, capacity: usize) -> &mut Self {
         self.capacity = capacity;
@@ -241,7 +242,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn panic_capacity_0() {
+    fn error_capacity_0() {
         assert!(matches!(
             ThreadPool::builder().capacity(0).build(),
             Err(Error::InvalidArgument(
