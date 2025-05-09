@@ -214,7 +214,7 @@ impl RecordOwned {
 }
 
 fn get_current_tid() -> u64 {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     #[must_use]
     fn get_current_tid_inner() -> u64 {
         // https://github.com/SpriteOvO/spdlog-rs/issues/31
