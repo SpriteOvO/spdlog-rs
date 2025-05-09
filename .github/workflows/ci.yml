@@ -119,7 +119,7 @@ jobs:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        target: ['', 'x86_64-apple-ios', 'x86_64-unknown-freebsd', 'x86_64-unknown-illumos']
+        target: ['', 'x86_64-apple-ios', 'x86_64-unknown-freebsd', 'x86_64-unknown-illumos', 'aarch64-linux-android']
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
