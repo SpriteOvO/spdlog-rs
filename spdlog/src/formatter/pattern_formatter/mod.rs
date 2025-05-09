@@ -331,6 +331,7 @@ use crate::{
 /// | `{module_path}`       | Source module path           | `mod::module` [^1]                           |
 /// | `{logger}`            | Logger name                  | `my-logger`                                  |
 /// | `{payload}`           | Log payload                  | `log message`                                |
+/// | `{kv}`                | Key-values                   | `k1=123 k2=text`                             |
 /// | `{pid}`               | Process ID                   | `3824`                                       |
 /// | `{tid}`               | Thread ID                    | `3132`                                       |
 /// | `{eol}`               | End of line                  | `\n` (on non-Windows) or `\r\n` (on Windows) |
@@ -1230,6 +1231,7 @@ mod tests {
             "record_payload",
             Some(SourceLocation::__new("module", "file", 10, 20)),
             Some("logger_name"),
+            &[],
         )
     }
 

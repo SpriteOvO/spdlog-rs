@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use crate::{default_logger, sync::*, Logger, Record};
+use crate::{default_logger, sync::*, LogCrateRecord, Logger};
 
 /// Proxy layer for compatible [log crate].
 ///
@@ -76,8 +76,8 @@ impl log::Log for LogCrateProxy {
 
     fn log(&self, record: &log::Record) {
         let logger = self.logger();
-        let record = Record::from_log_crate_record(&logger, record, SystemTime::now());
-        logger.log(&record)
+        let record = LogCrateRecord::new(&logger, record, SystemTime::now());
+        logger.log(&record.as_record())
     }
 
     fn flush(&self) {

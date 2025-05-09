@@ -20,8 +20,9 @@ Fast, highly configurable Rust logging crate, inspired by the C++ logging librar
     - files (single file, rotating hourly, daily, periodically or by file size);
     - platform-specific (e.g. `journald` for Linux and `OutputDebugStringW` for Windows);
     - ... and able to implement one yourself.
+ - Structured logging.
  - Configuring via environment variables or TOML[^1].
- - More readable level filters.
+ - Readable level filters.
 
 [^1]: TOML deserialization support is working in progress, tracking issue [#25]
 
@@ -46,7 +47,7 @@ When updating this, also update:
 - Cargo.toml
 -->
 
-The current minimum supported Rust version is 1.60.
+The current minimum supported Rust version is 1.61.
 
 `spdlog-rs` is built against the latest Rust stable release, it is not guaranteed to build on Rust versions earlier than the minimum supported version.
 
