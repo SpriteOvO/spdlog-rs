@@ -31,10 +31,8 @@ macro_rules! log {
 macro_rules! __log_impl {
     (logger: $logger:expr, kv: $kv:tt, $level:expr, $($arg:tt)+) => ({
         let logger = &$logger;
-        const LEVEL: $crate::Level = $level;
-        const SHOULD_LOG: bool = $crate::STATIC_LEVEL_FILTER.__test_const(LEVEL);
-        if SHOULD_LOG && logger.should_log(LEVEL) {
-            $crate::__log(logger, LEVEL, $crate::source_location_current!(), $crate::__kv!($kv), format_args!($($arg)+));
+        if $crate::STATIC_LEVEL_FILTER.__test_const($level) && logger.should_log($level) {
+            $crate::__log(logger, $level, $crate::source_location_current!(), $crate::__kv!($kv), format_args!($($arg)+));
         }
     });
 }
@@ -363,6 +361,9 @@ mod tests {
             &[("mod1", "debug")],
             "params arbitrary order = format, kv, logger",
         );
+
+        let runtime_level = Level::Info;
+        log!(logger: test, runtime_level, "runtime level");
     }
 
     #[test]
