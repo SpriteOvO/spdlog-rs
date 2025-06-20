@@ -22,19 +22,29 @@
 #[macro_export]
 macro_rules! log {
     ($($input:tt)+) => {
-        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}], $($input)+)
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, then: __DISABLE], $($input)+)
     };
 }
 
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __log_impl {
-    (logger: $logger:expr, kv: $kv:tt, $level:expr, $($arg:tt)+) => ({
+    (logger: $logger:expr, kv: $kv:tt, then: $then:ident, $level:expr, $($arg:tt)+) => ({
         let logger = &$logger;
         if $crate::STATIC_LEVEL_FILTER.__test_const($level) && logger.should_log($level) {
             $crate::__log(logger, $level, $crate::source_location_current!(), $crate::__kv!($kv), format_args!($($arg)+));
         }
+        $crate::__then_impl!($then, $($arg)+)
     });
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __then_impl {
+    (__DISABLE, $($arg:tt)+) => {{}};
+    ($then:ident, $($arg:tt)+) => {{
+        $then!($($arg)+)
+    }};
 }
 
 /// Logs a message at the critical level.
@@ -56,7 +66,7 @@ macro_rules! __log_impl {
 #[macro_export]
 macro_rules! critical {
     ($($input:tt)+) => {
-        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Critical], $($input)+)
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, then: __DISABLE, $crate::Level::Critical], $($input)+)
     };
 }
 
@@ -79,7 +89,7 @@ macro_rules! critical {
 #[macro_export]
 macro_rules! error {
     ($($input:tt)+) => {
-        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Error], $($input)+)
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, then: __DISABLE, $crate::Level::Error], $($input)+)
     };
 }
 
@@ -102,7 +112,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($input:tt)+) => {
-        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Warn], $($input)+)
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, then: __DISABLE, $crate::Level::Warn], $($input)+)
     };
 }
 
@@ -126,7 +136,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($input:tt)+) => {
-        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Info], $($input)+)
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, then: __DISABLE, $crate::Level::Info], $($input)+)
     };
 }
 
@@ -150,7 +160,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($input:tt)+) => {
-        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Debug], $($input)+)
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, then: __DISABLE, $crate::Level::Debug], $($input)+)
     };
 }
 
@@ -174,7 +184,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($input:tt)+) => {
-        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Trace], $($input)+)
+        $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, then: __DISABLE, $crate::Level::Trace], $($input)+)
     };
 }
 
@@ -364,6 +374,12 @@ mod tests {
 
         let runtime_level = Level::Info;
         log!(logger: test, runtime_level, "runtime level");
+    }
+
+    #[test]
+    #[should_panic(expected = "log then panic")]
+    fn then_param() {
+        error!("log then {}", "panic", then: panic);
     }
 
     #[test]
