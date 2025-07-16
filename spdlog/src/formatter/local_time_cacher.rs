@@ -79,7 +79,7 @@ impl LocalTimeCacher {
         let millisecond = nanosecond / 1_000_000;
 
         let cache_key = since_epoch.as_secs(); // Unix timestamp
-        if self.cache_values.is_none() || self.stored_key != cache_key {
+        if self.stored_key != cache_key {
             self.cache_values = Some(CacheValues::new(system_time));
             self.stored_key = cache_key;
         }
