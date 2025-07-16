@@ -78,10 +78,7 @@ pub(crate) fn from_str_inner(var: &str) -> Result<EnvLevel, EnvLevelError> {
                     if let Some(level) = LevelFilter::from_str_for_env(default_logger_level) {
                         (EnvLevelLogger::Default, level)
                     } else {
-                        return Err(format!(
-                            "cannot parse level for default logger: '{}'",
-                            kv_str
-                        ));
+                        return Err(format!("cannot parse level for default logger: '{kv_str}'"));
                     }
                 }
                 (Some(logger_name), Some(level), None) => {
@@ -89,19 +86,18 @@ pub(crate) fn from_str_inner(var: &str) -> Result<EnvLevel, EnvLevelError> {
                         (EnvLevelLogger::from_key(logger_name), level)
                     } else {
                         return Err(format!(
-                            "cannot parse level for logger '{}': '{}'",
-                            logger_name, kv_str
+                            "cannot parse level for logger '{logger_name}': '{kv_str}'"
                         ));
                     }
                 }
                 _ => {
-                    return Err(format!("invalid kv: '{}'", kv_str));
+                    return Err(format!("invalid kv: '{kv_str}'"));
                 }
             };
 
             match env_level.entry(logger) {
                 Entry::Occupied(_) => {
-                    return Err(format!("specified level multiple times: '{}'", kv_str));
+                    return Err(format!("specified level multiple times: '{kv_str}'"));
                 }
                 Entry::Vacant(entry) => entry.insert(level),
             };

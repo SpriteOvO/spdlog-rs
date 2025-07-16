@@ -22,7 +22,7 @@ fn set_cfg_channel() -> Result<(), Box<dyn Error>> {
         Channel::Nightly => "CHANNEL_NIGHTLY",
         Channel::Dev => "CHANNEL_DEV",
     };
-    println!("cargo:rustc-cfg={}", channel);
+    println!("cargo:rustc-cfg={channel}");
     Ok(())
 }
 
@@ -39,17 +39,17 @@ fn generate_code_test_utils() -> Result<(), Box<dyn Error>> {
 
     fs::write(
         out_dir.join("common_for_doc_test.rs"),
-        format!("mod test_utils {{\n{}\n}}", input).lines().fold(
+        format!("mod test_utils {{\n{input}\n}}").lines().fold(
             String::new(),
             |mut contents, line| {
-                writeln!(&mut contents, "# {}", line).unwrap();
+                writeln!(&mut contents, "# {line}").unwrap();
                 contents
             },
         ),
     )?;
     fs::write(
         out_dir.join("common_for_integration_test.rs"),
-        format!("#[allow(dead_code)]\nmod test_utils {{\n{}\n}}", input),
+        format!("#[allow(dead_code)]\nmod test_utils {{\n{input}\n}}"),
     )?;
     fs::write(
         out_dir.join("common_for_unit_test.rs"),

@@ -124,7 +124,7 @@ impl Sink for JournaldSink {
             .format(record, &mut string_buf, &mut ctx)?;
 
         let kvs = [
-            format!("MESSAGE={}", string_buf),
+            format!("MESSAGE={string_buf}"),
             format!(
                 "PRIORITY={}",
                 JournaldSink::SYSLOG_LEVELS.level(record.level()) as u32

@@ -62,21 +62,21 @@ impl Display for Error {
                 }
             },
             Error::Template(err) => {
-                write!(f, "template ill-format: {}", err)
+                write!(f, "template ill-format: {err}")
             }
             Error::Parse(err) => {
-                write!(f, "failed to parse template string: {}", err)
+                write!(f, "failed to parse template string: {err}")
             }
             Error::Multiple(errs) => {
                 writeln!(f, "{} errors detected:", errs.len())?;
                 for err in errs {
-                    writeln!(f, " - {}", err)?;
+                    writeln!(f, " - {err}")?;
                 }
                 Ok(())
             }
             #[cfg(test)]
             Error::__ForInternalTestsUseOnly(value) => {
-                write!(f, "{}", value)
+                write!(f, "{value}")
             }
         }
     }
@@ -105,14 +105,12 @@ impl Display for TemplateError {
                 if *is_builtin_as_custom {
                     write!(
                         f,
-                        "'{}' is a built-in pattern, it cannot be used as a custom pattern. try to replace it with `{{{}}}`",
-                        placeholder, placeholder
+                        "'{placeholder}' is a built-in pattern, it cannot be used as a custom pattern. try to replace it with `{{{placeholder}}}`"
                     )
                 } else {
                     write!(
                         f,
-                        "'{}' is a custom pattern, it cannot be used as a built-in pattern. try to replace it with `{{${}}}`",
-                        placeholder, placeholder
+                        "'{placeholder}' is a custom pattern, it cannot be used as a built-in pattern. try to replace it with `{{${placeholder}}}`"
                     )
                 }
             }
@@ -123,11 +121,10 @@ impl Display for TemplateError {
                 if *is_custom {
                     write!(
                         f,
-                        "the constructor of custom pattern '{}' is not specified",
-                        placeholder
+                        "the constructor of custom pattern '{placeholder}' is not specified"
                     )
                 } else {
-                    write!(f, "no built-in pattern named '{}'", placeholder)
+                    write!(f, "no built-in pattern named '{placeholder}'")
                 }
             }
             TemplateError::MultipleStyleRange => {

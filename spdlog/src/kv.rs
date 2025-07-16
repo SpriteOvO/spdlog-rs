@@ -269,13 +269,13 @@ impl<'a> KeyValues<'a> {
             // So we manually process the first KV pair
             dest.write_str(key.as_str())?;
             dest.write_str("=")?;
-            write!(dest, "{}", value)?;
+            write!(dest, "{value}")?;
 
             for (key, value) in iter {
                 dest.write_str(" ")?;
                 dest.write_str(key.as_str())?;
                 dest.write_str("=")?;
-                write!(dest, "{}", value)?;
+                write!(dest, "{value}")?;
             }
 
             if brackets {

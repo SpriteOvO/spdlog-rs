@@ -276,10 +276,7 @@ impl TimeDate<'_> {
                 let offset_hours = offset_secs_abs / 3600;
                 let offset_minutes = offset_secs_abs % 3600 / 60;
 
-                Some(format!(
-                    "{}{:02}:{:02}",
-                    sign_str, offset_hours, offset_minutes
-                ))
+                Some(format!("{sign_str}{offset_hours:02}:{offset_minutes:02}"))
             };
         }
         self.cached.tz_offset_str.as_deref().unwrap()

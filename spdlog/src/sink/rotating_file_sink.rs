@@ -407,7 +407,7 @@ impl RotatorFileSize {
         let externsion = base_path.extension();
 
         // append index
-        file_name.push(format!("_{}", index));
+        file_name.push(format!("_{index}"));
 
         let mut path = base_path.to_owned();
         path.set_file_name(file_name);
@@ -1112,7 +1112,7 @@ mod tests {
                 }
                 count
             });
-            println!("found files: {:?}", filenames);
+            println!("found files: {filenames:?}");
             assert_eq!(actual, expected)
         }
 
