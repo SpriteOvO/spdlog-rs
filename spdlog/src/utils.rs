@@ -1,5 +1,6 @@
 use std::{
     fs::{self, File, OpenOptions},
+    io::BufWriter,
     path::Path,
 };
 
@@ -24,6 +25,18 @@ pub fn open_file(path: impl AsRef<Path>, truncate: bool) -> Result<File> {
         .create(true)
         .open(path)
         .map_err(Error::OpenFile)
+}
+
+pub fn open_file_bufw(
+    path: impl AsRef<Path>,
+    truncate: bool,
+    capacity: Option<usize>,
+) -> Result<BufWriter<File>> {
+    let file = open_file(path, truncate)?;
+    Ok(match capacity {
+        Some(capacity) => BufWriter::with_capacity(capacity, file),
+        None => BufWriter::new(file), // Use std internal default capacity
+    })
 }
 
 // Credits `static_assertions` crate

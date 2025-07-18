@@ -43,6 +43,7 @@ impl FileSink {
     /// |                 |                         |
     /// | [path]          | *must be specified*     |
     /// | [truncate]      | `false`                 |
+    /// | [capacity]      | consistent with `std`   |
     ///
     /// [level_filter]: FileSinkBuilder::level_filter
     /// [formatter]: FileSinkBuilder::formatter
@@ -50,11 +51,13 @@ impl FileSink {
     /// [default error handler]: error/index.html#default-error-handler
     /// [path]: FileSinkBuilder::path
     /// [truncate]: FileSinkBuilder::truncate
+    /// [capacity]: FileSinkBuilder::capacity
     #[must_use]
     pub fn builder() -> FileSinkBuilder<()> {
         FileSinkBuilder {
             path: (),
             truncate: false,
+            capacity: None,
             common_builder_impl: helper::CommonBuilderImpl::new(),
         }
     }
@@ -125,6 +128,7 @@ pub struct FileSinkBuilder<ArgPath> {
     common_builder_impl: helper::CommonBuilderImpl,
     path: ArgPath,
     truncate: bool,
+    capacity: Option<usize>,
 }
 
 impl<ArgPath> FileSinkBuilder<ArgPath> {
@@ -140,6 +144,7 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
             common_builder_impl: self.common_builder_impl,
             path: path.into(),
             truncate: self.truncate,
+            capacity: self.capacity,
         }
     }
 
@@ -151,6 +156,15 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
     #[must_use]
     pub fn truncate(mut self, truncate: bool) -> Self {
         self.truncate = truncate;
+        self
+    }
+
+    /// Specifies the internal buffer capacity.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn capacity(mut self, capacity: usize) -> Self {
+        self.capacity = Some(capacity);
         self
     }
 
@@ -174,11 +188,11 @@ impl FileSinkBuilder<PathBuf> {
     /// If an error occurs opening the file, [`Error::CreateDirectory`] or
     /// [`Error::OpenFile`] will be returned.
     pub fn build(self) -> Result<FileSink> {
-        let file = utils::open_file(self.path, self.truncate)?;
+        let file = utils::open_file_bufw(self.path, self.truncate, self.capacity)?;
 
         let sink = FileSink {
             common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
-            file: SpinMutex::new(BufWriter::new(file)),
+            file: SpinMutex::new(file),
         };
 
         Ok(sink)

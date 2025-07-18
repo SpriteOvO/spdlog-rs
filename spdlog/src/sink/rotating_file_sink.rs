@@ -100,6 +100,7 @@ struct RotatorFileSize {
     base_path: PathBuf,
     max_size: u64,
     max_files: usize,
+    capacity: Option<usize>,
     inner: SpinMutex<RotatorFileSizeInner>,
 }
 
@@ -158,6 +159,7 @@ pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
     rotation_policy: ArgRP,
     max_files: usize,
     rotate_on_open: bool,
+    capacity: Option<usize>,
 }
 
 impl RotatingFileSink {
@@ -173,6 +175,7 @@ impl RotatingFileSink {
     /// | [rotation_policy] | *must be specified*     |
     /// | [max_files]       | `0`                     |
     /// | [rotate_on_open]  | `false`                 |
+    /// | [capacity]        | consistent with `std`   |
     ///
     /// [level_filter]: RotatingFileSinkBuilder::level_filter
     /// [formatter]: RotatingFileSinkBuilder::formatter
@@ -182,6 +185,7 @@ impl RotatingFileSink {
     /// [rotation_policy]: RotatingFileSinkBuilder::rotation_policy
     /// [max_files]: RotatingFileSinkBuilder::max_files
     /// [rotate_on_open]: RotatingFileSinkBuilder::rotate_on_open
+    /// [capacity]: RotatingFileSinkBuilder::capacity
     #[must_use]
     pub fn builder() -> RotatingFileSinkBuilder<(), ()> {
         RotatingFileSinkBuilder {
@@ -190,6 +194,7 @@ impl RotatingFileSink {
             rotation_policy: (),
             max_files: 0,
             rotate_on_open: false,
+            capacity: None,
         }
     }
 
@@ -337,15 +342,24 @@ impl RotatorFileSize {
         max_size: u64,
         max_files: usize,
         rotate_on_open: bool,
+        capacity: Option<usize>,
     ) -> Result<Self> {
-        let file = utils::open_file(&base_path, false)?;
-        let current_size = file.metadata().map_err(Error::QueryFileMetadata)?.len();
+        let file = utils::open_file_bufw(&base_path, false, capacity)?;
+        let current_size = file
+            .get_ref()
+            .metadata()
+            .map_err(Error::QueryFileMetadata)?
+            .len();
 
         let res = Self {
             base_path,
             max_size,
             max_files,
-            inner: SpinMutex::new(RotatorFileSizeInner::new(file, current_size)),
+            capacity,
+            inner: SpinMutex::new(RotatorFileSizeInner {
+                file: Some(file),
+                current_size,
+            }),
         };
 
         if rotate_on_open && current_size > 0 {
@@ -356,9 +370,9 @@ impl RotatorFileSize {
         Ok(res)
     }
 
-    fn reopen(&self) -> Result<File> {
+    fn reopen(&self) -> Result<BufWriter<File>> {
         // always truncate
-        utils::open_file(&self.base_path, true)
+        utils::open_file_bufw(&self.base_path, true, self.capacity)
     }
 
     fn rotate(&self, opened_file: &mut SpinMutexGuard<RotatorFileSizeInner>) -> Result<()> {
@@ -386,7 +400,7 @@ impl RotatorFileSize {
             opened_file.current_size = 0;
         }
 
-        opened_file.file = Some(BufWriter::new(self.reopen()?));
+        opened_file.file = Some(self.reopen()?);
 
         res
     }
@@ -422,7 +436,7 @@ impl RotatorFileSize {
     fn lock_inner(&self) -> Result<SpinMutexGuard<RotatorFileSizeInner>> {
         let mut inner = self.inner.lock();
         if inner.file.is_none() {
-            inner.file = Some(BufWriter::new(self.reopen()?));
+            inner.file = Some(self.reopen()?);
         }
         Ok(inner)
     }
@@ -465,16 +479,6 @@ impl Rotator for RotatorFileSize {
     }
 }
 
-impl RotatorFileSizeInner {
-    #[must_use]
-    fn new(file: File, current_size: u64) -> Self {
-        Self {
-            file: Some(BufWriter::new(file)),
-            current_size,
-        }
-    }
-}
-
 impl RotatorTimePoint {
     fn new(
         override_now: Option<SystemTime>,
@@ -482,13 +486,14 @@ impl RotatorTimePoint {
         time_point: TimePoint,
         max_files: usize,
         truncate: bool,
+        capacity: Option<usize>,
     ) -> Result<Self> {
         let now = override_now.unwrap_or_else(SystemTime::now);
         let file_path = Self::calc_file_path(base_path.as_path(), time_point, now);
-        let file = utils::open_file(file_path, truncate)?;
+        let file = utils::open_file_bufw(file_path, truncate, capacity)?;
 
         let inner = RotatorTimePointInner {
-            file: BufWriter::new(file),
+            file,
             rotation_time_point: Self::next_rotation_time_point(time_point, now),
             file_paths: None,
         };
@@ -728,6 +733,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
             rotation_policy: self.rotation_policy,
             max_files: self.max_files,
             rotate_on_open: self.rotate_on_open,
+            capacity: self.capacity,
         }
     }
 
@@ -745,6 +751,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
             rotation_policy,
             max_files: self.max_files,
             rotate_on_open: self.rotate_on_open,
+            capacity: self.capacity,
         }
     }
 
@@ -774,6 +781,15 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     #[must_use]
     pub fn rotate_on_open(mut self, rotate_on_open: bool) -> Self {
         self.rotate_on_open = rotate_on_open;
+        self
+    }
+
+    /// Specifies the internal buffer capacity.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn capacity(mut self, capacity: usize) -> Self {
+        self.capacity = Some(capacity);
         self
     }
 
@@ -821,6 +837,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 max_size,
                 self.max_files,
                 self.rotate_on_open,
+                None,
             )?),
             RotationPolicy::Daily { hour, minute } => {
                 RotatorKind::TimePoint(RotatorTimePoint::new(
@@ -829,6 +846,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                     TimePoint::Daily { hour, minute },
                     self.max_files,
                     self.rotate_on_open,
+                    None,
                 )?)
             }
             RotationPolicy::Hourly => RotatorKind::TimePoint(RotatorTimePoint::new(
@@ -837,6 +855,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 TimePoint::Hourly,
                 self.max_files,
                 self.rotate_on_open,
+                None,
             )?),
             RotationPolicy::Period(duration) => RotatorKind::TimePoint(RotatorTimePoint::new(
                 override_now,
@@ -844,6 +863,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 TimePoint::Period(duration),
                 self.max_files,
                 self.rotate_on_open,
+                None,
             )?),
         };
 
