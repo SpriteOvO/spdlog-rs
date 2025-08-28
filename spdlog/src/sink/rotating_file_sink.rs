@@ -16,10 +16,10 @@ use chrono::prelude::*;
 
 use crate::{
     error::InvalidArgumentError,
-    formatter::FormatterContext,
-    sink::{helper, Sink},
+    formatter::{Formatter, FormatterContext},
+    sink::{GetSinkProp, Sink, SinkProp},
     sync::*,
-    utils, Error, Record, Result, StringBuf,
+    utils, Error, ErrorHandler, LevelFilter, Record, Result, StringBuf,
 };
 
 /// Rotation policies for [`RotatingFileSink`].
@@ -147,14 +147,14 @@ struct RotatorTimePointInner {
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct RotatingFileSink {
-    common_impl: helper::CommonImpl,
+    prop: SinkProp,
     rotator: RotatorKind,
 }
 
 /// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
 pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
-    common_builder_impl: helper::CommonBuilderImpl,
+    prop: SinkProp,
     base_path: ArgBP,
     rotation_policy: ArgRP,
     max_files: usize,
@@ -189,7 +189,7 @@ impl RotatingFileSink {
     #[must_use]
     pub fn builder() -> RotatingFileSinkBuilder<(), ()> {
         RotatingFileSinkBuilder {
-            common_builder_impl: helper::CommonBuilderImpl::new(),
+            prop: SinkProp::default(),
             base_path: (),
             rotation_policy: (),
             max_files: 0,
@@ -252,13 +252,18 @@ impl RotatingFileSink {
     }
 }
 
+impl GetSinkProp for RotatingFileSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
+
 impl Sink for RotatingFileSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        self.common_impl
-            .formatter
-            .read_expect()
+        self.prop
+            .formatter()
             .format(record, &mut string_buf, &mut ctx)?;
 
         self.rotator.log(record, &string_buf)
@@ -267,15 +272,12 @@ impl Sink for RotatingFileSink {
     fn flush(&self) -> Result<()> {
         self.rotator.flush()
     }
-
-    helper::common_impl!(@Sink: common_impl);
 }
 
 impl Drop for RotatingFileSink {
     fn drop(&mut self) {
         if let Err(err) = self.rotator.drop_flush() {
-            self.common_impl
-                .non_returnable_error("RotatingFileSink", err)
+            self.prop.non_returnable_error("RotatingFileSink", err)
         }
     }
 }
@@ -732,7 +734,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
         P: Into<PathBuf>,
     {
         RotatingFileSinkBuilder {
-            common_builder_impl: self.common_builder_impl,
+            prop: self.prop,
             base_path: base_path.into(),
             rotation_policy: self.rotation_policy,
             max_files: self.max_files,
@@ -750,7 +752,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
         rotation_policy: RotationPolicy,
     ) -> RotatingFileSinkBuilder<ArgBP, RotationPolicy> {
         RotatingFileSinkBuilder {
-            common_builder_impl: self.common_builder_impl,
+            prop: self.prop,
             base_path: self.base_path,
             rotation_policy,
             max_files: self.max_files,
@@ -797,7 +799,35 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
         self
     }
 
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
+    // Prop
+    //
+
+    /// Specifies a log level filter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn level_filter(self, level_filter: LevelFilter) -> Self {
+        self.prop.set_level_filter(level_filter);
+        self
+    }
+
+    /// Specifies a formatter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+        self.prop.set_formatter(formatter);
+        self
+    }
+
+    /// Specifies an error handler.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn error_handler(self, handler: ErrorHandler) -> Self {
+        self.prop.set_error_handler(Some(handler));
+        self
+    }
 }
 
 impl<ArgRP> RotatingFileSinkBuilder<(), ArgRP> {
@@ -872,7 +902,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
         };
 
         let res = RotatingFileSink {
-            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+            prop: self.prop,
             rotator,
         };
 

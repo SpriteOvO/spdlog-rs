@@ -10,9 +10,9 @@ use regex::Regex;
 use spdlog::formatter::runtime_pattern;
 use spdlog::{
     error,
-    formatter::{pattern, Formatter, FormatterContext, Pattern, PatternFormatter},
+    formatter::{pattern, FormatterContext, Pattern, PatternFormatter},
     prelude::*,
-    sink::Sink,
+    sink::{GetSinkProp, Sink, SinkProp},
     Error, StringBuf, __EOL,
 };
 
@@ -115,7 +115,7 @@ where
 }
 
 struct MockSink {
-    formatter: Mutex<Option<Box<dyn Formatter>>>,
+    prop: SinkProp,
     last_msg: Mutex<Option<(String, Option<Range<usize>>)>>,
 }
 
@@ -123,7 +123,7 @@ impl MockSink {
     #[must_use]
     fn new() -> Self {
         Self {
-            formatter: Mutex::new(None),
+            prop: SinkProp::default(),
             last_msg: Mutex::new(None),
         }
     }
@@ -134,13 +134,18 @@ impl MockSink {
     }
 }
 
+impl GetSinkProp for MockSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
+
 impl Sink for MockSink {
     fn log(&self, record: &spdlog::Record) -> spdlog::Result<()> {
         let mut buf = StringBuf::new();
-        let fmt = self.formatter.lock().unwrap();
         let mut ctx = FormatterContext::new();
-        fmt.as_ref()
-            .unwrap()
+        self.prop
+            .formatter()
             .format(record, &mut buf, &mut ctx)
             .unwrap();
         *self.last_msg.lock().unwrap() = Some((String::from(buf.as_str()), ctx.style_range()));
@@ -149,22 +154,6 @@ impl Sink for MockSink {
 
     fn flush(&self) -> spdlog::Result<()> {
         Ok(())
-    }
-
-    fn level_filter(&self) -> spdlog::LevelFilter {
-        spdlog::LevelFilter::All
-    }
-
-    fn set_level_filter(&self, _level_filter: spdlog::LevelFilter) {}
-
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.lock().unwrap() = Some(formatter);
-    }
-
-    fn set_error_handler(&self, _handler: Option<spdlog::ErrorHandler>) {}
-
-    fn should_log(&self, _level: spdlog::Level) -> bool {
-        true
     }
 }
 

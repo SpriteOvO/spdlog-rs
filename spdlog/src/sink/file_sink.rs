@@ -8,10 +8,10 @@ use std::{
 };
 
 use crate::{
-    formatter::FormatterContext,
-    sink::{helper, Sink},
+    formatter::{Formatter, FormatterContext},
+    sink::{GetSinkProp, Sink, SinkProp},
     sync::*,
-    utils, Error, Record, Result, StringBuf,
+    utils, Error, ErrorHandler, LevelFilter, Record, Result, StringBuf,
 };
 
 /// A sink with a file as the target.
@@ -28,7 +28,7 @@ use crate::{
 /// [`RotatingFileSink`]: crate::sink::RotatingFileSink
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct FileSink {
-    common_impl: helper::CommonImpl,
+    prop: SinkProp,
     file: Mutex<BufWriter<File>>,
 }
 
@@ -55,10 +55,10 @@ impl FileSink {
     #[must_use]
     pub fn builder() -> FileSinkBuilder<()> {
         FileSinkBuilder {
+            prop: SinkProp::default(),
             path: (),
             truncate: false,
             capacity: None,
-            common_builder_impl: helper::CommonBuilderImpl::new(),
         }
     }
 
@@ -87,13 +87,18 @@ impl FileSink {
     }
 }
 
+impl GetSinkProp for FileSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
+
 impl Sink for FileSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        self.common_impl
-            .formatter
-            .read_expect()
+        self.prop
+            .formatter()
             .format(record, &mut string_buf, &mut ctx)?;
 
         self.file
@@ -107,14 +112,12 @@ impl Sink for FileSink {
     fn flush(&self) -> Result<()> {
         self.file.lock_expect().flush().map_err(Error::FlushBuffer)
     }
-
-    helper::common_impl!(@Sink: common_impl);
 }
 
 impl Drop for FileSink {
     fn drop(&mut self) {
         if let Err(err) = self.file.lock_expect().flush() {
-            self.common_impl
+            self.prop
                 .non_returnable_error("FileSink", Error::FlushBuffer(err))
         }
     }
@@ -125,7 +128,7 @@ impl Drop for FileSink {
 /// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
 pub struct FileSinkBuilder<ArgPath> {
-    common_builder_impl: helper::CommonBuilderImpl,
+    prop: SinkProp,
     path: ArgPath,
     truncate: bool,
     capacity: Option<usize>,
@@ -141,7 +144,7 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
         P: Into<PathBuf>,
     {
         FileSinkBuilder {
-            common_builder_impl: self.common_builder_impl,
+            prop: self.prop,
             path: path.into(),
             truncate: self.truncate,
             capacity: self.capacity,
@@ -168,7 +171,35 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
         self
     }
 
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
+    // Prop
+    //
+
+    /// Specifies a log level filter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn level_filter(self, level_filter: LevelFilter) -> Self {
+        self.prop.set_level_filter(level_filter);
+        self
+    }
+
+    /// Specifies a formatter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+        self.prop.set_formatter(formatter);
+        self
+    }
+
+    /// Specifies an error handler.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn error_handler(self, handler: ErrorHandler) -> Self {
+        self.prop.set_error_handler(Some(handler));
+        self
+    }
 }
 
 impl FileSinkBuilder<()> {
@@ -191,7 +222,7 @@ impl FileSinkBuilder<PathBuf> {
         let file = utils::open_file_bufw(self.path, self.truncate, self.capacity)?;
 
         let sink = FileSink {
-            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+            prop: self.prop,
             file: Mutex::new(file),
         };
 

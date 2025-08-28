@@ -216,13 +216,12 @@ mod tests {
     };
 
     use crate::{
-        formatter::Formatter,
         kv::Key,
         prelude::*,
-        sink::Sink,
+        sink::{GetSinkProp, Sink, SinkProp},
         test_utils::{self, *},
         utils::RefStr,
-        ErrorHandler, Record,
+        Record,
     };
 
     #[test]
@@ -369,7 +368,15 @@ mod tests {
 
     #[test]
     fn kv_types() {
-        struct Asserter;
+        struct Asserter {
+            prop: SinkProp,
+        }
+
+        impl GetSinkProp for Asserter {
+            fn prop(&self) -> &SinkProp {
+                &self.prop
+            }
+        }
 
         impl Sink for Asserter {
             fn should_log(&self, _: Level) -> bool {
@@ -377,18 +384,6 @@ mod tests {
             }
             fn flush(&self) -> crate::Result<()> {
                 Ok(())
-            }
-            fn level_filter(&self) -> LevelFilter {
-                LevelFilter::All
-            }
-            fn set_level_filter(&self, _: LevelFilter) {
-                unimplemented!()
-            }
-            fn set_formatter(&self, _: Box<dyn Formatter>) {
-                unimplemented!()
-            }
-            fn set_error_handler(&self, _: Option<ErrorHandler>) {
-                unimplemented!()
             }
 
             fn log(&self, record: &Record) -> crate::Result<()> {
@@ -410,7 +405,11 @@ mod tests {
             }
         }
 
-        let asserter = test_utils::build_test_logger(|b| b.sink(Arc::new(Asserter)));
+        let asserter = test_utils::build_test_logger(|b| {
+            b.sink(Arc::new(Asserter {
+                prop: SinkProp::default(),
+            }))
+        });
 
         #[cfg_attr(feature = "sval", derive(sval_derive::Value))]
         #[cfg_attr(feature = "serde", derive(serde::Serialize))]

@@ -10,16 +10,23 @@ use std::{
 };
 
 use spdlog::{
-    formatter::Formatter,
     prelude::*,
-    sink::{AsyncPoolSink, Sink},
-    ErrorHandler,
+    sink::{AsyncPoolSink, GetSinkProp, Sink, SinkProp},
 };
 
 static IS_LOGGED: AtomicBool = AtomicBool::new(false);
 static IS_FLUSHED: AtomicBool = AtomicBool::new(false);
 
-struct SetFlagSink;
+#[derive(Default)]
+struct SetFlagSink {
+    prop: SinkProp,
+}
+
+impl GetSinkProp for SetFlagSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
 
 impl Sink for SetFlagSink {
     fn log(&self, _record: &spdlog::Record) -> error::Result<()> {
@@ -32,22 +39,6 @@ impl Sink for SetFlagSink {
         assert!(IS_LOGGED.load(Ordering::SeqCst));
         IS_FLUSHED.store(true, Ordering::SeqCst);
         Ok(())
-    }
-
-    fn level_filter(&self) -> LevelFilter {
-        LevelFilter::All
-    }
-
-    fn set_level_filter(&self, _level_filter: LevelFilter) {
-        unimplemented!()
-    }
-
-    fn set_formatter(&self, _formatter: Box<dyn Formatter>) {
-        unimplemented!()
-    }
-
-    fn set_error_handler(&self, _handler: Option<ErrorHandler>) {
-        unimplemented!()
     }
 }
 
@@ -66,7 +57,7 @@ fn run_test() {
 
         let async_pool_sink = Arc::new(
             AsyncPoolSink::builder()
-                .sink(Arc::new(SetFlagSink))
+                .sink(Arc::new(SetFlagSink::default()))
                 .build()
                 .unwrap(),
         );

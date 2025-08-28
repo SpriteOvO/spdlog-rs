@@ -10,7 +10,7 @@ use spdlog::formatter::JsonFormatter;
 use spdlog::{
     formatter::{pattern, Formatter, FormatterContext, FullFormatter, Pattern, PatternFormatter},
     prelude::*,
-    sink::Sink,
+    sink::{Sink, SinkAccess},
     Record, StringBuf,
 };
 use spdlog_macros::runtime_pattern;
@@ -56,7 +56,9 @@ impl<F: Formatter> Sink for BenchSink<'_, F> {
     fn flush(&self) -> spdlog::Result<()> {
         unimplemented!()
     }
+}
 
+impl<F: Formatter> SinkAccess for BenchSink<'_, F> {
     fn level_filter(&self) -> LevelFilter {
         LevelFilter::All
     }

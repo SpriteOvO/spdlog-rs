@@ -14,18 +14,16 @@ use std::{
     time::Duration,
 };
 
-use atomic::Atomic;
 use spdlog::{
     formatter::{Formatter, FormatterContext, Pattern, PatternFormatter},
-    sink::{Sink, WriteSink, WriteSinkBuilder},
-    Error, ErrorHandler, LevelFilter, Logger, LoggerBuilder, Record, RecordOwned, Result,
-    StringBuf,
+    sink::{GetSinkProp, Sink, SinkProp, WriteSink, WriteSinkBuilder},
+    Error, Logger, LoggerBuilder, Record, RecordOwned, Result, StringBuf,
 };
 
 //////////////////////////////////////////////////
 
 pub struct TestSink {
-    level_filter: Atomic<LevelFilter>,
+    prop: SinkProp,
     log_counter: AtomicUsize,
     flush_counter: AtomicUsize,
     records: Mutex<Vec<RecordOwned>>,
@@ -41,7 +39,7 @@ impl TestSink {
     #[must_use]
     pub fn with_delay(duration: Option<Duration>) -> Self {
         Self {
-            level_filter: Atomic::new(LevelFilter::All),
+            prop: SinkProp::default(),
             log_counter: AtomicUsize::new(0),
             flush_counter: AtomicUsize::new(0),
             records: Mutex::new(vec![]),
@@ -85,6 +83,12 @@ impl TestSink {
     }
 }
 
+impl GetSinkProp for TestSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
+
 impl Sink for TestSink {
     fn log(&self, record: &Record) -> Result<()> {
         if let Some(delay) = self.delay_duration {
@@ -104,22 +108,6 @@ impl Sink for TestSink {
 
         self.flush_counter.fetch_add(1, Ordering::Relaxed);
         Ok(())
-    }
-
-    fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
-    }
-
-    fn set_formatter(&self, _formatter: Box<dyn Formatter>) {
-        unimplemented!("no-op")
-    }
-
-    fn set_error_handler(&self, _handler: Option<ErrorHandler>) {
-        unimplemented!("no-op")
     }
 }
 
@@ -157,6 +145,12 @@ impl StringSink {
     }
 }
 
+impl GetSinkProp for StringSink {
+    fn prop(&self) -> &SinkProp {
+        self.underlying.prop()
+    }
+}
+
 impl Sink for StringSink {
     fn log(&self, record: &Record) -> Result<()> {
         self.underlying.log(record)
@@ -164,22 +158,6 @@ impl Sink for StringSink {
 
     fn flush(&self) -> Result<()> {
         self.underlying.flush()
-    }
-
-    fn level_filter(&self) -> LevelFilter {
-        self.underlying.level_filter()
-    }
-
-    fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.underlying.set_level_filter(level_filter)
-    }
-
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        self.underlying.set_formatter(formatter)
-    }
-
-    fn set_error_handler(&self, handler: Option<ErrorHandler>) {
-        self.underlying.set_error_handler(handler)
     }
 }
 
