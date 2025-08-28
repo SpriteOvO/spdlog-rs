@@ -5,8 +5,8 @@ use once_cell::sync::Lazy;
 
 use crate::{formatter::FormatterContext, sync::*, Record};
 
-static LOCAL_TIME_CACHER: Lazy<SpinMutex<LocalTimeCacher>> =
-    Lazy::new(|| SpinMutex::new(LocalTimeCacher::new()));
+static LOCAL_TIME_CACHER: Lazy<Mutex<LocalTimeCacher>> =
+    Lazy::new(|| Mutex::new(LocalTimeCacher::new()));
 
 pub(crate) fn fmt_with_time<R, F>(ctx: &mut FormatterContext, record: &Record, mut callback: F) -> R
 where
@@ -15,7 +15,7 @@ where
     if let Some(time_date) = ctx.locked_time_date.as_mut() {
         callback(time_date.get())
     } else {
-        callback(LOCAL_TIME_CACHER.lock().get(record.time()))
+        callback(LOCAL_TIME_CACHER.lock_expect().get(record.time()))
     }
 }
 
@@ -314,7 +314,7 @@ impl CacheValues {
 }
 
 struct TimeDateLocked<'a> {
-    cached: SpinMutexGuard<'a, LocalTimeCacher>,
+    cached: MutexGuard<'a, LocalTimeCacher>,
     nanosecond: u32,
     millisecond: u32,
 }
@@ -333,7 +333,7 @@ impl TimeDateLazyLocked<'_> {
     #[must_use]
     pub(crate) fn get(&mut self) -> TimeDate<'_> {
         let locked = self.locked.get_or_insert_with(|| {
-            let mut cached = LOCAL_TIME_CACHER.lock();
+            let mut cached = LOCAL_TIME_CACHER.lock_expect();
             let time_date = cached.get(self.time);
             let (nanosecond, millisecond) = (time_date.nanosecond, time_date.millisecond);
             TimeDateLocked {

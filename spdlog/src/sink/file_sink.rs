@@ -29,7 +29,7 @@ use crate::{
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct FileSink {
     common_impl: helper::CommonImpl,
-    file: SpinMutex<BufWriter<File>>,
+    file: Mutex<BufWriter<File>>,
 }
 
 impl FileSink {
@@ -93,11 +93,11 @@ impl Sink for FileSink {
         let mut ctx = FormatterContext::new();
         self.common_impl
             .formatter
-            .read()
+            .read_expect()
             .format(record, &mut string_buf, &mut ctx)?;
 
         self.file
-            .lock()
+            .lock_expect()
             .write_all(string_buf.as_bytes())
             .map_err(Error::WriteRecord)?;
 
@@ -105,7 +105,7 @@ impl Sink for FileSink {
     }
 
     fn flush(&self) -> Result<()> {
-        self.file.lock().flush().map_err(Error::FlushBuffer)
+        self.file.lock_expect().flush().map_err(Error::FlushBuffer)
     }
 
     helper::common_impl!(@Sink: common_impl);
@@ -113,7 +113,7 @@ impl Sink for FileSink {
 
 impl Drop for FileSink {
     fn drop(&mut self) {
-        if let Err(err) = self.file.lock().flush() {
+        if let Err(err) = self.file.lock_expect().flush() {
             self.common_impl
                 .non_returnable_error("FileSink", Error::FlushBuffer(err))
         }
@@ -192,7 +192,7 @@ impl FileSinkBuilder<PathBuf> {
 
         let sink = FileSink {
             common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
-            file: SpinMutex::new(file),
+            file: Mutex::new(file),
         };
 
         Ok(sink)

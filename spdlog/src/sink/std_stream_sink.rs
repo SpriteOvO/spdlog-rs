@@ -10,6 +10,7 @@ use if_chain::if_chain;
 use crate::{
     formatter::FormatterContext,
     sink::{helper, Sink},
+    sync::RwLockExtend as _,
     terminal_style::{LevelStyles, Style, StyleMode},
     Error, Level, Record, Result, StringBuf,
 };
@@ -165,7 +166,7 @@ impl Sink for StdStreamSink {
         let mut ctx = FormatterContext::new();
         self.common_impl
             .formatter
-            .read()
+            .read_expect()
             .format(record, &mut string_buf, &mut ctx)?;
 
         let mut dest = self.dest.lock();

@@ -6,10 +6,6 @@ pub use std::sync::{
 
 pub use arc_swap::{ArcSwap, ArcSwapOption};
 pub use once_cell::sync::{Lazy, OnceCell};
-pub use spin::{
-    Mutex as SpinMutex, MutexGuard as SpinMutexGuard, RwLock as SpinRwLock,
-    RwLockReadGuard as SpinRwLockReadGuard, RwLockWriteGuard as SpinRwLockWriteGuard,
-};
 
 pub mod atomic {
     pub use std::sync::atomic::*;
@@ -18,44 +14,32 @@ pub mod atomic {
 }
 pub use self::atomic::*;
 
-pub trait MutexExtend<'a> {
-    type LockReturn;
-
-    #[must_use]
-    fn lock_expect(&'a self) -> Self::LockReturn;
+pub trait MutexExtend<T: ?Sized> {
+    fn lock_expect(&self) -> MutexGuard<'_, T>;
+    fn get_mut_expect(&mut self) -> &mut T;
 }
 
-pub trait RwLockExtend<'a> {
-    type ReadReturn;
-    type WriteReturn;
-
-    #[allow(dead_code)]
-    #[must_use]
-    fn read_expect(&'a self) -> Self::ReadReturn;
-
-    #[must_use]
-    fn write_expect(&'a self) -> Self::WriteReturn;
+pub trait RwLockExtend<T: ?Sized> {
+    fn read_expect(&self) -> RwLockReadGuard<'_, T>;
+    fn write_expect(&self) -> RwLockWriteGuard<'_, T>;
 }
 
 const LOCK_POISONED_MESSAGE: &str = "lock is poisoned";
 
-impl<'a, T: ?Sized + 'a> MutexExtend<'a> for Mutex<T> {
-    type LockReturn = MutexGuard<'a, T>;
-
-    fn lock_expect(&'a self) -> Self::LockReturn {
+impl<T: ?Sized> MutexExtend<T> for Mutex<T> {
+    fn lock_expect(&self) -> MutexGuard<'_, T> {
         self.lock().expect(LOCK_POISONED_MESSAGE)
+    }
+    fn get_mut_expect(&mut self) -> &mut T {
+        self.get_mut().expect(LOCK_POISONED_MESSAGE)
     }
 }
 
-impl<'a, T: ?Sized + 'a> RwLockExtend<'a> for RwLock<T> {
-    type ReadReturn = RwLockReadGuard<'a, T>;
-    type WriteReturn = RwLockWriteGuard<'a, T>;
-
-    fn read_expect(&'a self) -> Self::ReadReturn {
+impl<T: ?Sized> RwLockExtend<T> for RwLock<T> {
+    fn read_expect(&self) -> RwLockReadGuard<'_, T> {
         self.read().expect(LOCK_POISONED_MESSAGE)
     }
-
-    fn write_expect(&'a self) -> Self::WriteReturn {
+    fn write_expect(&self) -> RwLockWriteGuard<'_, T> {
         self.write().expect(LOCK_POISONED_MESSAGE)
     }
 }

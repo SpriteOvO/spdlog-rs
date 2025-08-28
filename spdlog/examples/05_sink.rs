@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, RwLock};
 
 use atomic::{Atomic, Ordering};
 use spdlog::{
@@ -7,7 +7,6 @@ use spdlog::{
     sink::Sink,
     ErrorHandler, Record, StringBuf,
 };
-use spin::{Mutex, RwLock};
 
 struct CollectVecSink {
     level_filter: Atomic<LevelFilter>,
@@ -27,7 +26,7 @@ impl CollectVecSink {
     }
 
     fn collected(&self) -> Vec<String> {
-        self.collected.lock().clone()
+        self.collected.lock().unwrap().clone()
     }
 }
 
@@ -37,8 +36,9 @@ impl Sink for CollectVecSink {
         let mut ctx = FormatterContext::new();
         self.formatter
             .read()
+            .unwrap()
             .format(record, &mut string_buf, &mut ctx)?;
-        self.collected.lock().push(string_buf.to_string());
+        self.collected.lock().unwrap().push(string_buf.to_string());
         Ok(())
     }
 
@@ -55,7 +55,7 @@ impl Sink for CollectVecSink {
     }
 
     fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        *self.formatter.write() = formatter;
+        *self.formatter.write().unwrap() = formatter;
     }
 
     fn set_error_handler(&self, handler: Option<ErrorHandler>) {
