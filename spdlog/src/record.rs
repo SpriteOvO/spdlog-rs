@@ -111,7 +111,7 @@ impl<'a> Record<'a> {
 
     /// Gets the key-values.
     #[must_use]
-    pub fn key_values(&self) -> kv::KeyValues {
+    pub fn key_values(&self) -> kv::KeyValues<'_> {
         kv::KeyValues::with_borrowed(&self.kvs)
     }
 
@@ -147,7 +147,7 @@ pub struct RecordOwned {
 impl RecordOwned {
     /// References as [`Record`] cheaply.
     #[must_use]
-    pub fn as_ref(&self) -> Record {
+    pub fn as_ref(&self) -> Record<'_> {
         Record {
             logger_name: self.logger_name.as_deref(),
             payload: Cow::Borrowed(&self.payload),
@@ -199,7 +199,7 @@ impl RecordOwned {
 
     /// Gets the key-values.
     #[must_use]
-    pub fn key_values(&self) -> kv::KeyValues {
+    pub fn key_values(&self) -> kv::KeyValues<'_> {
         kv::KeyValues::with_owned(&self.kvs)
     }
 
@@ -251,7 +251,7 @@ impl<'a> LogCrateRecord<'a> {
     }
 
     #[must_use]
-    pub(crate) fn as_record(&self) -> Record {
+    pub(crate) fn as_record(&self) -> Record<'_> {
         Record {
             logger_name: self.logger_name,
             payload: self.payload.clone(),

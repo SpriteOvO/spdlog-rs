@@ -73,7 +73,7 @@ impl LocalTimeCacher {
     }
 
     #[must_use]
-    pub(crate) fn get(&mut self, system_time: SystemTime) -> TimeDate {
+    pub(crate) fn get(&mut self, system_time: SystemTime) -> TimeDate<'_> {
         let since_epoch = system_time.duration_since(SystemTime::UNIX_EPOCH).unwrap();
         let nanosecond = since_epoch.subsec_nanos();
         let millisecond = nanosecond / 1_000_000;

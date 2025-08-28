@@ -151,7 +151,7 @@ enum KeyOwnedInner {
 pub(crate) struct KeyOwned(KeyOwnedInner);
 
 impl KeyOwned {
-    pub(crate) fn as_ref(&self) -> Key {
+    pub(crate) fn as_ref(&self) -> Key<'_> {
         let inner = match &self.0 {
             KeyOwnedInner::CowStr(s) => match s {
                 Cow::Borrowed(s) => KeyInner::StaticStr(s),

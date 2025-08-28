@@ -79,7 +79,7 @@ where
         callback(&mut *self.lock_target())
     }
 
-    fn lock_target(&self) -> MutexGuard<W> {
+    fn lock_target(&self) -> MutexGuard<'_, W> {
         self.target.lock_expect()
     }
 }

@@ -417,7 +417,7 @@ pub struct PatternContext<'a, 'b> {
 
 impl PatternContext<'_, '_> {
     #[must_use]
-    fn time_date(&mut self) -> TimeDate {
+    fn time_date(&mut self) -> TimeDate<'_> {
         self.fmt_ctx.locked_time_date.as_mut().unwrap().get()
     }
 }

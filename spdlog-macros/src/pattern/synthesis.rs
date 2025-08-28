@@ -82,7 +82,7 @@ impl Synthesiser {
     }
 }
 
-pub(crate) fn factory_of_pattern(pattern: &PatternKind) -> Cow<Path> {
+pub(crate) fn factory_of_pattern(pattern: &PatternKind) -> Cow<'_, Path> {
     match pattern {
         PatternKind::BuiltIn(builtin) => Cow::Owned(
             syn::parse_str::<Path>(&format!(
