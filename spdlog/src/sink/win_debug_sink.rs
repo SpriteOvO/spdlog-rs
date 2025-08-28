@@ -1,15 +1,14 @@
 use std::{ffi::OsStr, iter::once};
 
 use crate::{
-    formatter::FormatterContext,
-    sink::{helper, Sink},
-    sync::RwLockExtend as _,
-    Record, Result, StringBuf,
+    formatter::{Formatter, FormatterContext},
+    sink::{GetSinkProp, Sink, SinkProp},
+    ErrorHandler, LevelFilter, Record, Result, StringBuf,
 };
 
 /// A sink with a win32 API `OutputDebugStringW` as the target.
 pub struct WinDebugSink {
-    common_impl: helper::CommonImpl,
+    prop: SinkProp,
 }
 
 impl WinDebugSink {
@@ -28,7 +27,7 @@ impl WinDebugSink {
     #[must_use]
     pub fn builder() -> WinDebugSinkBuilder {
         WinDebugSinkBuilder {
-            common_builder_impl: helper::CommonBuilderImpl::new(),
+            prop: SinkProp::default(),
         }
     }
 
@@ -44,6 +43,12 @@ impl WinDebugSink {
     }
 }
 
+impl GetSinkProp for WinDebugSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
+
 impl Sink for WinDebugSink {
     fn log(&self, record: &Record) -> Result<()> {
         #[cfg(windows)] // https://github.com/rust-lang/rust/issues/97976
@@ -51,9 +56,8 @@ impl Sink for WinDebugSink {
 
         let mut string_buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        self.common_impl
-            .formatter
-            .read_expect()
+        self.prop
+            .formatter()
             .format(record, &mut string_buf, &mut ctx)?;
 
         let wide: Vec<u16> = OsStr::new(&string_buf)
@@ -70,23 +74,49 @@ impl Sink for WinDebugSink {
     fn flush(&self) -> Result<()> {
         Ok(())
     }
-
-    helper::common_impl!(@Sink: common_impl);
 }
 
 #[allow(missing_docs)]
 pub struct WinDebugSinkBuilder {
-    common_builder_impl: helper::CommonBuilderImpl,
+    prop: SinkProp,
 }
 
 impl WinDebugSinkBuilder {
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
+    // Prop
+    //
+
+    /// Specifies a log level filter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn level_filter(self, level_filter: LevelFilter) -> Self {
+        self.prop.set_level_filter(level_filter);
+        self
+    }
+
+    /// Specifies a formatter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+        self.prop.set_formatter(formatter);
+        self
+    }
+
+    /// Specifies an error handler.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn error_handler(self, handler: ErrorHandler) -> Self {
+        self.prop.set_error_handler(Some(handler));
+        self
+    }
+
+    //
 
     /// Builds a [`WinDebugSink`].
     pub fn build(self) -> Result<WinDebugSink> {
-        let sink = WinDebugSink {
-            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
-        };
+        let sink = WinDebugSink { prop: self.prop };
         Ok(sink)
     }
 }

@@ -1,10 +1,10 @@
 use std::{convert::Infallible, io::Write, marker::PhantomData};
 
 use crate::{
-    formatter::FormatterContext,
-    sink::{helper, Sink},
+    formatter::{Formatter, FormatterContext},
+    sink::{GetSinkProp, Sink, SinkProp},
     sync::*,
-    Error, Record, Result, StringBuf,
+    Error, ErrorHandler, LevelFilter, Record, Result, StringBuf,
 };
 
 /// A sink that writes log messages into an arbitrary `impl Write` object.
@@ -29,7 +29,7 @@ pub struct WriteSink<W>
 where
     W: Write + Send,
 {
-    common_impl: helper::CommonImpl,
+    prop: SinkProp,
     target: Mutex<W>,
 }
 
@@ -55,7 +55,7 @@ where
     #[must_use]
     pub fn builder() -> WriteSinkBuilder<W, ()> {
         WriteSinkBuilder {
-            common_builder_impl: helper::CommonBuilderImpl::new(),
+            prop: SinkProp::default(),
             target: None,
             _phantom: PhantomData,
         }
@@ -95,6 +95,15 @@ where
     }
 }
 
+impl<W> GetSinkProp for WriteSink<W>
+where
+    W: Write + Send,
+{
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
+
 impl<W> Sink for WriteSink<W>
 where
     W: Write + Send,
@@ -102,9 +111,8 @@ where
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        self.common_impl
-            .formatter
-            .read_expect()
+        self.prop
+            .formatter()
             .format(record, &mut string_buf, &mut ctx)?;
 
         self.lock_target()
@@ -117,8 +125,6 @@ where
     fn flush(&self) -> Result<()> {
         self.lock_target().flush().map_err(Error::FlushBuffer)
     }
-
-    helper::common_impl!(@Sink: common_impl);
 }
 
 impl<W> Drop for WriteSink<W>
@@ -128,7 +134,7 @@ where
     fn drop(&mut self) {
         let flush_result = self.lock_target().flush().map_err(Error::FlushBuffer);
         if let Err(err) = flush_result {
-            self.common_impl.non_returnable_error("WriteSink", err)
+            self.prop.non_returnable_error("WriteSink", err)
         }
     }
 }
@@ -136,7 +142,7 @@ where
 /// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
 pub struct WriteSinkBuilder<W, ArgW> {
-    common_builder_impl: helper::CommonBuilderImpl,
+    prop: SinkProp,
     target: Option<W>,
     _phantom: PhantomData<ArgW>,
 }
@@ -152,13 +158,41 @@ where
     #[must_use]
     pub fn target(self, target: W) -> WriteSinkBuilder<W, PhantomData<W>> {
         WriteSinkBuilder {
-            common_builder_impl: self.common_builder_impl,
+            prop: self.prop,
             target: Some(target),
             _phantom: PhantomData,
         }
     }
 
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
+    // Prop
+    //
+
+    /// Specifies a log level filter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn level_filter(self, level_filter: LevelFilter) -> Self {
+        self.prop.set_level_filter(level_filter);
+        self
+    }
+
+    /// Specifies a formatter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+        self.prop.set_formatter(formatter);
+        self
+    }
+
+    /// Specifies an error handler.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn error_handler(self, handler: ErrorHandler) -> Self {
+        self.prop.set_error_handler(Some(handler));
+        self
+    }
 }
 
 impl<W> WriteSinkBuilder<W, ()>
@@ -180,7 +214,7 @@ where
     /// Builds a [`WriteSink`].
     pub fn build(self) -> Result<WriteSink<W>> {
         let sink = WriteSink {
-            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+            prop: self.prop,
             target: Mutex::new(self.target.unwrap()),
         };
         Ok(sink)

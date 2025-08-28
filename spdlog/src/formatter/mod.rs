@@ -5,7 +5,7 @@
 //! Each normal *Sink* owns a *Formatter*, which is used to format each log.
 //!
 //! The default formatter for most sinks is [`FullFormatter`], you can call
-//! [`Sink::set_formatter`] to replace it with another formatter.
+//! [`SinkAccess::set_formatter`] to replace it with another formatter.
 //!
 //! The easiest way to make a custom formatter is to build a pattern, see
 //! [Compile-time and runtime pattern
@@ -23,7 +23,10 @@
 //! - Macro [`runtime_pattern!`]: Builds a pattern at runtime.
 //!
 //! ```
-//! use spdlog::formatter::{pattern, PatternFormatter};
+//! use spdlog::{
+//!     formatter::{pattern, PatternFormatter},
+//!     prelude::*,
+//! };
 //! # use spdlog::sink::{Sink, WriteSink};
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -45,7 +48,7 @@
 //! # Ok(()) }
 //! ```
 //!
-//! [`Sink::set_formatter`]: crate::sink::Sink::set_formatter
+//! [`SinkAccess::set_formatter`]: crate::sink::SinkAccess::set_formatter
 //! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 
 mod full_formatter;
@@ -57,6 +60,7 @@ mod journald_formatter;
 #[cfg(feature = "serde_json")]
 mod json_formatter;
 mod local_time_cacher;
+mod null_formatter;
 mod pattern_formatter;
 
 use std::ops::Range;
@@ -71,6 +75,7 @@ pub(crate) use journald_formatter::*;
 #[cfg(feature = "serde_json")]
 pub use json_formatter::*;
 pub(crate) use local_time_cacher::*;
+pub(crate) use null_formatter::*;
 pub use pattern_formatter::*;
 
 use crate::{Record, Result, StringBuf};

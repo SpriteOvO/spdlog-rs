@@ -1,10 +1,9 @@
 use std::{io, os::raw::c_int};
 
 use crate::{
-    formatter::{FormatterContext, JournaldFormatter},
-    sink::{helper, Sink},
-    sync::RwLockExtend as _,
-    Error, Level, Record, Result, StdResult, StringBuf,
+    formatter::{Formatter, FormatterContext, JournaldFormatter},
+    sink::{GetSinkProp, Sink, SinkProp},
+    Error, ErrorHandler, Level, LevelFilter, Record, Result, StdResult, StringBuf,
 };
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -89,7 +88,7 @@ fn journal_send(args: impl Iterator<Item = impl AsRef<str>>) -> StdResult<(), io
 /// pacman -S systemd
 /// ```
 pub struct JournaldSink {
-    common_impl: helper::CommonImpl,
+    prop: SinkProp,
 }
 
 impl JournaldSink {
@@ -109,9 +108,16 @@ impl JournaldSink {
     /// [default error handler]: error/index.html#default-error-handler
     #[must_use]
     pub fn builder() -> JournaldSinkBuilder {
-        JournaldSinkBuilder {
-            common_builder_impl: helper::CommonBuilderImpl::new(),
-        }
+        let prop = SinkProp::default();
+        prop.set_formatter(Box::new(JournaldFormatter::new()));
+
+        JournaldSinkBuilder { prop }
+    }
+}
+
+impl GetSinkProp for JournaldSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
     }
 }
 
@@ -119,9 +125,8 @@ impl Sink for JournaldSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        self.common_impl
-            .formatter
-            .read_expect()
+        self.prop
+            .formatter()
             .format(record, &mut string_buf, &mut ctx)?;
 
         let kvs = [
@@ -146,26 +151,49 @@ impl Sink for JournaldSink {
     fn flush(&self) -> Result<()> {
         Ok(())
     }
-
-    helper::common_impl!(@Sink: common_impl);
 }
 
 #[allow(missing_docs)]
 pub struct JournaldSinkBuilder {
-    common_builder_impl: helper::CommonBuilderImpl,
+    prop: SinkProp,
 }
 
 impl JournaldSinkBuilder {
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
+    // Prop
+    //
+
+    /// Specifies a log level filter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn level_filter(self, level_filter: LevelFilter) -> Self {
+        self.prop.set_level_filter(level_filter);
+        self
+    }
+
+    /// Specifies a formatter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+        self.prop.set_formatter(formatter);
+        self
+    }
+
+    /// Specifies an error handler.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn error_handler(self, handler: ErrorHandler) -> Self {
+        self.prop.set_error_handler(Some(handler));
+        self
+    }
+
+    //
 
     /// Builds a [`JournaldSink`].
     pub fn build(self) -> Result<JournaldSink> {
-        let sink = JournaldSink {
-            common_impl: helper::CommonImpl::from_builder_with_formatter(
-                self.common_builder_impl,
-                || Box::new(JournaldFormatter::new()),
-            ),
-        };
+        let sink = JournaldSink { prop: self.prop };
         Ok(sink)
     }
 }

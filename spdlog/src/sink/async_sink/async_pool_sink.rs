@@ -1,7 +1,7 @@
 use crate::{
     default_error_handler, default_thread_pool,
-    formatter::Formatter,
-    sink::{helper, OverflowPolicy, Sink, Sinks},
+    formatter::{Formatter, UnreachableFormatter},
+    sink::{OverflowPolicy, Sink, SinkAccess, SinkProp, Sinks},
     sync::*,
     Error, ErrorHandler, LevelFilter, Record, RecordOwned, Result, ThreadPool,
 };
@@ -46,7 +46,6 @@ use crate::{
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 // The names `AsyncSink` and `AsyncRuntimeSink` is reserved for future use.
 pub struct AsyncPoolSink {
-    level_filter: Atomic<LevelFilter>,
     overflow_policy: OverflowPolicy,
     thread_pool: Arc<ThreadPool>,
     backend: Arc<Backend>,
@@ -69,12 +68,17 @@ impl AsyncPoolSink {
     /// [thread_pool]: AsyncPoolSinkBuilder::thread_pool
     #[must_use]
     pub fn builder() -> AsyncPoolSinkBuilder {
+        let prop = SinkProp::default();
+        // AsyncPoolSink does not have its own formatter, and we do not impl
+        // `GetSinkProp` for it, so there should be no way to access the
+        // formatter inside the `prop`.
+        prop.set_formatter(Box::new(UnreachableFormatter::new()));
+
         AsyncPoolSinkBuilder {
-            level_filter: helper::SINK_DEFAULT_LEVEL_FILTER,
+            prop,
             overflow_policy: OverflowPolicy::Block,
             sinks: Sinks::new(),
             thread_pool: None,
-            error_handler: None,
         }
     }
 
@@ -84,11 +88,6 @@ impl AsyncPoolSink {
         &self.backend.sinks
     }
 
-    /// Sets a error handler.
-    pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
-        self.backend.error_handler.swap(handler, Ordering::Relaxed);
-    }
-
     fn assign_task(&self, task: Task) -> Result<()> {
         self.thread_pool.assign_task(task, self.overflow_policy)
     }
@@ -96,6 +95,28 @@ impl AsyncPoolSink {
     #[must_use]
     fn clone_backend(&self) -> Arc<Backend> {
         Arc::clone(&self.backend)
+    }
+}
+
+impl SinkAccess for AsyncPoolSink {
+    fn level_filter(&self) -> LevelFilter {
+        self.backend.prop.level_filter()
+    }
+
+    fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.backend.prop.set_level_filter(level_filter);
+    }
+
+    /// For [`AsyncPoolSink`], the function performs the same call to all
+    /// internal sinks.
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        for sink in &self.backend.sinks {
+            sink.set_formatter(formatter.clone())
+        }
+    }
+
+    fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+        self.backend.prop.set_error_handler(handler);
     }
 }
 
@@ -124,31 +145,14 @@ impl Sink for AsyncPoolSink {
             })
         }
     }
-
-    /// For [`AsyncPoolSink`], the function performs the same call to all
-    /// internal sinks.
-    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        for sink in &self.backend.sinks {
-            sink.set_formatter(formatter.clone())
-        }
-    }
-
-    helper::common_impl! {
-        @SinkCustom {
-            level_filter: level_filter,
-            formatter: None,
-            error_handler: backend.error_handler,
-        }
-    }
 }
 
 #[allow(missing_docs)]
 pub struct AsyncPoolSinkBuilder {
-    level_filter: LevelFilter,
+    prop: SinkProp,
     sinks: Sinks,
     overflow_policy: OverflowPolicy,
     thread_pool: Option<Arc<ThreadPool>>,
-    error_handler: Option<ErrorHandler>,
 }
 
 impl AsyncPoolSinkBuilder {
@@ -190,33 +194,56 @@ impl AsyncPoolSinkBuilder {
         self
     }
 
+    // Prop
+    //
+
+    /// Specifies a log level filter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn level_filter(self, level_filter: LevelFilter) -> Self {
+        self.prop.set_level_filter(level_filter);
+        self
+    }
+
+    /// Specifies a formatter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+        self.prop.set_formatter(formatter);
+        self
+    }
+
+    /// Specifies an error handler.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn error_handler(self, handler: ErrorHandler) -> Self {
+        self.prop.set_error_handler(Some(handler));
+        self
+    }
+
     /// Builds a [`AsyncPoolSink`].
     pub fn build(self) -> Result<AsyncPoolSink> {
         let backend = Arc::new(Backend {
+            prop: self.prop,
             sinks: self.sinks.clone(),
-            error_handler: Atomic::new(self.error_handler),
         });
 
         let thread_pool = self.thread_pool.unwrap_or_else(default_thread_pool);
 
         Ok(AsyncPoolSink {
-            level_filter: Atomic::new(self.level_filter),
             overflow_policy: self.overflow_policy,
             thread_pool,
             backend,
         })
     }
-
-    helper::common_impl!(@SinkBuilderCustom {
-        level_filter: level_filter,
-        formatter: None,
-        error_handler: error_handler,
-    });
 }
 
 pub(crate) struct Backend {
+    prop: SinkProp,
     sinks: Sinks,
-    error_handler: helper::SinkErrorHandler,
 }
 
 impl Backend {
@@ -237,8 +264,8 @@ impl Backend {
     }
 
     fn handle_error(&self, err: Error) {
-        self.error_handler
-            .load(Ordering::Relaxed)
+        self.prop
+            .error_handler()
             .unwrap_or(|err| default_error_handler("AsyncPoolSink", err))(err);
     }
 }

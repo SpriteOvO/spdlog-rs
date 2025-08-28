@@ -1,9 +1,10 @@
 use std::{cmp::Ordering, convert::Infallible, sync::Arc, time::Duration};
 
 use crate::{
-    sink::{helper, Sink, Sinks},
+    formatter::Formatter,
+    sink::{GetSinkProp, Sink, SinkProp, Sinks},
     sync::*,
-    Error, Record, RecordOwned, Result,
+    Error, ErrorHandler, LevelFilter, Record, RecordOwned, Result,
 };
 
 struct DedupSinkState {
@@ -79,7 +80,7 @@ struct DedupSinkState {
 ///
 /// [combined sink]: index.html#combined-sink
 pub struct DedupSink {
-    common_impl: helper::CommonImpl,
+    prop: SinkProp,
     sinks: Sinks,
     skip_duration: Duration,
     state: Mutex<DedupSinkState>,
@@ -106,7 +107,7 @@ impl DedupSink {
     #[must_use]
     pub fn builder() -> DedupSinkBuilder<()> {
         DedupSinkBuilder {
-            common_builder_impl: helper::CommonBuilderImpl::new(),
+            prop: SinkProp::default(),
             sinks: vec![],
             skip_duration: (),
         }
@@ -159,6 +160,12 @@ impl DedupSink {
     }
 }
 
+impl GetSinkProp for DedupSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
+
 impl Sink for DedupSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut state = self.state.lock_expect();
@@ -179,17 +186,15 @@ impl Sink for DedupSink {
     fn flush(&self) -> Result<()> {
         self.flush_sinks()
     }
-
-    helper::common_impl!(@Sink: common_impl);
 }
 
 impl Drop for DedupSink {
     fn drop(&mut self) {
         if let Err(err) = self.log_skipping_message(&mut self.state.lock_expect()) {
-            self.common_impl.non_returnable_error("DedupSink", err);
+            self.prop.non_returnable_error("DedupSink", err);
         }
         if let Err(err) = self.flush_sinks() {
-            self.common_impl.non_returnable_error("DedupSink", err);
+            self.prop.non_returnable_error("DedupSink", err);
         }
     }
 }
@@ -197,7 +202,7 @@ impl Drop for DedupSink {
 /// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
 pub struct DedupSinkBuilder<ArgS> {
-    common_builder_impl: helper::CommonBuilderImpl,
+    prop: SinkProp,
     sinks: Sinks,
     skip_duration: ArgS,
 }
@@ -227,13 +232,41 @@ impl<ArgS> DedupSinkBuilder<ArgS> {
     #[must_use]
     pub fn skip_duration(self, duration: Duration) -> DedupSinkBuilder<Duration> {
         DedupSinkBuilder {
-            common_builder_impl: self.common_builder_impl,
+            prop: self.prop,
             sinks: self.sinks,
             skip_duration: duration,
         }
     }
 
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
+    // Prop
+    //
+
+    /// Specifies a log level filter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn level_filter(self, level_filter: LevelFilter) -> Self {
+        self.prop.set_level_filter(level_filter);
+        self
+    }
+
+    /// Specifies a formatter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+        self.prop.set_formatter(formatter);
+        self
+    }
+
+    /// Specifies an error handler.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn error_handler(self, handler: ErrorHandler) -> Self {
+        self.prop.set_error_handler(Some(handler));
+        self
+    }
 }
 
 impl DedupSinkBuilder<()> {
@@ -249,7 +282,7 @@ impl DedupSinkBuilder<Duration> {
     /// Builds a [`DedupSink`].
     pub fn build(self) -> Result<DedupSink> {
         Ok(DedupSink {
-            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+            prop: self.prop,
             sinks: self.sinks,
             skip_duration: self.skip_duration,
             state: Mutex::new(DedupSinkState {

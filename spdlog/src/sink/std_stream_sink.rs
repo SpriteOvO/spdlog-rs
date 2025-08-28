@@ -8,11 +8,10 @@ use std::{
 use if_chain::if_chain;
 
 use crate::{
-    formatter::FormatterContext,
-    sink::{helper, Sink},
-    sync::RwLockExtend as _,
+    formatter::{Formatter, FormatterContext},
+    sink::{GetSinkProp, Sink, SinkProp},
     terminal_style::{LevelStyles, Style, StyleMode},
-    Error, Level, Record, Result, StringBuf,
+    Error, ErrorHandler, Level, LevelFilter, Record, Result, StringBuf,
 };
 
 /// An enum representing the available standard streams.
@@ -87,7 +86,7 @@ impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 ///
 /// Note that this sink always flushes the buffer once with each logging.
 pub struct StdStreamSink {
-    common_impl: helper::CommonImpl,
+    prop: SinkProp,
     dest: StdStreamDest<io::Stdout, io::Stderr>,
     should_render_style: bool,
     level_styles: LevelStyles,
@@ -114,7 +113,7 @@ impl StdStreamSink {
     #[must_use]
     pub fn builder() -> StdStreamSinkBuilder<()> {
         StdStreamSinkBuilder {
-            common_builder_impl: helper::CommonBuilderImpl::new(),
+            prop: SinkProp::default(),
             std_stream: (),
             style_mode: StyleMode::Auto,
         }
@@ -160,13 +159,18 @@ impl StdStreamSink {
     }
 }
 
+impl GetSinkProp for StdStreamSink {
+    fn prop(&self) -> &SinkProp {
+        &self.prop
+    }
+}
+
 impl Sink for StdStreamSink {
     fn log(&self, record: &Record) -> Result<()> {
         let mut string_buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        self.common_impl
-            .formatter
-            .read_expect()
+        self.prop
+            .formatter()
             .format(record, &mut string_buf, &mut ctx)?;
 
         let mut dest = self.dest.lock();
@@ -203,8 +207,6 @@ impl Sink for StdStreamSink {
     fn flush(&self) -> Result<()> {
         self.dest.lock().flush().map_err(Error::FlushBuffer)
     }
-
-    helper::common_impl!(@Sink: common_impl);
 }
 
 // --------------------------------------------------
@@ -212,7 +214,7 @@ impl Sink for StdStreamSink {
 /// #
 #[doc = include_str!("../include/doc/generic-builder-note.md")]
 pub struct StdStreamSinkBuilder<ArgSS> {
-    common_builder_impl: helper::CommonBuilderImpl,
+    prop: SinkProp,
     std_stream: ArgSS,
     style_mode: StyleMode,
 }
@@ -240,7 +242,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     #[must_use]
     pub fn std_stream(self, std_stream: StdStream) -> StdStreamSinkBuilder<StdStream> {
         StdStreamSinkBuilder {
-            common_builder_impl: self.common_builder_impl,
+            prop: self.prop,
             std_stream,
             style_mode: self.style_mode,
         }
@@ -255,7 +257,35 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
         self
     }
 
-    helper::common_impl!(@SinkBuilder: common_builder_impl);
+    // Prop
+    //
+
+    /// Specifies a log level filter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn level_filter(self, level_filter: LevelFilter) -> Self {
+        self.prop.set_level_filter(level_filter);
+        self
+    }
+
+    /// Specifies a formatter.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+        self.prop.set_formatter(formatter);
+        self
+    }
+
+    /// Specifies an error handler.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn error_handler(self, handler: ErrorHandler) -> Self {
+        self.prop.set_error_handler(Some(handler));
+        self
+    }
 }
 
 impl StdStreamSinkBuilder<()> {
@@ -271,7 +301,7 @@ impl StdStreamSinkBuilder<StdStream> {
     /// Builds a [`StdStreamSink`].
     pub fn build(self) -> Result<StdStreamSink> {
         Ok(StdStreamSink {
-            common_impl: helper::CommonImpl::from_builder(self.common_builder_impl),
+            prop: self.prop,
             dest: StdStreamDest::new(self.std_stream),
             should_render_style: StdStreamSink::should_render_style(
                 self.style_mode,

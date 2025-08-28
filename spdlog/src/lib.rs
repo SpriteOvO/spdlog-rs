@@ -322,6 +322,9 @@ pub use thread_pool::*;
 
 /// Contains all log macros and common types.
 pub mod prelude {
+    // Traits
+    pub use super::sink::SinkAccess as _;
+    // Types
     pub use super::{
         critical, debug, error, info, log, trace, warn, Level, LevelFilter, Logger, LoggerBuilder,
     };

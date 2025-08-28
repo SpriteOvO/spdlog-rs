@@ -6,6 +6,9 @@ pub use std::sync::{
 
 pub use arc_swap::{ArcSwap, ArcSwapOption};
 pub use once_cell::sync::{Lazy, OnceCell};
+// Mapping in std locks are not yet stablized, so we use parking_lot's ones here.
+// https://github.com/rust-lang/rust/issues/117108
+pub use parking_lot::{RwLock as RwLockMappable, RwLockReadGuard as RwLockMappableReadGuard};
 
 pub mod atomic {
     pub use std::sync::atomic::*;

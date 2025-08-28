@@ -23,7 +23,6 @@
 pub(crate) mod async_sink;
 mod dedup_sink;
 mod file_sink;
-mod helper;
 #[cfg(any(
     all(target_os = "linux", feature = "native", feature = "libsystemd"),
     all(doc, not(doctest))
@@ -34,6 +33,8 @@ mod std_stream_sink;
 #[cfg(any(all(windows, feature = "native"), all(doc, not(doctest))))]
 mod win_debug_sink;
 mod write_sink;
+
+use std::ops::Deref;
 
 #[cfg(feature = "multi-thread")]
 pub use async_sink::*;
@@ -50,22 +51,126 @@ pub use std_stream_sink::*;
 pub use win_debug_sink::*;
 pub use write_sink::*;
 
-use crate::{formatter::Formatter, sync::*, ErrorHandler, Level, LevelFilter, Record, Result};
+use crate::{
+    formatter::{Formatter, FullFormatter},
+    sync::*,
+    Error, ErrorHandler, Level, LevelFilter, Record, Result,
+};
 
-/// Represents a sink
-pub trait Sink: Sync + Send {
-    /// Determines if a log message with the specified level would be logged.
+pub(crate) const SINK_DEFAULT_LEVEL_FILTER: LevelFilter = LevelFilter::All;
+
+pub(crate) type SinkErrorHandler = Atomic<Option<ErrorHandler>>;
+
+cfg_if::cfg_if! {
+    if #[cfg(test)] {
+        crate::utils::const_assert!(Atomic::<SinkErrorHandler>::is_lock_free());
+    }
+}
+
+/// Contains definitions of sink properties.
+///
+/// It provides a set of common properties for sink to define. If there is no
+/// special need for properties, use it directly and then implement
+/// [`GetSinkProp`] for your sink, a blanket implementation will be enabled,
+/// which would eliminate a lot of boilerplate code.
+///
+/// If further customization of the properties is needed (e.g., using different
+/// types, changing behavior), this struct is not needed. Instead, define
+/// properties manually within your sink, and then implement [`SinkAccess`].
+pub struct SinkProp {
+    level_filter: Atomic<LevelFilter>,
+    formatter: RwLockMappable<Box<dyn Formatter>>,
+    error_handler: SinkErrorHandler,
+}
+
+impl Default for SinkProp {
+    fn default() -> Self {
+        Self {
+            level_filter: Atomic::new(SINK_DEFAULT_LEVEL_FILTER),
+            formatter: RwLockMappable::new(Box::new(FullFormatter::new())),
+            error_handler: Atomic::new(None),
+        }
+    }
+}
+
+impl SinkProp {
+    /// Gets the log level filter.
     #[must_use]
-    fn should_log(&self, level: Level) -> bool {
-        self.level_filter().test(level)
+    pub fn level_filter(&self) -> LevelFilter {
+        self.level_filter.load(Ordering::Relaxed)
     }
 
-    /// Logs a record.
-    fn log(&self, record: &Record) -> Result<()>;
+    /// Sets the log level filter.
+    pub fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.level_filter.store(level_filter, Ordering::Relaxed)
+    }
 
-    /// Flushes any buffered records.
-    fn flush(&self) -> Result<()>;
+    /// Gets the formatter.
+    ///
+    /// The returned value is a lock guard, so please avoid storing it in a
+    /// variable with a longer lifetime.
+    pub fn formatter<'a>(&'a self) -> impl Deref<Target = dyn Formatter> + 'a {
+        RwLockMappableReadGuard::map(self.formatter.read(), |f| &**f)
+    }
 
+    /// Sets the formatter.
+    pub fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        *self.formatter.write() = formatter;
+    }
+
+    /// Gets the error handler.
+    pub fn error_handler(&self) -> Option<ErrorHandler> {
+        self.error_handler.load(Ordering::Relaxed)
+    }
+
+    /// Sets a error handler.
+    ///
+    /// Most errors that occur in `Sink` will be returned as directly as
+    /// possible (e.g. returned to [`Logger`]), but some errors that cannot be
+    /// returned immediately, this function will be called. For example,
+    /// asynchronous errors.
+    ///
+    /// If no handler is set, [default error handler] will be used.
+    ///
+    /// [`Logger`]: crate::logger::Logger
+    /// [default error handler]: ../error/index.html#default-error-handler
+    pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+        self.error_handler.store(handler, Ordering::Relaxed)
+    }
+
+    pub(crate) fn non_returnable_error(&self, from: impl AsRef<str>, err: Error) {
+        match self.error_handler.load(Ordering::Relaxed) {
+            Some(handler) => handler(err),
+            None => crate::default_error_handler(from, err),
+        }
+    }
+}
+
+/// Represents the getter for the [`SinkProp`] inside a sink.
+///
+/// This trait is not mandatory for a sink. It enables a blanket implementation,
+/// where a sink that implements this trait will automatically get the
+/// [`SinkAccess`] trait implemented, which eliminates a lot of boilerplate
+/// code.
+pub trait GetSinkProp {
+    /// Gets the [`SinkProp`] from a sink.
+    fn prop(&self) -> &SinkProp;
+}
+
+/// Represents getters for properties of a sink.
+///
+/// The use of a sink requires these properties, and this trait describes the
+/// methods for getting them.
+///
+/// For the common case of custom sinks, users don't need to implement this
+/// trait manually, they can just store a `SinkProp` in their sink struct and
+/// implement trait [`GetSinkProp`], a blanket implementation will automatically
+/// implement `SinkAccess` for the sink.
+///
+/// For more details on implementing custom sink, see [. /examples] directory.
+///
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
+pub trait SinkAccess {
     /// Gets the log level filter.
     #[must_use]
     fn level_filter(&self) -> LevelFilter;
@@ -88,6 +193,43 @@ pub trait Sink: Sync + Send {
     /// [`Logger`]: crate::logger::Logger
     /// [default error handler]: ../error/index.html#default-error-handler
     fn set_error_handler(&self, handler: Option<ErrorHandler>);
+}
+
+impl<S: GetSinkProp> SinkAccess for S {
+    fn level_filter(&self) -> LevelFilter {
+        self.prop().level_filter()
+    }
+
+    fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.prop().set_level_filter(level_filter);
+    }
+
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        self.prop().set_formatter(formatter);
+    }
+
+    fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+        self.prop().set_error_handler(handler);
+    }
+}
+
+/// Represents a sink
+///
+/// See [./examples] directory for how to implement a custom sink.
+///
+/// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
+pub trait Sink: SinkAccess + Sync + Send {
+    /// Determines if a log message with the specified level would be logged.
+    #[must_use]
+    fn should_log(&self, level: Level) -> bool {
+        self.level_filter().test(level)
+    }
+
+    /// Logs a record.
+    fn log(&self, record: &Record) -> Result<()>;
+
+    /// Flushes any buffered records.
+    fn flush(&self) -> Result<()>;
 }
 
 /// Container type for [`Sink`]s.
