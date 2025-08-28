@@ -101,7 +101,7 @@ struct RotatorFileSize {
     max_size: u64,
     max_files: usize,
     capacity: Option<usize>,
-    inner: SpinMutex<RotatorFileSizeInner>,
+    inner: Mutex<RotatorFileSizeInner>,
 }
 
 struct RotatorFileSizeInner {
@@ -113,7 +113,7 @@ struct RotatorTimePoint {
     base_path: PathBuf,
     time_point: TimePoint,
     max_files: usize,
-    inner: SpinMutex<RotatorTimePointInner>,
+    inner: Mutex<RotatorTimePointInner>,
 }
 
 #[derive(Copy, Clone)]
@@ -245,7 +245,7 @@ impl RotatingFileSink {
     #[must_use]
     fn _current_size(&self) -> u64 {
         if let RotatorKind::FileSize(rotator) = &self.rotator {
-            rotator.inner.lock().current_size
+            rotator.inner.lock_expect().current_size
         } else {
             panic!();
         }
@@ -258,7 +258,7 @@ impl Sink for RotatingFileSink {
         let mut ctx = FormatterContext::new();
         self.common_impl
             .formatter
-            .read()
+            .read_expect()
             .format(record, &mut string_buf, &mut ctx)?;
 
         self.rotator.log(record, &string_buf)
@@ -356,15 +356,15 @@ impl RotatorFileSize {
             max_size,
             max_files,
             capacity,
-            inner: SpinMutex::new(RotatorFileSizeInner {
+            inner: Mutex::new(RotatorFileSizeInner {
                 file: Some(file),
                 current_size,
             }),
         };
 
         if rotate_on_open && current_size > 0 {
-            res.rotate(&mut res.inner.lock())?;
-            res.inner.lock().current_size = 0;
+            res.rotate(&mut res.inner.lock_expect())?;
+            res.inner.lock_expect().current_size = 0;
         }
 
         Ok(res)
@@ -375,7 +375,7 @@ impl RotatorFileSize {
         utils::open_file_bufw(&self.base_path, true, self.capacity)
     }
 
-    fn rotate(&self, opened_file: &mut SpinMutexGuard<RotatorFileSizeInner>) -> Result<()> {
+    fn rotate(&self, opened_file: &mut MutexGuard<RotatorFileSizeInner>) -> Result<()> {
         let inner = || {
             for i in (1..self.max_files).rev() {
                 let src = Self::calc_file_path(&self.base_path, i - 1);
@@ -433,8 +433,8 @@ impl RotatorFileSize {
     }
 
     // if `self.inner.file` is `None`, try to reopen the file.
-    fn lock_inner(&self) -> Result<SpinMutexGuard<'_, RotatorFileSizeInner>> {
-        let mut inner = self.inner.lock();
+    fn lock_inner(&self) -> Result<MutexGuard<'_, RotatorFileSizeInner>> {
+        let mut inner = self.inner.lock_expect();
         if inner.file.is_none() {
             inner.file = Some(self.reopen()?);
         }
@@ -470,7 +470,7 @@ impl Rotator for RotatorFileSize {
     }
 
     fn drop_flush(&mut self) -> Result<()> {
-        let mut inner = self.inner.lock();
+        let mut inner = self.inner.lock_expect();
         if let Some(file) = inner.file.as_mut() {
             file.flush().map_err(Error::FlushBuffer)
         } else {
@@ -502,7 +502,7 @@ impl RotatorTimePoint {
             base_path,
             time_point,
             max_files,
-            inner: SpinMutex::new(inner),
+            inner: Mutex::new(inner),
         };
 
         res.init_previous_file_paths(max_files, now);
@@ -525,7 +525,7 @@ impl RotatorTimePoint {
                 now = now.checked_sub(self.time_point.delta_std()).unwrap()
             }
 
-            self.inner.get_mut().file_paths = Some(file_paths);
+            self.inner.get_mut_expect().file_paths = Some(file_paths);
         }
     }
 
@@ -571,7 +571,7 @@ impl RotatorTimePoint {
     fn push_new_remove_old(
         &self,
         new: PathBuf,
-        inner: &mut SpinMutexGuard<RotatorTimePointInner>,
+        inner: &mut MutexGuard<RotatorTimePointInner>,
     ) -> Result<()> {
         let file_paths = inner.file_paths.as_mut().unwrap();
 
@@ -647,7 +647,7 @@ impl RotatorTimePoint {
 
 impl Rotator for RotatorTimePoint {
     fn log(&self, record: &Record, string_buf: &StringBuf) -> Result<()> {
-        let mut inner = self.inner.lock();
+        let mut inner = self.inner.lock_expect();
 
         let mut file_path = None;
         let record_time = record.time();
@@ -677,7 +677,11 @@ impl Rotator for RotatorTimePoint {
     }
 
     fn flush(&self) -> Result<()> {
-        self.inner.lock().file.flush().map_err(Error::FlushBuffer)
+        self.inner
+            .lock_expect()
+            .file
+            .flush()
+            .map_err(Error::FlushBuffer)
     }
 }
 

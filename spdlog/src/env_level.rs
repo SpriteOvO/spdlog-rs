@@ -110,7 +110,7 @@ pub(crate) fn from_str_inner(var: &str) -> Result<EnvLevel, EnvLevelError> {
 
 #[must_use]
 pub(crate) fn logger_level(kind: LoggerKind) -> Option<LevelFilter> {
-    logger_level_inner(ENV_LEVEL.read().unwrap().as_ref()?, kind)
+    logger_level_inner(ENV_LEVEL.read_expect().as_ref()?, kind)
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]

@@ -111,7 +111,7 @@ pub struct Logger {
     level_filter: Atomic<LevelFilter>,
     sinks: Sinks,
     flush_level_filter: Atomic<LevelFilter>,
-    error_handler: SpinRwLock<Option<ErrorHandler>>,
+    error_handler: RwLock<Option<ErrorHandler>>,
     periodic_flusher: Mutex<Option<(Duration, PeriodicWorker)>>,
 }
 
@@ -384,7 +384,7 @@ impl Logger {
     /// }));
     /// ```
     pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
-        *self.error_handler.write() = handler;
+        *self.error_handler.write_expect() = handler;
     }
 
     /// Forks and configures a separate new logger.
@@ -479,7 +479,7 @@ impl Logger {
             sinks: self.sinks.clone(),
             flush_level_filter: Atomic::new(self.flush_level_filter()),
             periodic_flusher: Mutex::new(None),
-            error_handler: SpinRwLock::new(*self.error_handler.read()),
+            error_handler: RwLock::new(*self.error_handler.read_expect()),
         }
     }
 
@@ -506,7 +506,7 @@ impl Logger {
     }
 
     fn handle_error(&self, err: Error) {
-        if let Some(handler) = self.error_handler.read().as_ref() {
+        if let Some(handler) = self.error_handler.read_expect().as_ref() {
             handler(err)
         } else {
             crate::default_error_handler(
@@ -657,7 +657,7 @@ impl LoggerBuilder {
             level_filter: Atomic::new(self.level_filter),
             sinks: self.sinks.clone(),
             flush_level_filter: Atomic::new(self.flush_level_filter),
-            error_handler: SpinRwLock::new(self.error_handler),
+            error_handler: RwLock::new(self.error_handler),
             periodic_flusher: Mutex::new(None),
         };
 
