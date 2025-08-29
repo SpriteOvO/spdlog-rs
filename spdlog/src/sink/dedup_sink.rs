@@ -38,7 +38,7 @@ struct DedupSinkState {
 /// # fn main() -> Result<(), spdlog::Error> {
 /// # let underlying_sink = Arc::new(
 /// #     WriteSink::builder()
-/// #         .formatter(Box::new(PatternFormatter::new(pattern!("{payload}\n"))))
+/// #         .formatter(PatternFormatter::new(pattern!("{payload}\n")))
 /// #         .target(Vec::new())
 /// #         .build()?
 /// # );
@@ -254,7 +254,10 @@ impl<ArgS> DedupSinkBuilder<ArgS> {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+    pub fn formatter<F>(self, formatter: F) -> Self
+    where
+        F: Formatter + 'static,
+    {
         self.prop.set_formatter(formatter);
         self
     }

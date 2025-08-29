@@ -187,7 +187,10 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+    pub fn formatter<F>(self, formatter: F) -> Self
+    where
+        F: Formatter + 'static,
+    {
         self.prop.set_formatter(formatter);
         self
     }

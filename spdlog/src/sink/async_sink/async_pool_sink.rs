@@ -72,7 +72,7 @@ impl AsyncPoolSink {
         // AsyncPoolSink does not have its own formatter, and we do not impl
         // `GetSinkProp` for it, so there should be no way to access the
         // formatter inside the `prop`.
-        prop.set_formatter(Box::new(UnreachableFormatter::new()));
+        prop.set_formatter(UnreachableFormatter::new());
 
         AsyncPoolSinkBuilder {
             prop,
@@ -210,7 +210,10 @@ impl AsyncPoolSinkBuilder {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+    pub fn formatter<F>(self, formatter: F) -> Self
+    where
+        F: Formatter + 'static,
+    {
         self.prop.set_formatter(formatter);
         self
     }

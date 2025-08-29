@@ -73,10 +73,7 @@ use crate::{
 #[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 ///
 /// let formatter = PatternFormatter::new(pattern!("[{level}] {payload}{eol}"));
-/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
-/// #     Box::new(formatter),
-/// #     None
-/// # );
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
@@ -98,10 +95,7 @@ use crate::{
 /// # };
 #[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 /// let formatter = PatternFormatter::new(pattern!("[{{escaped}}] {payload}{eol}"));
-/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
-/// #     Box::new(formatter),
-/// #     None
-/// # );
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
@@ -127,10 +121,7 @@ use crate::{
 /// # };
 #[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 /// let formatter = PatternFormatter::new(pattern!("{^[{level}]} {payload}{eol}"));
-/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
-/// #     Box::new(formatter),
-/// #     None
-/// # );
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
@@ -169,10 +160,7 @@ use crate::{
 ///     {$mypat} => MyPattern::default,
 /// );
 /// let formatter = PatternFormatter::new(pat);
-/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
-/// #     Box::new(formatter),
-/// #     None
-/// # );
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
@@ -233,10 +221,7 @@ use crate::{
 ///     {$mypat} => MyPattern::new,
 /// );
 /// let formatter = PatternFormatter::new(pat);
-/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
-/// #     Box::new(formatter),
-/// #     None
-/// # );
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(

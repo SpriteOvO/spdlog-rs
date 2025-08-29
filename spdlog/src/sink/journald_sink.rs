@@ -109,7 +109,7 @@ impl JournaldSink {
     #[must_use]
     pub fn builder() -> JournaldSinkBuilder {
         let prop = SinkProp::default();
-        prop.set_formatter(Box::new(JournaldFormatter::new()));
+        prop.set_formatter(JournaldFormatter::new());
 
         JournaldSinkBuilder { prop }
     }
@@ -175,7 +175,10 @@ impl JournaldSinkBuilder {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn formatter(self, formatter: Box<dyn Formatter>) -> Self {
+    pub fn formatter<F>(self, formatter: F) -> Self
+    where
+        F: Formatter + 'static,
+    {
         self.prop.set_formatter(formatter);
         self
     }

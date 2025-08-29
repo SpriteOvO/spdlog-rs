@@ -114,7 +114,15 @@ impl SinkProp {
     }
 
     /// Sets the formatter.
-    pub fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+    pub fn set_formatter<F>(&self, formatter: F)
+    where
+        F: Formatter + 'static,
+    {
+        self.set_formatter_boxed(Box::new(formatter));
+    }
+
+    /// Sets the boxed formatter.
+    pub fn set_formatter_boxed(&self, formatter: Box<dyn Formatter>) {
         *self.formatter.write() = formatter;
     }
 
@@ -205,7 +213,7 @@ impl<S: GetSinkProp> SinkAccess for S {
     }
 
     fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        self.prop().set_formatter(formatter);
+        self.prop().set_formatter_boxed(formatter);
     }
 
     fn set_error_handler(&self, handler: Option<ErrorHandler>) {
