@@ -218,12 +218,12 @@ pub fn echo_logger_from_pattern(
     pattern: impl Pattern + Clone + 'static,
     name: Option<&'static str>,
 ) -> (Logger, Arc<StringSink>) {
-    echo_logger_from_formatter(Box::new(PatternFormatter::new(pattern)), name)
+    echo_logger_from_formatter(PatternFormatter::new(pattern), name)
 }
 
 #[must_use]
 pub fn echo_logger_from_formatter(
-    formatter: Box<dyn Formatter>,
+    formatter: impl Formatter + 'static,
     name: Option<&'static str>,
 ) -> (Logger, Arc<StringSink>) {
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));

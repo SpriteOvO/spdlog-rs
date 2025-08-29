@@ -88,12 +88,10 @@ fn bench_pattern(bencher: &mut Bencher, pattern: impl Pattern + Clone + 'static)
 }
 
 fn bench_full_pattern(bencher: &mut Bencher, pattern: impl Pattern + Clone + 'static) {
-    let full_formatter = Arc::new(StringSink::with(|b| {
-        b.formatter(Box::new(FullFormatter::new()))
-    }));
+    let full_formatter = Arc::new(StringSink::with(|b| b.formatter(FullFormatter::new())));
 
     let full_pattern = Arc::new(StringSink::with(|b| {
-        b.formatter(Box::new(PatternFormatter::new(pattern.clone())))
+        b.formatter(PatternFormatter::new(pattern.clone()))
     }));
 
     let combination =

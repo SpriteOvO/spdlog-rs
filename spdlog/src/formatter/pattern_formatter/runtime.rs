@@ -70,10 +70,7 @@ pub use spdlog_macros::runtime_pattern;
 #[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let formatter = PatternFormatter::new(runtime_pattern!("[{level}] {payload}{eol}")?);
-/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
-/// #     Box::new(formatter),
-/// #     None
-/// # );
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(
@@ -114,10 +111,7 @@ pub use spdlog_macros::runtime_pattern;
 ///         {$mypat2} => pat
 ///     )?
 /// );
-/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(
-/// #     Box::new(formatter),
-/// #     None
-/// # );
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
 ///
 /// info!(logger: doctest, "Interesting log message");
 /// # assert_eq!(

@@ -16,9 +16,7 @@ static GLOBAL_LOG_CRATE_PROXY_MUTEX: Mutex<()> = Mutex::new(());
 #[cfg(feature = "log")]
 #[test]
 fn test_source_location() {
-    let formatter = Box::new(PatternFormatter::new(pattern!(
-        "({module_path}::{file_name}) {payload}{eol}"
-    )));
+    let formatter = PatternFormatter::new(pattern!("({module_path}::{file_name}) {payload}{eol}"));
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
@@ -37,7 +35,7 @@ fn test_source_location() {
 #[cfg(feature = "log")]
 #[test]
 fn test_target() {
-    let formatter = Box::new(PatternFormatter::new(pattern!("[{logger}] {payload}{eol}")));
+    let formatter = PatternFormatter::new(pattern!("[{logger}] {payload}{eol}"));
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
@@ -53,7 +51,7 @@ fn test_target() {
 #[cfg(feature = "log")]
 #[test]
 fn test_kv() {
-    let formatter = Box::new(PatternFormatter::new(pattern!("{payload} {{ {kv} }}{eol}")));
+    let formatter = PatternFormatter::new(pattern!("{payload} {{ {kv} }}{eol}"));
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 

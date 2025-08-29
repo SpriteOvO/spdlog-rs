@@ -192,7 +192,7 @@ fn test_builtin_patterns() {
     #[track_caller]
     fn fmt(pattern: impl Pattern + Clone + 'static) -> String {
         let sink = Arc::new(test_utils::StringSink::with(|b| {
-            b.formatter(Box::new(PatternFormatter::new(pattern)))
+            b.formatter(PatternFormatter::new(pattern))
         }));
 
         let logger = Logger::builder()
@@ -518,7 +518,7 @@ fn test_different_context_thread() {
 
     use spdlog::{sink::AsyncPoolSink, ThreadPool};
 
-    let formatter = Box::new(PatternFormatter::new(pattern!("{tid}{eol}")));
+    let formatter = PatternFormatter::new(pattern!("{tid}{eol}"));
     let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
     let buffer_sink = Arc::new(test_utils::StringSink::with(|b| b.formatter(formatter)));
     let sinks: [Arc<dyn Sink>; 2] = [
