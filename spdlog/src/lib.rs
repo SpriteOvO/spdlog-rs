@@ -16,10 +16,12 @@
 //!   - [Configured via environment variable](init_env_level)
 //!   - [Compile-time and runtime pattern formatter]
 //!   - [Asynchronous support]
+//!   - [Structured logging]
 //!   - [Compatible with log crate](LogCrateProxy)
 //!
 //! [Compile-time and runtime pattern formatter]: formatter/index.html#compile-time-and-runtime-pattern-formatter
 //! [Asynchronous support]: crate::sink::AsyncPoolSink
+//! [Structured logging]: crate::kv
 //!
 //! # Getting started
 //!
@@ -218,7 +220,7 @@
 //! - README.md
 //! -->
 //!
-//! The current minimum supported Rust version is 1.60.
+//! The current minimum supported Rust version is 1.61.
 //!
 //! `spdlog-rs` is built against the latest Rust stable release, it is not
 //! guaranteed to build on Rust versions earlier than the minimum supported
@@ -278,9 +280,14 @@
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 
+// Used for referencing from proc-macros
+// Credits: https://stackoverflow.com/a/57049687
+extern crate self as spdlog;
+
 mod env_level;
 pub mod error;
 pub mod formatter;
+pub mod kv;
 mod level;
 #[cfg(feature = "log")]
 mod log_crate_proxy;
@@ -307,6 +314,8 @@ pub use log_crate_proxy::*;
 pub use logger::*;
 pub use record::*;
 pub use source_location::*;
+#[doc(hidden)]
+pub use spdlog_macros::normalize_forward as __normalize_forward;
 pub use string_buf::StringBuf;
 #[cfg(feature = "multi-thread")]
 pub use thread_pool::*;
@@ -789,6 +798,7 @@ pub fn __log(
     logger: &Logger,
     level: Level,
     srcloc: Option<SourceLocation>,
+    kvs: &[(kv::Key, kv::Value)],
     fmt_args: fmt::Arguments,
 ) {
     // Use `Cow` to avoid allocation as much as we can
@@ -796,7 +806,7 @@ pub fn __log(
         .as_str()
         .map(Cow::Borrowed) // No format arguments, so it is a `&'static str`
         .unwrap_or_else(|| Cow::Owned(fmt_args.to_string()));
-    let record = Record::new(level, payload, srcloc, logger.name());
+    let record = Record::new(level, payload, srcloc, logger.name(), kvs);
     logger.log(&record);
 }
 

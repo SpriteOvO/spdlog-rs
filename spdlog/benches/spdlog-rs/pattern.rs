@@ -41,6 +41,7 @@ impl<F: Formatter> BenchSink<'_, F> {
 // I think we're just testing benchmarks here, and they should not be executed
 // in parallel, so the data race from `buffer` shouldn't be an problem?
 unsafe impl<F> Sync for BenchSink<'_, F> {}
+unsafe impl<F> Send for BenchSink<'_, F> {}
 
 impl<F: Formatter> Sink for BenchSink<'_, F> {
     fn log(&self, record: &Record) -> spdlog::Result<()> {

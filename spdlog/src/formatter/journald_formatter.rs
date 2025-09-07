@@ -48,6 +48,9 @@ impl JournaldFormatter {
 
         dest.write_str("] ")?;
         dest.write_str(record.payload())?;
+
+        record.key_values().write_to(dest, true)?;
+
         dest.write_str(__EOL)?;
 
         ctx.set_style_range(Some(style_range_begin..style_range_end));

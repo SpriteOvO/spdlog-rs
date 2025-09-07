@@ -19,19 +19,19 @@ use crate::{
 ///  - Default:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [<font color="#0DBC79">info</font>] hello, world!
+///    [2022-11-02 09:23:12.263] [<font color="#0DBC79">info</font>] hello, world! { key1=value1 key2=value2 }
 ///    </pre>
 ///
 ///  - If the logger has a name:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] hello, world!
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] hello, world! { key1=value1 key2=value2 }
 ///    </pre>
 /// 
 ///  - If crate feature `source-location` is enabled:
 ///
 ///    <pre>
-///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] [mod::path, src/main.rs:4] hello, world!
+///    [2022-11-02 09:23:12.263] [logger-name] [<font color="#0DBC79">info</font>] [mod::path, src/main.rs:4] hello, world! { key1=value1 key2=value2 }
 ///    </pre>
 #[derive(Clone)]
 pub struct FullFormatter {
@@ -62,14 +62,18 @@ impl FullFormatter {
             }
         }
 
-        fmt_with_time(ctx, record, |mut time: TimeDate| {
-            dest.write_str("[")?;
-            dest.write_str(time.full_second_str())?;
-            dest.write_str(".")?;
-            write!(dest, "{:03}", time.millisecond())?;
-            dest.write_str("] [")?;
-            Ok(())
-        })?;
+        fmt_with_time(
+            ctx,
+            record,
+            |mut time: TimeDate| -> Result<(), fmt::Error> {
+                dest.write_str("[")?;
+                dest.write_str(time.full_second_str())?;
+                dest.write_str(".")?;
+                write!(dest, "{:03}", time.millisecond())?;
+                dest.write_str("] [")?;
+                Ok(())
+            },
+        )?;
 
         if let Some(logger_name) = record.logger_name() {
             dest.write_str(logger_name)?;
@@ -93,6 +97,8 @@ impl FullFormatter {
 
         dest.write_str("] ")?;
         dest.write_str(record.payload())?;
+
+        record.key_values().write_to(dest, true)?;
 
         if self.with_eol {
             dest.write_str(__EOL)?;
@@ -126,11 +132,15 @@ mod tests {
     use chrono::prelude::*;
 
     use super::*;
-    use crate::{Level, __EOL};
+    use crate::{kv, Level, __EOL};
 
     #[test]
     fn format() {
-        let record = Record::new(Level::Warn, "test log content", None, None);
+        let kvs = [
+            (kv::Key::__from_static_str("k1"), kv::Value::from(114)),
+            (kv::Key::__from_static_str("k2"), kv::Value::from("514")),
+        ];
+        let record = Record::new(Level::Warn, "test log content", None, None, &kvs);
         let mut buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
         FullFormatter::new()
@@ -140,7 +150,7 @@ mod tests {
         let local_time: DateTime<Local> = record.time().into();
         assert_eq!(
             format!(
-                "[{}] [warn] test log content{}",
+                "[{}] [warn] test log content {{ k1=114 k2=514 }}{}",
                 local_time.format("%Y-%m-%d %H:%M:%S.%3f"),
                 __EOL
             ),

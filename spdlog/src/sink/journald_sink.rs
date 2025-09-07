@@ -3,6 +3,7 @@ use std::{io, os::raw::c_int};
 use crate::{
     formatter::{FormatterContext, JournaldFormatter},
     sink::{helper, Sink},
+    sync::RwLockExtend as _,
     Error, Level, Record, Result, StdResult, StringBuf,
 };
 
@@ -120,11 +121,11 @@ impl Sink for JournaldSink {
         let mut ctx = FormatterContext::new();
         self.common_impl
             .formatter
-            .read()
+            .read_expect()
             .format(record, &mut string_buf, &mut ctx)?;
 
         let kvs = [
-            format!("MESSAGE={}", string_buf),
+            format!("MESSAGE={string_buf}"),
             format!(
                 "PRIORITY={}",
                 JournaldSink::SYSLOG_LEVELS.level(record.level()) as u32

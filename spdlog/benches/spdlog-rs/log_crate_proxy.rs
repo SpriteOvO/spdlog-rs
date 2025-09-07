@@ -29,3 +29,9 @@ fn bench_log_crate_proxy(bencher: &mut Bencher) {
     init();
     bencher.iter(|| log::info!(bench_log_message!()))
 }
+
+#[bench]
+fn bench_log_crate_proxy_kv(bencher: &mut Bencher) {
+    init();
+    bencher.iter(|| log::info!(key1 = 42, key2 = true; bench_log_message!()))
+}

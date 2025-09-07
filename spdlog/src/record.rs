@@ -4,7 +4,7 @@ use std::{
     time::SystemTime,
 };
 
-use crate::{Level, SourceLocation};
+use crate::{kv, Level, SourceLocation};
 
 /// Represents a log record.
 ///
@@ -22,8 +22,9 @@ use crate::{Level, SourceLocation};
 // possible to correct.
 #[derive(Clone, Debug)]
 pub struct Record<'a> {
-    logger_name: Option<Cow<'a, str>>,
+    logger_name: Option<&'a str>,
     payload: Cow<'a, str>,
+    kvs: Cow<'a, [kv::Pair<'a>]>,
     inner: Cow<'a, RecordInner>,
 }
 
@@ -42,10 +43,12 @@ impl<'a> Record<'a> {
         payload: impl Into<Cow<'a, str>>,
         srcloc: Option<SourceLocation>,
         logger_name: Option<&'a str>,
+        kvs: &'a [(kv::Key<'a>, kv::Value<'a>)],
     ) -> Record<'a> {
         Record {
-            logger_name: logger_name.map(Cow::Borrowed),
+            logger_name,
             payload: payload.into(),
+            kvs: Cow::Borrowed(kvs),
             inner: Cow::Owned(RecordInner {
                 level,
                 source_location: srcloc,
@@ -59,8 +62,13 @@ impl<'a> Record<'a> {
     #[must_use]
     pub fn to_owned(&self) -> RecordOwned {
         RecordOwned {
-            logger_name: self.logger_name.clone().map(|n| n.into_owned()),
+            logger_name: self.logger_name.map(|n| n.to_owned()),
             payload: self.payload.to_string(),
+            kvs: self
+                .kvs
+                .iter()
+                .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                .collect(),
             inner: self.inner.clone().into_owned(),
         }
     }
@@ -68,7 +76,7 @@ impl<'a> Record<'a> {
     /// Gets the logger name.
     #[must_use]
     pub fn logger_name(&self) -> Option<&str> {
-        self.logger_name.as_ref().map(|n| n.as_ref())
+        self.logger_name
     }
 
     /// Gets the level.
@@ -101,49 +109,21 @@ impl<'a> Record<'a> {
         self.inner.tid
     }
 
+    /// Gets the key-values.
+    #[must_use]
+    pub fn key_values(&self) -> kv::KeyValues<'_> {
+        kv::KeyValues::with_borrowed(&self.kvs)
+    }
+
     // When adding more getters, also add to `RecordOwned`
 
     #[must_use]
     pub(crate) fn replace_payload(&'a self, new: impl Into<Cow<'a, str>>) -> Self {
         Self {
-            logger_name: self.logger_name.clone(),
+            logger_name: self.logger_name,
             payload: new.into(),
+            kvs: self.kvs.clone(),
             inner: Cow::Borrowed(&self.inner),
-        }
-    }
-
-    #[cfg(feature = "log")]
-    #[must_use]
-    pub(crate) fn from_log_crate_record(
-        logger: &'a crate::Logger,
-        record: &log::Record,
-        time: SystemTime,
-    ) -> Self {
-        let args = record.args();
-
-        Self {
-            // If the logger has a name configured, use that name. Otherwise, the name can also be
-            // given by the target of the log record.
-            logger_name: logger.name().map(Cow::Borrowed).or_else(|| {
-                let log_target = record.target();
-                if log_target.is_empty() {
-                    None
-                } else {
-                    Some(Cow::Owned(String::from(log_target)))
-                }
-            }),
-            payload: match args.as_str() {
-                Some(literal_str) => literal_str.into(),
-                None => args.to_string().into(),
-            },
-            inner: Cow::Owned(RecordInner {
-                level: record.level().into(),
-                source_location: SourceLocation::from_log_crate_record(record),
-                time,
-                // For records from `log` crate, they never seem to come from different threads, so
-                // getting the current TID here should be correct
-                tid: get_current_tid(),
-            }),
         }
     }
 
@@ -160,6 +140,7 @@ impl<'a> Record<'a> {
 pub struct RecordOwned {
     logger_name: Option<String>,
     payload: String,
+    kvs: Vec<(kv::KeyOwned, kv::ValueOwned)>,
     inner: RecordInner,
 }
 
@@ -168,8 +149,14 @@ impl RecordOwned {
     #[must_use]
     pub fn as_ref(&self) -> Record<'_> {
         Record {
-            logger_name: self.logger_name.as_deref().map(Cow::Borrowed),
+            logger_name: self.logger_name.as_deref(),
             payload: Cow::Borrowed(&self.payload),
+            kvs: Cow::Owned(
+                self.kvs
+                    .iter()
+                    .map(|(k, v)| (k.as_ref(), v.by_ref()))
+                    .collect::<Vec<_>>(),
+            ),
             inner: Cow::Borrowed(&self.inner),
         }
     }
@@ -210,7 +197,72 @@ impl RecordOwned {
         self.inner.tid
     }
 
+    /// Gets the key-values.
+    #[must_use]
+    pub fn key_values(&self) -> kv::KeyValues<'_> {
+        kv::KeyValues::with_owned(&self.kvs)
+    }
+
     // When adding more getters, also add to `Record`
+}
+
+#[cfg(feature = "log")]
+#[derive(Clone, Debug)]
+pub(crate) struct LogCrateRecord<'a> {
+    logger_name: Option<&'a str>,
+    payload: Cow<'a, str>,
+    kvs: Vec<(log::kv::Key<'a>, kv::ValueOwned)>,
+    inner: Cow<'a, RecordInner>,
+}
+
+#[cfg(feature = "log")]
+impl<'a> LogCrateRecord<'a> {
+    #[must_use]
+    pub(crate) fn new(
+        logger: &'a crate::Logger,
+        record: &'a log::Record,
+        time: SystemTime,
+    ) -> Self {
+        let args = record.args();
+
+        Self {
+            // If the logger has a name configured, use that name. Otherwise, the name can also be
+            // given by the target of the log record.
+            logger_name: logger.name().or_else(|| Some(record.target())),
+            kvs: {
+                let kvs = record.key_values();
+                let mut cvt = kv::LogCrateConverter::new(kvs.count());
+                assert!(kvs.visit(&mut cvt).is_ok());
+                cvt.finalize()
+            },
+            payload: match args.as_str() {
+                Some(literal_str) => literal_str.into(),
+                None => args.to_string().into(),
+            },
+            inner: Cow::Owned(RecordInner {
+                level: record.level().into(),
+                source_location: SourceLocation::from_log_crate_record(record),
+                time,
+                // For records from `log` crate, they never seem to come from different threads, so
+                // getting the current TID here should be correct
+                tid: get_current_tid(),
+            }),
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn as_record(&self) -> Record<'_> {
+        Record {
+            logger_name: self.logger_name,
+            payload: self.payload.clone(),
+            kvs: self
+                .kvs
+                .iter()
+                .map(|(k, v)| (kv::Key::from_str(k.as_str()), v.by_ref()))
+                .collect(),
+            inner: self.inner.clone(),
+        }
+    }
 }
 
 fn get_current_tid() -> u64 {

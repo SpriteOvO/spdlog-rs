@@ -19,7 +19,7 @@ pub(crate) const SINK_DEFAULT_LEVEL_FILTER: LevelFilter = LevelFilter::All;
 
 pub(crate) struct CommonImpl {
     pub(crate) level_filter: Atomic<LevelFilter>,
-    pub(crate) formatter: SpinRwLock<Box<dyn Formatter>>,
+    pub(crate) formatter: RwLock<Box<dyn Formatter>>,
     pub(crate) error_handler: SinkErrorHandler,
 }
 
@@ -36,7 +36,7 @@ impl CommonImpl {
     ) -> Self {
         Self {
             level_filter: Atomic::new(common_builder_impl.level_filter),
-            formatter: SpinRwLock::new(common_builder_impl.formatter.unwrap_or_else(fallback)),
+            formatter: RwLock::new(common_builder_impl.formatter.unwrap_or_else(fallback)),
             error_handler: Atomic::new(common_builder_impl.error_handler),
         }
     }
@@ -46,7 +46,7 @@ impl CommonImpl {
     pub(crate) fn with_formatter(formatter: Box<dyn Formatter>) -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
-            formatter: SpinRwLock::new(formatter),
+            formatter: RwLock::new(formatter),
             error_handler: Atomic::new(None),
         }
     }
@@ -108,7 +108,8 @@ macro_rules! common_impl {
     ( @SinkCustomInner@formatter: None ) => {};
     ( @SinkCustomInner@formatter: $($field:ident).+ ) => {
         fn set_formatter(&self, formatter: Box<dyn $crate::formatter::Formatter>) {
-            *self.$($field).+.write() = formatter;
+            use crate::sync::RwLockExtend as _;
+            *self.$($field).+.write_expect() = formatter;
         }
     };
     ( @SinkCustomInner@error_handler: None ) => {};

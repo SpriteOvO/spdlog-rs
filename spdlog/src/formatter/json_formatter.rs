@@ -5,7 +5,10 @@ use std::{
 };
 
 use cfg_if::cfg_if;
-use serde::{ser::SerializeStruct, Serialize};
+use serde::{
+    ser::{SerializeMap, SerializeStruct},
+    Serialize, Serializer,
+};
 
 use crate::{
     formatter::{Formatter, FormatterContext},
@@ -16,12 +19,12 @@ fn opt_to_num<T>(opt: Option<T>) -> usize {
     opt.map_or(0, |_| 1)
 }
 
-struct JsonRecord<'a>(&'a Record<'a>);
+struct JsonRecord<'a, 'b>(&'a Record<'b>);
 
-impl Serialize for JsonRecord<'_> {
+impl Serialize for JsonRecord<'_, '_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer,
+        S: Serializer,
     {
         let fields_len =
             4 + opt_to_num(self.0.logger_name()) + opt_to_num(self.0.source_location());
@@ -40,6 +43,27 @@ impl Serialize for JsonRecord<'_> {
                 .expect("invalid timestamp"),
         )?;
         record.serialize_field("payload", self.0.payload())?;
+
+        if !self.0.key_values().is_empty() {
+            struct JsonKV<'a, 'b>(&'a Record<'b>);
+
+            impl Serialize for JsonKV<'_, '_> {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+                {
+                    let kv = self.0.key_values();
+                    let mut map = serializer.serialize_map(Some(kv.len()))?;
+                    for (key, value) in kv {
+                        map.serialize_entry(key.as_str(), &value)?;
+                    }
+                    map.end()
+                }
+            }
+
+            record.serialize_field("kv", &JsonKV(self.0))?;
+        }
+
         if let Some(logger_name) = self.0.logger_name() {
             record.serialize_field("logger", logger_name)?;
         }
@@ -49,12 +73,6 @@ impl Serialize for JsonRecord<'_> {
         }
 
         record.end()
-    }
-}
-
-impl<'a> From<&'a Record<'a>> for JsonRecord<'a> {
-    fn from(value: &'a Record<'a>) -> Self {
-        JsonRecord(value)
     }
 }
 
@@ -96,6 +114,7 @@ impl From<JsonFormatterError> for crate::Error {
 /// | `level`     | String       | The level of the log. Same as the return of [`Level::as_str`].                                                                 |
 /// | `timestamp` | Integer(u64) | The timestamp when the log was generated, in milliseconds since January 1, 1970 00:00:00 UTC.                                  |
 /// | `payload`   | String       | The contents of the log.                                                                                                       |
+/// | `kv`        | Object/Null  | The key-values of the log. Null if kv is not specified.                                                                        |
 /// | `logger`    | String/Null  | The name of the logger. Null if the logger has no name.                                                                        |
 /// | `tid`       | Integer(u64) | The thread ID when the log was generated.                                                                                      |
 /// | `source`    | Object/Null  | The source location of the log. See [`SourceLocation`] for its schema. Null if crate feature `source-location` is not enabled. |
@@ -124,6 +143,13 @@ impl From<JsonFormatterError> for crate::Error {
 ///    ```json
 ///    {"level":"info","timestamp":1722817541459,"payload":"hello, world!","logger":"app-component","tid":3478045}
 ///    {"level":"error","timestamp":1722817541459,"payload":"something went wrong","logger":"app-component","tid":3478045}
+///    ```
+/// 
+///  - If key-values are present:
+/// 
+///    ```json
+///    {"level":"info","timestamp":1722817541459,"payload":"hello, world!","kv":{"k1":123,"k2":"cool"},"tid":3478045}
+///    {"level":"error","timestamp":1722817541459,"payload":"something went wrong","kv":{"k1":123,"k2":"cool"},"tid":3478045}
 ///    ```
 /// 
 ///  - If crate feature `source-location` is enabled:
@@ -157,13 +183,11 @@ impl JsonFormatter {
             }
         }
 
-        let json_record: JsonRecord = record.into();
-
         // TODO: https://github.com/serde-rs/json/issues/863
         //
         // The performance can be significantly optimized here if the issue can be
         // solved.
-        dest.write_str(&serde_json::to_string(&json_record)?)?;
+        dest.write_str(&serde_json::to_string(&JsonRecord(record))?)?;
 
         dest.write_str(__EOL)?;
 
@@ -193,13 +217,13 @@ mod tests {
     use chrono::prelude::*;
 
     use super::*;
-    use crate::{Level, SourceLocation, __EOL};
+    use crate::{kv, Level, SourceLocation, __EOL};
 
     #[test]
     fn should_format_json() {
         let mut dest = StringBuf::new();
         let formatter = JsonFormatter::new();
-        let record = Record::new(Level::Info, "payload", None, None);
+        let record = Record::new(Level::Info, "payload", None, None, &[]);
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
@@ -222,7 +246,7 @@ mod tests {
     fn should_format_json_with_logger_name() {
         let mut dest = StringBuf::new();
         let formatter = JsonFormatter::new();
-        let record = Record::new(Level::Info, "payload", None, Some("my-component"));
+        let record = Record::new(Level::Info, "payload", None, Some("my-component"), &[]);
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
@@ -250,6 +274,7 @@ mod tests {
             "payload",
             Some(SourceLocation::__new("module", "file.rs", 1, 2)),
             None,
+            &[],
         );
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
@@ -261,6 +286,33 @@ mod tests {
             dest.to_string(),
             format!(
                 r#"{{"level":"info","timestamp":{},"payload":"{}","tid":{},"source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
+                local_time.timestamp_millis(),
+                "payload",
+                record.tid(),
+                __EOL
+            )
+        );
+    }
+
+    #[test]
+    fn should_format_json_with_kv() {
+        let mut dest = StringBuf::new();
+        let formatter = JsonFormatter::new();
+        let kvs = [
+            (kv::Key::__from_static_str("k1"), kv::Value::from(114)),
+            (kv::Key::__from_static_str("k2"), kv::Value::from("514")),
+        ];
+        let record = Record::new(Level::Info, "payload", None, None, &kvs);
+        let mut ctx = FormatterContext::new();
+        formatter.format(&record, &mut dest, &mut ctx).unwrap();
+
+        let local_time: DateTime<Local> = record.time().into();
+
+        assert_eq!(ctx.style_range(), None);
+        assert_eq!(
+            dest.to_string(),
+            format!(
+                r#"{{"level":"info","timestamp":{},"payload":"{}","kv":{{"k1":114,"k2":"514"}},"tid":{}}}{}"#,
                 local_time.timestamp_millis(),
                 "payload",
                 record.tid(),

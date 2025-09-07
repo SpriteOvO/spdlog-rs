@@ -5,8 +5,8 @@ use once_cell::sync::Lazy;
 
 use crate::{formatter::FormatterContext, sync::*, Record};
 
-static LOCAL_TIME_CACHER: Lazy<SpinMutex<LocalTimeCacher>> =
-    Lazy::new(|| SpinMutex::new(LocalTimeCacher::new()));
+static LOCAL_TIME_CACHER: Lazy<Mutex<LocalTimeCacher>> =
+    Lazy::new(|| Mutex::new(LocalTimeCacher::new()));
 
 pub(crate) fn fmt_with_time<R, F>(ctx: &mut FormatterContext, record: &Record, mut callback: F) -> R
 where
@@ -15,7 +15,7 @@ where
     if let Some(time_date) = ctx.locked_time_date.as_mut() {
         callback(time_date.get())
     } else {
-        callback(LOCAL_TIME_CACHER.lock().get(record.time()))
+        callback(LOCAL_TIME_CACHER.lock_expect().get(record.time()))
     }
 }
 
@@ -79,7 +79,7 @@ impl LocalTimeCacher {
         let millisecond = nanosecond / 1_000_000;
 
         let cache_key = since_epoch.as_secs(); // Unix timestamp
-        if self.cache_values.is_none() || self.stored_key != cache_key {
+        if self.stored_key != cache_key {
             self.cache_values = Some(CacheValues::new(system_time));
             self.stored_key = cache_key;
         }
@@ -276,10 +276,7 @@ impl TimeDate<'_> {
                 let offset_hours = offset_secs_abs / 3600;
                 let offset_minutes = offset_secs_abs % 3600 / 60;
 
-                Some(format!(
-                    "{}{:02}:{:02}",
-                    sign_str, offset_hours, offset_minutes
-                ))
+                Some(format!("{sign_str}{offset_hours:02}:{offset_minutes:02}"))
             };
         }
         self.cached.tz_offset_str.as_deref().unwrap()
@@ -317,7 +314,7 @@ impl CacheValues {
 }
 
 struct TimeDateLocked<'a> {
-    cached: SpinMutexGuard<'a, LocalTimeCacher>,
+    cached: MutexGuard<'a, LocalTimeCacher>,
     nanosecond: u32,
     millisecond: u32,
 }
@@ -336,7 +333,7 @@ impl TimeDateLazyLocked<'_> {
     #[must_use]
     pub(crate) fn get(&mut self) -> TimeDate<'_> {
         let locked = self.locked.get_or_insert_with(|| {
-            let mut cached = LOCAL_TIME_CACHER.lock();
+            let mut cached = LOCAL_TIME_CACHER.lock_expect();
             let time_date = cached.get(self.time);
             let (nanosecond, millisecond) = (time_date.nanosecond, time_date.millisecond);
             TimeDateLocked {

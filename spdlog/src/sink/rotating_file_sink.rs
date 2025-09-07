@@ -100,7 +100,8 @@ struct RotatorFileSize {
     base_path: PathBuf,
     max_size: u64,
     max_files: usize,
-    inner: SpinMutex<RotatorFileSizeInner>,
+    capacity: Option<usize>,
+    inner: Mutex<RotatorFileSizeInner>,
 }
 
 struct RotatorFileSizeInner {
@@ -112,7 +113,7 @@ struct RotatorTimePoint {
     base_path: PathBuf,
     time_point: TimePoint,
     max_files: usize,
-    inner: SpinMutex<RotatorTimePointInner>,
+    inner: Mutex<RotatorTimePointInner>,
 }
 
 #[derive(Copy, Clone)]
@@ -158,6 +159,7 @@ pub struct RotatingFileSinkBuilder<ArgBP, ArgRP> {
     rotation_policy: ArgRP,
     max_files: usize,
     rotate_on_open: bool,
+    capacity: Option<usize>,
 }
 
 impl RotatingFileSink {
@@ -173,6 +175,7 @@ impl RotatingFileSink {
     /// | [rotation_policy] | *must be specified*     |
     /// | [max_files]       | `0`                     |
     /// | [rotate_on_open]  | `false`                 |
+    /// | [capacity]        | consistent with `std`   |
     ///
     /// [level_filter]: RotatingFileSinkBuilder::level_filter
     /// [formatter]: RotatingFileSinkBuilder::formatter
@@ -182,6 +185,7 @@ impl RotatingFileSink {
     /// [rotation_policy]: RotatingFileSinkBuilder::rotation_policy
     /// [max_files]: RotatingFileSinkBuilder::max_files
     /// [rotate_on_open]: RotatingFileSinkBuilder::rotate_on_open
+    /// [capacity]: RotatingFileSinkBuilder::capacity
     #[must_use]
     pub fn builder() -> RotatingFileSinkBuilder<(), ()> {
         RotatingFileSinkBuilder {
@@ -190,6 +194,7 @@ impl RotatingFileSink {
             rotation_policy: (),
             max_files: 0,
             rotate_on_open: false,
+            capacity: None,
         }
     }
 
@@ -240,7 +245,7 @@ impl RotatingFileSink {
     #[must_use]
     fn _current_size(&self) -> u64 {
         if let RotatorKind::FileSize(rotator) = &self.rotator {
-            rotator.inner.lock().current_size
+            rotator.inner.lock_expect().current_size
         } else {
             panic!();
         }
@@ -253,7 +258,7 @@ impl Sink for RotatingFileSink {
         let mut ctx = FormatterContext::new();
         self.common_impl
             .formatter
-            .read()
+            .read_expect()
             .format(record, &mut string_buf, &mut ctx)?;
 
         self.rotator.log(record, &string_buf)
@@ -337,31 +342,40 @@ impl RotatorFileSize {
         max_size: u64,
         max_files: usize,
         rotate_on_open: bool,
+        capacity: Option<usize>,
     ) -> Result<Self> {
-        let file = utils::open_file(&base_path, false)?;
-        let current_size = file.metadata().map_err(Error::QueryFileMetadata)?.len();
+        let file = utils::open_file_bufw(&base_path, false, capacity)?;
+        let current_size = file
+            .get_ref()
+            .metadata()
+            .map_err(Error::QueryFileMetadata)?
+            .len();
 
         let res = Self {
             base_path,
             max_size,
             max_files,
-            inner: SpinMutex::new(RotatorFileSizeInner::new(file, current_size)),
+            capacity,
+            inner: Mutex::new(RotatorFileSizeInner {
+                file: Some(file),
+                current_size,
+            }),
         };
 
         if rotate_on_open && current_size > 0 {
-            res.rotate(&mut res.inner.lock())?;
-            res.inner.lock().current_size = 0;
+            res.rotate(&mut res.inner.lock_expect())?;
+            res.inner.lock_expect().current_size = 0;
         }
 
         Ok(res)
     }
 
-    fn reopen(&self) -> Result<File> {
+    fn reopen(&self) -> Result<BufWriter<File>> {
         // always truncate
-        utils::open_file(&self.base_path, true)
+        utils::open_file_bufw(&self.base_path, true, self.capacity)
     }
 
-    fn rotate(&self, opened_file: &mut SpinMutexGuard<RotatorFileSizeInner>) -> Result<()> {
+    fn rotate(&self, opened_file: &mut MutexGuard<RotatorFileSizeInner>) -> Result<()> {
         let inner = || {
             for i in (1..self.max_files).rev() {
                 let src = Self::calc_file_path(&self.base_path, i - 1);
@@ -386,7 +400,7 @@ impl RotatorFileSize {
             opened_file.current_size = 0;
         }
 
-        opened_file.file = Some(BufWriter::new(self.reopen()?));
+        opened_file.file = Some(self.reopen()?);
 
         res
     }
@@ -407,7 +421,7 @@ impl RotatorFileSize {
         let externsion = base_path.extension();
 
         // append index
-        file_name.push(format!("_{}", index));
+        file_name.push(format!("_{index}"));
 
         let mut path = base_path.to_owned();
         path.set_file_name(file_name);
@@ -419,10 +433,10 @@ impl RotatorFileSize {
     }
 
     // if `self.inner.file` is `None`, try to reopen the file.
-    fn lock_inner(&self) -> Result<SpinMutexGuard<'_, RotatorFileSizeInner>> {
-        let mut inner = self.inner.lock();
+    fn lock_inner(&self) -> Result<MutexGuard<'_, RotatorFileSizeInner>> {
+        let mut inner = self.inner.lock_expect();
         if inner.file.is_none() {
-            inner.file = Some(BufWriter::new(self.reopen()?));
+            inner.file = Some(self.reopen()?);
         }
         Ok(inner)
     }
@@ -456,21 +470,11 @@ impl Rotator for RotatorFileSize {
     }
 
     fn drop_flush(&mut self) -> Result<()> {
-        let mut inner = self.inner.lock();
+        let mut inner = self.inner.lock_expect();
         if let Some(file) = inner.file.as_mut() {
             file.flush().map_err(Error::FlushBuffer)
         } else {
             Ok(())
-        }
-    }
-}
-
-impl RotatorFileSizeInner {
-    #[must_use]
-    fn new(file: File, current_size: u64) -> Self {
-        Self {
-            file: Some(BufWriter::new(file)),
-            current_size,
         }
     }
 }
@@ -482,13 +486,14 @@ impl RotatorTimePoint {
         time_point: TimePoint,
         max_files: usize,
         truncate: bool,
+        capacity: Option<usize>,
     ) -> Result<Self> {
         let now = override_now.unwrap_or_else(SystemTime::now);
         let file_path = Self::calc_file_path(base_path.as_path(), time_point, now);
-        let file = utils::open_file(file_path, truncate)?;
+        let file = utils::open_file_bufw(file_path, truncate, capacity)?;
 
         let inner = RotatorTimePointInner {
-            file: BufWriter::new(file),
+            file,
             rotation_time_point: Self::next_rotation_time_point(time_point, now),
             file_paths: None,
         };
@@ -497,7 +502,7 @@ impl RotatorTimePoint {
             base_path,
             time_point,
             max_files,
-            inner: SpinMutex::new(inner),
+            inner: Mutex::new(inner),
         };
 
         res.init_previous_file_paths(max_files, now);
@@ -520,7 +525,7 @@ impl RotatorTimePoint {
                 now = now.checked_sub(self.time_point.delta_std()).unwrap()
             }
 
-            self.inner.get_mut().file_paths = Some(file_paths);
+            self.inner.get_mut_expect().file_paths = Some(file_paths);
         }
     }
 
@@ -566,7 +571,7 @@ impl RotatorTimePoint {
     fn push_new_remove_old(
         &self,
         new: PathBuf,
-        inner: &mut SpinMutexGuard<RotatorTimePointInner>,
+        inner: &mut MutexGuard<RotatorTimePointInner>,
     ) -> Result<()> {
         let file_paths = inner.file_paths.as_mut().unwrap();
 
@@ -642,7 +647,7 @@ impl RotatorTimePoint {
 
 impl Rotator for RotatorTimePoint {
     fn log(&self, record: &Record, string_buf: &StringBuf) -> Result<()> {
-        let mut inner = self.inner.lock();
+        let mut inner = self.inner.lock_expect();
 
         let mut file_path = None;
         let record_time = record.time();
@@ -672,7 +677,11 @@ impl Rotator for RotatorTimePoint {
     }
 
     fn flush(&self) -> Result<()> {
-        self.inner.lock().file.flush().map_err(Error::FlushBuffer)
+        self.inner
+            .lock_expect()
+            .file
+            .flush()
+            .map_err(Error::FlushBuffer)
     }
 }
 
@@ -728,6 +737,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
             rotation_policy: self.rotation_policy,
             max_files: self.max_files,
             rotate_on_open: self.rotate_on_open,
+            capacity: self.capacity,
         }
     }
 
@@ -745,6 +755,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
             rotation_policy,
             max_files: self.max_files,
             rotate_on_open: self.rotate_on_open,
+            capacity: self.capacity,
         }
     }
 
@@ -774,6 +785,15 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     #[must_use]
     pub fn rotate_on_open(mut self, rotate_on_open: bool) -> Self {
         self.rotate_on_open = rotate_on_open;
+        self
+    }
+
+    /// Specifies the internal buffer capacity.
+    ///
+    /// This parameter is **optional**.
+    #[must_use]
+    pub fn capacity(mut self, capacity: usize) -> Self {
+        self.capacity = Some(capacity);
         self
     }
 
@@ -821,6 +841,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 max_size,
                 self.max_files,
                 self.rotate_on_open,
+                None,
             )?),
             RotationPolicy::Daily { hour, minute } => {
                 RotatorKind::TimePoint(RotatorTimePoint::new(
@@ -829,6 +850,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                     TimePoint::Daily { hour, minute },
                     self.max_files,
                     self.rotate_on_open,
+                    None,
                 )?)
             }
             RotationPolicy::Hourly => RotatorKind::TimePoint(RotatorTimePoint::new(
@@ -837,6 +859,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 TimePoint::Hourly,
                 self.max_files,
                 self.rotate_on_open,
+                None,
             )?),
             RotationPolicy::Period(duration) => RotatorKind::TimePoint(RotatorTimePoint::new(
                 override_now,
@@ -844,6 +867,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 TimePoint::Period(duration),
                 self.max_files,
                 self.rotate_on_open,
+                None,
             )?),
         };
 
@@ -1112,7 +1136,7 @@ mod tests {
                 }
                 count
             });
-            println!("found files: {:?}", filenames);
+            println!("found files: {filenames:?}");
             assert_eq!(actual, expected)
         }
 
@@ -1220,7 +1244,7 @@ mod tests {
 
             {
                 let logger = build(true);
-                let mut record = Record::new(Level::Info, "test log message", None, None);
+                let mut record = Record::new(Level::Info, "test log message", None, None, &[]);
                 let initial_time = record.time();
 
                 assert_files_count("hourly", 1);
@@ -1279,7 +1303,7 @@ mod tests {
             };
 
             {
-                let mut record = Record::new(Level::Info, "test log message", None, None);
+                let mut record = Record::new(Level::Info, "test log message", None, None, &[]);
 
                 assert_files_count(prefix, 1);
 

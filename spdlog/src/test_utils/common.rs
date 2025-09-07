@@ -64,6 +64,10 @@ impl TestSink {
         self.records.lock().unwrap().clone()
     }
 
+    pub fn clear(&self) {
+        self.records.lock().unwrap().clear();
+    }
+
     #[must_use]
     pub fn payloads(&self) -> Vec<String> {
         self.records
