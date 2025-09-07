@@ -79,7 +79,7 @@ impl Pattern {
         self.custom_patterns.0.iter()
     }
 
-    fn template(&self) -> &Template {
+    fn template(&self) -> &Template<'_> {
         &self.template.as_ref().unwrap().1
     }
 }

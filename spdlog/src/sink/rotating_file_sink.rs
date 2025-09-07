@@ -419,7 +419,7 @@ impl RotatorFileSize {
     }
 
     // if `self.inner.file` is `None`, try to reopen the file.
-    fn lock_inner(&self) -> Result<SpinMutexGuard<RotatorFileSizeInner>> {
+    fn lock_inner(&self) -> Result<SpinMutexGuard<'_, RotatorFileSizeInner>> {
         let mut inner = self.inner.lock();
         if inner.file.is_none() {
             inner.file = Some(BufWriter::new(self.reopen()?));

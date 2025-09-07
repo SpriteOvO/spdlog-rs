@@ -5,6 +5,8 @@ extern crate test;
 #[path = "../common/mod.rs"]
 mod common;
 
+use std::{cmp, env, num::NonZeroUsize, sync::Arc, thread, time::Instant};
+
 use clap::Parser;
 use spdlog::{
     error::{Error, SendToChannelError},
@@ -13,7 +15,6 @@ use spdlog::{
     sink::*,
     ThreadPool,
 };
-use std::{cmp, env, num::NonZeroUsize, sync::Arc, thread, time::Instant};
 use test::black_box;
 
 fn bench(

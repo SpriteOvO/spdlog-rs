@@ -166,7 +166,7 @@ pub struct RecordOwned {
 impl RecordOwned {
     /// References as [`Record`] cheaply.
     #[must_use]
-    pub fn as_ref(&self) -> Record {
+    pub fn as_ref(&self) -> Record<'_> {
         Record {
             logger_name: self.logger_name.as_deref().map(Cow::Borrowed),
             payload: Cow::Borrowed(&self.payload),

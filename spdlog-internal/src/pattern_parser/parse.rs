@@ -146,7 +146,7 @@ mod tests {
     mod template_parsing {
         use super::*;
 
-        fn parse_template_str(template: &str) -> nom::IResult<&str, Template> {
+        fn parse_template_str(template: &str) -> nom::IResult<&str, Template<'_>> {
             Template::parser().parse(template)
         }
 

@@ -1,5 +1,7 @@
-use std::num::NonZeroUsize;
-use std::thread::{self, JoinHandle};
+use std::{
+    num::NonZeroUsize,
+    thread::{self, JoinHandle},
+};
 
 use crossbeam::channel::{self as mpmc, Receiver, Sender};
 use once_cell::sync::Lazy;
