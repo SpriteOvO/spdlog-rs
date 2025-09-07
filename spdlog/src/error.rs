@@ -137,6 +137,10 @@ pub enum InvalidArgumentError {
     RotationPolicy(String),
 
     /// Invalid thread pool capacity.
+    #[deprecated(
+        since = "0.5.0",
+        note = "non-zero thread pool capacity is now guarded by NonZeroUsize type"
+    )]
     #[error("'thread pool capacity': {0}")]
     ThreadPoolCapacity(String),
 }
