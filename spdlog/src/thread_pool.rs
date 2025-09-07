@@ -1,10 +1,13 @@
-use std::thread::{self, JoinHandle};
+use std::{
+    num::NonZeroUsize,
+    thread::{self, JoinHandle},
+};
 
 use crossbeam::channel::{self as mpmc, Receiver, Sender};
 use once_cell::sync::Lazy;
 
 use crate::{
-    error::{Error, InvalidArgumentError},
+    error::Error,
     sink::{OverflowPolicy, Task},
     sync::*,
     Result,
@@ -42,8 +45,8 @@ type Callback = Arc<dyn Fn() + Send + Sync + 'static>;
 
 #[allow(missing_docs)]
 pub struct ThreadPoolBuilder {
-    capacity: usize,
-    threads: usize,
+    capacity: NonZeroUsize,
+    threads: NonZeroUsize,
     on_thread_spawn: Option<Callback>,
     on_thread_finish: Option<Callback>,
 }
@@ -67,8 +70,8 @@ impl ThreadPool {
     #[must_use]
     pub fn builder() -> ThreadPoolBuilder {
         ThreadPoolBuilder {
-            capacity: 8192,
-            threads: 1,
+            capacity: NonZeroUsize::new(8192).unwrap(),
+            threads: NonZeroUsize::new(1).unwrap(),
             on_thread_spawn: None,
             on_thread_finish: None,
         }
@@ -123,25 +126,17 @@ impl ThreadPoolBuilder {
     ///
     /// When a new operation is incoming, but the channel is full, it will be
     /// handled by sink according to the [`OverflowPolicy`] that has been set.
-    ///
-    /// # Errors
-    ///
-    /// The `build()` will return [`Error::InvalidArgument`] if the value is
-    /// zero.
     #[must_use]
-    pub fn capacity(&mut self, capacity: usize) -> &mut Self {
+    pub fn capacity(&mut self, capacity: NonZeroUsize) -> &mut Self {
         self.capacity = capacity;
         self
     }
 
     // The current Sinks are not beneficial with more than one thread, so the method
     // is not public.
-    //
-    // If it is ready to be made public in the future, please don't forget to
-    // replace the `panic!` in the `build` function with a recoverable error.
     #[must_use]
     #[allow(dead_code)]
-    fn threads(&mut self, threads: usize) -> &mut Self {
+    fn threads(&mut self, threads: NonZeroUsize) -> &mut Self {
         self.threads = threads;
         self
     }
@@ -171,22 +166,10 @@ impl ThreadPoolBuilder {
 
     /// Builds a [`ThreadPool`].
     pub fn build(&self) -> Result<ThreadPool> {
-        if self.capacity < 1 {
-            return Err(Error::InvalidArgument(
-                InvalidArgumentError::ThreadPoolCapacity("cannot be 0".to_string()),
-            ));
-        }
-
-        if self.threads < 1 {
-            // Users cannot currently configure this value, so `panic!` is not a problem
-            // here.
-            panic!("threads of ThreadPool cannot be 0");
-        }
-
-        let (sender, receiver) = mpmc::bounded(self.capacity);
+        let (sender, receiver) = mpmc::bounded(self.capacity.get());
 
         let mut threads = Vec::new();
-        threads.resize_with(self.threads, || {
+        threads.resize_with(self.threads.get(), || {
             let receiver = receiver.clone();
             let on_thread_spawn = self.on_thread_spawn.clone();
             let on_thread_finish = self.on_thread_finish.clone();
@@ -234,26 +217,5 @@ pub(crate) fn default_thread_pool() -> Arc<ThreadPool> {
             *pool_weak = Arc::downgrade(&pool);
             pool
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn error_capacity_0() {
-        assert!(matches!(
-            ThreadPool::builder().capacity(0).build(),
-            Err(Error::InvalidArgument(
-                InvalidArgumentError::ThreadPoolCapacity(_)
-            ))
-        ));
-    }
-
-    #[test]
-    #[should_panic]
-    fn panic_thread_0() {
-        let _ = ThreadPool::builder().threads(0).build();
     }
 }

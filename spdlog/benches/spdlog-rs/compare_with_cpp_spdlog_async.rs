@@ -5,7 +5,7 @@ extern crate test;
 #[path = "../common/mod.rs"]
 mod common;
 
-use std::{cmp, env, sync::Arc, thread, time::Instant};
+use std::{cmp, env, num::NonZeroUsize, sync::Arc, thread, time::Instant};
 
 use clap::Parser;
 use spdlog::{
@@ -30,6 +30,7 @@ fn bench(
     info!("Queue Overflow Policy: {policy:?}");
     info!("********************************************");
 
+    let queue_size = NonZeroUsize::new(queue_size).unwrap();
     for _ in 0..iters {
         let thread_pool = Arc::new(ThreadPool::builder().capacity(queue_size).build().unwrap());
 
