@@ -119,7 +119,7 @@ macro_rules! common_impl {
         }
     };
 
-    // SinkBuiler
+    // SinkBuilder
 
     ( @SinkBuilder: $($field:ident).+ ) => {
         $crate::sink::helper::common_impl!(@SinkBuilderCustomInner@level_filter: $($field).+.level_filter);
