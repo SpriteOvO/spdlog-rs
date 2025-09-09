@@ -92,47 +92,36 @@ use std::{borrow::Cow, fmt, slice};
 
 use value_bag::{OwnedValueBag, ValueBag};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) enum KeyInner<'a> {
-    Str(&'a str),
-    StaticStr(&'static str),
-}
+use crate::utils::RefStr;
 
 /// Represents a key in a key-value pair.
 #[derive(Debug, Clone)]
-pub struct Key<'a>(KeyInner<'a>);
+pub struct Key<'a>(RefStr<'a>);
 
 impl Key<'_> {
     /// Gets the key string.
     pub fn as_str(&self) -> &str {
-        match &self.0 {
-            KeyInner::Str(s) => s,
-            KeyInner::StaticStr(s) => s,
-        }
+        self.0.get()
     }
 }
 
 impl<'a> Key<'a> {
     #[doc(hidden)]
     pub fn __from_static_str(key: &'static str) -> Self {
-        Key(KeyInner::StaticStr(key))
+        Key(RefStr::new_static(key))
     }
 
     pub(crate) fn from_str(key: &'a str) -> Self {
-        Key(KeyInner::Str(key))
+        Key(RefStr::new_ref(key))
     }
 
     pub(crate) fn to_owned(&self) -> KeyOwned {
-        let inner = match self.0 {
-            KeyInner::Str(s) => KeyOwnedInner::CowStr(Cow::Owned(s.to_string())),
-            KeyInner::StaticStr(s) => KeyOwnedInner::CowStr(Cow::Borrowed(s)),
-        };
-        KeyOwned(inner)
+        KeyOwned(self.0.to_cow_static())
     }
 
     #[cfg(test)]
-    pub(crate) fn inner(&self) -> KeyInner<'a> {
-        self.0.clone()
+    pub(crate) fn inner(&self) -> RefStr<'a> {
+        self.0
     }
 }
 
@@ -143,22 +132,11 @@ impl PartialEq for Key<'_> {
 }
 
 #[derive(Debug, Clone)]
-enum KeyOwnedInner {
-    CowStr(Cow<'static, str>),
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct KeyOwned(KeyOwnedInner);
+pub(crate) struct KeyOwned(Cow<'static, str>);
 
 impl KeyOwned {
     pub(crate) fn as_ref(&self) -> Key<'_> {
-        let inner = match &self.0 {
-            KeyOwnedInner::CowStr(s) => match s {
-                Cow::Borrowed(s) => KeyInner::StaticStr(s),
-                Cow::Owned(s) => KeyInner::Str(s),
-            },
-        };
-        Key(inner)
+        Key(RefStr::new_ref(&self.0))
     }
 }
 

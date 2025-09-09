@@ -1,8 +1,12 @@
+mod ref_str;
+
 use std::{
     fs::{self, File, OpenOptions},
     io::BufWriter,
     path::Path,
 };
+
+pub(crate) use ref_str::*;
 
 use crate::{Error, Result};
 

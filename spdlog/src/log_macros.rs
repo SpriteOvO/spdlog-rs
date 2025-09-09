@@ -217,10 +217,11 @@ mod tests {
 
     use crate::{
         formatter::Formatter,
-        kv::{Key, KeyInner},
+        kv::Key,
         prelude::*,
         sink::Sink,
         test_utils::{self, *},
+        utils::RefStr,
         ErrorHandler, Record,
     };
 
@@ -271,7 +272,7 @@ mod tests {
                             .map(|(k, v)| (k.inner(), v.to_string()))
                             .collect::<Vec<_>>(),
                         kv.iter()
-                            .map(|(k, v)| (KeyInner::StaticStr(k), v.to_string()))
+                            .map(|(k, v)| (RefStr::new_ref(k), v.to_string()))
                             .collect::<Vec<_>>()
                     );
                     assert_eq!(record.payload(), payload);
