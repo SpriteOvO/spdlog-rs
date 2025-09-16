@@ -47,7 +47,7 @@ When updating this, also update:
 - Cargo.toml
 -->
 
-The current minimum supported Rust version is 1.61.
+The current minimum supported Rust version is 1.63.
 
 `spdlog-rs` is built against the latest Rust stable release, it is not guaranteed to build on Rust versions earlier than the minimum supported version.
 

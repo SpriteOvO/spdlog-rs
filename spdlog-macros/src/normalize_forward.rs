@@ -187,7 +187,7 @@ pub fn normalize(normalize: Normalize) -> syn::Result<TokenStream> {
                     .find_map(|allowed| {
                         allowed
                             .as_optional_mut()
-                            .and_then(|allowed| (allowed.name == input_arg.name).then(|| allowed))
+                            .and_then(|allowed| (allowed.name == input_arg.name).then_some(allowed))
                     })
                     .ok_or_else(|| {
                         syn::Error::new(
