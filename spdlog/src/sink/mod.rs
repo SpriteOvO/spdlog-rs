@@ -19,6 +19,11 @@
 //!
 //! [`Logger`]: crate::logger::Logger
 
+#[cfg(any(
+    all(target_os = "android", feature = "native", feature = "android_log"),
+    all(doc, not(doctest))
+))]
+mod android_sink;
 #[cfg(feature = "multi-thread")]
 pub(crate) mod async_sink;
 mod dedup_sink;
@@ -36,6 +41,11 @@ mod write_sink;
 
 use std::ops::Deref;
 
+#[cfg(any(
+    all(target_os = "android", feature = "native", feature = "android_log"),
+    all(doc, not(doctest))
+))]
+pub use android_sink::*;
 #[cfg(feature = "multi-thread")]
 pub use async_sink::*;
 pub use dedup_sink::*;

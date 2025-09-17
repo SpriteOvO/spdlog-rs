@@ -35,6 +35,7 @@ release-level-trace    = []
 source-location = []
 native = []
 libsystemd = ["dep:libsystemd-sys"]
+android_log = ["dep:android_log-sys"]
 multi-thread = ["dep:crossbeam"]
 runtime-pattern = ["dep:spdlog-internal"]
 serde = ["dep:serde", "value-bag/serde"]
@@ -69,6 +70,9 @@ libc = "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libsystemd-sys = { version = "0.9.3", optional = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_log-sys = { version = "0.3.0", optional = true }
 
 [dev-dependencies]
 clap = { version = "3.2.23", features = ["derive"] }
