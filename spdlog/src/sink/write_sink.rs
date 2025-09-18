@@ -39,18 +39,18 @@ where
 {
     /// Gets a builder of `WriteSink` with default parameters:
     ///
-    /// | Parameter         | Default Value           |
-    /// |-------------------|-------------------------|
-    /// | [level_filter]    | `All`                   |
-    /// | [formatter]       | `FullFormatter`         |
-    /// | [error_handler]   | [default error handler] |
-    /// |                   |                         |
-    /// | [target]          | *must be specified*     |
+    /// | Parameter         | Default Value               |
+    /// |-------------------|-----------------------------|
+    /// | [level_filter]    | `All`                       |
+    /// | [formatter]       | `FullFormatter`             |
+    /// | [error_handler]   | [`ErrorHandler::default()`] |
+    /// |                   |                             |
+    /// | [target]          | *must be specified*         |
     ///
     /// [level_filter]: WriteSinkBuilder::level_filter
     /// [formatter]: WriteSinkBuilder::formatter
     /// [error_handler]: WriteSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [target]: WriteSinkBuilder::target
     #[must_use]
     pub fn builder() -> WriteSinkBuilder<W, ()> {
@@ -134,7 +134,7 @@ where
     fn drop(&mut self) {
         let flush_result = self.lock_target().flush().map_err(Error::FlushBuffer);
         if let Err(err) = flush_result {
-            self.prop.non_returnable_error("WriteSink", err)
+            self.prop.call_error_handler_internal("WriteSink", err)
         }
     }
 }
@@ -192,8 +192,8 @@ where
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn error_handler(self, handler: ErrorHandler) -> Self {
-        self.prop.set_error_handler(Some(handler));
+    pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
+        self.prop.set_error_handler(handler);
         self
     }
 }

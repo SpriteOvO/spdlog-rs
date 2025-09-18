@@ -95,19 +95,19 @@ pub struct StdStreamSink {
 impl StdStreamSink {
     /// Gets a builder of `StdStreamSink` with default parameters:
     ///
-    /// | Parameter         | Default Value           |
-    /// |-------------------|-------------------------|
-    /// | [level_filter]    | `All`                   |
-    /// | [formatter]       | `FullFormatter`         |
-    /// | [error_handler]   | [default error handler] |
-    /// |                   |                         |
-    /// | [std_stream]      | *must be specified*     |
-    /// | [style_mode]      | `Auto`                  |
+    /// | Parameter         | Default Value               |
+    /// |-------------------|-----------------------------|
+    /// | [level_filter]    | `All`                       |
+    /// | [formatter]       | `FullFormatter`             |
+    /// | [error_handler]   | [`ErrorHandler::default()`] |
+    /// |                   |                             |
+    /// | [std_stream]      | *must be specified*         |
+    /// | [style_mode]      | `Auto`                      |
     ///
     /// [level_filter]: StdStreamSinkBuilder::level_filter
     /// [formatter]: StdStreamSinkBuilder::formatter
     /// [error_handler]: StdStreamSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [std_stream]: StdStreamSinkBuilder::std_stream
     /// [style_mode]: StdStreamSinkBuilder::style_mode
     #[must_use]
@@ -285,8 +285,8 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn error_handler(self, handler: ErrorHandler) -> Self {
-        self.prop.set_error_handler(Some(handler));
+    pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
+        self.prop.set_error_handler(handler);
         self
     }
 }

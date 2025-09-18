@@ -89,19 +89,19 @@ pub struct DedupSink {
 impl DedupSink {
     /// Gets a builder of `DedupSink` with default parameters:
     ///
-    /// | Parameter       | Default Value           |
-    /// |-----------------|-------------------------|
-    /// | [level_filter]  | `All`                   |
-    /// | [formatter]     | `FullFormatter`         |
-    /// | [error_handler] | [default error handler] |
-    /// |                 |                         |
-    /// | [sinks]         | `[]`                    |
-    /// | [skip_duration] | *must be specified*     |
+    /// | Parameter       | Default Value               |
+    /// |-----------------|-----------------------------|
+    /// | [level_filter]  | `All`                       |
+    /// | [formatter]     | `FullFormatter`             |
+    /// | [error_handler] | [`ErrorHandler::default()`] |
+    /// |                 |                             |
+    /// | [sinks]         | `[]`                        |
+    /// | [skip_duration] | *must be specified*         |
     ///
     /// [level_filter]: DedupSinkBuilder::level_filter
     /// [formatter]: DedupSinkBuilder::formatter
     /// [error_handler]: DedupSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [sinks]: DedupSinkBuilder::sink
     /// [skip_duration]: DedupSinkBuilder::skip_duration
     #[must_use]
@@ -191,10 +191,10 @@ impl Sink for DedupSink {
 impl Drop for DedupSink {
     fn drop(&mut self) {
         if let Err(err) = self.log_skipping_message(&mut self.state.lock_expect()) {
-            self.prop.non_returnable_error("DedupSink", err);
+            self.prop.call_error_handler_internal("DedupSink", err);
         }
         if let Err(err) = self.flush_sinks() {
-            self.prop.non_returnable_error("DedupSink", err);
+            self.prop.call_error_handler_internal("DedupSink", err);
         }
     }
 }
@@ -266,8 +266,8 @@ impl<ArgS> DedupSinkBuilder<ArgS> {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn error_handler(self, handler: ErrorHandler) -> Self {
-        self.prop.set_error_handler(Some(handler));
+    pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
+        self.prop.set_error_handler(handler);
         self
     }
 }

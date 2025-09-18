@@ -59,14 +59,6 @@ use crate::{
 
 pub(crate) const SINK_DEFAULT_LEVEL_FILTER: LevelFilter = LevelFilter::All;
 
-pub(crate) type SinkErrorHandler = Atomic<Option<ErrorHandler>>;
-
-cfg_if::cfg_if! {
-    if #[cfg(test)] {
-        crate::utils::const_assert!(Atomic::<SinkErrorHandler>::is_lock_free());
-    }
-}
-
 /// Contains definitions of sink properties.
 ///
 /// It provides a set of common properties for sink to define. If there is no
@@ -80,7 +72,7 @@ cfg_if::cfg_if! {
 pub struct SinkProp {
     level_filter: Atomic<LevelFilter>,
     formatter: RwLockMappable<Box<dyn Formatter>>,
-    error_handler: SinkErrorHandler,
+    error_handler: RwLock<ErrorHandler>,
 }
 
 impl Default for SinkProp {
@@ -88,7 +80,7 @@ impl Default for SinkProp {
         Self {
             level_filter: Atomic::new(SINK_DEFAULT_LEVEL_FILTER),
             formatter: RwLockMappable::new(Box::new(FullFormatter::new())),
-            error_handler: Atomic::new(None),
+            error_handler: RwLock::new(ErrorHandler::default()),
         }
     }
 }
@@ -126,9 +118,13 @@ impl SinkProp {
         *self.formatter.write() = formatter;
     }
 
-    /// Gets the error handler.
-    pub fn error_handler(&self) -> Option<ErrorHandler> {
-        self.error_handler.load(Ordering::Relaxed)
+    /// Calls the error handler with an error.
+    pub fn call_error_handler(&self, err: Error) {
+        self.error_handler.read_expect().call(err)
+    }
+
+    pub(crate) fn call_error_handler_internal(&self, from: impl AsRef<str>, err: Error) {
+        self.error_handler.read_expect().call_internal(from, err)
     }
 
     /// Sets a error handler.
@@ -138,19 +134,9 @@ impl SinkProp {
     /// returned immediately, this function will be called. For example,
     /// asynchronous errors.
     ///
-    /// If no handler is set, [default error handler] will be used.
-    ///
     /// [`Logger`]: crate::logger::Logger
-    /// [default error handler]: ../error/index.html#default-error-handler
-    pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
-        self.error_handler.store(handler, Ordering::Relaxed)
-    }
-
-    pub(crate) fn non_returnable_error(&self, from: impl AsRef<str>, err: Error) {
-        match self.error_handler.load(Ordering::Relaxed) {
-            Some(handler) => handler(err),
-            None => crate::default_error_handler(from, err),
-        }
+    pub fn set_error_handler<F: Into<ErrorHandler>>(&self, handler: F) {
+        *self.error_handler.write_expect() = handler.into();
     }
 }
 
@@ -196,11 +182,8 @@ pub trait SinkPropAccess {
     /// returned immediately, this function will be called. For example,
     /// asynchronous errors.
     ///
-    /// If no handler is set, [default error handler] will be used.
-    ///
     /// [`Logger`]: crate::logger::Logger
-    /// [default error handler]: ../error/index.html#default-error-handler
-    fn set_error_handler(&self, handler: Option<ErrorHandler>);
+    fn set_error_handler(&self, handler: ErrorHandler);
 }
 
 impl<S: GetSinkProp> SinkPropAccess for S {
@@ -216,7 +199,7 @@ impl<S: GetSinkProp> SinkPropAccess for S {
         self.prop().set_formatter_boxed(formatter);
     }
 
-    fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+    fn set_error_handler(&self, handler: ErrorHandler) {
         self.prop().set_error_handler(handler);
     }
 }

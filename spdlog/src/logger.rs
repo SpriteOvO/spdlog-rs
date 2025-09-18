@@ -111,7 +111,7 @@ pub struct Logger {
     level_filter: Atomic<LevelFilter>,
     sinks: Sinks,
     flush_level_filter: Atomic<LevelFilter>,
-    error_handler: RwLock<Option<ErrorHandler>>,
+    error_handler: RwLock<ErrorHandler>,
     periodic_flusher: Mutex<Option<(Duration, PeriodicWorker)>>,
 }
 
@@ -148,14 +148,14 @@ impl Debug for Logger {
 impl Logger {
     /// Gets a [`LoggerBuilder`] with default parameters:
     ///
-    /// | Parameter            | Default Value           |
-    /// |----------------------|-------------------------|
-    /// | [name]               | `None`                  |
-    /// | [sinks]              | `[]`                    |
-    /// | [level_filter]       | `MoreSevereEqual(Info)` |
-    /// | [flush_level_filter] | `Off`                   |
-    /// | [flush_period]       | `None`                  |
-    /// | [error_handler]      | [default error handler] |
+    /// | Parameter            | Default Value               |
+    /// |----------------------|-----------------------------|
+    /// | [name]               | `None`                      |
+    /// | [sinks]              | `[]`                        |
+    /// | [level_filter]       | `MoreSevereEqual(Info)`     |
+    /// | [flush_level_filter] | `Off`                       |
+    /// | [flush_period]       | `None`                      |
+    /// | [error_handler]      | [`ErrorHandler::default()`] |
     ///
     /// [name]: LoggerBuilder::name
     /// [sinks]: LoggerBuilder::sink
@@ -163,7 +163,7 @@ impl Logger {
     /// [flush_level_filter]: LoggerBuilder::flush_level_filter
     /// [flush_period]: Logger::set_flush_period
     /// [error_handler]: LoggerBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     #[must_use]
     pub fn builder() -> LoggerBuilder {
         LoggerBuilder {
@@ -171,7 +171,7 @@ impl Logger {
             level_filter: LevelFilter::MoreSevereEqual(Level::Info),
             sinks: vec![],
             flush_level_filter: LevelFilter::Off,
-            error_handler: None,
+            error_handler: ErrorHandler::default(),
         }
     }
 
@@ -379,12 +379,12 @@ impl Logger {
     /// ```
     /// use spdlog::prelude::*;
     ///
-    /// spdlog::default_logger().set_error_handler(Some(|err| {
+    /// spdlog::default_logger().set_error_handler(|err| {
     ///     panic!("An error occurred in the default logger: {}", err)
-    /// }));
+    /// });
     /// ```
-    pub fn set_error_handler(&self, handler: Option<ErrorHandler>) {
-        *self.error_handler.write_expect() = handler;
+    pub fn set_error_handler<F: Into<ErrorHandler>>(&self, handler: F) {
+        *self.error_handler.write_expect() = handler.into();
     }
 
     /// Forks and configures a separate new logger.
@@ -479,7 +479,7 @@ impl Logger {
             sinks: self.sinks.clone(),
             flush_level_filter: Atomic::new(self.flush_level_filter()),
             periodic_flusher: Mutex::new(None),
-            error_handler: RwLock::new(*self.error_handler.read_expect()),
+            error_handler: RwLock::new(self.error_handler.read_expect().clone()),
         }
     }
 
@@ -506,17 +506,13 @@ impl Logger {
     }
 
     fn handle_error(&self, err: Error) {
-        if let Some(handler) = self.error_handler.read_expect().as_ref() {
-            handler(err)
-        } else {
-            crate::default_error_handler(
-                format!(
-                    "Logger ({})",
-                    self.name.as_ref().map_or("*no name*", String::as_str)
-                ),
-                err,
-            );
-        }
+        self.error_handler.read_expect().call_internal(
+            format!(
+                "Logger ({})",
+                self.name.as_ref().map_or("*no name*", String::as_str)
+            ),
+            err,
+        );
     }
 
     #[must_use]
@@ -550,7 +546,7 @@ pub struct LoggerBuilder {
     level_filter: LevelFilter,
     sinks: Sinks,
     flush_level_filter: LevelFilter,
-    error_handler: Option<ErrorHandler>,
+    error_handler: ErrorHandler,
 }
 
 impl LoggerBuilder {
@@ -624,8 +620,8 @@ impl LoggerBuilder {
     ///
     /// See the documentation of [`Logger::set_error_handler`] for the
     /// description of this parameter.
-    pub fn error_handler(&mut self, handler: ErrorHandler) -> &mut Self {
-        self.error_handler = Some(handler);
+    pub fn error_handler<F: Into<ErrorHandler>>(&mut self, handler: F) -> &mut Self {
+        self.error_handler = handler.into();
         self
     }
 
@@ -657,7 +653,7 @@ impl LoggerBuilder {
             level_filter: Atomic::new(self.level_filter),
             sinks: self.sinks.clone(),
             flush_level_filter: Atomic::new(self.flush_level_filter),
-            error_handler: RwLock::new(self.error_handler),
+            error_handler: RwLock::new(self.error_handler.clone()),
             periodic_flusher: Mutex::new(None),
         };
 

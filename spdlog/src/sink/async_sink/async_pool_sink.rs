@@ -1,5 +1,5 @@
 use crate::{
-    default_error_handler, default_thread_pool,
+    default_thread_pool,
     formatter::{Formatter, UnreachableFormatter},
     sink::{OverflowPolicy, Sink, SinkProp, SinkPropAccess, Sinks},
     sync::*,
@@ -57,13 +57,13 @@ impl AsyncPoolSink {
     /// | Parameter         | Default Value                       |
     /// |-------------------|-------------------------------------|
     /// | [level_filter]    | `All`                               |
-    /// | [error_handler]   | [default error handler]             |
+    /// | [error_handler]   | [`ErrorHandler::default()`]         |
     /// | [overflow_policy] | `Block`                             |
     /// | [thread_pool]     | internal shared default thread pool |
     ///
     /// [level_filter]: AsyncPoolSinkBuilder::level_filter
     /// [error_handler]: AsyncPoolSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [overflow_policy]: AsyncPoolSinkBuilder::overflow_policy
     /// [thread_pool]: AsyncPoolSinkBuilder::thread_pool
     #[must_use]
@@ -115,7 +115,7 @@ impl SinkPropAccess for AsyncPoolSink {
         }
     }
 
-    fn set_error_handler(&self, handler: Option<ErrorHandler>) {
+    fn set_error_handler(&self, handler: ErrorHandler) {
         self.backend.prop.set_error_handler(handler);
     }
 }
@@ -222,8 +222,8 @@ impl AsyncPoolSinkBuilder {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn error_handler(self, handler: ErrorHandler) -> Self {
-        self.prop.set_error_handler(Some(handler));
+    pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
+        self.prop.set_error_handler(handler);
         self
     }
 
@@ -267,9 +267,7 @@ impl Backend {
     }
 
     fn handle_error(&self, err: Error) {
-        self.prop
-            .error_handler()
-            .unwrap_or(|err| default_error_handler("AsyncPoolSink", err))(err);
+        self.prop.call_error_handler_internal("AsyncPoolSink", err)
     }
 }
 
