@@ -6,6 +6,7 @@
 //! handler will be used, which will print the error to `stderr`.
 
 use std::{
+    error::Error as StdError,
     fmt::{self, Display},
     io, result,
 };
@@ -104,6 +105,15 @@ pub enum Error {
     #[cfg(feature = "serde")]
     #[error("failed to serialize log: {0}")]
     SerializeRecord(io::Error),
+
+    /// Returned from a downstream implementation of `spdlog-rs`. Its actual
+    /// error type may be a downstream struct.
+    ///
+    /// When downstream crates encounter errors, other more specific error
+    /// variants should be used first, this variant should only be used as a
+    /// last option when other variant types are incompatible.
+    #[error("{0}")]
+    Downstream(Box<dyn StdError>),
 
     /// Returned when multiple errors occurred.
     #[error("{0:?}")]
