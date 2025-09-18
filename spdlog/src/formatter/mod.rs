@@ -5,7 +5,7 @@
 //! Each normal *Sink* owns a *Formatter*, which is used to format each log.
 //!
 //! The default formatter for most sinks is [`FullFormatter`], you can call
-//! [`SinkAccess::set_formatter`] to replace it with another formatter.
+//! [`SinkPropAccess::set_formatter`] to replace it with another formatter.
 //!
 //! The easiest way to make a custom formatter is to build a pattern, see
 //! [Compile-time and runtime pattern
@@ -48,7 +48,7 @@
 //! # Ok(()) }
 //! ```
 //!
-//! [`SinkAccess::set_formatter`]: crate::sink::SinkAccess::set_formatter
+//! [`SinkPropAccess::set_formatter`]: crate::sink::SinkPropAccess::set_formatter
 //! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 
 mod full_formatter;

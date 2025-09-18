@@ -1,7 +1,7 @@
 use crate::{
     default_error_handler, default_thread_pool,
     formatter::{Formatter, UnreachableFormatter},
-    sink::{OverflowPolicy, Sink, SinkAccess, SinkProp, Sinks},
+    sink::{OverflowPolicy, Sink, SinkProp, SinkPropAccess, Sinks},
     sync::*,
     Error, ErrorHandler, LevelFilter, Record, RecordOwned, Result, ThreadPool,
 };
@@ -98,7 +98,7 @@ impl AsyncPoolSink {
     }
 }
 
-impl SinkAccess for AsyncPoolSink {
+impl SinkPropAccess for AsyncPoolSink {
     fn level_filter(&self) -> LevelFilter {
         self.backend.prop.level_filter()
     }

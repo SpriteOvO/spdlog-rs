@@ -76,7 +76,7 @@ cfg_if::cfg_if! {
 ///
 /// If further customization of the properties is needed (e.g., using different
 /// types, changing behavior), this struct is not needed. Instead, define
-/// properties manually within your sink, and then implement [`SinkAccess`].
+/// properties manually within your sink, and then implement [`SinkPropAccess`].
 pub struct SinkProp {
     level_filter: Atomic<LevelFilter>,
     formatter: RwLockMappable<Box<dyn Formatter>>,
@@ -158,7 +158,7 @@ impl SinkProp {
 ///
 /// This trait is not mandatory for a sink. It enables a blanket implementation,
 /// where a sink that implements this trait will automatically get the
-/// [`SinkAccess`] trait implemented, which eliminates a lot of boilerplate
+/// [`SinkPropAccess`] trait implemented, which eliminates a lot of boilerplate
 /// code.
 pub trait GetSinkProp {
     /// Gets the [`SinkProp`] from a sink.
@@ -173,12 +173,12 @@ pub trait GetSinkProp {
 /// For the common case of custom sinks, users don't need to implement this
 /// trait manually, they can just store a `SinkProp` in their sink struct and
 /// implement trait [`GetSinkProp`], a blanket implementation will automatically
-/// implement `SinkAccess` for the sink.
+/// implement `SinkPropAccess` for the sink.
 ///
 /// For more details on implementing custom sink, see [. /examples] directory.
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
-pub trait SinkAccess {
+pub trait SinkPropAccess {
     /// Gets the log level filter.
     #[must_use]
     fn level_filter(&self) -> LevelFilter;
@@ -203,7 +203,7 @@ pub trait SinkAccess {
     fn set_error_handler(&self, handler: Option<ErrorHandler>);
 }
 
-impl<S: GetSinkProp> SinkAccess for S {
+impl<S: GetSinkProp> SinkPropAccess for S {
     fn level_filter(&self) -> LevelFilter {
         self.prop().level_filter()
     }
@@ -226,7 +226,7 @@ impl<S: GetSinkProp> SinkAccess for S {
 /// See [./examples] directory for how to implement a custom sink.
 ///
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
-pub trait Sink: SinkAccess + Sync + Send {
+pub trait Sink: SinkPropAccess + Sync + Send {
     /// Determines if a log message with the specified level would be logged.
     #[must_use]
     fn should_log(&self, level: Level) -> bool {
