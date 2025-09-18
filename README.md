@@ -21,10 +21,8 @@ Fast, highly configurable Rust logging crate, inspired by the C++ logging librar
     - platform-specific (e.g. `journald` for Linux and `OutputDebugStringW` for Windows);
     - ... and able to implement one yourself.
  - Structured logging.
- - Configuring via environment variables or TOML[^1].
+ - Configuring via environment variables.
  - Readable level filters.
-
-[^1]: TOML deserialization support is working in progress, tracking issue [#25]
 
 ## Getting started
 
