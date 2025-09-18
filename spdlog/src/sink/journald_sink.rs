@@ -96,16 +96,16 @@ impl JournaldSink {
 
     /// Gets a builder of `JournaldSink` with default parameters:
     ///
-    /// | Parameter       | Default Value           |
-    /// |-----------------|-------------------------|
-    /// | [level_filter]  | `All`                   |
-    /// | [formatter]     | `JournaldFormatter`     |
-    /// | [error_handler] | [default error handler] |
+    /// | Parameter       | Default Value               |
+    /// |-----------------|-----------------------------|
+    /// | [level_filter]  | `All`                       |
+    /// | [formatter]     | `JournaldFormatter`         |
+    /// | [error_handler] | [`ErrorHandler::default()`] |
     ///
     /// [level_filter]: JournaldSinkBuilder::level_filter
     /// [formatter]: JournaldSinkBuilder::formatter
     /// [error_handler]: JournaldSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     #[must_use]
     pub fn builder() -> JournaldSinkBuilder {
         let prop = SinkProp::default();
@@ -187,8 +187,8 @@ impl JournaldSinkBuilder {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn error_handler(self, handler: ErrorHandler) -> Self {
-        self.prop.set_error_handler(Some(handler));
+    pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
+        self.prop.set_error_handler(handler);
         self
     }
 

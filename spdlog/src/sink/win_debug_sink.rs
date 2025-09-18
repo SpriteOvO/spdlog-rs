@@ -14,16 +14,16 @@ pub struct WinDebugSink {
 impl WinDebugSink {
     /// Gets a builder of `WinDebugSink` with default parameters:
     ///
-    /// | Parameter       | Default Value           |
-    /// |-----------------|-------------------------|
-    /// | [level_filter]  | `All`                   |
-    /// | [formatter]     | `FullFormatter`         |
-    /// | [error_handler] | [default error handler] |
+    /// | Parameter       | Default Value               |
+    /// |-----------------|-----------------------------|
+    /// | [level_filter]  | `All`                       |
+    /// | [formatter]     | `FullFormatter`             |
+    /// | [error_handler] | [`ErrorHandler::default()`] |
     ///
     /// [level_filter]: WinDebugSinkBuilder::level_filter
     /// [formatter]: WinDebugSinkBuilder::formatter
     /// [error_handler]: WinDebugSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     #[must_use]
     pub fn builder() -> WinDebugSinkBuilder {
         WinDebugSinkBuilder {
@@ -110,8 +110,8 @@ impl WinDebugSinkBuilder {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn error_handler(self, handler: ErrorHandler) -> Self {
-        self.prop.set_error_handler(Some(handler));
+    pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
+        self.prop.set_error_handler(handler);
         self
     }
 

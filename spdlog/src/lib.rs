@@ -334,9 +334,7 @@ use std::{
     borrow::Cow,
     env::{self, VarError},
     ffi::OsStr,
-    fmt,
-    io::{self, Write},
-    panic,
+    fmt, panic,
     result::Result as StdResult,
 };
 
@@ -770,29 +768,6 @@ fn flush_default_logger_at_exit() {
     if !try_atexit() {
         hook_panic() // at least
     }
-}
-
-fn default_error_handler(from: impl AsRef<str>, error: Error) {
-    if let Error::Multiple(errs) = error {
-        errs.into_iter()
-            .for_each(|err| default_error_handler(from.as_ref(), err));
-        return;
-    }
-
-    let date = chrono::Local::now()
-        .format("%Y-%m-%d %H:%M:%S.%3f")
-        .to_string();
-
-    // https://github.com/SpriteOvO/spdlog-rs/discussions/87
-    //
-    // Don't use `eprintln!` here, as it may fail to write and then panic.
-    let _ = writeln!(
-        io::stderr(),
-        "[*** SPDLOG-RS UNHANDLED ERROR ***] [{}] [{}] {}",
-        date,
-        from.as_ref(),
-        error
-    );
 }
 
 // Used at log macros

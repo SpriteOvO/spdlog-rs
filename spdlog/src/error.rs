@@ -8,14 +8,14 @@
 use std::{
     error::Error as StdError,
     fmt::{self, Display},
-    io, result,
+    io::{self, Write},
+    result,
+    sync::Arc,
 };
 
-use atomic::Atomic;
 use thiserror::Error;
 
 pub use crate::env_level::EnvLevelError;
-use crate::utils::const_assert;
 #[cfg(feature = "multi-thread")]
 use crate::{sink::Task, RecordOwned};
 
@@ -278,11 +278,87 @@ pub struct BuildPatternError(pub(crate) spdlog_internal::pattern_parser::Error);
 /// The result type of this crate.
 pub type Result<T> = result::Result<T, Error>;
 
-/// The error handler function type.
-pub type ErrorHandler = fn(Error);
+/// Represents an error handler.
+///
+/// In most cases, it can be constructed by just a `.into()`.
+///
+/// Call [`ErrorHandler::default`] to construct an empty error handler, when an
+/// error is triggered, a built-in fallback handler will be used which prints
+/// the error to `stderr`.
+#[derive(Clone)]
+pub struct ErrorHandler(Option<Arc<dyn Fn(Error) + Send + Sync>>);
 
-const_assert!(Atomic::<ErrorHandler>::is_lock_free());
-const_assert!(Atomic::<Option<ErrorHandler>>::is_lock_free());
+impl ErrorHandler {
+    /// Constructs an error handler with a custom function.
+    #[must_use]
+    pub fn new<F>(custom: F) -> Self
+    where
+        F: Fn(Error) + Send + Sync + 'static,
+    {
+        Self(Some(Arc::new(custom)))
+    }
+
+    /// Calls the error handler with an error.
+    pub fn call(&self, err: Error) {
+        self.call_internal("External", err);
+    }
+
+    pub(crate) fn call_internal(&self, from: impl AsRef<str>, err: Error) {
+        if let Some(handler) = &self.0 {
+            handler(err);
+        } else {
+            Self::default_impl(from, err);
+        }
+    }
+
+    fn default_impl(from: impl AsRef<str>, error: Error) {
+        if let Error::Multiple(errs) = error {
+            errs.into_iter()
+                .for_each(|err| Self::default_impl(from.as_ref(), err));
+            return;
+        }
+
+        let date = chrono::Local::now()
+            .format("%Y-%m-%d %H:%M:%S.%3f")
+            .to_string();
+
+        // https://github.com/SpriteOvO/spdlog-rs/discussions/87
+        //
+        // Don't use `eprintln!` here, as it may fail to write and then panic.
+        let _ = writeln!(
+            io::stderr(),
+            "[*** SPDLOG-RS UNHANDLED ERROR ***] [{}] [{}] {}",
+            date,
+            from.as_ref(),
+            error
+        );
+    }
+}
+
+impl<F> From<F> for ErrorHandler
+where
+    F: Fn(Error) + Send + Sync + 'static,
+{
+    fn from(handler: F) -> Self {
+        Self::new(handler)
+    }
+}
+
+impl Default for ErrorHandler {
+    /// Constructs an error handler with the built-in handler which prints
+    /// errors to `stderr`.
+    fn default() -> Self {
+        Self(None)
+    }
+}
+
+impl fmt::Debug for ErrorHandler {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ErrorHandler")
+            .field(&self.0.as_ref().map_or("default", |_| "custom"))
+            .finish()
+    }
+}
 
 #[cfg(test)]
 mod tests {

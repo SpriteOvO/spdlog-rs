@@ -44,6 +44,7 @@ pub fn open_file_bufw(
 }
 
 // Credits `static_assertions` crate
+#[cfg(test)]
 macro_rules! const_assert {
     ( $cond:expr $(,)? ) => {
         const _: [(); 0 - !{
@@ -52,4 +53,5 @@ macro_rules! const_assert {
         } as usize] = [];
     };
 }
+#[cfg(test)]
 pub(crate) use const_assert;

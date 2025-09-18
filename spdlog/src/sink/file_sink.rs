@@ -35,20 +35,20 @@ pub struct FileSink {
 impl FileSink {
     /// Gets a builder of `FileSink` with default parameters:
     ///
-    /// | Parameter       | Default Value           |
-    /// |-----------------|-------------------------|
-    /// | [level_filter]  | `All`                   |
-    /// | [formatter]     | `FullFormatter`         |
-    /// | [error_handler] | [default error handler] |
-    /// |                 |                         |
-    /// | [path]          | *must be specified*     |
-    /// | [truncate]      | `false`                 |
-    /// | [capacity]      | consistent with `std`   |
+    /// | Parameter       | Default Value               |
+    /// |-----------------|-----------------------------|
+    /// | [level_filter]  | `All`                       |
+    /// | [formatter]     | `FullFormatter`             |
+    /// | [error_handler] | [`ErrorHandler::default()`] |
+    /// |                 |                             |
+    /// | [path]          | *must be specified*         |
+    /// | [truncate]      | `false`                     |
+    /// | [capacity]      | consistent with `std`       |
     ///
     /// [level_filter]: FileSinkBuilder::level_filter
     /// [formatter]: FileSinkBuilder::formatter
     /// [error_handler]: FileSinkBuilder::error_handler
-    /// [default error handler]: error/index.html#default-error-handler
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [path]: FileSinkBuilder::path
     /// [truncate]: FileSinkBuilder::truncate
     /// [capacity]: FileSinkBuilder::capacity
@@ -118,7 +118,7 @@ impl Drop for FileSink {
     fn drop(&mut self) {
         if let Err(err) = self.file.lock_expect().flush() {
             self.prop
-                .non_returnable_error("FileSink", Error::FlushBuffer(err))
+                .call_error_handler_internal("FileSink", Error::FlushBuffer(err))
         }
     }
 }
@@ -199,8 +199,8 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
     ///
     /// This parameter is **optional**.
     #[must_use]
-    pub fn error_handler(self, handler: ErrorHandler) -> Self {
-        self.prop.set_error_handler(Some(handler));
+    pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
+        self.prop.set_error_handler(handler);
         self
     }
 }
