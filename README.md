@@ -38,6 +38,12 @@ The documentation of this crate is hosted on [docs.rs], and you can learn exampl
 
 If you have any trouble while using this crate, please don't hesitate to [open a discussion] for help. For feature requests or bug reports, please [open an issue].
 
+## Developments
+
+Unreleased commits are active on [`main-dev`] branch, and [`main`] branch is only synchronized when released.
+
+If you are going to contribute `spdlog-rs`, please make sure to check out the [`main-dev`] branch and select the [`main-dev`] branch as the base when opening PR.
+
 ## Supported Rust versions
 
 <!--
@@ -73,3 +79,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [docs.rs]: https://docs.rs/spdlog-rs/
 [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
+[`main-dev`]: https://github.com/SpriteOvO/spdlog-rs/tree/main-dev
+[`main`]: https://github.com/SpriteOvO/spdlog-rs/tree/main
