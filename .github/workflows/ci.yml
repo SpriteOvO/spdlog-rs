@@ -196,6 +196,47 @@ jobs:
     - name: Check MSRV for core with Rust ${{ env.rust_minver }}
       run: cargo +${{ env.rust_minver }} check --locked --all-features --verbose
 
+  native-test-android:
+    strategy:
+      fail-fast: false
+    runs-on: 'ubuntu-latest'
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Restore cargo caches
+      uses: Swatinem/rust-cache@v2
+    - name: Install cross
+      run: cargo install cross --git https://github.com/cross-rs/cross --verbose
+    - name: Build example
+      run: |
+        cross build --target x86_64-linux-android --example native_android --features native,android_log,source-location --verbose
+        mv ./target/x86_64-linux-android/debug/examples/native_android ./target/x86_64-linux-android/debug/examples/native_android_srcloc
+        cross build --target x86_64-linux-android --example native_android --features native,android_log --verbose
+    - name: Enable KVM
+      run: |
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+    - name: Run emulator and test
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 29
+        arch: x86_64
+        script: |
+          adb root
+          adb push ./target/x86_64-linux-android/debug/examples/native_android /data
+          adb push ./target/x86_64-linux-android/debug/examples/native_android_srcloc /data
+
+          adb logcat -b all -c
+          adb shell /data/native_android
+          adb shell /data/native_android_srcloc
+          adb logcat -s "spdlog-rs-example" -d > ./logcat.log
+          cat ./logcat.log
+          cat ./logcat.log | grep "I spdlog-rs-example: \[demo] info message from spdlog-rs's AndroidSink"
+          cat ./logcat.log | grep "E spdlog-rs-example: \[demo] error message from spdlog-rs's AndroidSink { error_code=114514 }"
+          cat ./logcat.log | grep -E "I spdlog-rs-example: \[demo] \[native_android, .+.rs:[0-9]+] info message from spdlog-rs's AndroidSink"
+          cat ./logcat.log | grep -E "E spdlog-rs-example: \[demo] \[native_android, .+.rs:[0-9]+] error message from spdlog-rs's AndroidSink { error_code=114514 }"
+
   bench:
     needs: [test, check]
     strategy:
