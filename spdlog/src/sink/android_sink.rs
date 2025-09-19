@@ -3,7 +3,7 @@ use std::{ffi::CString, io, ptr::null, result::Result as StdResult};
 use libc::EPERM;
 
 use crate::{
-    formatter::{Formatter, FormatterContext},
+    formatter::{AndroidFormatter, Formatter, FormatterContext},
     prelude::*,
     sink::{GetSinkProp, Sink, SinkProp},
     Error, ErrorHandler, Record, Result, StringBuf,
@@ -184,7 +184,7 @@ impl AndroidSink {
     /// | Parameter       | Default Value               |
     /// |-----------------|-----------------------------|
     /// | [level_filter]  | `All`                       |
-    /// | [formatter]     | `FullFormatter`             |
+    /// | [formatter]     | `AndroidFormatter`          |
     /// | [error_handler] | [`ErrorHandler::default()`] |
     /// |                 |                             |
     /// | [tag]           | `AndroidSink::Default`      |
@@ -196,8 +196,11 @@ impl AndroidSink {
     /// [tag]: AndroidSinkBuilder::tag
     #[must_use]
     pub fn builder() -> AndroidSinkBuilder {
+        let prop = SinkProp::default();
+        prop.set_formatter(AndroidFormatter::new());
+
         AndroidSinkBuilder {
-            prop: SinkProp::default(),
+            prop,
             tag: AndroidLogTag::Default,
         }
     }
