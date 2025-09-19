@@ -57,13 +57,29 @@ mod ffi {
         // pointers.
         drop((tag, text));
 
-        if result == 1 {
+        // Although the documentation [^1] says that:
+        //   1 if the message was written to the log, or -EPERM if it was not;
+        //
+        // It doesn't point out that the behavior differs between versions. The above
+        // behavior is available since Android 11 (API 30). Before that, the behavior of
+        // the return value was not clarified in the documentation, but referring to the
+        // implementation, for a successful log write, the number of bytes written is
+        // actually returned. This behavior is changed in this commit [^2].
+        //
+        // For compatible with more versions, we do not use `result == 1` as the success
+        // condition, but `result >= 0` instead.
+        //
+        // [^1]: https://developer.android.com/ndk/reference/group/logging#group___logging_1ga32a7173b092ec978b50490bd12ee523b
+        // [^2]: https://android.googlesource.com/platform/system/logging/+/c17613c4582d4f6eecb3965bb96584f25762b827%5E%21/
+        //
+        // ---
+        //
+        // For the condition `result == -EPERM`, see
+        // https://github.com/gabime/spdlog/commit/01b3724c484eebb42d83fa21aa8d71a57b2b8fb6
+        if result >= 0 || /* !__android_log_is_loggable */ result == -EPERM {
             Ok(())
         } else {
-            // Doc: https://developer.android.com/ndk/reference/group/logging#group___logging_1ga32a7173b092ec978b50490bd12ee523b
-            // 1 if the message was written to the log, or -EPERM if it was not;
-            debug_assert_eq!(result, -EPERM);
-            Err(io::Error::from_raw_os_error(EPERM))
+            Err(io::Error::from_raw_os_error(-result))
         }
     }
 }
