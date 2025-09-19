@@ -20,12 +20,24 @@ env:
   # - Cargo.toml
   # - README.md
   rust_minver: 1.63.0
+  ci_targets: "['', 'x86_64-apple-ios', 'x86_64-unknown-freebsd', 'x86_64-unknown-illumos', 'aarch64-linux-android']"
 
 defaults:
   run:
     shell: bash
 
 jobs:
+  matrix:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    outputs: 
+      ci_targets: ${{ steps.generate.outputs.ci_targets }}
+    steps: 
+    - name: Generate matrix
+      id: generate
+      run: echo "ci_targets=${{ env.ci_targets }}" >> $GITHUB_OUTPUT
+
   format:
     strategy:
       fail-fast: false
@@ -78,14 +90,19 @@ jobs:
         done
 
   clippy:
+    needs: [matrix]
     strategy:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
+        target: ${{ fromJSON(needs.matrix.outputs.ci_targets) }}
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+    - name: Disable bench dependencies
+      if: matrix.target != ''
+      run: ./.github/workflows/disable-bench-deps.sh
     - name: Install dependencies
       if: matrix.os == 'ubuntu-latest'
       run: sudo bash ./.github/workflows/install-deps.sh
@@ -93,6 +110,12 @@ jobs:
       run: |
         rustup toolchain install nightly
         rustup component add clippy --toolchain nightly
+    - name: Install Rust target
+      if: matrix.target != ''
+      run: |
+        rustup target add ${{ matrix.target }}
+        rustup target add ${{ matrix.target }} --toolchain nightly
+        echo 'CARGO_BUILD_TARGET=${{ matrix.target }}' >> $GITHUB_ENV
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
     - name: Run clippy 
@@ -106,6 +129,8 @@ jobs:
           echo "::warning title=nightly clippy::Detected $WARNS warnings"
         fi
     - name: Run clippy nightly for benches
+      # Not all bench deps support all tier-2 targets
+      if: matrix.target == ''
       run: |
         cargo +nightly clippy --all-features --benches -- -A clippy::incompatible_msrv
 
@@ -115,11 +140,12 @@ jobs:
         fi
 
   check:
+    needs: [matrix]
     strategy:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-        target: ['', 'x86_64-apple-ios', 'x86_64-unknown-freebsd', 'x86_64-unknown-illumos', 'aarch64-linux-android']
+        target: ${{ fromJSON(needs.matrix.outputs.ci_targets) }}
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout repository
@@ -131,16 +157,13 @@ jobs:
       run: sudo bash ./.github/workflows/install-deps.sh
     - name: Install Rust target
       if: matrix.target != ''
-      run: rustup target add ${{ matrix.target }}
+      run: |
+        rustup target add ${{ matrix.target }}
+        echo 'CARGO_BUILD_TARGET=${{ matrix.target }}' >> $GITHUB_ENV
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
     - name: Run check
-      run: |
-        if [[ -z "${{ matrix.target }}" ]]; then
-          cargo check --all-features
-        else
-          cargo check --all-features --target ${{ matrix.target }}
-        fi
+      run: cargo check --all-features --verbose
 
   check-doc:
     strategy:
