@@ -177,3 +177,7 @@ required-features = ["log"]
 [[example]]
 name = "07_async"
 required-features = ["multi-thread"]
+[[example]]
+name = "native_android"
+path = "examples/native/android.rs"
+required-features = ["native", "android_log"]
