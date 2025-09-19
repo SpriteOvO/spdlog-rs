@@ -51,6 +51,11 @@
 //! [`SinkPropAccess::set_formatter`]: crate::sink::SinkPropAccess::set_formatter
 //! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 
+#[cfg(any(
+    all(target_os = "android", feature = "native", feature = "android_log"),
+    all(doc, not(doctest))
+))]
+mod android_formatter;
 mod full_formatter;
 #[cfg(any(
     all(target_os = "linux", feature = "native", feature = "libsystemd"),
@@ -65,6 +70,11 @@ mod unreachable_formatter;
 
 use std::ops::Range;
 
+#[cfg(any(
+    all(target_os = "android", feature = "native", feature = "android_log"),
+    all(doc, not(doctest))
+))]
+pub(crate) use android_formatter::*;
 use dyn_clone::*;
 pub use full_formatter::*;
 #[cfg(any(
