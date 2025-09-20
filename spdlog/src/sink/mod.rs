@@ -20,7 +20,7 @@
 //! [`Logger`]: crate::logger::Logger
 
 #[cfg(any(
-    all(target_os = "android", feature = "native", feature = "android_log"),
+    all(target_os = "android", feature = "native", feature = "android-ndk"),
     all(doc, not(doctest))
 ))]
 mod android_sink;
@@ -42,7 +42,7 @@ mod write_sink;
 use std::ops::Deref;
 
 #[cfg(any(
-    all(target_os = "android", feature = "native", feature = "android_log"),
+    all(target_os = "android", feature = "native", feature = "android-ndk"),
     all(doc, not(doctest))
 ))]
 pub use android_sink::*;
