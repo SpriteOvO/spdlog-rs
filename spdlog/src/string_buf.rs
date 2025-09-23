@@ -19,21 +19,16 @@
 /// [`Formatter`]: crate::formatter::Formatter
 pub type StringBuf = StringBufInner;
 
-use cfg_if::cfg_if;
-
 // Users should not use the following types directly.
 
-cfg_if! {
-    if #[cfg(feature = "flexible-string")] {
-        // pub for hide type alias in doc
-        #[doc(hidden)]
-        pub type StringBufInner = flexible_string::FlexibleString<STACK_SIZE>;
-    } else {
-        // same as above
-        #[doc(hidden)]
-        pub type StringBufInner = String;
-    }
-}
+// pub for hide type alias in doc
+#[doc(hidden)]
+#[cfg(feature = "flexible-string")]
+pub type StringBufInner = flexible_string::FlexibleString<STACK_SIZE>;
+// same as above
+#[doc(hidden)]
+#[cfg(not(feature = "flexible-string"))]
+pub type StringBufInner = String;
 
 #[allow(dead_code)]
 pub(crate) const STACK_SIZE: usize = 256;

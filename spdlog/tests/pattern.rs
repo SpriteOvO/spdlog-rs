@@ -4,7 +4,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use cfg_if::cfg_if;
 use regex::Regex;
 #[cfg(feature = "runtime-pattern")]
 use spdlog::formatter::runtime_pattern;
@@ -401,9 +400,8 @@ fn test_builtin_patterns() {
         vec![0..=i32::MAX as u64],
     );
 
-    cfg_if! {
-        if #[cfg(feature = "source-location")] {
-            check!(
+    #[cfg(feature = "source-location")]
+    check!(
                 "{full}",
                 Some([format!("[0000-00-00 00:00:00.000] [logger-name] [info] [pattern, {}:000] test payload {{ a=true b=text }}", file!())]),
                 vec![
@@ -417,41 +415,44 @@ fn test_builtin_patterns() {
                     SOURCE_RANGE,
                 ],
             );
-        } else {
-            check!(
-                "{full}",
-                Some(["[0000-00-00 00:00:00.000] [logger-name] [info] test payload { a=true b=text }"]),
-                vec![
-                    YEAR_RANGE,
-                    MONTH_RANGE,
-                    DAY_RANGE,
-                    HOUR_RANGE,
-                    MINUTE_RANGE,
-                    SECOND_RANGE,
-                    MILLISECOND_RANGE,
-                ],
-            );
-        }
-    }
+    #[cfg(not(feature = "source-location"))]
+    check!(
+        "{full}",
+        Some(["[0000-00-00 00:00:00.000] [logger-name] [info] test payload { a=true b=text }"]),
+        vec![
+            YEAR_RANGE,
+            MONTH_RANGE,
+            DAY_RANGE,
+            HOUR_RANGE,
+            MINUTE_RANGE,
+            SECOND_RANGE,
+            MILLISECOND_RANGE,
+        ],
+    );
 
     check!("{level}", Some(["info"]), vec![]);
     check!("{level_short}", Some(["I"]), vec![]);
-    cfg_if! {
-        if #[cfg(feature = "source-location")] {
-            check!("{source}", Some([format!("{}:000", file!())]), vec![SOURCE_RANGE]);
-            check!("{file_name}", Some(["pattern.rs"]), vec![]);
-            check!("{file}", Some([file!()]), vec![]);
-            check!("{line}", Some(["000"]), vec![SOURCE_RANGE]);
-            check!("{column}", Some(["0"]), vec![SOURCE_RANGE]);
-            check!("{module_path}", Some([module_path!()]), vec![]);
-        } else {
-            check!("{source}", Some([""]), vec![]);
-            check!("{file_name}", Some([""]), vec![]);
-            check!("{file}", Some([""]), vec![]);
-            check!("{line}", Some([""]), vec![]);
-            check!("{column}", Some([""]), vec![]);
-            check!("{module_path}", Some([""]), vec![]);
-        }
+    #[cfg(feature = "source-location")]
+    {
+        check!(
+            "{source}",
+            Some([format!("{}:000", file!())]),
+            vec![SOURCE_RANGE]
+        );
+        check!("{file_name}", Some(["pattern.rs"]), vec![]);
+        check!("{file}", Some([file!()]), vec![]);
+        check!("{line}", Some(["000"]), vec![SOURCE_RANGE]);
+        check!("{column}", Some(["0"]), vec![SOURCE_RANGE]);
+        check!("{module_path}", Some([module_path!()]), vec![]);
+    }
+    #[cfg(not(feature = "source-location"))]
+    {
+        check!("{source}", Some([""]), vec![]);
+        check!("{file_name}", Some([""]), vec![]);
+        check!("{file}", Some([""]), vec![]);
+        check!("{line}", Some([""]), vec![]);
+        check!("{column}", Some([""]), vec![]);
+        check!("{module_path}", Some([""]), vec![]);
     }
     check!("{logger}", Some(["logger-name"]), vec![]);
     check!("{payload}", Some(["test payload"]), vec![]);

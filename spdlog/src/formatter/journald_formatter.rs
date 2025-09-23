@@ -5,8 +5,6 @@
 
 use std::fmt::{self, Write};
 
-use cfg_if::cfg_if;
-
 use crate::{
     formatter::{Formatter, FormatterContext},
     Error, Record, StringBuf, __EOL,
@@ -27,11 +25,8 @@ impl JournaldFormatter {
         dest: &mut StringBuf,
         ctx: &mut FormatterContext,
     ) -> Result<(), fmt::Error> {
-        cfg_if! {
-            if #[cfg(not(feature = "flexible-string"))] {
-                dest.reserve(crate::string_buf::RESERVE_SIZE);
-            }
-        }
+        #[cfg(not(feature = "flexible-string"))]
+        dest.reserve(crate::string_buf::RESERVE_SIZE);
 
         dest.write_str("[")?;
 

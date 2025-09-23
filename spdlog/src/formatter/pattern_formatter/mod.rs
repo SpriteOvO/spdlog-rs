@@ -376,11 +376,8 @@ where
         dest: &mut StringBuf,
         fmt_ctx: &mut FormatterContext,
     ) -> crate::Result<()> {
-        cfg_if::cfg_if! {
-            if #[cfg(not(feature = "flexible-string"))] {
-                dest.reserve(crate::string_buf::RESERVE_SIZE);
-            }
-        };
+        #[cfg(not(feature = "flexible-string"))]
+        dest.reserve(crate::string_buf::RESERVE_SIZE);
 
         fmt_ctx.locked_time_date = Some(TimeDateLazyLocked::new(record.time()));
         {

@@ -338,7 +338,6 @@ use std::{
     result::Result as StdResult,
 };
 
-use cfg_if::cfg_if;
 use error::EnvLevelError;
 use sink::{Sink, StdStreamSink};
 use sync::*;
@@ -353,37 +352,40 @@ use sync::*;
 ///
 /// [`Logger`]: crate::logger::Logger
 /// [`Sink`]: crate::sink::Sink
-pub const STATIC_LEVEL_FILTER: LevelFilter = STATIC_LEVEL_FILTER_INNER;
+pub const STATIC_LEVEL_FILTER: LevelFilter = static_level_filter_inner();
 
-cfg_if! {
-    if #[cfg(all(not(debug_assertions), feature = "release-level-off"))] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::Off;
-    } else if #[cfg(all(not(debug_assertions), feature = "release-level-critical"))] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Critical);
-    } else if #[cfg(all(not(debug_assertions), feature = "release-level-error"))] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
-    } else if #[cfg(all(not(debug_assertions), feature = "release-level-warn"))] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Warn);
-    } else if #[cfg(all(not(debug_assertions), feature = "release-level-info"))] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Info);
-    } else if #[cfg(all(not(debug_assertions), feature = "release-level-debug"))] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Debug);
-    } else if #[cfg(all(not(debug_assertions), feature = "release-level-trace"))] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
-    } else if #[cfg(feature = "level-off")] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::Off;
-    } else if #[cfg(feature = "level-critical")] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Critical);
-    } else if #[cfg(feature = "level-error")] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Error);
-    } else if #[cfg(feature = "level-warn")] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Warn);
-    } else if #[cfg(feature = "level-info")] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Info);
-    } else if #[cfg(feature = "level-debug")] {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Debug);
+const fn static_level_filter_inner() -> LevelFilter {
+    if cfg!(all(not(debug_assertions), feature = "release-level-off")) {
+        LevelFilter::Off
+    } else if cfg!(all(
+        not(debug_assertions),
+        feature = "release-level-critical"
+    )) {
+        LevelFilter::MoreSevereEqual(Level::Critical)
+    } else if cfg!(all(not(debug_assertions), feature = "release-level-error")) {
+        LevelFilter::MoreSevereEqual(Level::Error)
+    } else if cfg!(all(not(debug_assertions), feature = "release-level-warn")) {
+        LevelFilter::MoreSevereEqual(Level::Warn)
+    } else if cfg!(all(not(debug_assertions), feature = "release-level-info")) {
+        LevelFilter::MoreSevereEqual(Level::Info)
+    } else if cfg!(all(not(debug_assertions), feature = "release-level-debug")) {
+        LevelFilter::MoreSevereEqual(Level::Debug)
+    } else if cfg!(all(not(debug_assertions), feature = "release-level-trace")) {
+        LevelFilter::MoreSevereEqual(Level::Trace)
+    } else if cfg!(feature = "level-off") {
+        LevelFilter::Off
+    } else if cfg!(feature = "level-critical") {
+        LevelFilter::MoreSevereEqual(Level::Critical)
+    } else if cfg!(feature = "level-error") {
+        LevelFilter::MoreSevereEqual(Level::Error)
+    } else if cfg!(feature = "level-warn") {
+        LevelFilter::MoreSevereEqual(Level::Warn)
+    } else if cfg!(feature = "level-info") {
+        LevelFilter::MoreSevereEqual(Level::Info)
+    } else if cfg!(feature = "level-debug") {
+        LevelFilter::MoreSevereEqual(Level::Debug)
     } else {
-        const STATIC_LEVEL_FILTER_INNER: LevelFilter = LevelFilter::MoreSevereEqual(Level::Trace);
+        LevelFilter::MoreSevereEqual(Level::Trace)
     }
 }
 

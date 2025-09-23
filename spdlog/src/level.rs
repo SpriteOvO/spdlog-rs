@@ -1,7 +1,5 @@
 use std::{fmt, str::FromStr};
 
-use cfg_if::cfg_if;
-
 use crate::Error;
 
 pub(crate) const LOG_LEVEL_NAMES: [&str; Level::count()] =
@@ -74,12 +72,6 @@ impl serde::Serialize for Level {
         S: serde::Serializer,
     {
         serializer.serialize_str(self.as_str())
-    }
-}
-
-cfg_if! {
-    if #[cfg(test)] {
-        crate::utils::const_assert!(atomic::Atomic::<Level>::is_lock_free());
     }
 }
 
@@ -216,17 +208,6 @@ pub enum LevelFilter {
     All,
 }
 
-cfg_if! {
-    if #[cfg(test)] {
-        use std::mem::{align_of, size_of};
-        use crate::utils::const_assert;
-
-        const_assert!(atomic::Atomic::<LevelFilter>::is_lock_free());
-        const_assert!(size_of::<Level>() * 2 == size_of::<LevelFilter>());
-        const_assert!(align_of::<Level>() * 2 == align_of::<LevelFilter>());
-    }
-}
-
 impl LevelFilter {
     /// Checks the given level if satisfies the filter condition.
     #[deprecated(
@@ -301,7 +282,15 @@ impl From<log::LevelFilter> for LevelFilter {
 
 #[cfg(test)]
 mod tests {
+    use std::mem::{align_of, size_of};
+
     use super::*;
+    use crate::utils::const_assert;
+
+    const_assert!(atomic::Atomic::<Level>::is_lock_free());
+    const_assert!(atomic::Atomic::<LevelFilter>::is_lock_free());
+    const_assert!(size_of::<Level>() * 2 == size_of::<LevelFilter>());
+    const_assert!(align_of::<Level>() * 2 == align_of::<LevelFilter>());
 
     #[test]
     fn from_usize() {

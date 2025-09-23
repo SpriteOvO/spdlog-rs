@@ -4,7 +4,6 @@ use std::{
     time::SystemTime,
 };
 
-use cfg_if::cfg_if;
 use serde::{
     ser::{SerializeMap, SerializeStruct},
     Serialize, Serializer,
@@ -177,11 +176,8 @@ impl JsonFormatter {
         dest: &mut StringBuf,
         _ctx: &mut FormatterContext,
     ) -> Result<(), JsonFormatterError> {
-        cfg_if! {
-            if #[cfg(not(feature = "flexible-string"))] {
-                dest.reserve(crate::string_buf::RESERVE_SIZE);
-            }
-        }
+        #[cfg(not(feature = "flexible-string"))]
+        dest.reserve(crate::string_buf::RESERVE_SIZE);
 
         // TODO: https://github.com/serde-rs/json/issues/863
         //
