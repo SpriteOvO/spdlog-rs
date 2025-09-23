@@ -5,8 +5,6 @@ use std::{
     io::{self, Write},
 };
 
-use if_chain::if_chain;
-
 use crate::{
     formatter::{Formatter, FormatterContext},
     sink::{GetSinkProp, Sink, SinkProp},
@@ -176,10 +174,9 @@ impl Sink for StdStreamSink {
         let mut dest = self.dest.lock();
 
         (|| {
-            if_chain! {
-                if self.should_render_style;
-                if let Some(style_range) = ctx.style_range();
-                then {
+            // TODO: Simplify the if block when our MSRV reaches let-chain support.
+            if self.should_render_style {
+                if let Some(style_range) = ctx.style_range() {
                     let style = self.level_styles.style(record.level());
 
                     dest.write_all(string_buf[..style_range.start].as_bytes())?;
@@ -190,7 +187,10 @@ impl Sink for StdStreamSink {
                 } else {
                     dest.write_all(string_buf.as_bytes())?;
                 }
+            } else {
+                dest.write_all(string_buf.as_bytes())?;
             }
+
             Ok(())
         })()
         .map_err(Error::WriteRecord)?;
