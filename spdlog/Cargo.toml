@@ -57,7 +57,7 @@ serde = { version = "1.0.163", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.120", optional = true }
 spdlog-internal = { version = "=0.1.0", path = "../spdlog-internal", optional = true }
 spdlog-macros = { version = "=0.2.0", path = "../spdlog-macros" }
-thiserror = "1.0.37"
+thiserror = "2.0.0"
 value-bag = { version = "1.11.1", features = ["owned", "inline-i128"] }
 
 [target.'cfg(windows)'.dependencies]
