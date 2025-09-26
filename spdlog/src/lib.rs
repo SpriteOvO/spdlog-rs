@@ -486,6 +486,7 @@ pub fn default_logger() -> Arc<Logger> {
 /// info!("this log will be handled by `new_logger`");
 /// info!(logger: old_logger, "this log will be handled by `old_logger`");
 /// ```
+#[must_use = "the old default logger is returned, if you don't need it, use `set_default_logger` instead"]
 pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
     default_logger_ref().swap(logger)
 }
@@ -504,7 +505,7 @@ pub fn swap_default_logger(logger: Arc<Logger>) -> Arc<Logger> {
 /// info!("this log will be handled by `new_logger`");
 /// ```
 pub fn set_default_logger(logger: Arc<Logger>) {
-    swap_default_logger(logger);
+    _ = swap_default_logger(logger);
 }
 
 /// Initializes environment variable level filters from environment variable
