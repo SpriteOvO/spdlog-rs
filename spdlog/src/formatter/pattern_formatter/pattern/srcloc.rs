@@ -21,7 +21,7 @@ impl Pattern for Source {
             (|| {
                 dest.write_str(loc.file())?;
                 dest.write_char(':')?;
-                write!(dest, "{}", loc.line())
+                dest.write_str(&numtoa::BaseN::<10>::u32(loc.line()))
             })()
             .map_err(Error::FormatRecord)?;
         }
@@ -80,7 +80,8 @@ impl Pattern for SourceLine {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            write!(dest, "{}", loc.line()).map_err(Error::FormatRecord)?;
+            dest.write_str(&numtoa::BaseN::<10>::u32(loc.line()))
+                .map_err(Error::FormatRecord)?;
         }
         Ok(())
     }
@@ -98,7 +99,8 @@ impl Pattern for SourceColumn {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         if let Some(loc) = record.source_location() {
-            write!(dest, "{}", loc.column()).map_err(Error::FormatRecord)?;
+            dest.write_str(&numtoa::BaseN::<10>::u32(loc.column()))
+                .map_err(Error::FormatRecord)?;
         }
         Ok(())
     }
