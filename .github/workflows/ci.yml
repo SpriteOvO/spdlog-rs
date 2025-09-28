@@ -218,7 +218,7 @@ jobs:
     - name: Check MSRV for core with Rust ${{ env.rust_minver }}
       run: cargo +${{ env.rust_minver }} check --locked --all-features --verbose
 
-  native-test-android:
+  test-native-android:
     strategy:
       fail-fast: false
     runs-on: 'ubuntu-latest'
