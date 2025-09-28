@@ -135,6 +135,7 @@ impl Sink for JournaldSink {
                 "PRIORITY={}",
                 JournaldSink::SYSLOG_LEVELS.level(record.level()) as u32
             ),
+            format!("TID={}", record.tid()),
         ];
 
         let srcloc_kvs = match record.source_location() {
