@@ -197,6 +197,10 @@ name = "native_linux"
 path = "examples/native/linux.rs"
 required-features = ["native", "libsystemd"]
 [[example]]
+name = "native_windows"
+path = "examples/native/windows.rs"
+required-features = ["native"]
+[[example]]
 name = "native_android"
 path = "examples/native/android.rs"
 required-features = ["native", "android-ndk"]
