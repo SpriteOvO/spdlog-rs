@@ -4,17 +4,16 @@ extern crate test;
 
 mod common;
 
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 
 use flexi_logger::{
     writers::FileLogWriter, Age, Cleanup, Criterion, DeferredNow, FileSpec, LogSpecification,
     Logger, LoggerHandle, Naming, WriteMode, TS_DASHES_BLANK_COLONS_DOT_BLANK,
 };
 use log::{info, Record};
-use once_cell::sync::Lazy;
 use test::Bencher;
 
-static HANDLE: Lazy<Mutex<LoggerHandle>> = Lazy::new(|| {
+static HANDLE: LazyLock<Mutex<LoggerHandle>> = LazyLock::new(|| {
     Mutex::new(
         Logger::with(LogSpecification::off())
             .log_to_file(FileSpec::try_from(common::BENCH_LOGS_PATH.join("empty.log")).unwrap())

@@ -16,12 +16,6 @@ use spdlog::{
 };
 use test::black_box;
 
-include!(concat!(
-    env!("OUT_DIR"),
-    "/test_utils/common_for_integration_test.rs"
-));
-use test_utils::*;
-
 const FILE_SIZE: u64 = 30 * 1024 * 1024;
 // C++ "spdlog" is `5` here because it does not include the current file,
 // "spdlog-rs" does.
@@ -35,7 +29,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     info!("Multi threaded: {} threads, {} messages", threads, iters);
     info!("**********************************************************************");
 
-    let logger = build_test_logger(|b| {
+    let logger = common::build_bench_logger(|b| {
         b.sink(Arc::new(
             FileSink::builder()
                 .path(common::BENCH_LOGS_PATH.join("FileSink.log"))
@@ -47,7 +41,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     });
     bench_mt(logger, threads, iters);
 
-    let logger = build_test_logger(|b| {
+    let logger = common::build_bench_logger(|b| {
         b.sink(Arc::new(
             RotatingFileSink::builder()
                 .base_path(common::BENCH_LOGS_PATH.join("RotatingFileSink_FileSize.log"))
@@ -60,7 +54,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     });
     bench_mt(logger, threads, iters);
 
-    let logger = build_test_logger(|b| {
+    let logger = common::build_bench_logger(|b| {
         b.sink(Arc::new(
             RotatingFileSink::builder()
                 .base_path(common::BENCH_LOGS_PATH.join("RotatingFileSink_Daily.log"))
@@ -72,7 +66,7 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     });
     bench_mt(logger, threads, iters);
 
-    let logger = build_test_logger(|b| b.name("level-off").level_filter(LevelFilter::Off));
+    let logger = common::build_bench_logger(|b| b.name("level-off").level_filter(LevelFilter::Off));
     bench_mt(logger, threads, iters);
 }
 

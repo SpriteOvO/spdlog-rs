@@ -10,12 +10,6 @@ use std::sync::Arc;
 use spdlog::{prelude::*, sink::*};
 use test::Bencher;
 
-include!(concat!(
-    env!("OUT_DIR"),
-    "/test_utils/common_for_integration_test.rs"
-));
-use test_utils::*;
-
 fn logger(name: &str) -> Logger {
     let path = common::BENCH_LOGS_PATH.join(format!("kv_{name}.log"));
     let sink = Arc::new(
@@ -25,7 +19,7 @@ fn logger(name: &str) -> Logger {
             .build()
             .unwrap(),
     );
-    build_test_logger(|b| b.sink(sink))
+    common::build_bench_logger(|b| b.sink(sink))
 }
 
 #[bench]

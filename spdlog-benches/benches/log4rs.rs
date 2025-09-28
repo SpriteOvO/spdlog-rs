@@ -4,6 +4,8 @@ extern crate test;
 
 mod common;
 
+use std::sync::LazyLock;
+
 use log::{info, LevelFilter};
 use log4rs::{
     append::{
@@ -19,10 +21,9 @@ use log4rs::{
     encode::pattern::PatternEncoder,
     Handle,
 };
-use once_cell::sync::Lazy;
 use test::Bencher;
 
-static HANDLE: Lazy<Handle> = Lazy::new(|| {
+static HANDLE: LazyLock<Handle> = LazyLock::new(|| {
     log4rs::init_config(
         Config::builder()
             .build(Root::builder().build(LevelFilter::Off))

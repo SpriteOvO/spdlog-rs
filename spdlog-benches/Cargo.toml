@@ -1,0 +1,127 @@
+[package]
+name = "spdlog-benches"
+version = "0.1.0"
+edition = "2021"
+publish = false # local package, never publish it
+
+[features]
+# Note: Sync the following features with `spdlog/Cargo.toml`
+source-location = ["spdlog-rs/source-location"]
+native = ["spdlog-rs/native"]
+libsystemd = ["spdlog-rs/libsystemd"]
+android-ndk = ["spdlog-rs/android-ndk"]
+multi-thread = ["spdlog-rs/multi-thread"]
+runtime-pattern = ["spdlog-rs/runtime-pattern"]
+serde = ["spdlog-rs/serde"]
+serde_json = ["spdlog-rs/serde_json"]
+sval = ["spdlog-rs/sval"]
+#
+flexible-string = ["spdlog-rs/flexible-string"]
+log = ["spdlog-rs/log"]
+
+[build-dependencies]
+rustc_version = "0.4.0"
+
+[dev-dependencies]
+spdlog-rs = { path = "../spdlog" }
+
+# The next section will be uncommented in CI so that the following dependencies
+# are ignored, avoiding downloading them unnecessarily in CI.
+
+# [bench-dependencies]
+log = "=0.4.28"
+slog = "=2.7.0"
+sloggers = "=2.2.0"
+log4rs = "=1.4.0"
+logforth = { version = "=0.27.0", features = ["append-rolling-file", "append-single-file"]}
+fast_log = "=1.7.7"
+fern = "=0.7.1"
+flexi_logger = "=0.31.4"
+ftlog = "=0.2.15"
+tracing = "=0.1.41"
+tracing-subscriber = "=0.3.20"
+tracing-appender = "=0.2.3"
+
+chrono = "0.4.22"
+clap = { version = "4.5.48", features = ["derive"] }
+paste = "1.0.14"
+
+[[bench]]
+name = "spdlog_rs"
+path = "benches/spdlog-rs/spdlog_rs.rs"
+required-features = ["multi-thread"]
+[[bench]]
+name = "spdlog_rs_cmp_cpp"
+path = "benches/spdlog-rs/cmp_cpp.rs"
+harness = false
+[[bench]]
+name = "spdlog_rs_cmp_cpp_async"
+path = "benches/spdlog-rs/cmp_cpp_async.rs"
+harness = false
+required-features = ["multi-thread"]
+[[bench]]
+name = "spdlog_rs_pattern"
+path = "benches/spdlog-rs/pattern.rs"
+required-features = ["runtime-pattern", "serde_json"]
+[[bench]]
+name = "spdlog_rs_log_crate_proxy"
+path = "benches/spdlog-rs/log_crate_proxy.rs"
+required-features = ["log"]
+[[bench]]
+name = "spdlog_rs_kv"
+path = "benches/spdlog-rs/kv.rs"
+[[bench]]
+name = "fast_log"
+path = "benches/fast_log/main.rs"
+harness = false
+[[bench]]
+name = "fast_log_1_file_async"
+path = "benches/fast_log/1_file_async.rs"
+[[bench]]
+name = "fast_log_2_rotating_file_size_async"
+path = "benches/fast_log/2_rotating_file_size_async.rs"
+[[bench]]
+name = "fast_log_3_rotating_daily_async"
+path = "benches/fast_log/3_rotating_daily_async.rs"
+[[bench]]
+name = "fast_log_4_level_off"
+path = "benches/fast_log/4_level_off.rs"
+[[bench]]
+name = "fern"
+path = "benches/fern/main.rs"
+harness = false
+[[bench]]
+name = "fern_1_file"
+path = "benches/fern/1_file.rs"
+[[bench]]
+name = "fern_2_level_off"
+path = "benches/fern/2_level_off.rs"
+[[bench]]
+name = "ftlog"
+path = "benches/ftlog/main.rs"
+harness = false
+[[bench]]
+name = "ftlog_1_file_async"
+path = "benches/ftlog/1_file_async.rs"
+[[bench]]
+name = "ftlog_2_rotating_daily"
+path = "benches/ftlog/2_rotating_daily.rs"
+[[bench]]
+name = "ftlog_3_level_off"
+path = "benches/ftlog/3_level_off.rs"
+[[bench]]
+name = "logforth"
+path = "benches/logforth/main.rs"
+harness = false
+[[bench]]
+name = "logforth_1_file_async"
+path = "benches/logforth/1_file_async.rs"
+[[bench]]
+name = "logforth_2_rotating_file_size_async"
+path = "benches/logforth/2_rotating_file_size_async.rs"
+[[bench]]
+name = "logforth_3_rotating_daily_async"
+path = "benches/logforth/3_rotating_daily_async.rs"
+[[bench]]
+name = "logforth_4_level_off"
+path = "benches/logforth/4_level_off.rs"

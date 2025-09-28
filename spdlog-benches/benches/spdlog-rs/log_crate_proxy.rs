@@ -9,15 +9,9 @@ use std::sync::Arc;
 
 use test::Bencher;
 
-include!(concat!(
-    env!("OUT_DIR"),
-    "/test_utils/common_for_integration_test.rs"
-));
-use test_utils::*;
-
 fn init() {
     if spdlog::init_log_crate_proxy().is_ok() {
-        spdlog::set_default_logger(Arc::new(build_test_logger(|b| {
+        spdlog::set_default_logger(Arc::new(common::build_bench_logger(|b| {
             b.error_handler(|err| panic!("an error occurred: {err}"))
         })));
     }

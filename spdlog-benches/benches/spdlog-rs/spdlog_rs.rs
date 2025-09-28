@@ -15,12 +15,6 @@ use spdlog::{
 };
 use test::Bencher;
 
-include!(concat!(
-    env!("OUT_DIR"),
-    "/test_utils/common_for_integration_test.rs"
-));
-use test_utils::*;
-
 enum Mode {
     Sync,
     Async,
@@ -73,7 +67,7 @@ impl Mode {
 fn bench_any(bencher: &mut Bencher, mode: Mode, sink: Arc<dyn Sink>) {
     sink.set_error_handler((|err| panic!("an error occurred: {err}")).into());
 
-    let logger = build_test_logger(|b| {
+    let logger = common::build_bench_logger(|b| {
         b.error_handler(mode.error_handler())
             .sink(mode.final_sink(sink))
     });
@@ -132,7 +126,7 @@ fn bench_4_rotating_daily(bencher: &mut Bencher) {
 
 #[bench]
 fn bench_5_level_off(bencher: &mut Bencher) {
-    let logger = build_test_logger(|b| b.level_filter(LevelFilter::Off));
+    let logger = common::build_bench_logger(|b| b.level_filter(LevelFilter::Off));
 
     bencher.iter(|| info!(logger: logger, bench_log_message!()))
 }

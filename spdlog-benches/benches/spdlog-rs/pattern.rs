@@ -2,25 +2,24 @@
 
 extern crate test;
 
+#[path = "../common/mod.rs"]
+mod common;
+
 use std::{cell::RefCell, sync::Arc};
 
 use paste::paste;
 #[cfg(feature = "serde_json")]
 use spdlog::formatter::JsonFormatter;
 use spdlog::{
-    formatter::{pattern, Formatter, FormatterContext, FullFormatter, Pattern, PatternFormatter},
+    formatter::{
+        pattern, runtime_pattern, Formatter, FormatterContext, FullFormatter, Pattern,
+        PatternFormatter,
+    },
     prelude::*,
     sink::{Sink, SinkPropAccess},
     Record, StringBuf,
 };
-use spdlog_macros::runtime_pattern;
 use test::Bencher;
-
-include!(concat!(
-    env!("OUT_DIR"),
-    "/test_utils/common_for_integration_test.rs"
-));
-use test_utils::*;
 
 struct BenchSink<'a, F> {
     formatter: F,
@@ -78,7 +77,7 @@ impl<F: Formatter> SinkPropAccess for BenchSink<'_, F> {
 
 fn bench_formatter(bencher: &mut Bencher, formatter: impl Formatter + 'static) {
     let bench_sink = Arc::new(BenchSink::new(formatter));
-    let logger = build_test_logger(|b| b.sink(bench_sink));
+    let logger = common::build_bench_logger(|b| b.sink(bench_sink));
 
     bencher.iter(|| info!(logger: logger, "payload"));
 }
@@ -88,14 +87,16 @@ fn bench_pattern(bencher: &mut Bencher, pattern: impl Pattern + Clone + 'static)
 }
 
 fn bench_full_pattern(bencher: &mut Bencher, pattern: impl Pattern + Clone + 'static) {
-    let full_formatter = Arc::new(StringSink::with(|b| b.formatter(FullFormatter::new())));
+    let full_formatter = Arc::new(common::StringSink::with(|b| {
+        b.formatter(FullFormatter::new())
+    }));
 
-    let full_pattern = Arc::new(StringSink::with(|b| {
+    let full_pattern = Arc::new(common::StringSink::with(|b| {
         b.formatter(PatternFormatter::new(pattern.clone()))
     }));
 
     let combination =
-        build_test_logger(|b| b.sink(full_formatter.clone()).sink(full_pattern.clone()));
+        common::build_bench_logger(|b| b.sink(full_formatter.clone()).sink(full_pattern.clone()));
 
     info!(logger: combination, "test payload");
 

@@ -32,6 +32,7 @@ release-level-info     = []
 release-level-debug    = []
 release-level-trace    = []
 
+# Note: Sync the following features with `spdlog-benches/Cargo.toml`
 source-location = []
 native = []
 libsystemd = ["dep:libsystemd-sys"]
@@ -73,27 +74,10 @@ libsystemd-sys = { version = "0.9.3", optional = true }
 android_log-sys = { version = "0.3.0", optional = true }
 
 [dev-dependencies]
-clap = { version = "4.5.48", features = ["derive"] }
-crossbeam = "0.8.2"
 regex = "1.7.0"
-paste = "1.0.14"
 trybuild = "1.0.90"
 sval = "2.14.0"
 sval_derive = "2.14.0"
-
-# [bench-dependencies]
-log = "=0.4.28"
-slog = "=2.7.0"
-sloggers = "=2.2.0"
-log4rs = "=1.4.0"
-logforth = { version = "=0.27.0", features = ["append-rolling-file", "append-single-file"]}
-fast_log = "=1.7.7"
-fern = "=0.7.1"
-flexi_logger = "=0.31.4"
-ftlog = "=0.2.15"
-tracing = "=0.1.41"
-tracing-subscriber = "=0.3.20"
-tracing-appender = "=0.2.3"
 
 [build-dependencies]
 rustc_version = "0.4.0"
@@ -105,86 +89,6 @@ required-features = ["multi-thread"]
 [[test]]
 name = "broken_stdio"
 harness = false
-
-[[bench]]
-name = "spdlog_rs"
-path = "benches/spdlog-rs/spdlog_rs.rs"
-required-features = ["multi-thread"]
-[[bench]]
-name = "spdlog_rs_cmp_cpp"
-path = "benches/spdlog-rs/cmp_cpp.rs"
-harness = false
-[[bench]]
-name = "spdlog_rs_cmp_cpp_async"
-path = "benches/spdlog-rs/cmp_cpp_async.rs"
-harness = false
-required-features = ["multi-thread"]
-[[bench]]
-name = "spdlog_rs_pattern"
-path = "benches/spdlog-rs/pattern.rs"
-required-features = ["runtime-pattern", "serde_json"]
-[[bench]]
-name = "spdlog_rs_log_crate_proxy"
-path = "benches/spdlog-rs/log_crate_proxy.rs"
-required-features = ["log"]
-[[bench]]
-name = "spdlog_rs_kv"
-path = "benches/spdlog-rs/kv.rs"
-[[bench]]
-name = "fast_log"
-path = "benches/fast_log/main.rs"
-harness = false
-[[bench]]
-name = "fast_log_1_file_async"
-path = "benches/fast_log/1_file_async.rs"
-[[bench]]
-name = "fast_log_2_rotating_file_size_async"
-path = "benches/fast_log/2_rotating_file_size_async.rs"
-[[bench]]
-name = "fast_log_3_rotating_daily_async"
-path = "benches/fast_log/3_rotating_daily_async.rs"
-[[bench]]
-name = "fast_log_4_level_off"
-path = "benches/fast_log/4_level_off.rs"
-[[bench]]
-name = "fern"
-path = "benches/fern/main.rs"
-harness = false
-[[bench]]
-name = "fern_1_file"
-path = "benches/fern/1_file.rs"
-[[bench]]
-name = "fern_2_level_off"
-path = "benches/fern/2_level_off.rs"
-[[bench]]
-name = "ftlog"
-path = "benches/ftlog/main.rs"
-harness = false
-[[bench]]
-name = "ftlog_1_file_async"
-path = "benches/ftlog/1_file_async.rs"
-[[bench]]
-name = "ftlog_2_rotating_daily"
-path = "benches/ftlog/2_rotating_daily.rs"
-[[bench]]
-name = "ftlog_3_level_off"
-path = "benches/ftlog/3_level_off.rs"
-[[bench]]
-name = "logforth"
-path = "benches/logforth/main.rs"
-harness = false
-[[bench]]
-name = "logforth_1_file_async"
-path = "benches/logforth/1_file_async.rs"
-[[bench]]
-name = "logforth_2_rotating_file_size_async"
-path = "benches/logforth/2_rotating_file_size_async.rs"
-[[bench]]
-name = "logforth_3_rotating_daily_async"
-path = "benches/logforth/3_rotating_daily_async.rs"
-[[bench]]
-name = "logforth_4_level_off"
-path = "benches/logforth/4_level_off.rs"
 
 [[example]]
 name = "06_log_crate"

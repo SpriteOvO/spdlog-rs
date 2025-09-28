@@ -71,7 +71,7 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
 [spdlog]: https://github.com/gabime/spdlog
-[Benchmarks]: https://github.com/SpriteOvO/spdlog-rs/blob/main/spdlog/benches/README.md
+[Benchmarks]: https://github.com/SpriteOvO/spdlog-rs/blob/main/spdlog-benches/README.md
 [#25]: https://github.com/SpriteOvO/spdlog-rs/issues/25
 [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 [docs.rs]: https://docs.rs/spdlog-rs/

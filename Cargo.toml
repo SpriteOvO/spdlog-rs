@@ -4,4 +4,5 @@ members = [
     "spdlog",
     "spdlog-internal",
     "spdlog-macros",
+    "spdlog-benches",
 ]

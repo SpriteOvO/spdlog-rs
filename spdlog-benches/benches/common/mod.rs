@@ -2,15 +2,21 @@ use std::{
     env,
     fmt::Write,
     fs,
+    marker::PhantomData,
     path::{Path, PathBuf},
     process::{self, Stdio},
     str,
+    sync::LazyLock,
 };
 
-use once_cell::sync::Lazy;
+use spdlog::{
+    prelude::*,
+    sink::{GetSinkProp, Sink, SinkProp, WriteSink, WriteSinkBuilder},
+    LoggerBuilder, Record,
+};
 
 #[allow(dead_code)]
-pub static BENCH_LOGS_PATH: Lazy<PathBuf> = Lazy::new(|| {
+pub static BENCH_LOGS_PATH: LazyLock<PathBuf> = LazyLock::new(|| {
     let path = Path::new(env!("OUT_DIR")).join("bench_logs");
     if !path.exists() {
         fs::create_dir(&path).unwrap();
@@ -158,4 +164,55 @@ pub fn __aggregate_bench_main_impl(source_file: &Path) {
         .join("\n");
 
     println!("{}", results);
+}
+
+#[must_use]
+pub fn build_bench_logger(cb: impl FnOnce(&mut LoggerBuilder) -> &mut LoggerBuilder) -> Logger {
+    let mut builder = Logger::builder();
+    cb(builder.error_handler(|err| panic!("{}", err)));
+    builder.build().unwrap()
+}
+
+//
+
+pub struct StringSink {
+    underlying: WriteSink<Vec<u8>>,
+}
+
+impl StringSink {
+    pub fn new() -> Self {
+        Self {
+            underlying: WriteSink::builder().target(vec![]).build().unwrap(),
+        }
+    }
+
+    pub fn with(
+        cb: impl FnOnce(
+            WriteSinkBuilder<Vec<u8>, PhantomData<Vec<u8>>>,
+        ) -> WriteSinkBuilder<Vec<u8>, PhantomData<Vec<u8>>>,
+    ) -> Self {
+        Self {
+            underlying: cb(WriteSink::builder().target(vec![])).build().unwrap(),
+        }
+    }
+
+    pub fn clone_string(&self) -> String {
+        String::from_utf8(self.underlying.clone_target()).unwrap()
+    }
+}
+
+impl GetSinkProp for StringSink {
+    fn prop(&self) -> &SinkProp {
+        self.underlying.prop()
+    }
+}
+
+impl Sink for StringSink {
+    fn log(&self, record: &Record) -> spdlog::Result<()> {
+        self.underlying.log(record)
+    }
+
+    fn flush(&self) -> spdlog::Result<()> {
+        self.underlying.flush()
+    }
 }

@@ -1,4 +1,6 @@
-# Benchmarks
+# spdlog-benches
+
+## Benchmarks
 
 [The tracking page] for benchmark changes for each commit during development.
 
