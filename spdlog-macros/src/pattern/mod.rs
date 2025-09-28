@@ -47,7 +47,8 @@ pub fn runtime_pattern_impl(runtime_pattern: RuntimePattern) -> Result<TokenStre
         {
             let template = #template;
             let pattern_registry = {
-                let mut registry = spdlog_internal
+                let mut registry = spdlog
+                    ::__internal
                     ::pattern_parser
                     ::PatternRegistry
                     ::<Box<dyn Fn() -> Box<dyn spdlog::formatter::Pattern>>>

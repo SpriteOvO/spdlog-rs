@@ -315,6 +315,9 @@ pub use logger::*;
 pub use record::*;
 pub use source_location::*;
 #[doc(hidden)]
+#[cfg(feature = "runtime-pattern")]
+pub use spdlog_internal as __internal;
+#[doc(hidden)]
 pub use spdlog_macros::normalize_forward as __normalize_forward;
 pub use string_buf::StringBuf;
 #[cfg(feature = "multi-thread")]
