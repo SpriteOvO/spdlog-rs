@@ -4,28 +4,28 @@
 
 Run `cargo +nightly bench --features multi-thread` in the root directory of this repository for benchmarking.
 
-The following results are generated on `Windows 10 64 bit` and `Intel i9-10900KF CPU @ 3.70GHz` with `cargo 1.83.0-nightly (ad074abe3 2024-10-04)`.
+The following results are generated on `Windows 10 64 bit` and `Intel i9-10900KF CPU @ 3.70GHz` with `cargo 1.92.0-nightly (f2932725b 2025-09-24)`.
 
-### `spdlog-rs` (0.4.0)
+### `spdlog-rs` (0.5.0)
 
 - Default features
 
   ```
-  test bench_1_file               ... bench:         163.62 ns/iter (+/- 11.70)
-  test bench_2_file_async         ... bench:         214.90 ns/iter (+/- 16.04)
-  test bench_3_rotating_file_size ... bench:         184.23 ns/iter (+/- 31.93)
-  test bench_4_rotating_daily     ... bench:         170.50 ns/iter (+/- 10.23)
-  test bench_5_level_off          ... bench:           1.60 ns/iter (+/- 0.08)
+  test bench_1_file               ... bench:         201.82 ns/iter (+/- 10.63)
+  test bench_2_file_async         ... bench:         244.50 ns/iter (+/- 11.37)
+  test bench_3_rotating_file_size ... bench:         197.51 ns/iter (+/- 36.44)
+  test bench_4_rotating_daily     ... bench:         200.50 ns/iter (+/- 9.47)
+  test bench_5_level_off          ... bench:           1.37 ns/iter (+/- 0.13)
   ```
 
 - Enable `flexible-string` feature
 
   ```
-  test bench_1_file               ... bench:         143.55 ns/iter (+/- 7.91)
-  test bench_2_file_async         ... bench:         215.43 ns/iter (+/- 12.25)
-  test bench_3_rotating_file_size ... bench:         162.22 ns/iter (+/- 21.09)
-  test bench_4_rotating_daily     ... bench:         146.32 ns/iter (+/- 8.46)
-  test bench_5_level_off          ... bench:           1.23 ns/iter (+/- 0.02)
+  test bench_1_file               ... bench:         170.79 ns/iter (+/- 10.30)
+  test bench_2_file_async         ... bench:         247.40 ns/iter (+/- 15.25)
+  test bench_3_rotating_file_size ... bench:         172.91 ns/iter (+/- 27.18)
+  test bench_4_rotating_daily     ... bench:         173.12 ns/iter (+/- 10.84)
+  test bench_5_level_off          ... bench:           1.43 ns/iter (+/- 0.02)
   ```
 
 <details><summary><b>Compared with other Rust crates</b></summary>
@@ -34,80 +34,90 @@ The following results are generated on `Windows 10 64 bit` and `Intel i9-10900KF
 
 I'm not entirely familiar with using the other Rust crates below, so if you find a bug or something worth improving in the benchmark code, feel free to open an issue to let me know.
 
-### `tracing` (0.1.40)
+### `tracing` (0.1.41), `tracing-subscriber` (0.3.20), `tracing-appender` (0.2.3)
 
 ```
-test bench_1_file               ... bench:       2,316.25 ns/iter (+/- 107.55)
-test bench_2_file_async         ... bench:         603.70 ns/iter (+/- 24.70)
+test bench_1_file               ... bench:       2,479.67 ns/iter (+/- 224.87)
+test bench_2_file_async         ... bench:         699.95 ns/iter (+/- 47.68)
 test bench_3_rotating_file_size ...                   unavailable
-test bench_4_rotating_daily     ... bench:       2,373.32 ns/iter (+/- 97.30)
-test bench_5_level_off          ... bench:           0.41 ns/iter (+/- 0.00)
+test bench_4_rotating_daily     ... bench:       2,473.01 ns/iter (+/- 244.29)
+test bench_5_level_off          ... bench:           0.39 ns/iter (+/- 0.03)
 ```
 
-### `slog` (2.7.0)
+### `slog` (2.7.0), `sloggers` (2.2.0)
 
 ```
 test bench_1_file                     ...                   unavailable
-test bench_2_file_async               ... bench:         467.90 ns/iter (+/- 4.56)
-test bench_3_rotating_file_size_async ... bench:         472.49 ns/iter (+/- 17.81)
+test bench_2_file_async               ... bench:         446.12 ns/iter (+/- 28.20)
+test bench_3_rotating_file_size_async ... bench:         447.39 ns/iter (+/- 30.20)
 test bench_4_rotating_daily           ...                   unavailable
-test bench_5_level_off                ... bench:           1.81 ns/iter (+/- 0.14)
+test bench_5_level_off                ... bench:           1.76 ns/iter (+/- 0.10)
 ```
 
-### `flexi_logger` (0.29.2)
+### `flexi_logger` (0.31.4)
 
 ```
-test bench_1_file               ... bench:       1,181.17 ns/iter (+/- 97.06)
+test bench_1_file               ... bench:       1,172.30 ns/iter (+/- 73.46)
 test bench_2_file_async         ...                   unavailable
-test bench_3_rotating_file_size ... bench:       1,192.97 ns/iter (+/- 44.88)
-test bench_4_rotating_daily     ... bench:       1,587.54 ns/iter (+/- 59.07)
-test bench_5_level_off          ... bench:           0.20 ns/iter (+/- 0.01)
+test bench_3_rotating_file_size ... bench:       1,206.46 ns/iter (+/- 109.38)
+test bench_4_rotating_daily     ... bench:       1,510.36 ns/iter (+/- 101.03)
+test bench_5_level_off          ... bench:           0.20 ns/iter (+/- 0.02)
 ```
 
-### `log4rs` (1.3.0)
+### `log4rs` (1.4.0)
 
 ```
-test bench_1_file               ... bench:       2,882.34 ns/iter (+/- 85.30)
+test bench_1_file               ... bench:       2,931.94 ns/iter (+/- 201.13)
 test bench_2_file_async         ...                   unavailable
-test bench_3_rotating_file_size ... bench:       2,990.95 ns/iter (+/- 189.15)
+test bench_3_rotating_file_size ... bench:       2,968.21 ns/iter (+/- 141.19)
 test bench_4_rotating_daily     ...                   unavailable
 test bench_5_level_off          ... bench:           0.20 ns/iter (+/- 0.01)
 ```
 
-### `fern` (0.6.2)
+### `fern` (0.7.1)
 
 ```
-test bench_1_file               ... bench:       2,896.02 ns/iter (+/- 259.27)
+test bench_1_file               ... bench:       2,927.74 ns/iter (+/- 180.88)
 test bench_2_file_async         ...                   unavailable
 test bench_3_rotating_file_size ...                   unavailable
 test bench_4_rotating_daily     ...                   unavailable
 test bench_5_level_off          ... bench:           0.20 ns/iter (+/- 0.02)
 ```
 
-### `ftlog` (0.2.14)
+### `ftlog` (0.2.15)
 
 ```
 test bench_1_file               ...                   unavailable
-test bench_2_file_async         ... bench:         254.47 ns/iter (+/- 16.07)
+test bench_2_file_async         ... bench:         233.98 ns/iter (+/- 22.20)
 test bench_3_rotating_file_size ...                   unavailable
-test bench_4_rotating_daily     ... bench:         253.33 ns/iter (+/- 19.89)
+test bench_4_rotating_daily     ... bench:         239.08 ns/iter (+/- 20.10)
 test bench_5_level_off          ... bench:           0.20 ns/iter (+/- 0.01)
 ```
 
-### `fast_log` (1.7.4)
+### `fast_log` (1.7.7)
 
 ```
 test bench_1_file                     ...                   unavailable
-test bench_2_file_async               ... bench:         249.25 ns/iter (+/- 2,917.45)
-test bench_3_rotating_file_size_async ... bench:         270.89 ns/iter (+/- 753.87)
-test bench_4_rotating_daily_async     ... bench:         640.79 ns/iter (+/- 543.36)
+test bench_2_file_async               ... bench:         246.59 ns/iter (+/- 3,179.82)
+test bench_3_rotating_file_size_async ... bench:         255.32 ns/iter (+/- 631.78)
+test bench_4_rotating_daily_async     ... bench:         206.69 ns/iter (+/- 653.65)
 test bench_5_level_off                ... bench:           0.20 ns/iter (+/- 0.02)
+```
+
+### `logforth` (0.27.0)
+
+```
+test bench_1_file                     ...                   unavailable
+test bench_2_file_async               ... bench:         780.12 ns/iter (+/- 44.93)
+test bench_3_rotating_file_size_async ... bench:         918.14 ns/iter (+/- 47.00)
+test bench_4_rotating_daily_async     ... bench:         907.25 ns/iter (+/- 71.37)
+test bench_5_level_off                ... bench:           5.88 ns/iter (+/- 0.43)
 ```
 </details>
 
 <details><summary><b>Compared with C++ spdlog</b></summary>
 
-### `spdlog-rs` (0.4.0)
+### `spdlog-rs` (0.5.0)
 
 - Default features (corresponds to C++ `spdlog` using standard `<format>`)
 
@@ -117,17 +127,17 @@ test bench_5_level_off                ... bench:           0.20 ns/iter (+/- 0.0
     [info] **********************************************************************
     [info] Multi threaded: 1 threads, 250000 messages
     [info] **********************************************************************
-    [info] basic_mt                       Elapsed: 0.07 secs          3748502/sec
-    [info] rotating_mt                    Elapsed: 0.07 secs          3790491/sec
-    [info] daily_mt                       Elapsed: 0.07 secs          3815902/sec
-    [info] level-off                      Elapsed: 0.00 secs        488949735/sec
+    [info] basic_mt                       Elapsed: 0.08 secs          3092991/sec
+    [info] rotating_mt                    Elapsed: 0.08 secs          3096838/sec
+    [info] daily_mt                       Elapsed: 0.08 secs          3181888/sec
+    [info] level-off                      Elapsed: 0.00 secs        567150635/sec
     [info] **********************************************************************
     [info] Multi threaded: 4 threads, 250000 messages
     [info] **********************************************************************
-    [info] basic_mt                       Elapsed: 0.05 secs          5542241/sec
-    [info] rotating_mt                    Elapsed: 0.06 secs          4130975/sec
-    [info] daily_mt                       Elapsed: 0.06 secs          4545066/sec
-    [info] level-off                      Elapsed: 0.00 secs        550055005/sec
+    [info] basic_mt                       Elapsed: 0.07 secs          3605209/sec
+    [info] rotating_mt                    Elapsed: 0.07 secs          3519391/sec
+    [info] daily_mt                       Elapsed: 0.08 secs          3332786/sec
+    [info] level-off                      Elapsed: 0.00 secs        687947165/sec
     ```
 
   - Async
@@ -137,23 +147,23 @@ test bench_5_level_off                ... bench:           0.20 ns/iter (+/- 0.0
     [info] Messages     : 1000000
     [info] Threads      : 10
     [info] Queue        : 8192 slots
-    [info] Queue memory : 8192 x 112 = 896 KB
+    [info] Queue memory : 8192 x 136 = 1088 KB
     [info] Total iters  : 3
     [info] --------------------------------------------
     [info]
     [info] ********************************************
     [info] Queue Overflow Policy: Block
     [info] ********************************************
-    [info] Elapsed: 0.4002621 secs   2498362/sec
-    [info] Elapsed: 0.3905976 secs   2560179/sec
-    [info] Elapsed: 0.3966882 secs   2520871/sec
+    [info] Elapsed: 0.4880718 secs   2048878/sec
+    [info] Elapsed: 0.4717359 secs   2119830/sec
+    [info] Elapsed: 0.4589705 secs   2178789/sec
     [info]
     [info] ********************************************
     [info] Queue Overflow Policy: DropIncoming
     [info] ********************************************
-    [info] Elapsed: 0.0832805 secs   12007612/sec
-    [info] Elapsed: 0.0836786 secs   11950486/sec
-    [info] Elapsed: 0.0828995 secs   12062798/sec
+    [info] Elapsed: 0.1043783 secs   9580535/sec
+    [info] Elapsed: 0.1039465 secs   9620333/sec
+    [info] Elapsed: 0.104625 secs    9557945/sec
     ```
 
 - Enable `flexible-string` feature (corresponds to C++ `spdlog` using `fmt` library)
@@ -164,17 +174,17 @@ test bench_5_level_off                ... bench:           0.20 ns/iter (+/- 0.0
     [info] **********************************************************************
     [info] Multi threaded: 1 threads, 250000 messages
     [info] **********************************************************************
-    [info] basic_mt                       Elapsed: 0.06 secs          4402175/sec
-    [info] rotating_mt                    Elapsed: 0.06 secs          4045543/sec
-    [info] daily_mt                       Elapsed: 0.06 secs          4188222/sec
-    [info] level-off                      Elapsed: 0.00 secs        442243056/sec
+    [info] basic_mt                       Elapsed: 0.07 secs          3660086/sec
+    [info] rotating_mt                    Elapsed: 0.07 secs          3666522/sec
+    [info] daily_mt                       Elapsed: 0.07 secs          3597096/sec
+    [info] level-off                      Elapsed: 0.00 secs        508957654/sec
     [info] **********************************************************************
     [info] Multi threaded: 4 threads, 250000 messages
     [info] **********************************************************************
-    [info] basic_mt                       Elapsed: 0.05 secs          4885541/sec
-    [info] rotating_mt                    Elapsed: 0.06 secs          4344448/sec
-    [info] daily_mt                       Elapsed: 0.06 secs          4350549/sec
-    [info] level-off                      Elapsed: 0.00 secs        514721021/sec
+    [info] basic_mt                       Elapsed: 0.07 secs          3572576/sec
+    [info] rotating_mt                    Elapsed: 0.07 secs          3410138/sec
+    [info] daily_mt                       Elapsed: 0.07 secs          3552902/sec
+    [info] level-off                      Elapsed: 0.00 secs        724427702/sec
     ```
 
   - Async
@@ -184,28 +194,28 @@ test bench_5_level_off                ... bench:           0.20 ns/iter (+/- 0.0
     [info] Messages     : 1000000
     [info] Threads      : 10
     [info] Queue        : 8192 slots
-    [info] Queue memory : 8192 x 112 = 896 KB
+    [info] Queue memory : 8192 x 136 = 1088 KB
     [info] Total iters  : 3
     [info] --------------------------------------------
     [info]
     [info] ********************************************
     [info] Queue Overflow Policy: Block
     [info] ********************************************
-    [info] Elapsed: 0.380146 secs    2630568/sec
-    [info] Elapsed: 0.3686135 secs   2712868/sec
-    [info] Elapsed: 0.3628417 secs   2756022/sec
+    [info] Elapsed: 0.4305708 secs   2322498/sec
+    [info] Elapsed: 0.4584145 secs   2181431/sec
+    [info] Elapsed: 0.4509432 secs   2217574/sec
     [info]
     [info] ********************************************
     [info] Queue Overflow Policy: DropIncoming
     [info] ********************************************
-    [info] Elapsed: 0.0852181 secs   11734596/sec
-    [info] Elapsed: 0.0864404 secs   11568664/sec
-    [info] Elapsed: 0.0889495 secs   11242334/sec
+    [info] Elapsed: 0.1058637 secs   9446108/sec
+    [info] Elapsed: 0.1072791 secs   9321480/sec
+    [info] Elapsed: 0.1063269 secs   9404957/sec
     ```
 
-### C++ `spdlog` (1.14.1)
+### C++ `spdlog` (1.15.3)
 
-Compiler `MSVC 19.41.34120.0`.
+Compiler `MSVC 19.44.35217.0`.
 
 - Using standard `<format>`
   (compiled with `cmake -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DSPDLOG_BUILD_BENCH=ON -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_USE_STD_FORMAT=ON`)
@@ -216,17 +226,17 @@ Compiler `MSVC 19.41.34120.0`.
     [info] **************************************************************
     [info] Multi threaded: 1 threads, 250,000 messages
     [info] **************************************************************
-    [info] basic_mt                       Elapsed: 0.12 secs        2,057,294/sec
-    [info] rotating_mt                    Elapsed: 0.13 secs        1,878,038/sec
-    [info] daily_mt                       Elapsed: 0.12 secs        2,051,127/sec
-    [info] level-off                      Elapsed: 0.00 secs      151,515,151/sec
+    [info] basic_mt                       Elapsed: 0.12 secs        2,118,970/sec
+    [info] rotating_mt                    Elapsed: 0.13 secs        1,890,720/sec
+    [info] daily_mt                       Elapsed: 0.12 secs        2,089,322/sec
+    [info] level-off                      Elapsed: 0.00 secs      139,977,603/sec
     [info] **************************************************************
     [info] Multi threaded: 4 threads, 250,000 messages
     [info] **************************************************************
-    [info] basic_mt                       Elapsed: 0.18 secs        1,387,633/sec
-    [info] rotating_mt                    Elapsed: 0.18 secs        1,355,687/sec
-    [info] daily_mt                       Elapsed: 0.19 secs        1,347,550/sec
-    [info] level-off                      Elapsed: 0.00 secs      148,086,719/sec
+    [info] basic_mt                       Elapsed: 0.18 secs        1,424,666/sec
+    [info] rotating_mt                    Elapsed: 0.19 secs        1,329,264/sec
+    [info] daily_mt                       Elapsed: 0.18 secs        1,364,071/sec
+    [info] level-off                      Elapsed: 0.00 secs      139,899,272/sec
     ```
 
   - Async
@@ -236,23 +246,23 @@ Compiler `MSVC 19.41.34120.0`.
     [info] Messages     : 1000000
     [info] Threads      : 10
     [info] Queue        : 8192 slots
-    [info] Queue memory : 8192 x 176 = 1408 KB
+    [info] Queue memory : 8192 x 152 = 1216 KB
     [info] Total iters  : 3
     [info] -------------------------------------------------
     [info]
     [info] *********************************
     [info] Queue Overflow Policy: block
     [info] *********************************
-    [info] Elapsed: 2.8654663 secs   348983/sec
-    [info] Elapsed: 2.8504903 secs   350816/sec
-    [info] Elapsed: 2.8458098 secs   351393/sec
+    [info] Elapsed: 2.132892 secs    468846/sec
+    [info] Elapsed: 2.1042392 secs   475231/sec
+    [info] Elapsed: 2.1130006 secs   473260/sec
     [info]
     [info] *********************************
     [info] Queue Overflow Policy: overrun
     [info] *********************************
-    [info] Elapsed: 1.8782355 secs   532414/sec
-    [info] Elapsed: 1.8402441 secs   543406/sec
-    [info] Elapsed: 1.8303429 secs   546345/sec
+    [info] Elapsed: 0.4682991 secs   2135387/sec
+    [info] Elapsed: 0.4668421 secs   2142051/sec
+    [info] Elapsed: 0.4589271 secs   2178995/sec
     ```
 
 - Using `fmt` library
@@ -264,17 +274,17 @@ Compiler `MSVC 19.41.34120.0`.
     [info] **************************************************************
     [info] Multi threaded: 1 threads, 250,000 messages
     [info] **************************************************************
-    [info] basic_mt                       Elapsed: 0.07 secs        3,503,397/sec
-    [info] rotating_mt                    Elapsed: 0.08 secs        3,310,394/sec
-    [info] daily_mt                       Elapsed: 0.08 secs        3,160,360/sec
-    [info] level-off                      Elapsed: 0.00 secs      138,881,173/sec
+    [info] basic_mt                       Elapsed: 0.06 secs        3,945,408/sec
+    [info] rotating_mt                    Elapsed: 0.06 secs        4,016,483/sec
+    [info] daily_mt                       Elapsed: 0.06 secs        3,872,792/sec
+    [info] level-off                      Elapsed: 0.00 secs      136,061,826/sec
     [info] **************************************************************
     [info] Multi threaded: 4 threads, 250,000 messages
     [info] **************************************************************
-    [info] basic_mt                       Elapsed: 0.12 secs        2,091,563/sec
-    [info] rotating_mt                    Elapsed: 0.13 secs        1,886,654/sec
-    [info] daily_mt                       Elapsed: 0.13 secs        1,891,844/sec
-    [info] level-off                      Elapsed: 0.00 secs      139,883,616/sec
+    [info] basic_mt                       Elapsed: 0.10 secs        2,497,243/sec
+    [info] rotating_mt                    Elapsed: 0.10 secs        2,421,563/sec
+    [info] daily_mt                       Elapsed: 0.10 secs        2,390,189/sec
+    [info] level-off                      Elapsed: 0.00 secs      136,054,421/sec
     ```
 
   - Async
@@ -284,23 +294,23 @@ Compiler `MSVC 19.41.34120.0`.
     [info] Messages     : 1000000
     [info] Threads      : 10
     [info] Queue        : 8192 slots
-    [info] Queue memory : 8192 x 432 = 3456 KB
+    [info] Queue memory : 8192 x 408 = 3264 KB
     [info] Total iters  : 3
     [info] -------------------------------------------------
     [info]
     [info] *********************************
     [info] Queue Overflow Policy: block
     [info] *********************************
-    [info] Elapsed: 2.5994468 secs   384697/sec
-    [info] Elapsed: 2.6129828 secs   382704/sec
-    [info] Elapsed: 2.6062268 secs   383696/sec
+    [info] Elapsed: 1.7362919 secs   575940/sec
+    [info] Elapsed: 1.7509939 secs   571104/sec
+    [info] Elapsed: 1.7574208 secs   569015/sec
     [info]
     [info] *********************************
     [info] Queue Overflow Policy: overrun
     [info] *********************************
-    [info] Elapsed: 1.8697969 secs   534817/sec
-    [info] Elapsed: 1.8636448 secs   536582/sec
-    [info] Elapsed: 1.8804087 secs   531799/sec
+    [info] Elapsed: 0.3349014 secs   2985953/sec
+    [info] Elapsed: 0.3340692 secs   2993391/sec
+    [info] Elapsed: 0.3259194 secs   3068243/sec
     ```
 
 </details>
