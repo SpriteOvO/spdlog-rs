@@ -2,7 +2,7 @@
 name = "spdlog-rs"
 version = "0.4.3"
 edition = "2021"
-rust-version = "1.63"
+rust-version = "1.66.1"
 description = "Fast, highly configurable Rust logging crate, inspired by the C++ logging library spdlog"
 repository = "https://github.com/SpriteOvO/spdlog-rs"
 license = "MIT OR Apache-2.0"
