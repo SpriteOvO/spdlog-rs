@@ -86,6 +86,7 @@ log = "=0.4.28"
 slog = "=2.7.0"
 sloggers = "=2.2.0"
 log4rs = "=1.4.0"
+logforth = { version = "=0.27.0", features = ["append-rolling-file", "append-single-file"]}
 fast_log = "=1.7.7"
 fern = "=0.7.1"
 flexi_logger = "=0.31.4"
@@ -168,6 +169,22 @@ path = "benches/ftlog/2_rotating_daily.rs"
 [[bench]]
 name = "ftlog_3_level_off"
 path = "benches/ftlog/3_level_off.rs"
+[[bench]]
+name = "logforth"
+path = "benches/logforth/main.rs"
+harness = false
+[[bench]]
+name = "logforth_1_file_async"
+path = "benches/logforth/1_file_async.rs"
+[[bench]]
+name = "logforth_2_rotating_file_size_async"
+path = "benches/logforth/2_rotating_file_size_async.rs"
+[[bench]]
+name = "logforth_3_rotating_daily_async"
+path = "benches/logforth/3_rotating_daily_async.rs"
+[[bench]]
+name = "logforth_4_level_off"
+path = "benches/logforth/4_level_off.rs"
 
 [[example]]
 name = "06_log_crate"
