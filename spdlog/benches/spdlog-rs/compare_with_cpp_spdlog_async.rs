@@ -111,7 +111,7 @@ struct Args {
 
     /// Number of the channel capacity
     /// [default: `min(message_count + 2, 8192)`]
-    #[clap(long, validator(arg_queue_size_validator))]
+    #[clap(long, value_parser(arg_queue_size_validator))]
     queue_size: Option<usize>,
 
     /// Number of the benchmark threads

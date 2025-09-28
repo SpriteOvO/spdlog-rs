@@ -55,7 +55,7 @@ pub(crate) fn take_until_unbalanced(
 
 #[cfg(test)]
 mod tests {
-    use nom::{bytes::complete::tag, error::ErrorKind, sequence::delimited};
+    use nom::{bytes::complete::tag, error::ErrorKind, sequence::delimited, Parser};
 
     use super::*;
 
@@ -98,6 +98,9 @@ mod tests {
     #[test]
     fn take_until_basic_usage() {
         let mut parser = delimited(tag("<"), take_until_unbalanced('<', '>'), tag(">"));
-        assert_eq!(parser("<<inside>inside>abc"), Ok(("abc", "<inside>inside")));
+        assert_eq!(
+            parser.parse("<<inside>inside>abc"),
+            Ok(("abc", "<inside>inside"))
+        );
     }
 }

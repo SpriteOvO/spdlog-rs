@@ -26,14 +26,15 @@ impl<'a> Template<'a> {
 
 impl<'a> Template<'a> {
     #[must_use]
-    fn parser() -> impl Parser<&'a str, Template<'a>, NomError<&'a str>> {
+    fn parser() -> impl Parser<&'a str, Output = Template<'a>, Error = NomError<&'a str>> {
         let token_parser = TemplateToken::parser();
         nom::combinator::complete(nom::multi::many0(token_parser).and(nom::combinator::eof))
             .map(|(tokens, _)| Self { tokens })
     }
 
     #[must_use]
-    fn parser_without_style_range() -> impl Parser<&'a str, Template<'a>, NomError<&'a str>> {
+    fn parser_without_style_range(
+    ) -> impl Parser<&'a str, Output = Template<'a>, Error = NomError<&'a str>> {
         let token_parser = TemplateToken::parser_without_style_range();
         nom::combinator::complete(nom::multi::many0(token_parser).and(nom::combinator::eof))
             .map(|(tokens, _)| Self { tokens })
@@ -49,7 +50,7 @@ pub enum TemplateToken<'a> {
 
 impl<'a> TemplateToken<'a> {
     #[must_use]
-    fn parser() -> impl Parser<&'a str, TemplateToken<'a>, NomError<&'a str>> {
+    fn parser() -> impl Parser<&'a str, Output = TemplateToken<'a>, Error = NomError<&'a str>> {
         let style_range_parser = TemplateStyleRange::parser();
         let other_parser = Self::parser_without_style_range();
 
@@ -57,7 +58,8 @@ impl<'a> TemplateToken<'a> {
     }
 
     #[must_use]
-    fn parser_without_style_range() -> impl Parser<&'a str, TemplateToken<'a>, NomError<&'a str>> {
+    fn parser_without_style_range(
+    ) -> impl Parser<&'a str, Output = TemplateToken<'a>, Error = NomError<&'a str>> {
         let literal_parser = TemplateLiteral::parser();
         let formatter_parser = TemplateFormatterToken::parser();
 
@@ -73,7 +75,7 @@ pub struct TemplateLiteral {
 
 impl TemplateLiteral {
     #[must_use]
-    fn parser<'a>() -> impl Parser<&'a str, Self, NomError<&'a str>> {
+    fn parser<'a>() -> impl Parser<&'a str, Output = Self, Error = NomError<&'a str>> {
         let literal_char_parser = nom::combinator::value('{', nom::bytes::complete::tag("{{"))
             .or(nom::combinator::value('}', nom::bytes::complete::tag("}}")))
             .or(nom::character::complete::none_of("{"));
@@ -91,11 +93,12 @@ pub struct TemplateFormatterToken<'a> {
 
 impl<'a> TemplateFormatterToken<'a> {
     #[must_use]
-    fn parser() -> impl Parser<&'a str, TemplateFormatterToken<'a>, NomError<&'a str>> {
+    fn parser(
+    ) -> impl Parser<&'a str, Output = TemplateFormatterToken<'a>, Error = NomError<&'a str>> {
         let open_paren = nom::character::complete::char('{');
         let close_paren = nom::character::complete::char('}');
         let formatter_prefix = nom::character::complete::char('$');
-        let formatter_placeholder = nom::combinator::recognize(nom::sequence::tuple((
+        let formatter_placeholder = nom::combinator::recognize((
             nom::combinator::opt(formatter_prefix),
             nom::branch::alt((
                 nom::character::complete::alpha1,
@@ -105,7 +108,7 @@ impl<'a> TemplateFormatterToken<'a> {
                 nom::character::complete::alphanumeric1,
                 nom::bytes::complete::tag("_"),
             ))),
-        )));
+        ));
 
         nom::sequence::delimited(open_paren, formatter_placeholder, close_paren).map(
             move |placeholder: &str| match placeholder.strip_prefix('$') {
@@ -129,7 +132,8 @@ pub struct TemplateStyleRange<'a> {
 
 impl<'a> TemplateStyleRange<'a> {
     #[must_use]
-    fn parser() -> impl Parser<&'a str, TemplateStyleRange<'a>, NomError<&'a str>> {
+    fn parser() -> impl Parser<&'a str, Output = TemplateStyleRange<'a>, Error = NomError<&'a str>>
+    {
         nom::bytes::complete::tag("{^")
             .and(helper::take_until_unbalanced('{', '}'))
             .and(nom::bytes::complete::tag("}"))
