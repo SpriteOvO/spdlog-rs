@@ -193,6 +193,10 @@ required-features = ["log"]
 name = "07_async"
 required-features = ["multi-thread"]
 [[example]]
+name = "native_linux"
+path = "examples/native/linux.rs"
+required-features = ["native", "libsystemd"]
+[[example]]
 name = "native_android"
 path = "examples/native/android.rs"
 required-features = ["native", "android-ndk"]
