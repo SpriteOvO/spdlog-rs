@@ -609,7 +609,7 @@ impl LoggerBuilder {
 
     /// Sets the flush level filter.
     ///
-    /// This paramter is **optional**.
+    /// This parameter is **optional**.
     ///
     /// See the documentation of [`Logger::set_flush_level_filter`] for the
     /// description of this parameter.
