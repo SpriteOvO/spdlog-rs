@@ -302,7 +302,11 @@ impl Pattern for Millisecond {
         dest: &mut StringBuf,
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        write!(dest, "{:03}", ctx.time_date().millisecond()).map_err(Error::FormatRecord)
+        dest.write_str(&numtoa::BaseN::<10>::u32_filled::<3>(
+            ctx.time_date().millisecond(),
+            b'0',
+        ))
+        .map_err(Error::FormatRecord)
     }
 }
 
@@ -319,7 +323,9 @@ impl Pattern for Microsecond {
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let nanosecond = ctx.time_date().nanosecond();
-        write!(dest, "{:06}", nanosecond / 1_000).map_err(Error::FormatRecord)
+        let microsecond = nanosecond / 1_000;
+        dest.write_str(&numtoa::BaseN::<10>::u32_filled::<6>(microsecond, b'0'))
+            .map_err(Error::FormatRecord)
     }
 }
 
@@ -335,7 +341,11 @@ impl Pattern for Nanosecond {
         dest: &mut StringBuf,
         ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        write!(dest, "{:09}", ctx.time_date().nanosecond()).map_err(Error::FormatRecord)
+        dest.write_str(&numtoa::BaseN::<10>::u32_filled::<9>(
+            ctx.time_date().nanosecond(),
+            b'0',
+        ))
+        .map_err(Error::FormatRecord)
     }
 }
 

@@ -27,6 +27,7 @@ impl Pattern for ThreadId {
         dest: &mut StringBuf,
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
-        write!(dest, "{}", record.tid()).map_err(Error::FormatRecord)
+        dest.write_str(&numtoa::BaseN::<10>::u64(record.tid()))
+            .map_err(Error::FormatRecord)
     }
 }

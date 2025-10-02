@@ -40,7 +40,7 @@ impl AndroidFormatter {
             dest.write_str(", ")?;
             dest.write_str(srcloc.file())?;
             dest.write_str(":")?;
-            write!(dest, "{}", srcloc.line())?;
+            dest.write_str(&numtoa::BaseN::<10>::u32(srcloc.line()))?;
             dest.write_str("] ")?;
         }
 

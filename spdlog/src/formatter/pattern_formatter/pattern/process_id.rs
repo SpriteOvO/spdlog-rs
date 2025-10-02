@@ -26,7 +26,8 @@ impl Pattern for ProcessId {
         _ctx: &mut PatternContext,
     ) -> crate::Result<()> {
         let pid = get_current_process_id();
-        write!(dest, "{pid}").map_err(Error::FormatRecord)
+        dest.write_str(&numtoa::BaseN::<10>::u64(pid))
+            .map_err(Error::FormatRecord)
     }
 }
 
