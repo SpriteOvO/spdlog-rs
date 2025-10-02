@@ -8,6 +8,7 @@ repository = "https://github.com/SpriteOvO/spdlog-rs"
 license = "MIT OR Apache-2.0"
 keywords = ["spdlog", "log", "logging"]
 categories = ["development-tools::debugging"]
+exclude = ["/benches"]
 
 [package.metadata.docs.rs]
 all-features = true
