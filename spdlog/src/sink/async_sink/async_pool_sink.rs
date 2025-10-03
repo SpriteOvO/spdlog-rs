@@ -143,7 +143,7 @@ impl Sink for AsyncPoolSink {
         // before we do that we have to destroy the thread pool to ensure that any
         // pending log tasks are completed.
         self.thread_pool.destroy();
-        self.backend.flush()
+        self.backend.flush_atexit()
     }
 }
 
