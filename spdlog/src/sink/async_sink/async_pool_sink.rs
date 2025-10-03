@@ -266,6 +266,14 @@ impl Backend {
         result
     }
 
+    fn flush_atexit(&self) -> Result<()> {
+        let mut result = Ok(());
+        for sink in &self.sinks {
+            result = Error::push_result(result, sink.flush_atexit());
+        }
+        result
+    }
+
     fn handle_error(&self, err: Error) {
         self.prop.call_error_handler_internal("AsyncPoolSink", err)
     }
