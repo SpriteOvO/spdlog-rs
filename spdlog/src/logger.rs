@@ -470,6 +470,14 @@ impl Logger {
         })
     }
 
+    pub(crate) fn flush_sinks_atexit(&self) {
+        self.sinks.iter().for_each(|sink| {
+            if let Err(err) = sink.flush_atexit() {
+                self.handle_error(err);
+            }
+        });
+    }
+
     // This will lose the periodic flush property, if any.
     #[must_use]
     fn clone_lossy(&self) -> Self {
