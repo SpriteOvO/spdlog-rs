@@ -736,8 +736,6 @@ pub fn log_crate_proxy() -> &'static LogCrateProxy {
     &PROXY
 }
 
-static IS_TEARING_DOWN: AtomicBool = AtomicBool::new(false);
-
 fn flush_default_logger_at_exit() {
     // Rust never calls `drop` for static variables.
     //
@@ -745,9 +743,8 @@ fn flush_default_logger_at_exit() {
     // once at the program exit, thus we don't lose the last logs.
 
     extern "C" fn handler() {
-        IS_TEARING_DOWN.store(true, Ordering::SeqCst);
         if let Some(default_logger) = DEFAULT_LOGGER.get() {
-            default_logger.load().flush()
+            default_logger.load().flush_sinks_atexit()
         }
     }
 

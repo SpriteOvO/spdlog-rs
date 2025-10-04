@@ -231,6 +231,13 @@ pub trait Sink: SinkPropAccess + Sync + Send {
 
     /// Flushes any buffered records.
     fn flush(&self) -> Result<()>;
+
+    /// Flushes any buffered records at program exit.
+    ///
+    /// Default to call `flush()`.
+    fn flush_atexit(&self) -> Result<()> {
+        self.flush()
+    }
 }
 
 /// Container type for [`Sink`]s.
