@@ -86,6 +86,7 @@ pub(crate) use journald_formatter::*;
 pub use json_formatter::*;
 pub(crate) use local_time_cacher::*;
 pub use pattern_formatter::*;
+pub(crate) use unreachable_formatter::*;
 
 use crate::{Record, Result, StringBuf};
 
