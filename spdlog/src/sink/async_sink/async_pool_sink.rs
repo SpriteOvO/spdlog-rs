@@ -258,20 +258,20 @@ impl Backend {
         result
     }
 
-    fn flush(&self) -> Result<()> {
+    fn flush_with(&self, with: impl Fn(&dyn Sink) -> Result<()>) -> Result<()> {
         let mut result = Ok(());
         for sink in &self.sinks {
-            result = Error::push_result(result, sink.flush());
+            result = Error::push_result(result, with(&**sink));
         }
         result
     }
 
+    fn flush(&self) -> Result<()> {
+        self.flush_with(|sink| sink.flush())
+    }
+
     fn flush_atexit(&self) -> Result<()> {
-        let mut result = Ok(());
-        for sink in &self.sinks {
-            result = Error::push_result(result, sink.flush_atexit());
-        }
-        result
+        self.flush_with(|sink| sink.flush_atexit())
     }
 
     fn handle_error(&self, err: Error) {
