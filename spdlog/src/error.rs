@@ -113,7 +113,7 @@ pub enum Error {
     /// variants should be used first, this variant should only be used as a
     /// last option when other variant types are incompatible.
     #[error("{0}")]
-    Downstream(Box<dyn StdError>),
+    Downstream(Box<dyn StdError + Send + Sync>),
 
     /// Returned when multiple errors occurred.
     #[error("{0:?}")]
@@ -363,6 +363,12 @@ impl fmt::Debug for ErrorHandler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_utils::*;
+
+    #[test]
+    fn error_traits() {
+        assert_trait!(Error: Send + Sync);
+    }
 
     #[test]
     fn push_err() {
