@@ -93,6 +93,12 @@
 //! [`RotatingFileSink`] that automatically rotates files by time point or file
 //! size, and [`AsyncPoolSink`] that outputs logs asynchronously.
 //!
+//! Sinks for third-party services are maintained in separate repositories.
+//! Known crates are:
+//!
+//! - [spdlog-telegram](https://crates.io/crates/spdlog-telegram)
+//! - ... More ideas? See [#103].
+//!
 //! ## Logger
 //!
 //! A complex program may consist of many separated components.
@@ -266,6 +272,7 @@
 //! [`FileSink`]: crate::sink::FileSink
 //! [`RotatingFileSink`]: crate::sink::RotatingFileSink
 //! [`AsyncPoolSink`]: crate::sink::AsyncPoolSink
+//! [#103]: https://github.com/SpriteOvO/spdlog-rs/issues/103
 //! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 //! [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 //! [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose

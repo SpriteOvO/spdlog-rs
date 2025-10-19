@@ -19,7 +19,10 @@ Fast, highly configurable Rust logging crate, inspired by the C++ logging librar
     - standard streams with optional color support;
     - files (single file, rotating hourly, daily, periodically or by file size);
     - platform-specific (e.g. `journald` for Linux and `OutputDebugStringW` for Windows);
-    - ... and able to implement one yourself.
+    - third-party services (maintained in separate repositories):
+      - [spdlog-telegram](https://crates.io/crates/spdlog-telegram)
+      - ... more ideas? see [#103].
+    - and able to implement one yourself.
  - Structured logging.
  - Configuring via environment variables.
  - Readable level filters.
@@ -72,7 +75,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 [spdlog]: https://github.com/gabime/spdlog
 [Benchmarks]: https://github.com/SpriteOvO/spdlog-rs/blob/main/spdlog/benches/README.md
-[#25]: https://github.com/SpriteOvO/spdlog-rs/issues/25
+[#103]: https://github.com/SpriteOvO/spdlog-rs/issues/103
 [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 [docs.rs]: https://docs.rs/spdlog-rs/
 [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
