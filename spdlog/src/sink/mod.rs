@@ -67,8 +67,6 @@ use crate::{
     Error, ErrorHandler, Level, LevelFilter, Record, Result,
 };
 
-pub(crate) const SINK_DEFAULT_LEVEL_FILTER: LevelFilter = LevelFilter::All;
-
 /// Contains definitions of sink properties.
 ///
 /// It provides a set of common properties for sink to define. If there is no
@@ -86,9 +84,18 @@ pub struct SinkProp {
 }
 
 impl Default for SinkProp {
+    /// Returns a `SinkProp` with default values:
+    ///
+    /// | Parameter       | Default Value               |
+    /// |-----------------|-----------------------------|
+    /// | `level_filter`  | `All`                       |
+    /// | `formatter`     | `FullFormatter`             |
+    /// | `error_handler` | [`ErrorHandler::default()`] |
+    ///
+    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     fn default() -> Self {
         Self {
-            level_filter: Atomic::new(SINK_DEFAULT_LEVEL_FILTER),
+            level_filter: Atomic::new(LevelFilter::All),
             formatter: RwLockMappable::new(Box::new(FullFormatter::new())),
             error_handler: RwLock::new(ErrorHandler::default()),
         }
