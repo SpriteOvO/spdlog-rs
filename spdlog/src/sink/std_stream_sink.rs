@@ -3,6 +3,11 @@
 use std::{
     convert::Infallible,
     io::{self, Write},
+    // Import `str` module for function `std::str::from_utf8`, because method `str::from_utf8` is
+    // stabilized since Rust 1.87.
+    //
+    // TODO: Remove this import when our MSRV reaches Rust 1.87.
+    str,
 };
 
 use crate::{
@@ -21,6 +26,22 @@ pub enum StdStream {
     Stderr,
 }
 
+impl StdStream {
+    fn via_write(&self) -> StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>> {
+        match self {
+            Self::Stdout => StdStreamDest::Stdout(io::stdout().lock()),
+            Self::Stderr => StdStreamDest::Stderr(io::stderr().lock()),
+        }
+    }
+
+    fn via_macro(&self) -> StdStreamDest<via_macro::Stdout, via_macro::Stderr> {
+        match self {
+            Self::Stdout => StdStreamDest::Stdout(via_macro::Stdout),
+            Self::Stderr => StdStreamDest::Stderr(via_macro::Stderr),
+        }
+    }
+}
+
 // `io::stdout()` and `io::stderr()` return different types, and
 // `Std***::lock()` is not in any trait, so we need this struct to abstract
 // them.
@@ -30,27 +51,12 @@ enum StdStreamDest<O, E> {
     Stderr(E),
 }
 
-impl StdStreamDest<io::Stdout, io::Stderr> {
-    #[must_use]
-    fn new(stream: StdStream) -> Self {
-        match stream {
-            StdStream::Stdout => StdStreamDest::Stdout(io::stdout()),
-            StdStream::Stderr => StdStreamDest::Stderr(io::stderr()),
-        }
-    }
-
-    #[must_use]
-    fn lock(&self) -> StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>> {
-        match self {
-            StdStreamDest::Stdout(stream) => StdStreamDest::Stdout(stream.lock()),
-            StdStreamDest::Stderr(stream) => StdStreamDest::Stderr(stream.lock()),
-        }
-    }
-
+impl<O, E> StdStreamDest<O, E> {
+    #[allow(dead_code)]
     fn stream_type(&self) -> StdStream {
         match self {
-            StdStreamDest::Stdout(_) => StdStream::Stdout,
-            StdStreamDest::Stderr(_) => StdStream::Stderr,
+            Self::Stdout(_) => StdStream::Stdout,
+            Self::Stderr(_) => StdStream::Stderr,
         }
     }
 }
@@ -74,8 +80,42 @@ macro_rules! impl_write_for_dest {
         }
     };
 }
-impl_write_for_dest!(StdStreamDest<io::Stdout, io::Stderr>);
 impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
+impl_write_for_dest!(StdStreamDest<via_macro::Stdout, via_macro::Stderr>);
+
+mod via_macro {
+    use super::*;
+
+    fn bytes_to_str(buf: &[u8]) -> io::Result<&str> {
+        str::from_utf8(buf).map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))
+    }
+
+    pub(crate) struct Stdout;
+
+    impl Write for Stdout {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            print!("{}", bytes_to_str(buf)?);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            io::stdout().flush()
+        }
+    }
+
+    pub(crate) struct Stderr;
+
+    impl Write for Stderr {
+        fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+            eprint!("{}", bytes_to_str(buf)?);
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            io::stderr().flush()
+        }
+    }
+}
 
 /// A sink with a std stream as the target.
 ///
@@ -85,7 +125,8 @@ impl_write_for_dest!(StdStreamDest<io::StdoutLock<'_>, io::StderrLock<'_>>);
 /// Note that this sink always flushes the buffer once with each logging.
 pub struct StdStreamSink {
     prop: SinkProp,
-    dest: StdStreamDest<io::Stdout, io::Stderr>,
+    via_print_macro: bool,
+    std_stream: StdStream,
     should_render_style: bool,
     level_styles: LevelStyles,
 }
@@ -93,14 +134,15 @@ pub struct StdStreamSink {
 impl StdStreamSink {
     /// Gets a builder of `StdStreamSink` with default parameters:
     ///
-    /// | Parameter         | Default Value               |
-    /// |-------------------|-----------------------------|
-    /// | [level_filter]    | `All`                       |
-    /// | [formatter]       | `FullFormatter`             |
-    /// | [error_handler]   | [`ErrorHandler::default()`] |
-    /// |                   |                             |
-    /// | [std_stream]      | *must be specified*         |
-    /// | [style_mode]      | `Auto`                      |
+    /// | Parameter         | Default Value                                        |
+    /// |-------------------|------------------------------------------------------|
+    /// | [level_filter]    | `All`                                                |
+    /// | [formatter]       | `FullFormatter`                                      |
+    /// | [error_handler]   | [`ErrorHandler::default()`]                          |
+    /// |                   |                                                      |
+    /// | [std_stream]      | *must be specified*                                  |
+    /// | [style_mode]      | `Auto`                                               |
+    /// | [via_print_macro] | `false`, or `true` if feature gate `test` is enabled |
     ///
     /// [level_filter]: StdStreamSinkBuilder::level_filter
     /// [formatter]: StdStreamSinkBuilder::formatter
@@ -108,12 +150,14 @@ impl StdStreamSink {
     /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [std_stream]: StdStreamSinkBuilder::std_stream
     /// [style_mode]: StdStreamSinkBuilder::style_mode
+    /// [via_print_macro]: StdStreamSinkBuilder::via_print_macro
     #[must_use]
     pub fn builder() -> StdStreamSinkBuilder<()> {
         StdStreamSinkBuilder {
             prop: SinkProp::default(),
             std_stream: (),
             style_mode: StyleMode::Auto,
+            via_print_macro: cfg!(feature = "test"),
         }
     }
 
@@ -138,7 +182,7 @@ impl StdStreamSink {
 
     /// Sets the style mode.
     pub fn set_style_mode(&mut self, style_mode: StyleMode) {
-        self.should_render_style = Self::should_render_style(style_mode, self.dest.stream_type());
+        self.should_render_style = Self::should_render_style(style_mode, self.std_stream);
     }
 
     #[must_use]
@@ -171,8 +215,34 @@ impl Sink for StdStreamSink {
             .formatter()
             .format(record, &mut string_buf, &mut ctx)?;
 
-        let mut dest = self.dest.lock();
+        if !self.via_print_macro {
+            self.log_write(record, &string_buf, &ctx, self.std_stream.via_write())
+        } else {
+            self.log_write(record, &string_buf, &ctx, self.std_stream.via_macro())
+        }
+    }
 
+    fn flush(&self) -> Result<()> {
+        if !self.via_print_macro {
+            self.std_stream.via_write().flush()
+        } else {
+            self.std_stream.via_macro().flush()
+        }
+        .map_err(Error::FlushBuffer)
+    }
+}
+
+impl StdStreamSink {
+    fn log_write<O: Write, E: Write>(
+        &self,
+        record: &Record,
+        string_buf: &StringBuf,
+        ctx: &FormatterContext<'_>,
+        mut dest: StdStreamDest<O, E>,
+    ) -> Result<()>
+    where
+        StdStreamDest<O, E>: Write,
+    {
         (|| {
             // TODO: Simplify the if block when our MSRV reaches let-chain support.
             if self.should_render_style {
@@ -197,15 +267,11 @@ impl Sink for StdStreamSink {
 
         // stderr is not buffered, so we don't need to flush it.
         // https://doc.rust-lang.org/std/io/fn.stderr.html
-        if let StdStreamDest::Stdout(_) = dest {
+        if let StdStream::Stdout = self.std_stream {
             dest.flush().map_err(Error::FlushBuffer)?;
         }
 
         Ok(())
-    }
-
-    fn flush(&self) -> Result<()> {
-        self.dest.lock().flush().map_err(Error::FlushBuffer)
     }
 }
 
@@ -217,6 +283,7 @@ pub struct StdStreamSinkBuilder<ArgSS> {
     prop: SinkProp,
     std_stream: ArgSS,
     style_mode: StyleMode,
+    via_print_macro: bool,
 }
 
 impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
@@ -245,6 +312,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
             prop: self.prop,
             std_stream,
             style_mode: self.style_mode,
+            via_print_macro: self.via_print_macro,
         }
     }
 
@@ -254,6 +322,33 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     #[must_use]
     pub fn style_mode(mut self, style_mode: StyleMode) -> Self {
         self.style_mode = style_mode;
+        self
+    }
+
+    /// Specifies to use `print!` and `eprint!` macros for output.
+    ///
+    /// If enabled, the sink will use [`print!`] and [`eprint!`] macros instead
+    /// of [`io::Write`] trait with [`io::stdout`] and [`io::stderr`] to output
+    /// logs. This is useful if you want the logs to be [captured] by `cargo
+    /// test` and `cargo bench`.
+    ///
+    /// This parameter is **optional**, and defaults to `false`, or defaults to
+    /// `true` if feature gate `test` is enabled.
+    ///
+    /// A convienient way to enable it for `cargo test` and `cargo bench` is to
+    /// add the following lines to your `Cargo.toml`:
+    ///
+    /// ```toml
+    /// # Note that it's not [dependencies]
+    ///
+    /// [dev-dependencies]
+    /// spdlog-rs = { version = "...", features = ["test"] }
+    /// ```
+    ///
+    /// [captured]: https://doc.rust-lang.org/book/ch11-02-running-tests.html#showing-function-output
+    #[must_use]
+    pub fn via_print_macro(mut self) -> Self {
+        self.via_print_macro = true;
         self
     }
 
@@ -305,7 +400,8 @@ impl StdStreamSinkBuilder<StdStream> {
     pub fn build(self) -> Result<StdStreamSink> {
         Ok(StdStreamSink {
             prop: self.prop,
-            dest: StdStreamDest::new(self.std_stream),
+            via_print_macro: self.via_print_macro,
+            std_stream: self.std_stream,
             should_render_style: StdStreamSink::should_render_style(
                 self.style_mode,
                 self.std_stream,

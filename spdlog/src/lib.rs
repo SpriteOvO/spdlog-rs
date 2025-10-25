@@ -217,6 +217,9 @@
 //!
 //!  - `serde_json` enables [`formatter::JsonFormatter`].
 //!
+//!  - `test` changes the default behavior of [`StdStreamSink`] to use print
+//!    macros. See [`StdStreamSinkBuilder::via_print_macro`] for more details.
+//!
 //! # Supported Rust versions
 //!
 //! <!--
@@ -279,6 +282,7 @@
 //! [log crate]: https://crates.io/crates/log
 //! [`Formatter`]: crate::formatter::Formatter
 //! [`RuntimePattern`]: crate::formatter::RuntimePattern
+//! [`StdStreamSinkBuilder::via_print_macro`]: sink::StdStreamSinkBuilder::via_print_macro
 //! [`RotationPolicy::Daily`]: crate::sink::RotationPolicy::Daily
 //! [`RotationPolicy::Hourly`]: crate::sink::RotationPolicy::Hourly
 
