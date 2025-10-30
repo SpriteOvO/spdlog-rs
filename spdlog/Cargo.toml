@@ -12,6 +12,7 @@ exclude = ["/benches"]
 
 [package.metadata.docs.rs]
 all-features = true
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 
 [lib]
 name = "spdlog"
@@ -190,18 +191,23 @@ path = "benches/logforth/4_level_off.rs"
 [[example]]
 name = "06_log_crate"
 required-features = ["log"]
+doc-scrape-examples = true
 [[example]]
 name = "07_async"
 required-features = ["multi-thread"]
+doc-scrape-examples = true
 [[example]]
 name = "native_linux"
 path = "examples/native/linux.rs"
 required-features = ["native", "libsystemd"]
+doc-scrape-examples = true
 [[example]]
 name = "native_windows"
 path = "examples/native/windows.rs"
 required-features = ["native"]
+doc-scrape-examples = true
 [[example]]
 name = "native_android"
 path = "examples/native/android.rs"
 required-features = ["native", "android-ndk"]
+doc-scrape-examples = true
