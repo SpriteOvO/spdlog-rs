@@ -176,12 +176,11 @@ jobs:
       uses: Swatinem/rust-cache@v2
     - name: Run rustdoc nightly
       run: |
-        cd spdlog
-        cargo +nightly rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
-        cargo +nightly rustdoc --all-features --verbose -- -D warnings
-        cd ../spdlog-macros
-        cargo +nightly rustdoc --verbose -- -D warnings -A rustdoc::broken-intra-doc-links
-        cargo +nightly rustdoc --all-features --verbose -- -D warnings
+        RUSTDOCFLAGS='-D warnings -A rustdoc::broken-intra-doc-links'
+        cargo +nightly doc --verbose -Z unstable-options -Z rustdoc-scrape-examples
+
+        RUSTDOCFLAGS='-D warnings'
+        cargo +nightly doc --all-features --verbose -Z unstable-options -Z rustdoc-scrape-examples
 
   check-msrv:
     needs: [matrix]
