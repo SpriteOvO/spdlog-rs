@@ -5,15 +5,18 @@
 /// By default, it is an alias for [`String`], if feature `flexible-string` is
 /// enabled, an internal type `FlexibleString` will be used.
 ///
-/// `FlexibleString` has a fixed stack buffer of 250 bytes, and upgrades to
+/// `FlexibleString` has a fixed stack buffer of 256 bytes, and upgrades to
 /// [`String`] when more space is needed. It provides APIs that are as
 /// consistent as possible with [`String`], but some APIs are not yet
-/// implemented or cannot be implemented.
+/// implemented or not possible to be implemented.
 ///
-/// # Warning
+/// <div class="warning">
 ///
 /// `FlexibleString` can improve performance as it avoids memory allocation when
-/// formatting records as much as possible, however it contains unsafe code.
+/// formatting records as much as possible, however it contains unsafe code that
+/// has not been strictly reviewed.
+///
+/// </div>
 ///
 /// [`Sink`]: crate::sink::Sink
 /// [`Formatter`]: crate::formatter::Formatter
