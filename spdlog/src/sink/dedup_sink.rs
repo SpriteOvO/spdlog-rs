@@ -152,11 +152,19 @@ impl DedupSink {
         })
     }
 
-    fn flush_sinks(&self) -> Result<()> {
+    fn flush_with(&self, with: fn(&dyn Sink) -> Result<()>) -> Result<()> {
         #[allow(clippy::manual_try_fold)] // https://github.com/rust-lang/rust-clippy/issues/11554
         self.sinks.iter().fold(Ok(()), |result, sink| {
-            Error::push_result(result, sink.flush())
+            Error::push_result(result, with(sink.as_ref()))
         })
+    }
+
+    fn flush_sinks(&self) -> Result<()> {
+        self.flush_with(|sink| sink.flush())
+    }
+
+    fn flush_sinks_on_exit(&self) -> Result<()> {
+        self.flush_with(|sink| sink.flush_on_exit())
     }
 }
 
@@ -185,6 +193,10 @@ impl Sink for DedupSink {
 
     fn flush(&self) -> Result<()> {
         self.flush_sinks()
+    }
+
+    fn flush_on_exit(&self) -> Result<()> {
+        self.flush_sinks_on_exit()
     }
 }
 
