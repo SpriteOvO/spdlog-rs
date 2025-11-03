@@ -6,15 +6,17 @@ fn main() {
     // default logger - It will be output to `stdout`.
     info!("program started");
 
-    let file = "config.json";
-
     // They will be output to `stderr`.
+    let file = "config.json";
     error!("failed to open file: {}", file);
     warn!("undetermined locale, defaults to `en_US.UTF-8`");
 
     // Level "trace" and "debug" will be ignored by default, you can modify the
     // level filter of the global default logger to enable all levels.
-    spdlog::default_logger().set_level_filter(LevelFilter::All);
+    let verbose = true;
+    if verbose {
+        spdlog::default_logger().set_level_filter(LevelFilter::All);
+    }
 
     trace!("position x: {}, y: {}", 11.4, -5.14);
     // Or if you prefer structured logging.
