@@ -497,12 +497,20 @@ impl Logger {
         }
     }
 
-    fn flush_sinks(&self) {
+    fn flush_sinks_with(&self, with: impl Fn(&dyn Sink) -> Result<()>) {
         self.sinks.iter().for_each(|sink| {
-            if let Err(err) = sink.flush() {
+            if let Err(err) = with(&**sink) {
                 self.handle_error(err);
             }
         });
+    }
+
+    pub(crate) fn flush_sinks_on_exit(&self) {
+        self.flush_sinks_with(|sink| sink.flush_on_exit());
+    }
+
+    pub(crate) fn flush_sinks(&self) {
+        self.flush_sinks_with(|sink| sink.flush());
     }
 
     fn handle_error(&self, err: Error) {
