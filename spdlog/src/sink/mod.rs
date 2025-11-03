@@ -234,7 +234,24 @@ pub trait Sink: SinkPropAccess + Sync + Send {
 
     /// Flushes any buffered records at program exit.
     ///
-    /// Default to call `flush()`.
+    /// _spdlog-rs_ will perform a flush for sinks in the default logger when
+    /// the program exits, and the flush will be called to this method
+    /// `flush_on_exit` instead of `flush`. This is because the execution
+    /// context may be in the [`atexit`] callback or in the panic handler when
+    /// exiting. In such a context, some operations are restricted, e.g.
+    /// Thread-local Storage (TLS) may not be available in `atexit` callbacks.
+    ///
+    /// This method calls directly to `flush` method by default. When users'
+    /// `flush` method implementation is not usable in a program exit context,
+    /// users should override the implementation of this method to provide an
+    /// alternative flushing implementation. See the implementation of
+    /// [`AsyncPoolSink::flush_on_exit`] as an example.
+    ///
+    /// For combined sinks, this method should always be overridden to propagate
+    /// the information that "the program is exiting" to their sub-sinks. See
+    /// the implementation of [`DedupSink::flush_on_exit`] as an example.
+    ///
+    /// [`atexit`]: https://en.cppreference.com/w/c/program/atexit
     fn flush_on_exit(&self) -> Result<()> {
         self.flush()
     }
