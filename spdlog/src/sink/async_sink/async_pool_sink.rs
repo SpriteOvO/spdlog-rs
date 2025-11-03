@@ -134,7 +134,7 @@ impl Sink for AsyncPoolSink {
         })
     }
 
-    fn flush_atexit(&self) -> Result<()> {
+    fn flush_on_exit(&self) -> Result<()> {
         // https://github.com/SpriteOvO/spdlog-rs/issues/64
         //
         // If the program is tearing down, this will be the final flush. `crossbeam`
@@ -143,7 +143,7 @@ impl Sink for AsyncPoolSink {
         // before we do that we have to destroy the thread pool to ensure that any
         // pending log tasks are completed.
         self.thread_pool.destroy();
-        self.backend.flush_atexit()
+        self.backend.flush_on_exit()
     }
 }
 
@@ -270,8 +270,8 @@ impl Backend {
         self.flush_with(|sink| sink.flush())
     }
 
-    fn flush_atexit(&self) -> Result<()> {
-        self.flush_with(|sink| sink.flush_atexit())
+    fn flush_on_exit(&self) -> Result<()> {
+        self.flush_with(|sink| sink.flush_on_exit())
     }
 
     fn handle_error(&self, err: Error) {

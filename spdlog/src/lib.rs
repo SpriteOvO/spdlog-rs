@@ -744,7 +744,7 @@ fn flush_default_logger_at_exit() {
 
     extern "C" fn handler() {
         if let Some(default_logger) = DEFAULT_LOGGER.get() {
-            default_logger.load().flush_sinks_atexit()
+            default_logger.load().flush_sinks_on_exit()
         }
     }
 

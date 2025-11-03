@@ -505,8 +505,8 @@ impl Logger {
         });
     }
 
-    pub(crate) fn flush_sinks_atexit(&self) {
-        self.flush_sinks_with(|sink| sink.flush_atexit());
+    pub(crate) fn flush_sinks_on_exit(&self) {
+        self.flush_sinks_with(|sink| sink.flush_on_exit());
     }
 
     pub(crate) fn flush_sinks(&self) {

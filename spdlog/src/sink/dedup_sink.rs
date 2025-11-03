@@ -163,8 +163,8 @@ impl DedupSink {
         self.flush_with(|sink| sink.flush())
     }
 
-    fn flush_sinks_atexit(&self) -> Result<()> {
-        self.flush_with(|sink| sink.flush_atexit())
+    fn flush_sinks_on_exit(&self) -> Result<()> {
+        self.flush_with(|sink| sink.flush_on_exit())
     }
 }
 
@@ -195,8 +195,8 @@ impl Sink for DedupSink {
         self.flush_sinks()
     }
 
-    fn flush_atexit(&self) -> Result<()> {
-        self.flush_sinks_atexit()
+    fn flush_on_exit(&self) -> Result<()> {
+        self.flush_sinks_on_exit()
     }
 }
 
