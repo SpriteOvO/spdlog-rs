@@ -206,9 +206,11 @@ impl AsyncPoolSinkBuilder {
         self
     }
 
-    /// Specifies a formatter.
-    ///
-    /// This parameter is **optional**.
+    #[doc(hidden)]
+    #[deprecated(
+        note = "AsyncPoolSink does not have its own formatter, this method has no effect, it was added by accident and may be removed in the future",
+        since = "0.5.2"
+    )]
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
