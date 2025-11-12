@@ -33,6 +33,7 @@ release-level-info     = []
 release-level-debug    = []
 release-level-trace    = []
 
+test = []
 source-location = []
 native = []
 libsystemd = ["dep:libsystemd-sys"]
