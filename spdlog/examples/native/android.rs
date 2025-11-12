@@ -1,17 +1,13 @@
 #[cfg(target_os = "android")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use std::sync::Arc;
-
     use spdlog::{
         prelude::*,
         sink::{AndroidLogTag, AndroidSink},
     };
 
-    let sink = Arc::new(
-        AndroidSink::builder()
-            .tag(AndroidLogTag::Custom("spdlog-rs-example".into()))
-            .build()?,
-    );
+    let sink = AndroidSink::builder()
+        .tag(AndroidLogTag::Custom("spdlog-rs-example".into()))
+        .build_arc()?;
     let logger = spdlog::default_logger().fork_with(|logger| {
         logger.set_name(Some("demo")).unwrap();
         logger.sinks_mut().push(sink);

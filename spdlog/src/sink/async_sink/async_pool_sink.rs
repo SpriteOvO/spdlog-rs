@@ -242,6 +242,13 @@ impl AsyncPoolSinkBuilder {
             backend,
         })
     }
+
+    /// Builds a `Arc<AsyncPoolSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<AsyncPoolSink>> {
+        self.build().map(Arc::new)
+    }
 }
 
 pub(crate) struct Backend {
@@ -319,12 +326,12 @@ mod tests {
         let counter_sink = Arc::new(TestSink::new());
         let build_logger = || {
             build_test_logger(|b| {
-                b.sink(Arc::new(
+                b.sink(
                     AsyncPoolSink::builder()
                         .sink(counter_sink.clone())
-                        .build()
+                        .build_arc()
                         .unwrap(),
-                ))
+                )
                 .level_filter(LevelFilter::All)
                 .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Error))
             })
@@ -365,15 +372,15 @@ mod tests {
     #[test]
     fn custom_thread_pool() {
         let counter_sink = Arc::new(TestSink::new());
-        let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
+        let thread_pool = ThreadPool::builder().build_arc().unwrap();
         let logger = build_test_logger(|b| {
-            b.sink(Arc::new(
+            b.sink(
                 AsyncPoolSink::builder()
                     .sink(counter_sink.clone())
                     .thread_pool(thread_pool)
-                    .build()
+                    .build_arc()
                     .unwrap(),
-            ))
+            )
             .level_filter(LevelFilter::All)
             .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Error))
         });
@@ -402,15 +409,15 @@ mod tests {
         let counter_sink = Arc::new(TestSink::with_delay(Some(Duration::from_secs(1))));
         // The default thread pool is not used here to avoid race when tests are run in
         // parallel.
-        let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
+        let thread_pool = ThreadPool::builder().build_arc().unwrap();
         let logger = build_test_logger(|b| {
-            b.sink(Arc::new(
+            b.sink(
                 AsyncPoolSink::builder()
                     .sink(counter_sink.clone())
                     .thread_pool(thread_pool)
-                    .build()
+                    .build_arc()
                     .unwrap(),
-            ))
+            )
             .level_filter(LevelFilter::All)
             .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
         });

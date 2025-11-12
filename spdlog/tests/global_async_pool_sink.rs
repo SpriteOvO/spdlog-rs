@@ -55,20 +55,16 @@ fn run_test() {
         }
         assert_eq!(unsafe { atexit(check) }, 0);
 
-        let async_pool_sink = Arc::new(
-            AsyncPoolSink::builder()
-                .sink(Arc::new(SetFlagSink::default()))
-                .build()
-                .unwrap(),
-        );
-        let logger = Arc::new(
-            Logger::builder()
-                .sink(async_pool_sink)
-                .level_filter(LevelFilter::All)
-                .flush_level_filter(LevelFilter::Off)
-                .build()
-                .unwrap(),
-        );
+        let async_pool_sink = AsyncPoolSink::builder()
+            .sink(Arc::new(SetFlagSink::default()))
+            .build_arc()
+            .unwrap();
+        let logger = Logger::builder()
+            .sink(async_pool_sink)
+            .level_filter(LevelFilter::All)
+            .flush_level_filter(LevelFilter::Off)
+            .build_arc()
+            .unwrap();
         spdlog::set_default_logger(logger);
     }
 

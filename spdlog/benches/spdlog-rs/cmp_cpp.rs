@@ -5,7 +5,7 @@ extern crate test;
 #[path = "../common/mod.rs"]
 mod common;
 
-use std::{env, sync::Arc, thread, time::Instant};
+use std::{env, thread, time::Instant};
 
 use clap::Parser;
 use spdlog::{
@@ -36,38 +36,38 @@ fn bench_threaded_logging(threads: usize, iters: usize) {
     info!("**********************************************************************");
 
     let logger = build_test_logger(|b| {
-        b.sink(Arc::new(
+        b.sink(
             FileSink::builder()
                 .path(common::BENCH_LOGS_PATH.join("FileSink.log"))
                 .truncate(true)
-                .build()
+                .build_arc()
                 .unwrap(),
-        ))
+        )
         .name("basic_mt")
     });
     bench_mt(logger, threads, iters);
 
     let logger = build_test_logger(|b| {
-        b.sink(Arc::new(
+        b.sink(
             RotatingFileSink::builder()
                 .base_path(common::BENCH_LOGS_PATH.join("RotatingFileSink_FileSize.log"))
                 .rotation_policy(RotationPolicy::FileSize(FILE_SIZE))
                 .max_files(ROTATING_FILES)
-                .build()
+                .build_arc()
                 .unwrap(),
-        ))
+        )
         .name("rotating_mt")
     });
     bench_mt(logger, threads, iters);
 
     let logger = build_test_logger(|b| {
-        b.sink(Arc::new(
+        b.sink(
             RotatingFileSink::builder()
                 .base_path(common::BENCH_LOGS_PATH.join("RotatingFileSink_Daily.log"))
                 .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
-                .build()
+                .build_arc()
                 .unwrap(),
-        ))
+        )
         .name("daily_mt")
     });
     bench_mt(logger, threads, iters);

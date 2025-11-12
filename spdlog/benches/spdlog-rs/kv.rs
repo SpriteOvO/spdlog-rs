@@ -5,8 +5,6 @@ extern crate test;
 #[path = "../common/mod.rs"]
 mod common;
 
-use std::sync::Arc;
-
 use spdlog::{prelude::*, sink::*};
 use test::Bencher;
 
@@ -18,13 +16,11 @@ use test_utils::*;
 
 fn logger(name: &str) -> Logger {
     let path = common::BENCH_LOGS_PATH.join(format!("kv_{name}.log"));
-    let sink = Arc::new(
-        FileSink::builder()
-            .path(path)
-            .truncate(true)
-            .build()
-            .unwrap(),
-    );
+    let sink = FileSink::builder()
+        .path(path)
+        .truncate(true)
+        .build_arc()
+        .unwrap();
     build_test_logger(|b| b.sink(sink))
 }
 

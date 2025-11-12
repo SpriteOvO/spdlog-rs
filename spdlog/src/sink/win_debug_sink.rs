@@ -3,6 +3,7 @@ use std::{ffi::OsStr, iter::once};
 use crate::{
     formatter::{Formatter, FormatterContext},
     sink::{GetSinkProp, Sink, SinkProp},
+    sync::*,
     ErrorHandler, LevelFilter, Record, Result, StringBuf,
 };
 
@@ -121,5 +122,12 @@ impl WinDebugSinkBuilder {
     pub fn build(self) -> Result<WinDebugSink> {
         let sink = WinDebugSink { prop: self.prop };
         Ok(sink)
+    }
+
+    /// Builds a `Arc<WinDebugSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<WinDebugSink>> {
+        self.build().map(Arc::new)
     }
 }

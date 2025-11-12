@@ -69,7 +69,6 @@
 //! want logs to be written to files as well, [`FileSink`] is what you need.
 //!
 //! ```
-//! # use std::sync::Arc;
 //! use spdlog::{prelude::*, sink::FileSink};
 //!
 //! # fn main() -> spdlog::Result<()> {
@@ -77,7 +76,7 @@
 //!
 //! # let path = concat!(env!("OUT_DIR"), "/doctest-out/crate-1.txt");
 //! let new_logger = spdlog::default_logger().fork_with(|new| {
-//!     let file_sink = Arc::new(FileSink::builder().path(path).build()?);
+//!     let file_sink = FileSink::builder().path(path).build_arc()?;
 //!     new.sinks_mut().push(file_sink);
 //!     Ok(())
 //! })?;
@@ -414,16 +413,16 @@ fn default_logger_ref() -> &'static ArcSwap<Logger> {
         let stdout = StdStreamSink::builder()
             .stdout()
             .level_filter(LevelFilter::MoreVerbose(Level::Warn))
-            .build()
+            .build_arc()
             .unwrap();
 
         let stderr = StdStreamSink::builder()
             .stderr()
             .level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
-            .build()
+            .build_arc()
             .unwrap();
 
-        let sinks: [Arc<dyn Sink>; 2] = [Arc::new(stdout), Arc::new(stderr)];
+        let sinks: [Arc<dyn Sink>; 2] = [stdout, stderr];
 
         let res = ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default().unwrap());
 
@@ -809,7 +808,7 @@ mod tests {
         let test_sink = Arc::new(TestSink::new());
 
         let test_logger = Arc::new(build_test_logger(|b| b.sink(test_sink.clone())));
-        let empty_logger = Arc::new(Logger::builder().build().unwrap());
+        let empty_logger = Logger::builder().build_arc().unwrap();
 
         set_default_logger(empty_logger.clone());
         info!("hello");

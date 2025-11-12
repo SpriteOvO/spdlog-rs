@@ -5,7 +5,7 @@ extern crate test;
 #[path = "../common/mod.rs"]
 mod common;
 
-use std::{cmp, env, num::NonZeroUsize, sync::Arc, thread, time::Instant};
+use std::{cmp, env, num::NonZeroUsize, thread, time::Instant};
 
 use clap::Parser;
 use spdlog::{
@@ -32,25 +32,24 @@ fn bench(
 
     let queue_size = NonZeroUsize::new(queue_size).unwrap();
     for _ in 0..iters {
-        let thread_pool = Arc::new(ThreadPool::builder().capacity(queue_size).build().unwrap());
+        let thread_pool = ThreadPool::builder()
+            .capacity(queue_size)
+            .build_arc()
+            .unwrap();
 
-        let file_sink = Arc::new(
-            FileSink::builder()
-                .path(common::BENCH_LOGS_PATH.join(file_name))
-                .truncate(true)
-                .build()
-                .unwrap(),
-        );
+        let file_sink = FileSink::builder()
+            .path(common::BENCH_LOGS_PATH.join(file_name))
+            .truncate(true)
+            .build_arc()
+            .unwrap();
 
-        let async_sink = Arc::new(
-            AsyncPoolSink::builder()
-                .thread_pool(thread_pool)
-                .overflow_policy(policy)
-                .sink(file_sink)
-                .error_handler(|err| panic!("an error occurred: {err}"))
-                .build()
-                .unwrap(),
-        );
+        let async_sink = AsyncPoolSink::builder()
+            .thread_pool(thread_pool)
+            .overflow_policy(policy)
+            .sink(file_sink)
+            .error_handler(|err| panic!("an error occurred: {err}"))
+            .build_arc()
+            .unwrap();
 
         let logger = Logger::builder()
             .sink(async_sink)

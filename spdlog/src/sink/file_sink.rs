@@ -212,6 +212,13 @@ impl FileSinkBuilder<()> {
         - missing required parameter `path`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
+
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required parameter `path`\n\n\
+    ")]
+    pub fn build_arc(self, _: Infallible) {}
 }
 
 impl FileSinkBuilder<PathBuf> {
@@ -230,5 +237,12 @@ impl FileSinkBuilder<PathBuf> {
         };
 
         Ok(sink)
+    }
+
+    /// Builds a `Arc<FileSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<FileSink>> {
+        self.build().map(Arc::new)
     }
 }

@@ -405,7 +405,7 @@ impl Logger {
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
     /// # let test_sink = Arc::new(test_utils::StringSink::new());
     /// let old: Arc<Logger> = /* ... */
-    /// # Arc::new(Logger::builder().build().unwrap());
+    /// # Logger::builder().build_arc().unwrap();
     /// // Fork from an existing logger and add a new sink.
     /// # let new_sink = test_sink.clone();
     /// let new = old.fork_with(|new| {
@@ -449,11 +449,10 @@ impl Logger {
     /// # Examples
     ///
     /// ```
-    /// # use std::sync::Arc;
     /// # use spdlog::prelude::*;
     /// #
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// let old = Arc::new(Logger::builder().name("dog").build()?);
+    /// let old = Logger::builder().name("dog").build_arc()?;
     /// let new = old.fork_with_name(Some("cat"))?;
     ///
     /// assert_eq!(old.name(), Some("dog"));
@@ -638,6 +637,20 @@ impl LoggerBuilder {
         self.build_inner(self.preset_level(false))
     }
 
+    /// Builds a `Arc<Logger>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    ///
+    /// ## Notes
+    ///
+    /// Unlike [`Sink`], which almost always needs to work with [`Arc`].
+    /// [`Logger`] can be used directly in logging macros without `Arc`. So
+    /// when `Arc<Logger>` is not needed, users should just call
+    /// [`LoggerBuilder::build`] to get a `Logger` without `Arc`.
+    pub fn build_arc(&mut self) -> Result<Arc<Logger>> {
+        self.build().map(Arc::new)
+    }
+
     pub(crate) fn build_default(&mut self) -> Result<Logger> {
         self.build_inner(self.preset_level(true))
     }
@@ -735,7 +748,10 @@ mod tests {
     #[test]
     fn periodic_flush() {
         let test_sink = Arc::new(TestSink::new());
-        let test_logger = Arc::new(Logger::builder().sink(test_sink.clone()).build().unwrap());
+        let test_logger = Logger::builder()
+            .sink(test_sink.clone())
+            .build_arc()
+            .unwrap();
 
         test_logger.set_flush_period(Some(Duration::from_secs(1)));
 
