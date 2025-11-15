@@ -13,15 +13,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Or completely replace it with a new one.
     let path = env::current_exe()?.with_file_name("all.log");
-    let file_sink = Arc::new(FileSink::builder().path(path).build()?);
+    let file_sink = FileSink::builder().path(path).build_arc()?;
 
-    let new_logger = Arc::new(
-        Logger::builder()
-            .level_filter(LevelFilter::All)
-            .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
-            .sink(file_sink.clone())
-            .build()?,
-    );
+    let new_logger = Logger::builder()
+        .level_filter(LevelFilter::All)
+        .flush_level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
+        .sink(file_sink.clone())
+        .build_arc()?;
     new_logger.set_flush_period(Some(Duration::from_secs(3)));
     spdlog::set_default_logger(new_logger);
 
@@ -42,7 +40,7 @@ struct AppDatabase {
 impl AppDatabase {
     fn new(all_log_sink: Arc<dyn Sink>) -> Result<Self, Box<dyn std::error::Error>> {
         let path = env::current_exe()?.with_file_name("db.log");
-        let db_file_sink = Arc::new(FileSink::builder().path(path).build()?);
+        let db_file_sink = FileSink::builder().path(path).build_arc()?;
 
         let logger = Logger::builder()
             .name("database")

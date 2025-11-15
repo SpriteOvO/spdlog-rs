@@ -3,6 +3,7 @@ use std::{io, os::raw::c_int};
 use crate::{
     formatter::{Formatter, FormatterContext, JournaldFormatter},
     sink::{GetSinkProp, Sink, SinkProp},
+    sync::*,
     Error, ErrorHandler, Level, LevelFilter, Record, Result, StdResult, StringBuf,
 };
 
@@ -199,5 +200,12 @@ impl JournaldSinkBuilder {
     pub fn build(self) -> Result<JournaldSink> {
         let sink = JournaldSink { prop: self.prop };
         Ok(sink)
+    }
+
+    /// Builds a `Arc<JournaldSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<JournaldSink>> {
+        self.build().map(Arc::new)
     }
 }

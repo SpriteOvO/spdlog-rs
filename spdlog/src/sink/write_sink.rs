@@ -208,6 +208,13 @@ where
         - missing required parameter `target`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
+
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required parameter `target`\n\n\
+    ")]
+    pub fn build_arc(self, _: Infallible) {}
 }
 
 impl<W> WriteSinkBuilder<W, PhantomData<W>>
@@ -222,6 +229,13 @@ where
         };
         Ok(sink)
     }
+
+    /// Builds a `Arc<WriteSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<WriteSink<W>>> {
+        self.build().map(Arc::new)
+    }
 }
 
 #[cfg(test)]
@@ -231,7 +245,7 @@ mod tests {
 
     #[test]
     fn validation() {
-        let sink = Arc::new(WriteSink::builder().target(Vec::new()).build().unwrap());
+        let sink = WriteSink::builder().target(Vec::new()).build_arc().unwrap();
         sink.set_formatter(Box::new(NoModFormatter::new()));
         let logger = build_test_logger(|b| b.sink(sink.clone()).level_filter(LevelFilter::All));
 

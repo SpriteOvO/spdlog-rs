@@ -6,6 +6,7 @@ use crate::{
     formatter::{AndroidFormatter, Formatter, FormatterContext},
     prelude::*,
     sink::{GetSinkProp, Sink, SinkProp},
+    sync::*,
     Error, ErrorHandler, Record, Result, StringBuf,
 };
 
@@ -166,6 +167,13 @@ impl AndroidSinkBuilder {
             prop: self.prop,
             tag: self.tag,
         })
+    }
+
+    /// Builds a `Arc<AndroidSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<AndroidSink>> {
+        self.build().map(Arc::new)
     }
 }
 

@@ -194,6 +194,13 @@ impl ThreadPoolBuilder {
             },
         )))))
     }
+
+    /// Builds a `Arc<ThreadPool>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(&self) -> Result<Arc<ThreadPool>> {
+        self.build().map(Arc::new)
+    }
 }
 
 impl Worker {
@@ -213,7 +220,7 @@ pub(crate) fn default_thread_pool() -> Arc<ThreadPool> {
     match pool_weak.upgrade() {
         Some(pool) => pool,
         None => {
-            let pool = Arc::new(ThreadPool::builder().build().unwrap());
+            let pool = ThreadPool::builder().build_arc().unwrap();
             *pool_weak = Arc::downgrade(&pool);
             pool
         }
