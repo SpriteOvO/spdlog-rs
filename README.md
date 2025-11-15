@@ -45,6 +45,8 @@ Unreleased commits are active on [`main-dev`] branch, and [`main`] branch is onl
 
 If you are going to contribute `spdlog-rs`, please make sure to check out the [`main-dev`] branch and select the [`main-dev`] branch as the base when opening PR.
 
+Due to the complexity of combining crate feature gates, this repository provides a [./justfile] for tool [`just`] to easily interact with `cargo` during development. Run command `just --list` to check the available recipes specifically for this project.
+
 ## Supported Rust versions
 
 <!--
@@ -82,3 +84,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
 [`main-dev`]: https://github.com/SpriteOvO/spdlog-rs/tree/main-dev
 [`main`]: https://github.com/SpriteOvO/spdlog-rs/tree/main
+[./justfile]: /justfile
+[`just`]: https://github.com/casey/just

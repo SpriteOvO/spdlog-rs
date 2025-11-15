@@ -2,7 +2,7 @@
 
 [The tracking page] for benchmark changes for each commit during development.
 
-Run `cargo +nightly bench --features multi-thread` in the root directory of this repository for benchmarking.
+Run `just bench` in the root directory of this repository for benchmarking.
 
 The following results are generated on `Windows 10 64 bit` and `Intel i9-10900KF CPU @ 3.70GHz` with `cargo 1.92.0-nightly (f2932725b 2025-09-24)`.
 
