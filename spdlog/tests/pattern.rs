@@ -520,19 +520,17 @@ fn test_different_context_thread() {
     use spdlog::{sink::AsyncPoolSink, ThreadPool};
 
     let formatter = PatternFormatter::new(pattern!("{tid}{eol}"));
-    let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
+    let thread_pool = ThreadPool::builder().build_arc().unwrap();
     let buffer_sink = Arc::new(test_utils::StringSink::with(|b| b.formatter(formatter)));
     let sinks: [Arc<dyn Sink>; 2] = [
         buffer_sink.clone(),
-        Arc::new(
-            AsyncPoolSink::builder()
-                .sink(buffer_sink.clone())
-                .thread_pool(thread_pool)
-                .build()
-                .unwrap(),
-        ),
+        AsyncPoolSink::builder()
+            .sink(buffer_sink.clone())
+            .thread_pool(thread_pool)
+            .build_arc()
+            .unwrap(),
     ];
-    let logger = Arc::new(Logger::builder().sinks(sinks).build().unwrap());
+    let logger = Logger::builder().sinks(sinks).build_arc().unwrap();
 
     info!(logger: logger, "");
     std::thread::sleep(Duration::from_millis(200));

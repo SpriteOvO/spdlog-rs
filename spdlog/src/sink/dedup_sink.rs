@@ -29,28 +29,23 @@ struct DedupSinkState {
 /// use std::time::Duration;
 ///
 /// use spdlog::{prelude::*, sink::DedupSink};
-/// # use std::sync::Arc;
 /// # use spdlog::{
 /// #     formatter::{pattern, PatternFormatter},
 /// #     sink::WriteSink,
 /// # };
 /// #
 /// # fn main() -> Result<(), spdlog::Error> {
-/// # let underlying_sink = Arc::new(
-/// #     WriteSink::builder()
-/// #         .formatter(PatternFormatter::new(pattern!("{payload}\n")))
-/// #         .target(Vec::new())
-/// #         .build()?
-/// # );
+/// # let underlying_sink = WriteSink::builder()
+/// #     .formatter(PatternFormatter::new(pattern!("{payload}\n")))
+/// #     .target(Vec::new())
+/// #     .build_arc()?;
 ///
 /// # let sink = {
 /// #     let underlying_sink = underlying_sink.clone();
-/// let sink = Arc::new(
-///     DedupSink::builder()
-///         .sink(underlying_sink)
-///         .skip_duration(Duration::from_secs(1))
-///         .build()?
-/// );
+/// let sink = DedupSink::builder()
+///     .sink(underlying_sink)
+///     .skip_duration(Duration::from_secs(1))
+///     .build_arc()?;
 /// #     sink
 /// # };
 /// # let doctest = Logger::builder().sink(sink).build()?;
@@ -291,6 +286,13 @@ impl DedupSinkBuilder<()> {
         - missing required parameter `skip_duration`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
+
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required parameter `skip_duration`\n\n\
+    ")]
+    pub fn build_arc(self, _: Infallible) {}
 }
 
 impl DedupSinkBuilder<Duration> {
@@ -306,6 +308,13 @@ impl DedupSinkBuilder<Duration> {
             }),
         })
     }
+
+    /// Builds a `Arc<DedupSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<DedupSink>> {
+        self.build().map(Arc::new)
+    }
 }
 
 #[cfg(test)]
@@ -318,13 +327,11 @@ mod tests {
     #[test]
     fn dedup() {
         let test_sink = Arc::new(TestSink::new());
-        let dedup_sink = Arc::new(
-            DedupSink::builder()
-                .skip_duration(Duration::from_secs(1))
-                .sink(test_sink.clone())
-                .build()
-                .unwrap(),
-        );
+        let dedup_sink = DedupSink::builder()
+            .skip_duration(Duration::from_secs(1))
+            .sink(test_sink.clone())
+            .build_arc()
+            .unwrap();
         let test = build_test_logger(|b| b.sink(dedup_sink));
 
         info!(logger: test, "I wish I was a cat");
@@ -400,13 +407,11 @@ mod tests {
             let records = {
                 let test_sink = Arc::new(TestSink::new());
                 {
-                    let dedup_sink = Arc::new(
-                        DedupSink::builder()
-                            .skip_duration(Duration::from_secs(1))
-                            .sink(test_sink.clone())
-                            .build()
-                            .unwrap(),
-                    );
+                    let dedup_sink = DedupSink::builder()
+                        .skip_duration(Duration::from_secs(1))
+                        .sink(test_sink.clone())
+                        .build_arc()
+                        .unwrap();
                     let test = build_test_logger(|b| b.sink(dedup_sink));
 
                     info!(logger: test, "I wish I was a cat");
@@ -428,13 +433,11 @@ mod tests {
             let records = {
                 let test_sink = Arc::new(TestSink::new());
                 {
-                    let dedup_sink = Arc::new(
-                        DedupSink::builder()
-                            .skip_duration(Duration::from_secs(1))
-                            .sink(test_sink.clone())
-                            .build()
-                            .unwrap(),
-                    );
+                    let dedup_sink = DedupSink::builder()
+                        .skip_duration(Duration::from_secs(1))
+                        .sink(test_sink.clone())
+                        .build_arc()
+                        .unwrap();
                     let test = build_test_logger(|b| b.sink(dedup_sink));
 
                     info!(logger: test, "I wish I was a cat");

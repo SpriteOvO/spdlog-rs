@@ -1,10 +1,8 @@
 #[cfg(target_os = "windows")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use std::sync::Arc;
-
     use spdlog::{prelude::*, sink::WinDebugSink};
 
-    let sink = Arc::new(WinDebugSink::builder().build()?);
+    let sink = WinDebugSink::builder().build_arc()?;
     let logger = spdlog::default_logger().fork_with(|logger| {
         logger.set_name(Some("demo")).unwrap();
         logger.sinks_mut().push(sink);

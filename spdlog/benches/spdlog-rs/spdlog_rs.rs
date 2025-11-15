@@ -39,16 +39,14 @@ impl Mode {
         match self {
             Self::Sync => sink,
             Self::Async => {
-                let thread_pool = Arc::new(ThreadPool::builder().build().unwrap());
+                let thread_pool = ThreadPool::builder().build_arc().unwrap();
 
-                Arc::new(
-                    AsyncPoolSink::builder()
-                        .thread_pool(thread_pool)
-                        .overflow_policy(OverflowPolicy::DropIncoming)
-                        .sink(sink)
-                        .build()
-                        .unwrap(),
-                )
+                AsyncPoolSink::builder()
+                    .thread_pool(thread_pool)
+                    .overflow_policy(OverflowPolicy::DropIncoming)
+                    .sink(sink)
+                    .build_arc()
+                    .unwrap()
             }
         }
     }
@@ -82,31 +80,27 @@ fn bench_any(bencher: &mut Bencher, mode: Mode, sink: Arc<dyn Sink>) {
 }
 
 fn bench_file_inner(bencher: &mut Bencher, mode: Mode) {
-    let sink: Arc<dyn Sink> = Arc::new(
-        FileSink::builder()
-            .path(mode.path("file"))
-            .truncate(true)
-            .build()
-            .unwrap(),
-    );
+    let sink = FileSink::builder()
+        .path(mode.path("file"))
+        .truncate(true)
+        .build_arc()
+        .unwrap();
     bench_any(bencher, mode, sink);
 }
 
 fn bench_rotating_inner(bencher: &mut Bencher, rotation_policy: RotationPolicy) {
-    let sink = Arc::new(
-        RotatingFileSink::builder()
-            .base_path(Mode::Sync.path(match rotation_policy {
-                RotationPolicy::FileSize(_) => "rotating_file_size",
-                RotationPolicy::Daily { .. } => "rotating_daily",
-                RotationPolicy::Hourly => "rotating_hourly",
-                RotationPolicy::Period { .. } => "rotating_period",
-            }))
-            .rotation_policy(rotation_policy)
-            .max_files(common::ROTATING_FILES)
-            .rotate_on_open(true)
-            .build()
-            .unwrap(),
-    );
+    let sink = RotatingFileSink::builder()
+        .base_path(Mode::Sync.path(match rotation_policy {
+            RotationPolicy::FileSize(_) => "rotating_file_size",
+            RotationPolicy::Daily { .. } => "rotating_daily",
+            RotationPolicy::Hourly => "rotating_hourly",
+            RotationPolicy::Period { .. } => "rotating_period",
+        }))
+        .rotation_policy(rotation_policy)
+        .max_files(common::ROTATING_FILES)
+        .rotate_on_open(true)
+        .build_arc()
+        .unwrap();
     bench_any(bencher, Mode::Sync, sink);
 }
 

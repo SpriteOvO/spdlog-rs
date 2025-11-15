@@ -13,6 +13,7 @@ use std::{
 use crate::{
     formatter::{Formatter, FormatterContext},
     sink::{GetSinkProp, Sink, SinkProp},
+    sync::*,
     terminal_style::{LevelStyles, Style, StyleMode},
     Error, ErrorHandler, Level, LevelFilter, Record, Result, StringBuf,
 };
@@ -393,6 +394,13 @@ impl StdStreamSinkBuilder<()> {
         - missing required parameter `std_stream`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
+
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required parameter `std_stream`\n\n\
+    ")]
+    pub fn build_arc(self, _: Infallible) {}
 }
 
 impl StdStreamSinkBuilder<StdStream> {
@@ -408,6 +416,13 @@ impl StdStreamSinkBuilder<StdStream> {
             ),
             level_styles: LevelStyles::default(),
         })
+    }
+
+    /// Builds a `Arc<StdStreamSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<StdStreamSink>> {
+        self.build().map(Arc::new)
     }
 }
 

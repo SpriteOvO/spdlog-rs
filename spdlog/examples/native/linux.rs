@@ -1,10 +1,8 @@
 #[cfg(target_os = "linux")]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    use std::sync::Arc;
-
     use spdlog::{prelude::*, sink::JournaldSink};
 
-    let sink = Arc::new(JournaldSink::builder().build()?);
+    let sink = JournaldSink::builder().build_arc()?;
     let logger = spdlog::default_logger().fork_with(|logger| {
         logger.set_name(Some("demo")).unwrap();
         logger.sinks_mut().push(sink);

@@ -841,6 +841,13 @@ impl<ArgRP> RotatingFileSinkBuilder<(), ArgRP> {
         - missing required parameter `base_path`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
+
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required parameter `base_path`\n\n\
+    ")]
+    pub fn build_arc(self, _: Infallible) {}
 }
 
 impl RotatingFileSinkBuilder<PathBuf, ()> {
@@ -850,6 +857,13 @@ impl RotatingFileSinkBuilder<PathBuf, ()> {
         - missing required parameter `rotation_policy`\n\n\
     ")]
     pub fn build(self, _: Infallible) {}
+
+    #[doc(hidden)]
+    #[deprecated(note = "\n\n\
+        builder compile-time error:\n\
+        - missing required parameter `rotation_policy`\n\n\
+    ")]
+    pub fn build_arc(self, _: Infallible) {}
 }
 
 impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
@@ -862,6 +876,13 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
     /// returned.
     pub fn build(self) -> Result<RotatingFileSink> {
         self.build_with_initial_time(None)
+    }
+
+    /// Builds a `Arc<RotatingFileSink>`.
+    ///
+    /// This is a shorthand method for `.build().map(Arc::new)`.
+    pub fn build_arc(self) -> Result<Arc<RotatingFileSink>> {
+        self.build().map(Arc::new)
     }
 
     fn build_with_initial_time(self, override_now: Option<SystemTime>) -> Result<RotatingFileSink> {
@@ -986,16 +1007,14 @@ mod tests {
                     }
                 }
 
-                let formatter = Box::new(NoModFormatter::new());
                 let sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join(&base_path))
                     .rotation_policy(RotationPolicy::FileSize(16))
                     .max_files(3)
                     .rotate_on_open(rotate_on_open)
-                    .build()
+                    .formatter(NoModFormatter::new())
+                    .build_arc()
                     .unwrap();
-                sink.set_formatter(formatter);
-                let sink = Arc::new(sink);
                 let logger = build_test_logger(|b| b.sink(sink.clone()));
                 logger.set_level_filter(LevelFilter::All);
                 (sink, logger)
@@ -1245,14 +1264,14 @@ mod tests {
                     .base_path(LOGS_PATH.join("hourly.log"))
                     .rotation_policy(RotationPolicy::Hourly)
                     .rotate_on_open(rotate_on_open)
-                    .build()
+                    .build_arc()
                     .unwrap();
 
                 let period_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("period.log"))
                     .rotation_policy(RotationPolicy::Period(HOUR_1 + 2 * MINUTE_1 + 3 * SECOND_1))
                     .rotate_on_open(rotate_on_open)
-                    .build()
+                    .build_arc()
                     .unwrap();
 
                 let local_time_now = Local::now();
@@ -1263,14 +1282,10 @@ mod tests {
                         minute: local_time_now.minute(),
                     })
                     .rotate_on_open(rotate_on_open)
-                    .build()
+                    .build_arc()
                     .unwrap();
 
-                let sinks: [Arc<dyn Sink>; 3] = [
-                    Arc::new(hourly_sink),
-                    Arc::new(period_sink),
-                    Arc::new(daily_sink),
-                ];
+                let sinks: [Arc<dyn Sink>; 3] = [hourly_sink, period_sink, daily_sink];
                 let logger = build_test_logger(|b| b.sinks(sinks));
                 logger.set_level_filter(LevelFilter::All);
                 logger
