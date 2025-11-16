@@ -167,8 +167,8 @@ impl RotatingFileSink {
     ///
     /// | Parameter         | Default Value               |
     /// |-------------------|-----------------------------|
-    /// | [level_filter]    | `All`                       |
-    /// | [formatter]       | `FullFormatter`             |
+    /// | [level_filter]    | [`LevelFilter::All`]        |
+    /// | [formatter]       | [`FullFormatter`]           |
     /// | [error_handler]   | [`ErrorHandler::default()`] |
     /// |                   |                             |
     /// | [base_path]       | *must be specified*         |
@@ -179,8 +179,8 @@ impl RotatingFileSink {
     ///
     /// [level_filter]: RotatingFileSinkBuilder::level_filter
     /// [formatter]: RotatingFileSinkBuilder::formatter
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     /// [error_handler]: RotatingFileSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [base_path]: RotatingFileSinkBuilder::base_path
     /// [rotation_policy]: RotatingFileSinkBuilder::rotation_policy
     /// [max_files]: RotatingFileSinkBuilder::max_files
@@ -769,7 +769,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     ///
     /// Specify `0` for no limit.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to `0`.
     #[must_use]
     pub fn max_files(mut self, max_files: usize) -> Self {
         self.max_files = max_files;
@@ -784,7 +784,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
     /// contents of the existing file if the parameter is `true`, since the
     /// file name is a time point and not an index.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to `false`.
     #[must_use]
     pub fn rotate_on_open(mut self, rotate_on_open: bool) -> Self {
         self.rotate_on_open = rotate_on_open;
@@ -793,7 +793,8 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
 
     /// Specifies the internal buffer capacity.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to the value consistent
+    /// with `std`.
     #[must_use]
     pub fn capacity(mut self, capacity: usize) -> Self {
         self.capacity = Some(capacity);
@@ -805,7 +806,7 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -814,7 +815,9 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`FullFormatter`].
+    ///
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -826,7 +829,8 @@ impl<ArgBP, ArgRP> RotatingFileSinkBuilder<ArgBP, ArgRP> {
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);

@@ -86,8 +86,8 @@ impl DedupSink {
     ///
     /// | Parameter       | Default Value               |
     /// |-----------------|-----------------------------|
-    /// | [level_filter]  | `All`                       |
-    /// | [formatter]     | `FullFormatter`             |
+    /// | [level_filter]  | [`LevelFilter::All`]        |
+    /// | [formatter]     | [`FullFormatter`]           |
     /// | [error_handler] | [`ErrorHandler::default()`] |
     /// |                 |                             |
     /// | [sinks]         | `[]`                        |
@@ -95,8 +95,8 @@ impl DedupSink {
     ///
     /// [level_filter]: DedupSinkBuilder::level_filter
     /// [formatter]: DedupSinkBuilder::formatter
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     /// [error_handler]: DedupSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [sinks]: DedupSinkBuilder::sink
     /// [skip_duration]: DedupSinkBuilder::skip_duration
     #[must_use]
@@ -250,7 +250,7 @@ impl<ArgS> DedupSinkBuilder<ArgS> {
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -259,7 +259,9 @@ impl<ArgS> DedupSinkBuilder<ArgS> {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`FullFormatter`].
+    ///
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -271,7 +273,8 @@ impl<ArgS> DedupSinkBuilder<ArgS> {
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);

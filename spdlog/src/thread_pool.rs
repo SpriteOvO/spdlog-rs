@@ -122,7 +122,8 @@ impl Drop for ThreadPool {
 impl ThreadPoolBuilder {
     /// Specifies the capacity of the operation channel.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to `8192` (may change in
+    /// the future).
     ///
     /// When a new operation is incoming, but the channel is full, it will be
     /// handled by sink according to the [`OverflowPolicy`] that has been set.

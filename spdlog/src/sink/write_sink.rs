@@ -41,16 +41,16 @@ where
     ///
     /// | Parameter         | Default Value               |
     /// |-------------------|-----------------------------|
-    /// | [level_filter]    | `All`                       |
-    /// | [formatter]       | `FullFormatter`             |
+    /// | [level_filter]    | [`LevelFilter::All`]        |
+    /// | [formatter]       | [`FullFormatter`]           |
     /// | [error_handler]   | [`ErrorHandler::default()`] |
     /// |                   |                             |
     /// | [target]          | *must be specified*         |
     ///
     /// [level_filter]: WriteSinkBuilder::level_filter
     /// [formatter]: WriteSinkBuilder::formatter
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     /// [error_handler]: WriteSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [target]: WriteSinkBuilder::target
     #[must_use]
     pub fn builder() -> WriteSinkBuilder<W, ()> {
@@ -169,7 +169,7 @@ where
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -178,7 +178,9 @@ where
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`FullFormatter`].
+    ///
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -190,7 +192,8 @@ where
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);
