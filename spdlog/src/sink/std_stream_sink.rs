@@ -137,18 +137,18 @@ impl StdStreamSink {
     ///
     /// | Parameter         | Default Value                                        |
     /// |-------------------|------------------------------------------------------|
-    /// | [level_filter]    | `All`                                                |
-    /// | [formatter]       | `FullFormatter`                                      |
+    /// | [level_filter]    | [`LevelFilter::All`]                                 |
+    /// | [formatter]       | [`FullFormatter`]                                    |
     /// | [error_handler]   | [`ErrorHandler::default()`]                          |
     /// |                   |                                                      |
     /// | [std_stream]      | *must be specified*                                  |
-    /// | [style_mode]      | `Auto`                                               |
+    /// | [style_mode]      | [`StyleMode::Auto`]                                  |
     /// | [via_print_macro] | `false`, or `true` if feature gate `test` is enabled |
     ///
     /// [level_filter]: StdStreamSinkBuilder::level_filter
     /// [formatter]: StdStreamSinkBuilder::formatter
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     /// [error_handler]: StdStreamSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [std_stream]: StdStreamSinkBuilder::std_stream
     /// [style_mode]: StdStreamSinkBuilder::style_mode
     /// [via_print_macro]: StdStreamSinkBuilder::via_print_macro
@@ -319,7 +319,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
 
     /// Specifies the style mode.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [StyleMode::Auto].
     #[must_use]
     pub fn style_mode(mut self, style_mode: StyleMode) -> Self {
         self.style_mode = style_mode;
@@ -358,7 +358,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -367,7 +367,9 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`FullFormatter`].
+    ///
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -379,7 +381,8 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);

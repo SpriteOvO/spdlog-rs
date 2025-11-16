@@ -99,14 +99,13 @@ impl JournaldSink {
     ///
     /// | Parameter       | Default Value               |
     /// |-----------------|-----------------------------|
-    /// | [level_filter]  | `All`                       |
+    /// | [level_filter]  | [`LevelFilter::All`]        |
     /// | [formatter]     | `JournaldFormatter`         |
     /// | [error_handler] | [`ErrorHandler::default()`] |
     ///
     /// [level_filter]: JournaldSinkBuilder::level_filter
     /// [formatter]: JournaldSinkBuilder::formatter
     /// [error_handler]: JournaldSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     #[must_use]
     pub fn builder() -> JournaldSinkBuilder {
         let prop = SinkProp::default();
@@ -166,7 +165,7 @@ impl JournaldSinkBuilder {
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -175,7 +174,7 @@ impl JournaldSinkBuilder {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to `JournaldFormatter`.
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -187,7 +186,8 @@ impl JournaldSinkBuilder {
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);

@@ -153,7 +153,7 @@ impl Logger {
     /// | [name]               | `None`                      |
     /// | [sinks]              | `[]`                        |
     /// | [level_filter]       | `MoreSevereEqual(Info)`     |
-    /// | [flush_level_filter] | `Off`                       |
+    /// | [flush_level_filter] | [`LevelFilter::Off`]        |
     /// | [flush_period]       | `None`                      |
     /// | [error_handler]      | [`ErrorHandler::default()`] |
     ///
@@ -163,7 +163,6 @@ impl Logger {
     /// [flush_level_filter]: LoggerBuilder::flush_level_filter
     /// [flush_period]: Logger::set_flush_period
     /// [error_handler]: LoggerBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     #[must_use]
     pub fn builder() -> LoggerBuilder {
         LoggerBuilder {
@@ -570,7 +569,7 @@ impl LoggerBuilder {
 
     /// Sets the name of the logger.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to `None`.
     ///
     /// # Requirements
     ///
@@ -589,7 +588,7 @@ impl LoggerBuilder {
 
     /// Sets the log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to `MoreSevereEqual(Info)`.
     pub fn level_filter(&mut self, level_filter: LevelFilter) -> &mut Self {
         self.level_filter = level_filter;
         self
@@ -612,7 +611,7 @@ impl LoggerBuilder {
 
     /// Sets the flush level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::Off`].
     ///
     /// See the documentation of [`Logger::set_flush_level_filter`] for the
     /// description of this parameter.
@@ -623,7 +622,8 @@ impl LoggerBuilder {
 
     /// Sets the error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     ///
     /// See the documentation of [`Logger::set_error_handler`] for the
     /// description of this parameter.
