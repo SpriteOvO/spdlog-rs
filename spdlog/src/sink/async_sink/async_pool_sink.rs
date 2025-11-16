@@ -56,14 +56,13 @@ impl AsyncPoolSink {
     ///
     /// | Parameter         | Default Value                       |
     /// |-------------------|-------------------------------------|
-    /// | [level_filter]    | `All`                               |
+    /// | [level_filter]    | [`LevelFilter::All`]                |
     /// | [error_handler]   | [`ErrorHandler::default()`]         |
-    /// | [overflow_policy] | `Block`                             |
+    /// | [overflow_policy] | [`OverflowPolicy::Block`]           |
     /// | [thread_pool]     | internal shared default thread pool |
     ///
     /// [level_filter]: AsyncPoolSinkBuilder::level_filter
     /// [error_handler]: AsyncPoolSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [overflow_policy]: AsyncPoolSinkBuilder::overflow_policy
     /// [thread_pool]: AsyncPoolSinkBuilder::thread_pool
     #[must_use]
@@ -175,7 +174,8 @@ impl AsyncPoolSinkBuilder {
 
     /// Specifies a overflow policy.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`OverflowPolicy::Block`].
     ///
     /// When the channel is full, an incoming operation is handled according to
     /// the specified policy.
@@ -187,7 +187,8 @@ impl AsyncPoolSinkBuilder {
 
     /// Specifies a custom thread pool.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to the internal shared
+    /// default thread pool.
     #[must_use]
     pub fn thread_pool(mut self, thread_pool: Arc<ThreadPool>) -> Self {
         self.thread_pool = Some(thread_pool);
@@ -199,7 +200,7 @@ impl AsyncPoolSinkBuilder {
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -222,7 +223,8 @@ impl AsyncPoolSinkBuilder {
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);

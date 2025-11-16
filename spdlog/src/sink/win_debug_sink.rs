@@ -17,14 +17,14 @@ impl WinDebugSink {
     ///
     /// | Parameter       | Default Value               |
     /// |-----------------|-----------------------------|
-    /// | [level_filter]  | `All`                       |
-    /// | [formatter]     | `FullFormatter`             |
+    /// | [level_filter]  | [`LevelFilter::All`]        |
+    /// | [formatter]     | [`FullFormatter`]           |
     /// | [error_handler] | [`ErrorHandler::default()`] |
     ///
     /// [level_filter]: WinDebugSinkBuilder::level_filter
     /// [formatter]: WinDebugSinkBuilder::formatter
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     /// [error_handler]: WinDebugSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     #[must_use]
     pub fn builder() -> WinDebugSinkBuilder {
         WinDebugSinkBuilder {
@@ -88,7 +88,7 @@ impl WinDebugSinkBuilder {
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -97,7 +97,9 @@ impl WinDebugSinkBuilder {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`FullFormatter`].
+    ///
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -109,7 +111,8 @@ impl WinDebugSinkBuilder {
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);

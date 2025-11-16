@@ -37,8 +37,8 @@ impl FileSink {
     ///
     /// | Parameter       | Default Value               |
     /// |-----------------|-----------------------------|
-    /// | [level_filter]  | `All`                       |
-    /// | [formatter]     | `FullFormatter`             |
+    /// | [level_filter]  | [`LevelFilter::All`]        |
+    /// | [formatter]     | [`FullFormatter`]           |
     /// | [error_handler] | [`ErrorHandler::default()`] |
     /// |                 |                             |
     /// | [path]          | *must be specified*         |
@@ -47,8 +47,8 @@ impl FileSink {
     ///
     /// [level_filter]: FileSinkBuilder::level_filter
     /// [formatter]: FileSinkBuilder::formatter
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     /// [error_handler]: FileSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [path]: FileSinkBuilder::path
     /// [truncate]: FileSinkBuilder::truncate
     /// [capacity]: FileSinkBuilder::capacity
@@ -155,7 +155,7 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
     ///
     /// If it is `true`, the existing contents of the file will be discarded.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to `false`.
     #[must_use]
     pub fn truncate(mut self, truncate: bool) -> Self {
         self.truncate = truncate;
@@ -164,7 +164,8 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
 
     /// Specifies the internal buffer capacity.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to the value consistent
+    /// with `std`.
     #[must_use]
     pub fn capacity(mut self, capacity: usize) -> Self {
         self.capacity = Some(capacity);
@@ -176,7 +177,7 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -185,7 +186,9 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`FullFormatter`].
+    ///
+    /// [`FullFormatter`]: crate::formatter::FullFormatter
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -197,7 +200,8 @@ impl<ArgPath> FileSinkBuilder<ArgPath> {
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);

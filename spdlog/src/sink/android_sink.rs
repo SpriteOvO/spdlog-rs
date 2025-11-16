@@ -119,7 +119,8 @@ pub struct AndroidSinkBuilder {
 impl AndroidSinkBuilder {
     /// Specifies how to choose a tag for Android logs.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`AndroidLogTag::Default`].
     #[must_use]
     pub fn tag(mut self, tag: AndroidLogTag) -> Self {
         self.tag = tag;
@@ -131,7 +132,7 @@ impl AndroidSinkBuilder {
 
     /// Specifies a log level filter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to [`LevelFilter::All`].
     #[must_use]
     pub fn level_filter(self, level_filter: LevelFilter) -> Self {
         self.prop.set_level_filter(level_filter);
@@ -140,7 +141,7 @@ impl AndroidSinkBuilder {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to `AndroidFormatter`.
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -152,7 +153,8 @@ impl AndroidSinkBuilder {
 
     /// Specifies an error handler.
     ///
-    /// This parameter is **optional**.
+    /// This parameter is **optional**, and defaults to
+    /// [`ErrorHandler::default()`].
     #[must_use]
     pub fn error_handler<F: Into<ErrorHandler>>(self, handler: F) -> Self {
         self.prop.set_error_handler(handler);
@@ -191,16 +193,15 @@ impl AndroidSink {
     ///
     /// | Parameter       | Default Value               |
     /// |-----------------|-----------------------------|
-    /// | [level_filter]  | `All`                       |
+    /// | [level_filter]  | [`LevelFilter::All`]        |
     /// | [formatter]     | `AndroidFormatter`          |
     /// | [error_handler] | [`ErrorHandler::default()`] |
     /// |                 |                             |
-    /// | [tag]           | `AndroidSink::Default`      |
+    /// | [tag]           | [`AndroidLogTag::Default`]  |
     ///
     /// [level_filter]: AndroidSinkBuilder::level_filter
     /// [formatter]: AndroidSinkBuilder::formatter
     /// [error_handler]: AndroidSinkBuilder::error_handler
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     /// [tag]: AndroidSinkBuilder::tag
     #[must_use]
     pub fn builder() -> AndroidSinkBuilder {

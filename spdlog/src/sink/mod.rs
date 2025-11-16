@@ -88,11 +88,9 @@ impl Default for SinkProp {
     ///
     /// | Parameter       | Default Value               |
     /// |-----------------|-----------------------------|
-    /// | `level_filter`  | `All`                       |
-    /// | `formatter`     | `FullFormatter`             |
+    /// | `level_filter`  | [`LevelFilter::All`]        |
+    /// | `formatter`     | [`FullFormatter`]           |
     /// | `error_handler` | [`ErrorHandler::default()`] |
-    ///
-    /// [`ErrorHandler::default()`]: crate::error::ErrorHandler::default()
     fn default() -> Self {
         Self {
             level_filter: Atomic::new(LevelFilter::All),
