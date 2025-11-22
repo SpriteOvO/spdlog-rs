@@ -1,14 +1,14 @@
 [package]
 name = "spdlog-internal"
 version = "0.2.0"
-edition = "2021"
-rust-version = "1.66.1"
 description = "Internal private common code for crate \"spdlog-rs\""
-repository = "https://github.com/SpriteOvO/spdlog-rs"
-license = "MIT OR Apache-2.0"
 readme = "crates-io.md"
-keywords = ["spdlog", "log", "logging"]
-categories = ["development-tools::debugging"]
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 nom = "8.0.0"
