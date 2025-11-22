@@ -1,14 +1,14 @@
 [package]
 name = "spdlog-rs"
 version = "0.5.1"
-edition = "2021"
-rust-version = "1.66.1"
 description = "Fast, highly configurable Rust logging crate, inspired by the C++ logging library spdlog"
-repository = "https://github.com/SpriteOvO/spdlog-rs"
-license = "MIT OR Apache-2.0"
-keywords = ["spdlog", "log", "logging"]
-categories = ["development-tools::debugging"]
 exclude = ["/benches"]
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [package.metadata.docs.rs]
 all-features = true
