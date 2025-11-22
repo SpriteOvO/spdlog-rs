@@ -65,6 +65,7 @@ mod journald_formatter;
 #[cfg(feature = "serde_json")]
 mod json_formatter;
 mod local_time_cacher;
+mod partial_formatter;
 mod pattern_formatter;
 mod unreachable_formatter;
 
@@ -85,6 +86,7 @@ pub(crate) use journald_formatter::*;
 #[cfg(feature = "serde_json")]
 pub use json_formatter::*;
 pub(crate) use local_time_cacher::*;
+pub use partial_formatter::*;
 pub use pattern_formatter::*;
 pub(crate) use unreachable_formatter::*;
 
