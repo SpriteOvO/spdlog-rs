@@ -1,7 +1,7 @@
 use std::{io, os::raw::c_int};
 
 use crate::{
-    formatter::{Formatter, FormatterContext, JournaldFormatter},
+    formatter::{Formatter, FormatterContext, PartialFormatter},
     sink::{GetSinkProp, Sink, SinkProp},
     sync::*,
     Error, ErrorHandler, Level, LevelFilter, Record, Result, StdResult, StringBuf,
@@ -97,11 +97,11 @@ impl JournaldSink {
 
     /// Gets a builder of `JournaldSink` with default parameters:
     ///
-    /// | Parameter       | Default Value               |
-    /// |-----------------|-----------------------------|
-    /// | [level_filter]  | [`LevelFilter::All`]        |
-    /// | [formatter]     | `JournaldFormatter`         |
-    /// | [error_handler] | [`ErrorHandler::default()`] |
+    /// | Parameter       | Default Value                                   |
+    /// |-----------------|-------------------------------------------------|
+    /// | [level_filter]  | [`LevelFilter::All`]                            |
+    /// | [formatter]     | [`PartialFormatter`] `(!time !source_location)` |
+    /// | [error_handler] | [`ErrorHandler::default()`]                     |
     ///
     /// [level_filter]: JournaldSinkBuilder::level_filter
     /// [formatter]: JournaldSinkBuilder::formatter
@@ -109,7 +109,12 @@ impl JournaldSink {
     #[must_use]
     pub fn builder() -> JournaldSinkBuilder {
         let prop = SinkProp::default();
-        prop.set_formatter(JournaldFormatter::new());
+        prop.set_formatter(
+            PartialFormatter::builder()
+                .time(false)
+                .source_location(false)
+                .build(),
+        );
 
         JournaldSinkBuilder { prop }
     }
@@ -174,7 +179,8 @@ impl JournaldSinkBuilder {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**, and defaults to `JournaldFormatter`.
+    /// This parameter is **optional**, and defaults to [`PartialFormatter`]
+    /// `(!time !source_location)`.
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
