@@ -51,11 +51,6 @@
 //! [`SinkPropAccess::set_formatter`]: crate::sink::SinkPropAccess::set_formatter
 //! [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 
-#[cfg(any(
-    all(target_os = "android", feature = "native", feature = "android-ndk"),
-    all(doc, not(doctest))
-))]
-mod android_formatter;
 mod full_formatter;
 #[cfg(feature = "serde_json")]
 mod json_formatter;
@@ -66,11 +61,6 @@ mod unreachable_formatter;
 
 use std::ops::Range;
 
-#[cfg(any(
-    all(target_os = "android", feature = "native", feature = "android-ndk"),
-    all(doc, not(doctest))
-))]
-pub(crate) use android_formatter::*;
 use dyn_clone::*;
 pub use full_formatter::*;
 #[cfg(feature = "serde_json")]
