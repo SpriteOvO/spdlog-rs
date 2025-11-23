@@ -3,7 +3,7 @@ use std::{ffi::CString, io, ptr::null, result::Result as StdResult};
 use libc::EPERM;
 
 use crate::{
-    formatter::{AndroidFormatter, Formatter, FormatterContext},
+    formatter::{Formatter, FormatterContext, PartialFormatter},
     prelude::*,
     sink::{GetSinkProp, Sink, SinkProp},
     sync::*,
@@ -141,7 +141,8 @@ impl AndroidSinkBuilder {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**, and defaults to `AndroidFormatter`.
+    /// This parameter is **optional**, and defaults to [`PartialFormatter`]
+    /// `(!time !level !eol)`.
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -191,13 +192,13 @@ impl AndroidSink {
 
     /// Gets a builder of `AndroidSink` with default parameters:
     ///
-    /// | Parameter       | Default Value               |
-    /// |-----------------|-----------------------------|
-    /// | [level_filter]  | [`LevelFilter::All`]        |
-    /// | [formatter]     | `AndroidFormatter`          |
-    /// | [error_handler] | [`ErrorHandler::default()`] |
-    /// |                 |                             |
-    /// | [tag]           | [`AndroidLogTag::Default`]  |
+    /// | Parameter       | Default Value                              |
+    /// |-----------------|--------------------------------------------|
+    /// | [level_filter]  | [`LevelFilter::All`]                       |
+    /// | [formatter]     | [`PartialFormatter`] `(!time !level !eol)` |
+    /// | [error_handler] | [`ErrorHandler::default()`]                |
+    /// |                 |                                            |
+    /// | [tag]           | [`AndroidLogTag::Default`]                 |
     ///
     /// [level_filter]: AndroidSinkBuilder::level_filter
     /// [formatter]: AndroidSinkBuilder::formatter
@@ -206,7 +207,13 @@ impl AndroidSink {
     #[must_use]
     pub fn builder() -> AndroidSinkBuilder {
         let prop = SinkProp::default();
-        prop.set_formatter(AndroidFormatter::new());
+        prop.set_formatter(
+            PartialFormatter::builder()
+                .time(false)
+                .level(false)
+                .eol(false)
+                .build(),
+        );
 
         AndroidSinkBuilder {
             prop,
