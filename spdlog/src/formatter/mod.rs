@@ -57,11 +57,6 @@
 ))]
 mod android_formatter;
 mod full_formatter;
-#[cfg(any(
-    all(target_os = "linux", feature = "native", feature = "libsystemd"),
-    all(doc, not(doctest))
-))]
-mod journald_formatter;
 #[cfg(feature = "serde_json")]
 mod json_formatter;
 mod local_time_cacher;
@@ -78,11 +73,6 @@ use std::ops::Range;
 pub(crate) use android_formatter::*;
 use dyn_clone::*;
 pub use full_formatter::*;
-#[cfg(any(
-    all(target_os = "linux", feature = "native", feature = "libsystemd"),
-    all(doc, not(doctest))
-))]
-pub(crate) use journald_formatter::*;
 #[cfg(feature = "serde_json")]
 pub use json_formatter::*;
 pub(crate) use local_time_cacher::*;
