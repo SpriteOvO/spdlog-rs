@@ -11,7 +11,7 @@ fmt *ARGS:
 test *ARGS:
     cargo test \
       --features 'log native libsystemd multi-thread runtime-pattern serde serde_json sval' \
-      --features 'flexible-string source-location test' \
+      --features 'flexible-string source-location std-stream-captured' \
       {{ ARGS }}
 
 clippy *ARGS:

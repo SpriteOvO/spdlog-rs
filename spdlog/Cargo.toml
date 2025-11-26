@@ -34,7 +34,7 @@ release-level-info     = []
 release-level-debug    = []
 release-level-trace    = []
 
-test = []
+std-stream-captured = []
 source-location = []
 native = []
 libsystemd = ["dep:libsystemd-sys"]
