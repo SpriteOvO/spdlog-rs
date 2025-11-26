@@ -135,15 +135,15 @@ pub struct StdStreamSink {
 impl StdStreamSink {
     /// Gets a builder of `StdStreamSink` with default parameters:
     ///
-    /// | Parameter         | Default Value                                        |
-    /// |-------------------|------------------------------------------------------|
-    /// | [level_filter]    | [`LevelFilter::All`]                                 |
-    /// | [formatter]       | [`FullFormatter`]                                    |
-    /// | [error_handler]   | [`ErrorHandler::default()`]                          |
-    /// |                   |                                                      |
-    /// | [std_stream]      | *must be specified*                                  |
-    /// | [style_mode]      | [`StyleMode::Auto`]                                  |
-    /// | [via_print_macro] | `false`, or `true` if feature gate `test` is enabled |
+    /// | Parameter         | Default Value                                                       |
+    /// |-------------------|---------------------------------------------------------------------|
+    /// | [level_filter]    | [`LevelFilter::All`]                                                |
+    /// | [formatter]       | [`FullFormatter`]                                                   |
+    /// | [error_handler]   | [`ErrorHandler::default()`]                                         |
+    /// |                   |                                                                     |
+    /// | [std_stream]      | *must be specified*                                                 |
+    /// | [style_mode]      | [`StyleMode::Auto`]                                                 |
+    /// | [via_print_macro] | `false`, or `true` if feature gate `std-stream-captured` is enabled |
     ///
     /// [level_filter]: StdStreamSinkBuilder::level_filter
     /// [formatter]: StdStreamSinkBuilder::formatter
@@ -158,7 +158,7 @@ impl StdStreamSink {
             prop: SinkProp::default(),
             std_stream: (),
             style_mode: StyleMode::Auto,
-            via_print_macro: cfg!(feature = "test"),
+            via_print_macro: cfg!(feature = "std-stream-captured"),
         }
     }
 
@@ -334,7 +334,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// test` and `cargo bench`.
     ///
     /// This parameter is **optional**, and defaults to `false`, or defaults to
-    /// `true` if feature gate `test` is enabled.
+    /// `true` if feature gate `std-stream-captured` is enabled.
     ///
     /// A convienient way to enable it for `cargo test` and `cargo bench` is to
     /// add the following lines to your `Cargo.toml`:
@@ -343,7 +343,7 @@ impl<ArgSS> StdStreamSinkBuilder<ArgSS> {
     /// # Note that it's not [dependencies]
     ///
     /// [dev-dependencies]
-    /// spdlog-rs = { version = "...", features = ["test"] }
+    /// spdlog-rs = { version = "...", features = ["std-stream-captured"] }
     /// ```
     ///
     /// [captured]: https://doc.rust-lang.org/book/ch11-02-running-tests.html#showing-function-output
