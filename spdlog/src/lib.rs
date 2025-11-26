@@ -216,8 +216,9 @@
 //!
 //!  - `serde_json` enables [`formatter::JsonFormatter`].
 //!
-//!  - `test` changes the default behavior of [`StdStreamSink`] to use print
-//!    macros. See [`StdStreamSinkBuilder::via_print_macro`] for more details.
+//!  - `std-stream-captured` changes the default behavior of [`StdStreamSink`]
+//!    to use print macros. See [`StdStreamSinkBuilder::via_print_macro`] for
+//!    more details.
 //!
 //! # Supported Rust versions
 //!

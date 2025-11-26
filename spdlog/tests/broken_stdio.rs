@@ -5,13 +5,13 @@
 
 #[cfg(target_os = "linux")]
 fn main() {
-    #[cfg(not(feature = "test"))]
+    #[cfg(not(feature = "std-stream-captured"))]
     run(); // Should not panic
 
-    // Expect this test to panic when the "test" feature is enabled, because we
-    // intentionally use print macros in `StdStreamSink` for capturing output
-    // for `cargo test`.
-    #[cfg(feature = "test")]
+    // Expect this test to panic when the "std-stream-captured" feature is enabled,
+    // because we intentionally use print macros in `StdStreamSink` for capturing
+    // output for `cargo test` and/or `cargo bench`.
+    #[cfg(feature = "std-stream-captured")]
     assert!(std::panic::catch_unwind(run).is_err());
 
     fn run() {
