@@ -201,10 +201,10 @@ macro_rules! __kv {
 macro_rules! __kv_value {
     ($k:ident [$($modifier:tt)*]) => { $crate::__kv_value!($k [$($modifier)*] = $k) };
     ($k:ident [  ] = $v:expr) => { $crate::kv::Value::from(&$v) };
-    ($k:ident [: ] = $v:expr) => { $crate::kv::Value::capture_display(&$v) };
-    ($k:ident [:?] = $v:expr) => { $crate::kv::Value::capture_debug(&$v) };
-    ($k:ident [:sval] = $v:expr) => { $crate::kv::Value::capture_sval2(&$v) };
-    ($k:ident [:serde] = $v:expr) => { $crate::kv::Value::capture_serde1(&$v) };
+    ($k:ident [: ] = $v:expr) => { $crate::kv::Value::from_display(&$v) };
+    ($k:ident [:?] = $v:expr) => { $crate::kv::Value::from_debug(&$v) };
+    ($k:ident [:sval] = $v:expr) => { $crate::kv::Value::from_sval2(&$v) };
+    ($k:ident [:serde] = $v:expr) => { $crate::kv::Value::from_serde1(&$v) };
 }
 
 #[cfg(test)]
@@ -394,11 +394,11 @@ mod tests {
                 match record.payload() {
                     "1" => assert!(value.to_i64().is_some()),
                     "2" => assert!(value.to_str().is_some()),
-                    "3" => assert!(value.to_i64().is_some()),
-                    "4" => assert!(value.to_i64().is_some()),
-                    "5" => assert!(value.is::<Vec<i32>>()),
-                    "6" => assert!(value.is::<Data>()),
-                    "7" => assert!(value.is::<Data>()),
+                    "3" => assert_eq!(value.to_string(), "1"),
+                    "4" => assert_eq!(value.to_string(), "1"),
+                    "5" => assert_eq!(value.to_string(), "[1, 2]"),
+                    "6" => assert_eq!(value.to_string(), "Data { i: 1, v: [1, 2] }"),
+                    "7" => assert_eq!(value.to_string(), "Data { i: 1, v: [1, 2] }"),
                     _ => panic!(),
                 }
                 Ok(())
@@ -424,13 +424,26 @@ mod tests {
 
         info!(logger: asserter, "1", kv: { v = 1 });
         info!(logger: asserter, "2", kv: { v = "string" });
+
         info!(logger: asserter, "3", kv: { v: = 1 });
+        info!(logger: asserter, "3", kv: { v: = &1 });
+
         info!(logger: asserter, "4", kv: { v:? = 1 });
+        info!(logger: asserter, "4", kv: { v:? = &1 });
+
         #[cfg(feature = "sval")]
         info!(logger: asserter, "5", kv: { v:sval = vec![1, 2] });
         #[cfg(feature = "sval")]
+        info!(logger: asserter, "5", kv: { v:sval = &vec![1, 2] });
+
+        #[cfg(feature = "sval")]
         info!(logger: asserter, "6", kv: { v:sval = data });
+        #[cfg(feature = "sval")]
+        info!(logger: asserter, "6", kv: { v:sval = &data });
+
         #[cfg(feature = "serde")]
         info!(logger: asserter, "7", kv: { v:serde = data });
+        #[cfg(feature = "serde")]
+        info!(logger: asserter, "7", kv: { v:serde = &data });
     }
 }

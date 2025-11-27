@@ -40,13 +40,13 @@
 //! A value is stored directly with its type by default (after erasure, of
 //! course), using _modifier_ if you want it to be stored in another format.
 //!
-//! | Modifier | Description                                                                           |
-//! |----------|---------------------------------------------------------------------------------------|
-//! |          | No modifier, capture the value directly                                               |
-//! | `:`      | Capture the value using [`Display`] trait                                             |
-//! | `:?`     | Capture the value using [`Debug`] trait                                               |
-//! | `:sval`  | Capture the value using [`sval::Value`] trait, crate feature `sval` is required       |
-//! | `:serde` | Capture the value using [`serde::Serialize`] trait, crate feature `serde` is required |
+//! | Modifier | Description                                                                        |
+//! |----------|------------------------------------------------------------------------------------|
+//! |          | No modifier, pass the value directly, and type for primitives will be captured     |
+//! | `:`      | Pass the value using [`Display`] trait                                             |
+//! | `:?`     | Pass the value using [`Debug`] trait                                               |
+//! | `:sval`  | Pass the value using [`sval::Value`] trait, crate feature `sval` is required       |
+//! | `:serde` | Pass the value using [`serde::Serialize`] trait, crate feature `serde` is required |
 //!
 //! ```
 //! # use spdlog::prelude::*;
@@ -60,12 +60,12 @@
 //! # }
 //! let url = Url::parse("https://example.com")?;
 //! trace!("user browsed website", kv: { url: });
-//! //                                      ^ Capture the value using `Display` trait
+//! //                                      ^ Pass the value using `Display` trait
 //! //                                   ^^^^ Shorthand syntax, equivalent to `url: = url`
 //!
 //! let orders = vec!["coffee", "pizza", "soup"];
 //! info!("order received", kv: { orders:? });
-//! //                                  ^^ Capture the value using `Debug` trait
+//! //                                  ^^ Pass the value using `Debug` trait
 //! //                            ^^^^^^^^ Shorthand syntax, equivalent to `orders:? = orders`
 //!
 //! #[derive(sval_derive::Value)]
@@ -74,7 +74,7 @@
 //! let pos = Point { x: 11.4, y: 5.14 };
 //! # #[cfg(feature = "sval")]
 //! trace!("user clicked", kv: { pos:sval });
-//! //                              ^^^^^ Capture the value using `sval::Value` trait
+//! //                              ^^^^^ Pass the value using `sval::Value` trait
 //! //                           ^^^^^^^^ Shorthand syntax, equivalent to `pos:sval = pos`
 //! # Ok(()) }
 //! ```
