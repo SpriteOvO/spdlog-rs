@@ -3,7 +3,7 @@ use std::{ffi::CString, io, ptr::null, result::Result as StdResult};
 use libc::EPERM;
 
 use crate::{
-    formatter::{Formatter, FormatterContext, PartialFormatter},
+    formatter::{Formatter, FormatterContext, OptFormatter},
     prelude::*,
     sink::{GetSinkProp, Sink, SinkProp},
     sync::*,
@@ -141,8 +141,8 @@ impl AndroidSinkBuilder {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**, and defaults to [`PartialFormatter`]
-    /// `(!time !level !eol)`.
+    /// This parameter is **optional**, and defaults to [`OptFormatter`] `(!time
+    /// !level !eol)`.
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
@@ -192,13 +192,13 @@ impl AndroidSink {
 
     /// Gets a builder of `AndroidSink` with default parameters:
     ///
-    /// | Parameter       | Default Value                              |
-    /// |-----------------|--------------------------------------------|
-    /// | [level_filter]  | [`LevelFilter::All`]                       |
-    /// | [formatter]     | [`PartialFormatter`] `(!time !level !eol)` |
-    /// | [error_handler] | [`ErrorHandler::default()`]                |
-    /// |                 |                                            |
-    /// | [tag]           | [`AndroidLogTag::Default`]                 |
+    /// | Parameter       | Default Value                          |
+    /// |-----------------|----------------------------------------|
+    /// | [level_filter]  | [`LevelFilter::All`]                   |
+    /// | [formatter]     | [`OptFormatter`] `(!time !level !eol)` |
+    /// | [error_handler] | [`ErrorHandler::default()`]            |
+    /// |                 |                                        |
+    /// | [tag]           | [`AndroidLogTag::Default`]             |
     ///
     /// [level_filter]: AndroidSinkBuilder::level_filter
     /// [formatter]: AndroidSinkBuilder::formatter
@@ -208,7 +208,7 @@ impl AndroidSink {
     pub fn builder() -> AndroidSinkBuilder {
         let prop = SinkProp::default();
         prop.set_formatter(
-            PartialFormatter::builder()
+            OptFormatter::builder()
                 .time(false)
                 .level(false)
                 .eol(false)
