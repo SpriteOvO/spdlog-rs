@@ -5,15 +5,16 @@ use crate::{
     Error, Record, StringBuf, __EOL,
 };
 
+///
 #[derive(Clone)]
-pub struct PartialFormatter {
+pub struct OptFormatter {
     options: FormattingOptions,
 }
 
-impl PartialFormatter {
+impl OptFormatter {
     #[must_use]
-    pub fn builder() -> PartialFormatterBuilder {
-        PartialFormatterBuilder(FormattingOptions {
+    pub fn builder() -> OptFormatterBuilder {
+        OptFormatterBuilder(FormattingOptions {
             time: true,
             logger_name: true,
             level: true,
@@ -100,7 +101,7 @@ impl PartialFormatter {
     }
 }
 
-impl Formatter for PartialFormatter {
+impl Formatter for OptFormatter {
     fn format(
         &self,
         record: &Record,
@@ -112,9 +113,9 @@ impl Formatter for PartialFormatter {
     }
 }
 
-pub struct PartialFormatterBuilder(FormattingOptions);
+pub struct OptFormatterBuilder(FormattingOptions);
 
-impl PartialFormatterBuilder {
+impl OptFormatterBuilder {
     #[must_use]
     pub fn time(&mut self, value: bool) -> &mut Self {
         self.0.time = value;
@@ -151,10 +152,10 @@ impl PartialFormatterBuilder {
         self
     }
 
-    /// Builds a `PartialFormatter`.
+    /// Builds a `OptFormatter`.
     #[must_use]
-    pub fn build(&mut self) -> PartialFormatter {
-        PartialFormatter {
+    pub fn build(&mut self) -> OptFormatter {
+        OptFormatter {
             options: self.0.clone(),
         }
     }
@@ -246,10 +247,10 @@ mod tests {
     fn default_should_same_with_full() {
         let record = record();
 
-        let partial = {
+        let opt = {
             let mut buf = StringBuf::new();
             let mut ctx = FormatterContext::new();
-            PartialFormatter::builder()
+            OptFormatter::builder()
                 .build()
                 .format(&record.as_ref(), &mut buf, &mut ctx)
                 .unwrap();
@@ -264,8 +265,8 @@ mod tests {
             (buf, ctx)
         };
 
-        assert_eq!(partial.0, full.0);
-        assert_eq!(partial.1.style_range(), full.1.style_range());
+        assert_eq!(opt.0, full.0);
+        assert_eq!(opt.1.style_range(), full.1.style_range());
     }
 
     #[test]
@@ -273,7 +274,7 @@ mod tests {
         let record = record();
         let mut buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        PartialFormatter::builder()
+        OptFormatter::builder()
             .time(false)
             .build()
             .format(&record.as_ref(), &mut buf, &mut ctx)
@@ -291,7 +292,7 @@ mod tests {
         let record = record();
         let mut buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        PartialFormatter::builder()
+        OptFormatter::builder()
             .time(false)
             .logger_name(false)
             .build()
@@ -310,7 +311,7 @@ mod tests {
         let record = record();
         let mut buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        PartialFormatter::builder()
+        OptFormatter::builder()
             .time(false)
             .logger_name(false)
             .level(false)
@@ -327,7 +328,7 @@ mod tests {
         let record = record();
         let mut buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        PartialFormatter::builder()
+        OptFormatter::builder()
             .time(false)
             .logger_name(false)
             .level(false)
@@ -345,7 +346,7 @@ mod tests {
         let record = record();
         let mut buf = StringBuf::new();
         let mut ctx = FormatterContext::new();
-        PartialFormatter::builder()
+        OptFormatter::builder()
             .time(false)
             .eol(false)
             .build()
