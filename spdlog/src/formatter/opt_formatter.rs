@@ -5,13 +5,72 @@ use crate::{
     Error, Record, StringBuf, __EOL,
 };
 
+/// A formatter that fields can be opt-in / opt-out.
 ///
+/// It enables all fields by default, formatting results are identical to
+/// [`FullFormatter`] (in this case, use the latter for optimal performance).
+///
+/// By disabling fields, corresponding information can be removed from formatted
+/// results.
+///
+/// [`FullFormatter`]: crate::formatter::FullFormatter
+///
+/// ## Examples
+///
+/// ```
+/// use spdlog::formatter::OptFormatter;
+/// # use spdlog::info;
+#[doc = include_str!(concat!(env!("OUT_DIR"), "/test_utils/common_for_doc_test.rs"))]
+/// #
+///
+/// let formatter = OptFormatter::builder()
+///     .time(false)
+///     .source_location(false)
+///     .build();
+/// // ... Setting up sinks with the formatter
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
+/// info!(logger: doctest, "Interesting log message");
+/// # assert_eq!(
+/// #     sink.clone_string().replace("\r", ""),
+/// /* Output */ "[info] Interesting log message\n"
+/// # );
+///
+/// let formatter = OptFormatter::builder()
+///     .time(false)
+///     .level(false)
+///     .source_location(false)
+///     .build();
+/// // ... Setting up sinks with the formatter
+/// # let (doctest, sink) = test_utils::echo_logger_from_formatter(formatter, None);
+/// info!(logger: doctest, "Interesting log message");
+/// # assert_eq!(
+/// #     sink.clone_string().replace("\r", ""),
+/// /* Output */ "Interesting log message\n"
+/// # );
+/// ```
 #[derive(Clone)]
 pub struct OptFormatter {
     options: FormattingOptions,
 }
 
 impl OptFormatter {
+    /// Gets a builder of `OptFormatter` with default parameters:
+    ///
+    /// | Parameter         | Default Value |
+    /// |-------------------|---------------|
+    /// | [time]            | `true`        |
+    /// | [logger_name]     | `true`        |
+    /// | [level]           | `true`        |
+    /// | [source_location] | `true`        |
+    /// | [kv]              | `true`        |
+    /// | [eol]             | `true`        |
+    ///
+    /// [time]: OptFormatterBuilder::time
+    /// [logger_name]: OptFormatterBuilder::logger_name
+    /// [level]: OptFormatterBuilder::level
+    /// [source_location]: OptFormatterBuilder::source_location
+    /// [kv]: OptFormatterBuilder::kv
+    /// [eol]: OptFormatterBuilder::eol
     #[must_use]
     pub fn builder() -> OptFormatterBuilder {
         OptFormatterBuilder(FormattingOptions {
@@ -113,39 +172,61 @@ impl Formatter for OptFormatter {
     }
 }
 
+#[allow(missing_docs)]
 pub struct OptFormatterBuilder(FormattingOptions);
 
 impl OptFormatterBuilder {
+    /// Specify whether to enable time field.
+    ///
+    /// Example of this field: `[2022-11-02 09:23:12.263]`
     #[must_use]
     pub fn time(&mut self, value: bool) -> &mut Self {
         self.0.time = value;
         self
     }
 
+    /// Specify whether to enable logger name field.
+    ///
+    /// Example of this field: `[logger-name]`
     #[must_use]
     pub fn logger_name(&mut self, value: bool) -> &mut Self {
         self.0.logger_name = value;
         self
     }
 
+    /// Specify whether to enable level field.
+    ///
+    /// Note that disabling this field will also remove the style from the
+    /// formatted result.
+    ///
+    /// Example of this field: <code>[<font color="#0DBC79">info</font>]</code>
     #[must_use]
     pub fn level(&mut self, value: bool) -> &mut Self {
         self.0.level = value;
         self
     }
 
+    /// Specify whether to enable source location field.
+    ///
+    /// Example of this field: `[mod::path, src/main.rs:4]`
     #[must_use]
     pub fn source_location(&mut self, value: bool) -> &mut Self {
         self.0.source_location = value;
         self
     }
 
+    /// Specify whether to enable kv field.
+    ///
+    /// Example of this field: `{ key1=value1 key2=value2 }`
     #[must_use]
     pub fn kv(&mut self, value: bool) -> &mut Self {
         self.0.kv = value;
         self
     }
 
+    /// Specify whether to enable eol field.
+    ///
+    /// Example of this field: `\n` or `\r\n` on Windows.
     #[must_use]
     pub fn eol(&mut self, value: bool) -> &mut Self {
         self.0.eol = value;
