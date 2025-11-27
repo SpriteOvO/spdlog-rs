@@ -18,7 +18,7 @@ clippy *ARGS:
     cargo clippy --all-features --tests --examples {{ ARGS }}
 
 check *ARGS:
-    cargo check --all-features {{ ARGS }}
+    cargo check --all-features --tests --examples {{ ARGS }}
 
 _doc-default-features *ARGS:
     cargo +nightly doc -Z unstable-options -Z rustdoc-scrape-examples {{ ARGS }}
