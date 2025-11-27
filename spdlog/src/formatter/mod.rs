@@ -10,9 +10,10 @@
 //! The easiest way to make a custom formatter is to build a pattern, see
 //! [Compile-time and runtime pattern
 //! formatter](#compile-time-and-runtime-pattern-formatter) below. If pattern
-//! isn't flexible enough for you, you need to implement [`Formatter`] trait for
-//! your own formatter struct. See the implementation of [`FullFormatter`] and
-//! [./examples] directory for examples.
+//! isn't enough for you, take a look at [`OptFormatter`] which allows you to
+//! opt-out fields compared to [`FullFormatter`], or implement [`Formatter`]
+//! trait for your own formatter struct for better flexibility. See the
+//! implementation of [./examples] directory for examples.
 //!
 //! # Compile-time and runtime pattern formatter
 //!
