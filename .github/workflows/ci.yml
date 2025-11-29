@@ -241,28 +241,9 @@ jobs:
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
     - name: Build example
-      run: |
-        cargo build --example native_linux --features native,libsystemd,source-location --verbose
-        mv ./target/debug/examples/native_linux ./target/debug/examples/native_linux_srcloc
-        cargo build --example native_linux --features native,libsystemd --verbose
+      run: bash ./spdlog/tests/native/linux.sh build
     - name: Run and test
-      run: |
-        set -x
-        ./target/debug/examples/native_linux
-        ./target/debug/examples/native_linux_srcloc
-
-        journalctl --no-pager -o verbose -t native_linux
-        journalctl --no-pager -o verbose -t native_linux_srcloc
-
-        journalctl --no-pager -o json -t native_linux | jq -e -s $'.[0].MESSAGE == "[demo] [info] info message from spdlog-rs\'s JournaldSink\n"'
-        journalctl --no-pager -o json -t native_linux | jq -e -s $'.[0].PRIORITY == "6" and .[0].CODE_FILE == null and .[0].CODE_LINE == null and .[0].TID != null'
-        journalctl --no-pager -o json -t native_linux | jq -e -s $'.[1].MESSAGE == "[demo] [error] error message from spdlog-rs\'s JournaldSink { error_code=114514 }\n"'
-        journalctl --no-pager -o json -t native_linux | jq -e -s $'.[1].PRIORITY == "3" and .[1].CODE_FILE == null and .[1].CODE_LINE == null and .[1].TID != null'
-
-        journalctl --no-pager -o json -t native_linux_srcloc | jq -e -s $'.[0].MESSAGE == "[demo] [info] info message from spdlog-rs\'s JournaldSink\n"'
-        journalctl --no-pager -o json -t native_linux_srcloc | jq -e -s $'.[0].PRIORITY == "6" and .[0].CODE_FILE == "linux.rs" and .[0].CODE_LINE != null and .[0].TID != null'
-        journalctl --no-pager -o json -t native_linux_srcloc | jq -e -s $'.[1].MESSAGE == "[demo] [error] error message from spdlog-rs\'s JournaldSink { error_code=114514 }\n"'
-        journalctl --no-pager -o json -t native_linux_srcloc | jq -e -s $'.[1].PRIORITY == "3" and .[1].CODE_FILE == "linux.rs" and .[1].CODE_LINE != null and .[1].TID != null'
+      run: bash ./spdlog/tests/native/linux.sh run
 
   test-native-windows:
     strategy:
@@ -278,32 +259,9 @@ jobs:
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
     - name: Build example
-      run: |
-        cargo build --example native_windows --features native,source-location --verbose
-        mv ./target/debug/examples/native_windows ./target/debug/examples/native_windows_srcloc
-        cargo build --example native_windows --features native --verbose
+      run: bash ./spdlog/tests/native/windows.sh build
     - name: Run and test
-      run: |
-        set -x
-
-        # Microsoft styled CLI options start with `/` and need to be doubled to escape in bash.
-        dbgview //l ./dbgview.log
-        # Wait for dbgview to start up and create the log file
-        while [ ! -f ./dbgview.log ]; do sleep 1; done
-
-        ./target/debug/examples/native_windows
-        ./target/debug/examples/native_windows_srcloc
-
-        # Wait for dbgview to flush the log file
-        while [ ! -s ./dbgview.log ]; do sleep 1; done
-        sleep 3
-        dbgview //q
-
-        cat ./dbgview.log
-        cat ./dbgview.log | grep "\[demo] \[info] info message from spdlog-rs's WinDebugSink"
-        cat ./dbgview.log | grep "\[demo] \[error] error message from spdlog-rs's WinDebugSink { error_code=114514 }"
-        cat ./dbgview.log | grep -E "\[demo] \[info] \[native_windows, .+.rs:[0-9]+] info message from spdlog-rs's WinDebugSink"
-        cat ./dbgview.log | grep -E "\[demo] \[error] \[native_windows, .+.rs:[0-9]+] error message from spdlog-rs's WinDebugSink { error_code=114514 }"
+      run: bash ./spdlog/tests/native/windows.sh run
 
   test-native-android:
     strategy:
@@ -319,10 +277,7 @@ jobs:
     - name: Install cross
       run: cargo install cross --git https://github.com/cross-rs/cross --verbose
     - name: Build example
-      run: |
-        cross build --target x86_64-linux-android --example native_android --features native,android-ndk,source-location --verbose
-        mv ./target/x86_64-linux-android/debug/examples/native_android ./target/x86_64-linux-android/debug/examples/native_android_srcloc
-        cross build --target x86_64-linux-android --example native_android --features native,android-ndk --verbose
+      run: bash ./spdlog/tests/native/android.sh build
     - name: Enable KVM
       run: |
         echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -333,20 +288,7 @@ jobs:
       with:
         api-level: 29
         arch: x86_64
-        script: |
-          adb root
-          adb push ./target/x86_64-linux-android/debug/examples/native_android /data
-          adb push ./target/x86_64-linux-android/debug/examples/native_android_srcloc /data
-
-          adb logcat -b all -c
-          adb shell /data/native_android
-          adb shell /data/native_android_srcloc
-          adb logcat -s "spdlog-rs-example" -d > ./logcat.log
-          cat ./logcat.log
-          cat ./logcat.log | grep "I spdlog-rs-example: \[demo] info message from spdlog-rs's AndroidSink"
-          cat ./logcat.log | grep "E spdlog-rs-example: \[demo] error message from spdlog-rs's AndroidSink { error_code=114514 }"
-          cat ./logcat.log | grep -E "I spdlog-rs-example: \[demo] \[native_android, .+.rs:[0-9]+] info message from spdlog-rs's AndroidSink"
-          cat ./logcat.log | grep -E "E spdlog-rs-example: \[demo] \[native_android, .+.rs:[0-9]+] error message from spdlog-rs's AndroidSink { error_code=114514 }"
+        script: bash ./spdlog/tests/native/android.sh run
 
   bench:
     needs: [test, check]
