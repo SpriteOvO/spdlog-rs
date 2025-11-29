@@ -47,7 +47,8 @@ sval = ["value-bag/sval"]
 
 [dependencies]
 arc-swap = "1.5.1"
-atomic = "0.5.1"
+atomic = "0.6.1"
+bytemuck = { version = "1.24.0", features = ["derive"] }
 chrono = "0.4.22"
 crossbeam = { version = "0.8.2", optional = true }
 dyn-clone = "1.0.14"
