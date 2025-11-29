@@ -6,7 +6,7 @@ use crate::{
     periodic_worker::PeriodicWorker,
     sink::{Sink, Sinks},
     sync::*,
-    Level, LevelFilter, Record, Result,
+    AtomicLevelFilter, Level, LevelFilter, Record, Result,
 };
 
 fn check_logger_name(name: impl AsRef<str>) -> StdResult<(), SetLoggerNameError> {
@@ -108,9 +108,9 @@ fn check_logger_name(name: impl AsRef<str>) -> StdResult<(), SetLoggerNameError>
 /// [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
 pub struct Logger {
     name: Option<String>,
-    level_filter: Atomic<LevelFilter>,
+    level_filter: AtomicLevelFilter,
     sinks: Sinks,
-    flush_level_filter: Atomic<LevelFilter>,
+    flush_level_filter: AtomicLevelFilter,
     error_handler: RwLock<ErrorHandler>,
     periodic_flusher: Mutex<Option<(Duration, PeriodicWorker)>>,
 }
@@ -258,7 +258,7 @@ impl Logger {
     /// Gets the flush level filter.
     #[must_use]
     pub fn flush_level_filter(&self) -> LevelFilter {
-        self.flush_level_filter.load(Ordering::Relaxed)
+        self.flush_level_filter.get()
     }
 
     /// Sets a flush level filter.
@@ -286,14 +286,13 @@ impl Logger {
     /// trace!(logger: logger, "world"); // Logs and flushes the buffer once
     /// ```
     pub fn set_flush_level_filter(&self, level_filter: LevelFilter) {
-        self.flush_level_filter
-            .store(level_filter, Ordering::Relaxed);
+        self.flush_level_filter.set(level_filter);
     }
 
     /// Gets the log level filter.
     #[must_use]
     pub fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
+        self.level_filter.get()
     }
 
     /// Sets the log level filter.
@@ -302,7 +301,7 @@ impl Logger {
     ///
     /// See [`Logger::should_log`].
     pub fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed);
+        self.level_filter.set(level_filter);
     }
 
     /// Sets automatic periodic flushing.
@@ -473,9 +472,9 @@ impl Logger {
     fn clone_lossy(&self) -> Self {
         Logger {
             name: self.name.clone(),
-            level_filter: Atomic::new(self.level_filter()),
+            level_filter: AtomicLevelFilter::new(self.level_filter()),
             sinks: self.sinks.clone(),
-            flush_level_filter: Atomic::new(self.flush_level_filter()),
+            flush_level_filter: AtomicLevelFilter::new(self.flush_level_filter()),
             periodic_flusher: Mutex::new(None),
             error_handler: RwLock::new(self.error_handler.read_expect().clone()),
         }
@@ -671,9 +670,9 @@ impl LoggerBuilder {
 
         let logger = Logger {
             name: self.name.clone(),
-            level_filter: Atomic::new(self.level_filter),
+            level_filter: AtomicLevelFilter::new(self.level_filter),
             sinks: self.sinks.clone(),
-            flush_level_filter: Atomic::new(self.flush_level_filter),
+            flush_level_filter: AtomicLevelFilter::new(self.flush_level_filter),
             error_handler: RwLock::new(self.error_handler.clone()),
             periodic_flusher: Mutex::new(None),
         };
