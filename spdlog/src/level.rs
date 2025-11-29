@@ -54,7 +54,7 @@ const LOG_LEVEL_SHORT_NAMES: [&str; Level::count()] = ["C", "E", "W", "I", "D", 
 ///
 /// [`log!`]: crate::log!
 #[repr(u16)]
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, bytemuck::NoUninit)]
 pub enum Level {
     /// Designates critical errors.
     Critical = 0,
@@ -313,7 +313,7 @@ impl From<log::LevelFilter> for LevelFilter {
 
 // This struct must have the same memory layout as `LevelFilter`.
 #[repr(C, align(4))]
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, bytemuck::NoUninit)]
 struct LevelFilterLayout {
     discriminant: u16, // Keep the type in sync with the repr of `LevelFilter`
     level: Level,
