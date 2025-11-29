@@ -99,8 +99,9 @@ impl Level {
         Self::most_verbose() as usize
     }
 
+    /// Returns the number of logging levels.
     #[must_use]
-    pub(crate) const fn count() -> usize {
+    pub const fn count() -> usize {
         Self::max_usize() + 1
     }
 
