@@ -64,7 +64,7 @@ pub use write_sink::*;
 use crate::{
     formatter::{Formatter, FullFormatter},
     sync::*,
-    Error, ErrorHandler, Level, LevelFilter, Record, Result,
+    AtomicLevelFilter, Error, ErrorHandler, Level, LevelFilter, Record, Result,
 };
 
 /// Contains definitions of sink properties.
@@ -78,7 +78,7 @@ use crate::{
 /// types, changing behavior), this struct is not needed. Instead, define
 /// properties manually within your sink, and then implement [`SinkPropAccess`].
 pub struct SinkProp {
-    level_filter: Atomic<LevelFilter>,
+    level_filter: AtomicLevelFilter,
     formatter: RwLockMappable<Box<dyn Formatter>>,
     error_handler: RwLock<ErrorHandler>,
 }
@@ -93,7 +93,7 @@ impl Default for SinkProp {
     /// | `error_handler` | [`ErrorHandler::default()`] |
     fn default() -> Self {
         Self {
-            level_filter: Atomic::new(LevelFilter::All),
+            level_filter: AtomicLevelFilter::new(LevelFilter::All),
             formatter: RwLockMappable::new(Box::new(FullFormatter::new())),
             error_handler: RwLock::new(ErrorHandler::default()),
         }
@@ -104,12 +104,12 @@ impl SinkProp {
     /// Gets the log level filter.
     #[must_use]
     pub fn level_filter(&self) -> LevelFilter {
-        self.level_filter.load(Ordering::Relaxed)
+        self.level_filter.get()
     }
 
     /// Sets the log level filter.
     pub fn set_level_filter(&self, level_filter: LevelFilter) {
-        self.level_filter.store(level_filter, Ordering::Relaxed)
+        self.level_filter.set(level_filter)
     }
 
     /// Gets the formatter.
