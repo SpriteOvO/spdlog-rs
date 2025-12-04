@@ -159,7 +159,7 @@ impl Sink for JournaldSink {
     }
 }
 
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 pub struct JournaldSinkBuilder {
     prop: SinkProp,
 }

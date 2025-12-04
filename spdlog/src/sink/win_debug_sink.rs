@@ -33,7 +33,7 @@ impl WinDebugSink {
     }
 
     /// Constructs a `WinDebugSink`.
-    #[allow(clippy::new_without_default)]
+    #[expect(clippy::new_without_default)]
     #[deprecated(
         since = "0.3.0",
         note = "it may be removed in the future, use `WinDebugSink::builder()` instead"
@@ -77,7 +77,7 @@ impl Sink for WinDebugSink {
     }
 }
 
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 pub struct WinDebugSinkBuilder {
     prop: SinkProp,
 }

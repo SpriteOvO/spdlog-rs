@@ -146,7 +146,7 @@ impl Sink for AsyncPoolSink {
     }
 }
 
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 pub struct AsyncPoolSinkBuilder {
     prop: SinkProp,
     sinks: Sinks,

@@ -1248,8 +1248,7 @@ mod tests {
 
     #[test]
     fn test_pattern_ref_as_pattern() {
-        #[allow(unknown_lints)]
-        #[allow(clippy::needless_borrow, clippy::needless_borrows_for_generic_args)]
+        #[expect(clippy::needless_borrows_for_generic_args)]
         test_pattern(&String::from("literal"), "literal", None);
     }
 
@@ -1259,7 +1258,7 @@ mod tests {
         // accept an `&mut T` as a `Pattern` anymore, since `&mut T` is not cloneable.
         //
         // test_pattern(&mut String::from("literal"), "literal", None);
-        #[allow(clippy::deref_addrof)]
+        #[expect(clippy::deref_addrof)]
         test_pattern(&*&mut String::from("literal"), "literal", None);
     }
 

@@ -9,7 +9,7 @@ pub struct PeriodicWorker {
 
 impl PeriodicWorker {
     // Panic if the `interval.is_zero()` is `true`.
-    #[allow(clippy::mutex_atomic)]
+    #[expect(clippy::mutex_atomic)]
     #[must_use]
     pub fn new(callback: impl Fn() -> bool + Send + 'static, interval: Duration) -> Self {
         if interval.is_zero() {
@@ -36,7 +36,7 @@ impl PeriodicWorker {
 }
 
 impl Drop for PeriodicWorker {
-    #[allow(clippy::mutex_atomic)]
+    #[expect(clippy::mutex_atomic)]
     fn drop(&mut self) {
         *self.active.0.lock_expect() = false;
         self.active.1.notify_all();

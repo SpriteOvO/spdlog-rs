@@ -110,7 +110,7 @@ pub enum AndroidLogTag {
     Custom(String),
 }
 
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 pub struct AndroidSinkBuilder {
     prop: SinkProp,
     tag: AndroidLogTag,

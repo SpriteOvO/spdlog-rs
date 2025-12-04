@@ -545,7 +545,7 @@ impl Clone for Logger {
     }
 }
 
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 #[derive(Clone)]
 pub struct LoggerBuilder {
     name: Option<String>,
@@ -557,7 +557,7 @@ pub struct LoggerBuilder {
 
 impl LoggerBuilder {
     /// Constructs a `LoggerBuilder`.
-    #[allow(clippy::new_without_default)]
+    #[expect(clippy::new_without_default)]
     #[deprecated(
         since = "0.3.0",
         note = "it may be removed in the future, use `Logger::builder()` instead"

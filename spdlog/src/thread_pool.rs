@@ -43,7 +43,7 @@ struct ThreadPoolInner {
 
 type Callback = Arc<dyn Fn() + Send + Sync + 'static>;
 
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 pub struct ThreadPoolBuilder {
     capacity: NonZeroUsize,
     threads: NonZeroUsize,
@@ -136,7 +136,7 @@ impl ThreadPoolBuilder {
     // The current Sinks are not beneficial with more than one thread, so the method
     // is not public.
     #[must_use]
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn threads(&mut self, threads: NonZeroUsize) -> &mut Self {
         self.threads = threads;
         self

@@ -53,7 +53,7 @@ enum StdStreamDest<O, E> {
 }
 
 impl<O, E> StdStreamDest<O, E> {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn stream_type(&self) -> StdStream {
         match self {
             Self::Stdout(_) => StdStream::Stdout,

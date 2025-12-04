@@ -286,9 +286,9 @@
 //! [`RotationPolicy::Daily`]: crate::sink::RotationPolicy::Daily
 //! [`RotationPolicy::Hourly`]: crate::sink::RotationPolicy::Hourly
 
-#![allow(unexpected_cfgs)]
 // Credits: https://blog.wnut.pw/2020/03/24/documentation-and-unstable-rustdoc-features/
 #![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_cfg))]
+#![expect(unexpected_cfgs)]
 #![warn(missing_docs)]
 
 // Used for referencing from proc-macros

@@ -172,7 +172,7 @@ impl Formatter for OptFormatter {
     }
 }
 
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 pub struct OptFormatterBuilder(FormattingOptions);
 
 impl OptFormatterBuilder {

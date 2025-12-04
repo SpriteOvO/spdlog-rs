@@ -83,7 +83,6 @@ const HOUR_1: Duration = Duration::from_secs(SECONDS_PER_HOUR);
 const DAY_1: Duration = Duration::from_secs(SECONDS_PER_DAY);
 
 trait Rotator {
-    #[allow(clippy::ptr_arg)]
     fn log(&self, record: &Record, string_buf: &StringBuf) -> Result<()>;
     fn flush(&self) -> Result<()>;
     fn drop_flush(&mut self) -> Result<()> {

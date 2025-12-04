@@ -9,7 +9,7 @@ use std::io;
 use crate::Level;
 
 /// Text color for terminal rendering.
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Color {
     Black,
@@ -73,7 +73,7 @@ pub struct Style {
 
 impl Style {
     /// Constructs a `Style` with no styles.
-    #[allow(clippy::new_without_default)]
+    #[expect(clippy::new_without_default)]
     #[deprecated(
         since = "0.3.0",
         note = "it may be removed in the future, use `Style::builder()` instead"
@@ -155,7 +155,7 @@ impl Style {
     }
 }
 
-#[allow(missing_docs)]
+#[expect(missing_docs)]
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct StyleBuilder {
     style: Style,
@@ -165,7 +165,7 @@ pub(crate) mod macros {
     macro_rules! impl_style_builder_setters {
         ($builder_type:ident =>) => {};
         ($builder_type:ident => $visibility:vis $field_name:ident: Option<$field_type:ty>, $($tail:tt)*) => {
-            #[allow(missing_docs)]
+            #[expect(missing_docs)]
             $visibility fn $field_name(&mut self, $field_name: $field_type) -> &mut $builder_type {
                 self.style.$field_name = Some($field_name);
                 self
@@ -173,7 +173,7 @@ pub(crate) mod macros {
             macros::impl_style_builder_setters! { $builder_type => $($tail)* }
         };
         ($builder_type:ident => $visibility:vis $field_name:ident: bool, $($tail:tt)*) => {
-            #[allow(missing_docs)]
+            #[expect(missing_docs)]
             $visibility fn $field_name(&mut self) -> &mut $builder_type {
                 self.style.$field_name = true;
                 self
@@ -186,7 +186,7 @@ pub(crate) mod macros {
 
 impl StyleBuilder {
     /// Constructs a `StyleBuilder`.
-    #[allow(clippy::new_without_default)]
+    #[expect(clippy::new_without_default)]
     #[deprecated(
         since = "0.3.0",
         note = "it may be removed in the future, use `Style::builder()` instead"
@@ -235,13 +235,11 @@ pub enum StyleMode {
 pub(crate) struct LevelStyles([Style; Level::count()]);
 
 impl LevelStyles {
-    #[allow(dead_code)]
     #[must_use]
     pub(crate) fn style(&self, level: Level) -> &Style {
         &self.0[level as usize]
     }
 
-    #[allow(dead_code)]
     pub(crate) fn set_style(&mut self, level: Level, style: Style) {
         self.0[level as usize] = style;
     }
