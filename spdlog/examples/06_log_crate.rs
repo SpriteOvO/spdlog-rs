@@ -2,6 +2,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     spdlog::init_log_crate_proxy()
         .expect("users should only call `init_log_crate_proxy` function once");
 
+    // Setup filter as needed.
+    let filter = env_filter::Builder::new().try_parse("RUST_LOG")?.build();
+    spdlog::log_crate_proxy().set_filter(Some(filter));
+
     log::set_max_level(log::LevelFilter::Trace);
     log::trace!("this log will be processed by the global default logger in spdlog-rs");
 
