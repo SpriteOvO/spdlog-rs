@@ -231,7 +231,7 @@
 //! - README.md
 //! -->
 //!
-//! The current minimum supported Rust version is 1.61.
+//! The current minimum supported Rust version is 1.71.
 //!
 //! `spdlog-rs` is built against the latest Rust stable release, it is not
 //! guaranteed to build on Rust versions earlier than the minimum supported
