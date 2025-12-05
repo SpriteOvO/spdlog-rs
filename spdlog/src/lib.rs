@@ -527,6 +527,13 @@ pub fn set_default_logger(logger: Arc<Logger>) {
 /// Initializes environment variable level filters from environment variable
 /// `SPDLOG_RS_LEVEL`.
 ///
+/// ## Note
+///
+/// If you're looking for `RUST_LOG`, please check
+/// [`LogCrateProxy::set_filter`].
+///
+/// ---
+///
 /// Returns whether the level in the environment variable was applied if there
 /// are no errors.
 ///
