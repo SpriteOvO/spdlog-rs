@@ -44,6 +44,7 @@ runtime-pattern = ["dep:spdlog-internal"]
 serde = ["dep:serde", "value-bag/serde"]
 serde_json = ["serde", "dep:serde_json"]
 sval = ["value-bag/sval"]
+log = ["dep:log", "dep:env_filter"]
 
 [dependencies]
 arc-swap = "1.5.1"
@@ -51,6 +52,7 @@ atomic = "0.5.1"
 chrono = "0.4.22"
 crossbeam = { version = "0.8.2", optional = true }
 dyn-clone = "1.0.14"
+env_filter = { version = "0.1.0", optional = true }
 flexible-string = { version = "0.1.0", optional = true }
 is-terminal = "0.4"
 log = { version = "0.4.21", optional = true, features = ["kv"] }

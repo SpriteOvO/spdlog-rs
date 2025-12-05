@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use crate::{default_logger, sync::*, LogCrateRecord, Logger};
+use crate::{default_logger, sync::*, utils, LogCrateRecord, Logger};
 
 /// Proxy layer for compatible [log crate].
 ///
@@ -10,6 +10,9 @@ use crate::{default_logger, sync::*, LogCrateRecord, Logger};
 /// After the proxy is initialized, it will forward all log messages from `log`
 /// crate to the global default logger or the logger set by
 /// [`LogCrateProxy::set_logger`].
+///
+/// To set filters or read from `RUST_LOG` variable, call
+/// [`LogCrateProxy::set_filter`] after initialization.
 ///
 /// Note that the `log` crate uses a different log level filter and by default
 /// it rejects all log messages. To make `LogCrateProxy` able to receive log
@@ -39,6 +42,7 @@ use crate::{default_logger, sync::*, LogCrateRecord, Logger};
 #[derive(Default)]
 pub struct LogCrateProxy {
     logger: ArcSwapOption<Logger>,
+    filter: ArcSwapOption<env_filter::Filter>,
 }
 
 impl LogCrateProxy {
@@ -63,6 +67,13 @@ impl LogCrateProxy {
         self.swap_logger(logger);
     }
 
+    /// Sets a filter for records from `log` crate.
+    ///
+    /// This is useful if users want to support `RUST_LOG` environment variable.
+    pub fn set_filter(&self, filter: Option<env_filter::Filter>) {
+        self.filter.swap(filter.map(Arc::new));
+    }
+
     #[must_use]
     fn logger(&self) -> Arc<Logger> {
         self.logger.load_full().unwrap_or_else(default_logger)
@@ -71,13 +82,19 @@ impl LogCrateProxy {
 
 impl log::Log for LogCrateProxy {
     fn enabled(&self, metadata: &log::Metadata) -> bool {
-        self.logger().should_log(metadata.level().into())
+        let filter = self.filter.load();
+        utils::is_none_or(filter.as_deref(), |filter| filter.enabled(metadata))
+            && self.logger().should_log(metadata.level().into())
     }
 
     fn log(&self, record: &log::Record) {
-        let logger = self.logger();
-        let record = LogCrateRecord::new(&logger, record, SystemTime::now());
-        logger.log(&record.as_record())
+        if utils::is_none_or(self.filter.load().as_deref(), |filter| {
+            filter.matches(record)
+        }) {
+            let logger = self.logger();
+            let record = LogCrateRecord::new(&logger, record, SystemTime::now());
+            logger.log(&record.as_record())
+        }
     }
 
     fn flush(&self) {
@@ -98,11 +115,26 @@ mod tests {
         let sink = Arc::new(TestSink::new());
         crate::log_crate_proxy()
             .set_logger(Some(Arc::new(build_test_logger(|b| b.sink(sink.clone())))));
+        crate::log_crate_proxy().set_filter(Some(
+            env_filter::Builder::new()
+                .filter_module(
+                    "spdlog::log_crate_proxy::tests::should_be_filtered_out",
+                    log::LevelFilter::Off,
+                )
+                .filter(None, log::LevelFilter::Trace)
+                .build(),
+        ));
 
         assert_eq!(sink.log_count(), 0);
 
         log::info!("hello");
         log::error!("world");
+        mod should_be_filtered_out {
+            pub fn log_something() {
+                log::warn!("this should be filtered out");
+            }
+        }
+        should_be_filtered_out::log_something();
 
         assert_eq!(sink.log_count(), 2);
         assert_eq!(
