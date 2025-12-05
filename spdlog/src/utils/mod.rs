@@ -55,3 +55,11 @@ macro_rules! const_assert {
 }
 #[cfg(test)]
 pub(crate) use const_assert;
+
+// TODO: Remove this when MSRV reaches 1.82.
+pub(crate) fn is_none_or<T>(opt: Option<T>, f: impl FnOnce(T) -> bool) -> bool {
+    match opt {
+        None => true,
+        Some(x) => f(x),
+    }
+}
