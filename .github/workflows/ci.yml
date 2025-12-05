@@ -15,11 +15,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # When updating this, also update:
-  # - src/lib.rs
-  # - Cargo.toml
-  # - README.md
-  rust_minver: 1.66.1
   ci_targets: "['x86_64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'aarch64-apple-darwin', 'x86_64-apple-ios', 'x86_64-unknown-freebsd', 'x86_64-unknown-illumos', 'aarch64-linux-android']"
 
 defaults:
@@ -208,12 +203,17 @@ jobs:
       run: sudo bash ./.github/workflows/install-deps.sh
     - name: Install Rust nightly
       run: rustup toolchain install nightly
-    - name: Install Rust ${{ env.rust_minver }}
-      run: rustup toolchain install ${{ env.rust_minver }}
+    - name: Read rust-version from Cargo.toml
+      run: |
+        MSRV=$(yq '.workspace.package.rust-version' ./Cargo.toml)
+        echo $MSRV
+        echo "MSRV=$MSRV" >> $GITHUB_ENV
+    - name: Install Rust ${{ env.MSRV }}
+      run: rustup toolchain install ${{ env.MSRV }}
     - name: Install Rust target
       run: |
         rustup target add ${{ matrix.target }} --toolchain nightly
-        rustup target add ${{ matrix.target }} --toolchain ${{ env.rust_minver }}
+        rustup target add ${{ matrix.target }} --toolchain ${{ env.MSRV }}
         echo 'CARGO_BUILD_TARGET=${{ matrix.target }}' >> $GITHUB_ENV
     - name: Restore cargo caches
       uses: Swatinem/rust-cache@v2
@@ -224,8 +224,8 @@ jobs:
         perl -pi -e 's/\[dev-dependencies]/[workaround-avoid-dev-deps]/g' ./spdlog/Cargo.toml
     - name: Downgrade dependencies to minimal versions
       run: cargo +nightly update -Z minimal-versions
-    - name: Check MSRV for core with Rust ${{ env.rust_minver }}
-      run: cargo +${{ env.rust_minver }} check --locked --all-features --verbose
+    - name: Check MSRV for core with Rust ${{ env.MSRV }}
+      run: cargo +${{ env.MSRV }} check --locked --all-features --verbose
 
   test-native-linux:
     strategy:

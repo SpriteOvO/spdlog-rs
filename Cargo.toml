@@ -8,7 +8,7 @@ members = [
 
 [workspace.package]
 edition = "2021"
-rust-version = "1.66.1"
+rust-version = "1.66.1" # When updating this, also update: src/lib.rs, README.md
 repository = "https://github.com/SpriteOvO/spdlog-rs"
 license = "MIT OR Apache-2.0"
 keywords = ["spdlog", "log", "logging"]

@@ -51,7 +51,6 @@ Due to the complexity of combining crate feature gates, this repository provides
 
 <!--
 When updating this, also update:
-- .github/workflows/ci.yml
 - src/lib.rs
 - Cargo.toml
 -->

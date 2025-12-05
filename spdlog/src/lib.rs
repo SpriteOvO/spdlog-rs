@@ -224,7 +224,6 @@
 //!
 //! <!--
 //! When updating this, also update:
-//! - .github/workflows/ci.yml
 //! - Cargo.toml
 //! - README.md
 //! -->
