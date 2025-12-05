@@ -12,12 +12,15 @@
 //! - [Compile-time filters](#compile-time-filters)
 //! - [Crate feature flags](#crate-feature-flags)
 //! - [Supported Rust versions](#supported-rust-versions)
-//! - Overview of features
-//!   - [Configured via environment variable](init_env_level)
-//!   - [Compile-time and runtime pattern formatter]
-//!   - [Asynchronous support]
-//!   - [Structured logging]
-//!   - [Compatible with log crate](LogCrateProxy)
+//!
+//! # Overview of features
+//!
+//! - [Configured via environment variable](init_env_level)
+//! - [Compile-time and runtime pattern formatter]
+//! - [Asynchronous support]
+//! - [Structured logging]
+//! - [Compatible with log crate](LogCrateProxy)
+//! - [Capturing logs in tests](sink::StdStreamSinkBuilder::via_print_macro)
 //!
 //! [Compile-time and runtime pattern formatter]: formatter/index.html#compile-time-and-runtime-pattern-formatter
 //! [Asynchronous support]: crate::sink::AsyncPoolSink
