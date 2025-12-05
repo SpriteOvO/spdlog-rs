@@ -96,9 +96,8 @@ impl ThreadPool {
     }
 
     pub(super) fn destroy(&self) {
-        if let Some(mut inner) = self.0.swap(None) {
-            // Or use `Arc::into_inner`, but it requires us to bump MSRV.
-            let inner = Arc::get_mut(&mut inner).unwrap();
+        if let Some(inner) = self.0.swap(None) {
+            let mut inner = Arc::into_inner(inner).unwrap();
 
             // drop our sender, threads will break the loop after receiving and processing
             // the remaining tasks
