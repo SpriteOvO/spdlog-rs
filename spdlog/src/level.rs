@@ -1,11 +1,12 @@
 use std::{
     fmt::{self, Debug},
     mem,
+    mem::{align_of, size_of},
     str::FromStr,
     sync::atomic::Ordering,
 };
 
-use crate::Error;
+use crate::{utils::const_assert, Error};
 
 pub(crate) const LOG_LEVEL_NAMES: [&str; Level::count()] =
     ["critical", "error", "warn", "info", "debug", "trace"];
@@ -345,6 +346,13 @@ impl From<LevelFilterLayout> for LevelFilter {
     }
 }
 
+// If these assertions are not satisfied, `mem::transmute` may result in
+// undefined behavior.
+const_assert!(size_of::<Level>() * 2 == size_of::<LevelFilter>());
+const_assert!(align_of::<Level>() * 2 == align_of::<LevelFilter>());
+const_assert!(size_of::<LevelFilterLayout>() == size_of::<LevelFilter>());
+const_assert!(align_of::<LevelFilterLayout>() == align_of::<LevelFilter>());
+
 /// Atomic version of [`LevelFilter`] which can be safely shared between
 /// threads.
 pub struct AtomicLevelFilter {
@@ -403,18 +411,11 @@ impl Debug for AtomicLevelFilter {
 
 #[cfg(test)]
 mod tests {
-    use std::mem::{align_of, size_of};
-
     use super::*;
-    use crate::utils::const_assert;
 
     const_assert!(atomic::Atomic::<Level>::is_lock_free());
     const_assert!(atomic::Atomic::<LevelFilter>::is_lock_free());
     const_assert!(atomic::Atomic::<LevelFilterLayout>::is_lock_free());
-    const_assert!(size_of::<Level>() * 2 == size_of::<LevelFilter>());
-    const_assert!(align_of::<Level>() * 2 == align_of::<LevelFilter>());
-    const_assert!(size_of::<LevelFilterLayout>() == size_of::<LevelFilter>());
-    const_assert!(align_of::<LevelFilterLayout>() == align_of::<LevelFilter>());
 
     #[test]
     fn from_usize() {
