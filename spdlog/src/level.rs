@@ -1,12 +1,10 @@
 use std::{
     fmt::{self, Debug},
-    mem,
-    mem::{align_of, size_of},
     str::FromStr,
     sync::atomic::Ordering,
 };
 
-use crate::{utils::const_assert, Error};
+use crate::Error;
 
 pub(crate) const LOG_LEVEL_NAMES: [&str; Level::count()] =
     ["critical", "error", "warn", "info", "debug", "trace"];
@@ -188,11 +186,24 @@ impl FromStr for Level {
     }
 }
 
+#[repr(u16)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, bytemuck::NoUninit)]
+enum LevelFilterDiscriminant {
+    Off,
+    Equal,
+    NotEqual,
+    MoreSevere,
+    MoreSevereEqual,
+    MoreVerbose,
+    MoreVerboseEqual,
+    All,
+}
+
 /// Represents log level logical filter conditions.
 ///
 /// Use [`LevelFilter::test`] method to check if a [`Level`] satisfies the
 /// filter condition.
-#[repr(u16, align(4))]
+#[repr(align(4))]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum LevelFilter {
     /// Disables all levels.
@@ -277,13 +288,17 @@ impl LevelFilter {
     }
 
     #[must_use]
-    fn discriminant(&self) -> u16 {
-        // SAFETY:
-        // Because `LevelFilter` is marked `repr(u16)`, its layout is a `repr(C)`
-        // `union` between `repr(C)` structs, each of which has the `u16` discriminant
-        // as its first field, so we can read the discriminant without offsetting the
-        // pointer.
-        unsafe { *<*const _>::from(self).cast::<u16>() }
+    fn discriminant(&self) -> LevelFilterDiscriminant {
+        match self {
+            Self::Off => LevelFilterDiscriminant::Off,
+            Self::Equal(_) => LevelFilterDiscriminant::Equal,
+            Self::NotEqual(_) => LevelFilterDiscriminant::NotEqual,
+            Self::MoreSevere(_) => LevelFilterDiscriminant::MoreSevere,
+            Self::MoreSevereEqual(_) => LevelFilterDiscriminant::MoreSevereEqual,
+            Self::MoreVerbose(_) => LevelFilterDiscriminant::MoreVerbose,
+            Self::MoreVerboseEqual(_) => LevelFilterDiscriminant::MoreVerboseEqual,
+            Self::All => LevelFilterDiscriminant::All,
+        }
     }
 
     #[must_use]
@@ -312,11 +327,17 @@ impl From<log::LevelFilter> for LevelFilter {
 
 // Atomic
 
-// This struct must have the same memory layout as `LevelFilter`.
+// This is a version of `LevelFilter` that does not contain uninitialized bytes.
+// For variants like `LevelFilter::{Off,All}`, since they have no field, their
+// field memory space is treated as uninitialized bytes. `Atomic<T>` from the
+// `atomic` crate uses `std::mem::transmute`, and its operations on
+// uninitialized bytes are undefined behavior. Therefore, we created this
+// `LevelFilterLayout` type, where uninitialized bytes are filled with
+// `UNDEFINED_FALLBACK`, enabling safe atomic operations.
 #[repr(C, align(4))]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, bytemuck::NoUninit)]
 struct LevelFilterLayout {
-    discriminant: u16, // Keep the type in sync with the repr of `LevelFilter`
+    discriminant: LevelFilterDiscriminant,
     level: Level,
 }
 
@@ -326,8 +347,6 @@ impl LevelFilterLayout {
 
 impl From<LevelFilter> for LevelFilterLayout {
     fn from(value: LevelFilter) -> Self {
-        // Use `mem::transmute` here is undefined behavior, because `LevelFilter`
-        // contains uninitialized bytes.
         Self {
             discriminant: value.discriminant(),
             level: value.level().unwrap_or(Self::UNDEFINED_FALLBACK),
@@ -336,22 +355,19 @@ impl From<LevelFilter> for LevelFilterLayout {
 }
 
 impl From<LevelFilterLayout> for LevelFilter {
-    fn from(inner: LevelFilterLayout) -> Self {
-        // SAFETY:
-        // - Repr of `LevelFilter` is C union.
-        // - Repr of `LevelFilterLayout` is C struct, it has the same memory layout as
-        //   `LevelFilter`.
-        // - `LevelFilterLayout` doesn't contain uninitialized bytes.
-        unsafe { mem::transmute::<_, LevelFilter>(inner) }
+    fn from(layout: LevelFilterLayout) -> Self {
+        match layout.discriminant {
+            LevelFilterDiscriminant::Off => Self::Off,
+            LevelFilterDiscriminant::Equal => Self::Equal(layout.level),
+            LevelFilterDiscriminant::NotEqual => Self::NotEqual(layout.level),
+            LevelFilterDiscriminant::MoreSevere => Self::MoreSevere(layout.level),
+            LevelFilterDiscriminant::MoreSevereEqual => Self::MoreSevereEqual(layout.level),
+            LevelFilterDiscriminant::MoreVerbose => Self::MoreVerbose(layout.level),
+            LevelFilterDiscriminant::MoreVerboseEqual => Self::MoreVerboseEqual(layout.level),
+            LevelFilterDiscriminant::All => Self::All,
+        }
     }
 }
-
-// If these assertions are not satisfied, `mem::transmute` may result in
-// undefined behavior.
-const_assert!(size_of::<Level>() * 2 == size_of::<LevelFilter>());
-const_assert!(align_of::<Level>() * 2 == align_of::<LevelFilter>());
-const_assert!(size_of::<LevelFilterLayout>() == size_of::<LevelFilter>());
-const_assert!(align_of::<LevelFilterLayout>() == align_of::<LevelFilter>());
 
 /// Atomic version of [`LevelFilter`] which can be safely shared between
 /// threads.
@@ -411,11 +427,18 @@ impl Debug for AtomicLevelFilter {
 
 #[cfg(test)]
 mod tests {
+    use std::mem::size_of;
+
     use super::*;
+    use crate::utils::const_assert;
 
     const_assert!(atomic::Atomic::<Level>::is_lock_free());
     const_assert!(atomic::Atomic::<LevelFilter>::is_lock_free());
     const_assert!(atomic::Atomic::<LevelFilterLayout>::is_lock_free());
+    const_assert!(size_of::<Level>() * 2 == size_of::<LevelFilter>());
+    const_assert!(align_of::<Level>() * 2 == align_of::<LevelFilter>());
+    const_assert!(size_of::<LevelFilter>() == size_of::<LevelFilterLayout>());
+    const_assert!(align_of::<LevelFilter>() == align_of::<LevelFilterLayout>());
 
     #[test]
     fn from_usize() {
