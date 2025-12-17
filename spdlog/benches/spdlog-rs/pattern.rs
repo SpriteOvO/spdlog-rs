@@ -8,7 +8,10 @@ use paste::paste;
 #[cfg(feature = "serde_json")]
 use spdlog::formatter::JsonFormatter;
 use spdlog::{
-    formatter::{pattern, Formatter, FormatterContext, FullFormatter, Pattern, PatternFormatter},
+    formatter::{
+        pattern, Formatter, FormatterContext, FullFormatter, OptFormatter, Pattern,
+        PatternFormatter,
+    },
     prelude::*,
     sink::{Sink, SinkPropAccess},
     Record, StringBuf,
@@ -115,6 +118,11 @@ fn bench_1_full_formatter(bencher: &mut Bencher) {
 #[bench]
 fn bench_1_json_formatter(bencher: &mut Bencher) {
     bench_formatter(bencher, JsonFormatter::new())
+}
+
+#[bench]
+fn bench_1_opt_formatter(bencher: &mut Bencher) {
+    bench_formatter(bencher, OptFormatter::builder().build())
 }
 
 #[bench]
