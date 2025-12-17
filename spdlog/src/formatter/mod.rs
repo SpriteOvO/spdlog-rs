@@ -10,10 +10,10 @@
 //! The easiest way to make a custom formatter is to build a pattern, see
 //! [Compile-time and runtime pattern
 //! formatter](#compile-time-and-runtime-pattern-formatter) below. If pattern
-//! isn't enough for you, take a look at [`OptFormatter`] which allows you to
-//! opt-out fields compared to [`FullFormatter`], or implement [`Formatter`]
-//! trait for your own formatter struct for better flexibility. See the
-//! implementation of [./examples] directory for examples.
+//! isn't enough for you, take a look at [`FullFormatter::builder`] which allows
+//! you to opt-out fields, or implement [`Formatter`] trait for your own
+//! formatter struct for better flexibility. See the implementation of
+//! [./examples] directory for examples.
 //!
 //! # Compile-time and runtime pattern formatter
 //!
@@ -56,7 +56,6 @@ mod full_formatter;
 #[cfg(feature = "serde_json")]
 mod json_formatter;
 mod local_time_cacher;
-mod opt_formatter;
 mod pattern_formatter;
 mod unreachable_formatter;
 
@@ -67,7 +66,6 @@ pub use full_formatter::*;
 #[cfg(feature = "serde_json")]
 pub use json_formatter::*;
 pub(crate) use local_time_cacher::*;
-pub use opt_formatter::*;
 pub use pattern_formatter::*;
 pub(crate) use unreachable_formatter::*;
 
