@@ -1,7 +1,7 @@
 use std::{io, os::raw::c_int};
 
 use crate::{
-    formatter::{Formatter, FormatterContext, OptFormatter},
+    formatter::{Formatter, FormatterContext, FullFormatter},
     sink::{GetSinkProp, Sink, SinkProp},
     sync::*,
     Error, ErrorHandler, Level, LevelFilter, Record, Result, StdResult, StringBuf,
@@ -97,11 +97,11 @@ impl JournaldSink {
 
     /// Gets a builder of `JournaldSink` with default parameters:
     ///
-    /// | Parameter       | Default Value                               |
-    /// |-----------------|---------------------------------------------|
-    /// | [level_filter]  | [`LevelFilter::All`]                        |
-    /// | [formatter]     | [`OptFormatter`] `(!time !source_location)` |
-    /// | [error_handler] | [`ErrorHandler::default()`]                 |
+    /// | Parameter       | Default Value                                |
+    /// |-----------------|----------------------------------------------|
+    /// | [level_filter]  | [`LevelFilter::All`]                         |
+    /// | [formatter]     | [`FullFormatter`] `(!time !source_location)` |
+    /// | [error_handler] | [`ErrorHandler::default()`]                  |
     ///
     /// [level_filter]: JournaldSinkBuilder::level_filter
     /// [formatter]: JournaldSinkBuilder::formatter
@@ -110,7 +110,7 @@ impl JournaldSink {
     pub fn builder() -> JournaldSinkBuilder {
         let prop = SinkProp::default();
         prop.set_formatter(
-            OptFormatter::builder()
+            FullFormatter::builder()
                 .time(false)
                 .source_location(false)
                 .build(),
@@ -179,8 +179,8 @@ impl JournaldSinkBuilder {
 
     /// Specifies a formatter.
     ///
-    /// This parameter is **optional**, and defaults to [`OptFormatter`] `(!time
-    /// !source_location)`.
+    /// This parameter is **optional**, and defaults to [`FullFormatter`]
+    /// `(!time !source_location)`.
     #[must_use]
     pub fn formatter<F>(self, formatter: F) -> Self
     where
