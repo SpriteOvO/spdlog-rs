@@ -21,7 +21,9 @@ check *ARGS:
     cargo check --all-features --tests --examples {{ ARGS }}
 
 _doc-default-features *ARGS:
-    cargo +nightly doc -Z unstable-options -Z rustdoc-scrape-examples {{ ARGS }}
+    cargo +nightly doc \
+        --workspace --exclude spdlog-macros --exclude spdlog-internal \
+        -Z unstable-options -Z rustdoc-scrape-examples {{ ARGS }}
 
 doc *ARGS:
     @{{ just }} _doc-default-features --all-features {{ ARGS }}
