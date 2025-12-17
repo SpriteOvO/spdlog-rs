@@ -227,6 +227,28 @@ jobs:
     - name: Check MSRV for core with Rust ${{ env.MSRV }}
       run: cargo +${{ env.MSRV }} check --locked --all-features --verbose
 
+  miri:
+    if: contains(github.event.pull_request.labels.*.name, 'ci-runs-miri')
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Disable bench dependencies
+      run: ./.github/workflows/disable-bench-deps.sh
+    - uses: extractions/setup-just@v3
+    - name: Install dependencies
+      run: sudo bash ./.github/workflows/install-deps.sh
+    - name: Install Rust nightly
+      run: rustup toolchain install nightly
+    - name: Install Rust Miri
+      run: rustup +nightly component add miri
+    - name: Restore cargo caches
+      uses: Swatinem/rust-cache@v2
+    - name: Run Miri
+      run: just miri test --verbose
+
   test-native-linux:
     strategy:
       fail-fast: false

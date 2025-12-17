@@ -71,6 +71,7 @@ fn run_test() {
     info!("hello async_pool_sink");
 }
 
+#[cfg(not(miri))]
 fn main() {
     // https://github.com/SpriteOvO/spdlog-rs/issues/64
 
@@ -122,3 +123,6 @@ fn main() {
     }
     run_test();
 }
+
+#[cfg(miri)] // Process spawning is not supported in Miri emulation
+fn main() {}

@@ -1,5 +1,11 @@
 just := 'just' + ' --justfile=' + justfile()
 
+#
+
+additive-features := 'log native libsystemd multi-thread runtime-pattern serde serde_json sval'
+selective-features := 'flexible-string source-location std-stream-captured'
+test-features := additive-features + ' ' + selective-features
+
 _:
     @{{ just }} --list
 
@@ -9,10 +15,7 @@ fmt *ARGS:
     cargo +nightly fmt --all {{ ARGS }}
 
 test *ARGS:
-    cargo test \
-      --features 'log native libsystemd multi-thread runtime-pattern serde serde_json sval' \
-      --features 'flexible-string source-location std-stream-captured' \
-      {{ ARGS }}
+    cargo test --features '{{ test-features }}' {{ ARGS }}
 
 clippy *ARGS:
     cargo clippy --all-features --tests --examples {{ ARGS }}
@@ -28,6 +31,9 @@ doc *ARGS:
 
 bench *ARGS:
     cargo +nightly bench --features 'multi-thread runtime-pattern serde_json log' {{ ARGS }}
+
+miri cmd *ARGS:
+    MIRIFLAGS='-Zmiri-disable-isolation' cargo +nightly miri {{ cmd }} --features '{{ test-features }}' {{ ARGS }}
 
 [private]
 publish crate-name *ARGS:

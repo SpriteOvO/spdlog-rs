@@ -3,7 +3,7 @@
 // Rust's print macros will panic if a write fails, we should avoid using
 // print macros internally.
 
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(miri)))]
 fn main() {
     #[cfg(not(feature = "std-stream-captured"))]
     run(); // Should not panic
@@ -28,7 +28,10 @@ fn main() {
     }
 }
 
-#[cfg(not(target_os = "linux"))]
+#[cfg(any(
+    not(target_os = "linux"),
+    miri // Miri does not support closing std stream.
+))]
 fn main() {
     // TODO: Other platforms?
 }

@@ -745,6 +745,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // sleep for multi-threaded is inaccurate in Miri emulation
     fn periodic_flush() {
         let test_sink = Arc::new(TestSink::new());
         let test_logger = Logger::builder()
@@ -903,6 +904,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // sleep for multi-threaded is inaccurate in Miri emulation
     fn fork_logger() {
         let test_sink = (Arc::new(TestSink::new()), Arc::new(TestSink::new()));
         let logger = Arc::new(build_test_logger(|b| b.sink(test_sink.0.clone())));

@@ -326,6 +326,7 @@ mod tests {
     use crate::{prelude::*, test_utils::*};
 
     #[test]
+    #[cfg_attr(miri, ignore)] // sleep for multi-threaded is inaccurate in Miri emulation
     fn default_thread_pool() {
         let counter_sink = Arc::new(TestSink::new());
         let build_logger = || {
@@ -374,6 +375,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // sleep for multi-threaded is inaccurate in Miri emulation
     fn custom_thread_pool() {
         let counter_sink = Arc::new(TestSink::new());
         let thread_pool = ThreadPool::builder().build_arc().unwrap();
@@ -409,6 +411,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)] // sleep for multi-threaded is inaccurate in Miri emulation
     fn async_opeartions() {
         let counter_sink = Arc::new(TestSink::with_delay(Some(Duration::from_secs(1))));
         // The default thread pool is not used here to avoid race when tests are run in

@@ -1,4 +1,5 @@
 #[test]
+#[cfg_attr(miri, ignore)] // Process spawning is not supported in Miri emulation
 fn compile_fail() {
     let t = trybuild::TestCases::new();
 
