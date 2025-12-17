@@ -18,7 +18,7 @@ pub struct Full {
 impl Default for Full {
     fn default() -> Self {
         Full {
-            full_formatter: FullFormatter::without_eol(),
+            full_formatter: FullFormatter::builder().eol(false).build(),
         }
     }
 }
