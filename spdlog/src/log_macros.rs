@@ -20,6 +20,7 @@
 ///
 /// [`Level`]: crate::Level
 #[macro_export]
+#[clippy::format_args]
 macro_rules! log {
     ($($input:tt)+) => {
         $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}], $($input)+)
@@ -54,6 +55,7 @@ macro_rules! __log_impl {
 /// critical!(logger: app_events, "runtime assertion failed.", kv: { left, right });
 /// ```
 #[macro_export]
+#[clippy::format_args]
 macro_rules! critical {
     ($($input:tt)+) => {
         $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Critical], $($input)+)
@@ -77,6 +79,7 @@ macro_rules! critical {
 /// error!(logger: app_events, "app error", kv: { reason = err_info, port });
 /// ```
 #[macro_export]
+#[clippy::format_args]
 macro_rules! error {
     ($($input:tt)+) => {
         $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Error], $($input)+)
@@ -100,6 +103,7 @@ macro_rules! error {
 /// warn!(logger: input_events, "app received warning", kv: { reason = warn_description });
 /// ```
 #[macro_export]
+#[clippy::format_args]
 macro_rules! warn {
     ($($input:tt)+) => {
         $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Warn], $($input)+)
@@ -124,6 +128,7 @@ macro_rules! warn {
 /// info!(logger: conn_events, "successfull connection", kv: { port = conn_info.port, speed = conn_info.speed });
 /// ```
 #[macro_export]
+#[clippy::format_args]
 macro_rules! info {
     ($($input:tt)+) => {
         $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Info], $($input)+)
@@ -148,6 +153,7 @@ macro_rules! info {
 /// debug!(logger: app_events, "new position", kv: { x = pos.x, y = pos.y });
 /// ```
 #[macro_export]
+#[clippy::format_args]
 macro_rules! debug {
     ($($input:tt)+) => {
         $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Debug], $($input)+)
@@ -172,6 +178,7 @@ macro_rules! debug {
 /// trace!(logger: app_events, "position updated", kv: { x = pos.x, y = pos.y });
 /// ```
 #[macro_export]
+#[clippy::format_args]
 macro_rules! trace {
     ($($input:tt)+) => {
         $crate::__normalize_forward!(__log_impl => default[logger: $crate::default_logger(), kv: {}, $crate::Level::Trace], $($input)+)
