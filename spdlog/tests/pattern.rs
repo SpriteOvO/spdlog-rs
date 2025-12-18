@@ -514,6 +514,7 @@ fn runtime_pattern_invalid() {
 
 #[cfg(feature = "multi-thread")]
 #[test]
+#[cfg_attr(miri, ignore)] // sleep for multi-threaded is inaccurate in Miri emulation
 fn test_different_context_thread() {
     use std::time::Duration;
 

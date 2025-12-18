@@ -770,6 +770,7 @@ fn flush_default_logger_at_exit() {
     }
 
     #[must_use]
+    #[cfg(not(miri))]
     fn try_atexit() -> bool {
         use std::os::raw::c_int;
 
@@ -778,6 +779,12 @@ fn flush_default_logger_at_exit() {
         }
 
         (unsafe { atexit(handler) }) == 0
+    }
+
+    #[must_use]
+    #[cfg(miri)] // Miri does not support `atexit`.
+    fn try_atexit() -> bool {
+        false
     }
 
     fn hook_panic() {
