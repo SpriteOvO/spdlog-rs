@@ -31,7 +31,7 @@ fn use_pattern_formatter() {
 }
 
 fn impl_manually() {
-    use std::fmt::Write;
+    use std::fmt::Write as _;
 
     use spdlog::{
         formatter::{Formatter, FormatterContext},

@@ -7,7 +7,7 @@
 // rustdoc bug https://github.com/rust-lang/rust/issues/67295
 
 use std::{
-    fmt::Write,
+    fmt::Write as _,
     marker::PhantomData,
     sync::{atomic::*, Arc, Mutex},
     thread::sleep,

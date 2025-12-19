@@ -1,6 +1,6 @@
 //! Provides a full info formatter.
 
-use std::fmt::{self, Write};
+use std::fmt::{self, Write as _};
 
 use crate::{
     formatter::{fmt_with_time, Formatter, FormatterContext, TimeDate},

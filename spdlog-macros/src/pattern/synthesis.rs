@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use proc_macro2::{Span, TokenStream};
-use quote::ToTokens;
+use quote::ToTokens as _;
 use spdlog_internal::pattern_parser::{
     error::TemplateError,
     parse::{Template, TemplateFormatterToken, TemplateLiteral, TemplateToken},

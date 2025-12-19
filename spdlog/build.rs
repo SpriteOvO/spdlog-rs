@@ -1,7 +1,7 @@
 use std::{
     env,
     error::Error,
-    fmt::Write,
+    fmt::Write as _,
     fs,
     path::{Path, PathBuf},
 };

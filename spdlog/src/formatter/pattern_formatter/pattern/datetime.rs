@@ -1,4 +1,4 @@
-use std::{fmt::Write, marker::PhantomData};
+use std::{fmt::Write as _, marker::PhantomData};
 
 use crate::{
     formatter::pattern_formatter::{Pattern, PatternContext},

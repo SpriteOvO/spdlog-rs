@@ -1,5 +1,5 @@
 use std::{
-    fmt::Write,
+    fmt::Write as _,
     ops::{Range, RangeInclusive},
     sync::{Arc, Mutex},
 };

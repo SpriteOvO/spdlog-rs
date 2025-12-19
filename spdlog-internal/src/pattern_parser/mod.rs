@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use strum::IntoEnumIterator;
+use strum::IntoEnumIterator as _;
 use strum_macros::{EnumDiscriminants, EnumIter, EnumString, IntoStaticStr};
 
 pub mod error;

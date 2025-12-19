@@ -1,4 +1,4 @@
-use std::fmt::Write;
+use std::fmt::Write as _;
 
 use crate::{
     formatter::pattern_formatter::{Pattern, PatternContext},

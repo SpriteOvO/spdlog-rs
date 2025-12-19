@@ -1,7 +1,7 @@
 use crate::{
     formatter::{
         pattern_formatter::{Pattern, PatternContext},
-        Formatter, FullFormatter,
+        Formatter as _, FullFormatter,
     },
     Record, StringBuf,
 };

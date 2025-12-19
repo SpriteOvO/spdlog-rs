@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{quote, ToTokens as _};
 use syn::{
     braced, bracketed,
-    parse::{discouraged::Speculative, Parse, ParseStream},
+    parse::{discouraged::Speculative as _, Parse, ParseStream},
     Expr, Ident, Token,
 };
 
