@@ -1,7 +1,7 @@
 build() {
-    cargo build --example native_windows --features native,source-location --verbose
-    mv ./target/debug/examples/native_windows ./target/debug/examples/native_windows_srcloc
-    cargo build --example native_windows --features native --verbose
+    cargo build --example native-windows --features native,source-location --verbose
+    mv ./target/debug/examples/native-windows ./target/debug/examples/native-windows-srcloc
+    cargo build --example native-windows --features native --verbose
 }
 
 run() {
@@ -12,8 +12,8 @@ run() {
     # Wait for dbgview to start up and create the log file
     while [ ! -f ./dbgview.log ]; do sleep 1; done
 
-    ./target/debug/examples/native_windows
-    ./target/debug/examples/native_windows_srcloc
+    ./target/debug/examples/native-windows
+    ./target/debug/examples/native-windows-srcloc
 
     # Wait for dbgview to flush the log file
     while [ ! -s ./dbgview.log ]; do sleep 1; done

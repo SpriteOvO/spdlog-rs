@@ -1,17 +1,17 @@
 build() {
-    cross build --target x86_64-linux-android --example native_android --features native,android-ndk,source-location --verbose
-    mv ./target/x86_64-linux-android/debug/examples/native_android ./target/x86_64-linux-android/debug/examples/native_android_srcloc
-    cross build --target x86_64-linux-android --example native_android --features native,android-ndk --verbose
+    cross build --target x86_64-linux-android --example native-android --features native,android-ndk,source-location --verbose
+    mv ./target/x86_64-linux-android/debug/examples/native-android ./target/x86_64-linux-android/debug/examples/native-android-srcloc
+    cross build --target x86_64-linux-android --example native-android --features native,android-ndk --verbose
 }
 
 run() {
     adb root
-    adb push ./target/x86_64-linux-android/debug/examples/native_android /data
-    adb push ./target/x86_64-linux-android/debug/examples/native_android_srcloc /data
+    adb push ./target/x86_64-linux-android/debug/examples/native-android /data
+    adb push ./target/x86_64-linux-android/debug/examples/native-android-srcloc /data
 
     adb logcat -b all -c
-    adb shell /data/native_android
-    adb shell /data/native_android_srcloc
+    adb shell /data/native-android
+    adb shell /data/native-android-srcloc
     adb logcat -s "spdlog-rs-example" -d > ./logcat.log
     cat ./logcat.log
     cat ./logcat.log | grep "I spdlog-rs-example: \[demo] info message from spdlog-rs's AndroidSink"

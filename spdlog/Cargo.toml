@@ -105,113 +105,113 @@ tracing-appender = "=0.2.3"
 rustc_version = "0.4.0"
 
 [[test]]
-name = "global_async_pool_sink"
+name = "global-async-pool-sink"
 harness = false
 required-features = ["multi-thread"]
 [[test]]
-name = "broken_stdio"
+name = "broken-stdio"
 harness = false
 
 [[bench]]
-name = "spdlog_rs"
-path = "benches/spdlog-rs/spdlog_rs.rs"
+name = "spdlog-rs"
+path = "benches/spdlog-rs/spdlog-rs.rs"
 required-features = ["multi-thread"]
 [[bench]]
-name = "spdlog_rs_cmp_cpp"
-path = "benches/spdlog-rs/cmp_cpp.rs"
+name = "spdlog-rs-cmp-cpp"
+path = "benches/spdlog-rs/cmp-cpp.rs"
 harness = false
 [[bench]]
-name = "spdlog_rs_cmp_cpp_async"
-path = "benches/spdlog-rs/cmp_cpp_async.rs"
+name = "spdlog-rs-cmp-cpp-async"
+path = "benches/spdlog-rs/cmp-cpp-async.rs"
 harness = false
 required-features = ["multi-thread"]
 [[bench]]
-name = "spdlog_rs_pattern"
+name = "spdlog-rs-pattern"
 path = "benches/spdlog-rs/pattern.rs"
 required-features = ["runtime-pattern", "serde_json"]
 [[bench]]
-name = "spdlog_rs_log_crate_proxy"
-path = "benches/spdlog-rs/log_crate_proxy.rs"
+name = "spdlog-rs-log-crate-proxy"
+path = "benches/spdlog-rs/log-crate-proxy.rs"
 required-features = ["log"]
 [[bench]]
-name = "spdlog_rs_kv"
+name = "spdlog-rs-kv"
 path = "benches/spdlog-rs/kv.rs"
 [[bench]]
 name = "fast_log"
 path = "benches/fast_log/main.rs"
 harness = false
 [[bench]]
-name = "fast_log_1_file_async"
-path = "benches/fast_log/1_file_async.rs"
+name = "fast_log-1-file-async"
+path = "benches/fast_log/1-file-async.rs"
 [[bench]]
-name = "fast_log_2_rotating_file_size_async"
-path = "benches/fast_log/2_rotating_file_size_async.rs"
+name = "fast_log-2-rotating-file-size-async"
+path = "benches/fast_log/2-rotating-file-size-async.rs"
 [[bench]]
-name = "fast_log_3_rotating_daily_async"
-path = "benches/fast_log/3_rotating_daily_async.rs"
+name = "fast_log-3-rotating-daily-async"
+path = "benches/fast_log/3-rotating-daily-async.rs"
 [[bench]]
-name = "fast_log_4_level_off"
-path = "benches/fast_log/4_level_off.rs"
+name = "fast_log-4-level-off"
+path = "benches/fast_log/4-level-off.rs"
 [[bench]]
 name = "fern"
 path = "benches/fern/main.rs"
 harness = false
 [[bench]]
-name = "fern_1_file"
-path = "benches/fern/1_file.rs"
+name = "fern-1-file"
+path = "benches/fern/1-file.rs"
 [[bench]]
-name = "fern_2_level_off"
-path = "benches/fern/2_level_off.rs"
+name = "fern-2-level-off"
+path = "benches/fern/2-level-off.rs"
 [[bench]]
 name = "ftlog"
 path = "benches/ftlog/main.rs"
 harness = false
 [[bench]]
-name = "ftlog_1_file_async"
-path = "benches/ftlog/1_file_async.rs"
+name = "ftlog-1-file-async"
+path = "benches/ftlog/1-file-async.rs"
 [[bench]]
-name = "ftlog_2_rotating_daily"
-path = "benches/ftlog/2_rotating_daily.rs"
+name = "ftlog-2-rotating-daily"
+path = "benches/ftlog/2-rotating-daily.rs"
 [[bench]]
-name = "ftlog_3_level_off"
-path = "benches/ftlog/3_level_off.rs"
+name = "ftlog-3-level-off"
+path = "benches/ftlog/3-level-off.rs"
 [[bench]]
 name = "logforth"
 path = "benches/logforth/main.rs"
 harness = false
 [[bench]]
-name = "logforth_1_file_async"
-path = "benches/logforth/1_file_async.rs"
+name = "logforth-1-file-async"
+path = "benches/logforth/1-file-async.rs"
 [[bench]]
-name = "logforth_2_rotating_file_size_async"
-path = "benches/logforth/2_rotating_file_size_async.rs"
+name = "logforth-2-rotating-file-size-async"
+path = "benches/logforth/2-rotating-file-size-async.rs"
 [[bench]]
-name = "logforth_3_rotating_daily_async"
-path = "benches/logforth/3_rotating_daily_async.rs"
+name = "logforth-3-rotating-daily-async"
+path = "benches/logforth/3-rotating-daily-async.rs"
 [[bench]]
-name = "logforth_4_level_off"
-path = "benches/logforth/4_level_off.rs"
+name = "logforth-4-level-off"
+path = "benches/logforth/4-level-off.rs"
 
 [[example]]
-name = "06_log_crate"
+name = "06-log-crate"
 required-features = ["log"]
 doc-scrape-examples = true
 [[example]]
-name = "07_async"
+name = "07-async"
 required-features = ["multi-thread"]
 doc-scrape-examples = true
 [[example]]
-name = "native_linux"
+name = "native-linux"
 path = "examples/native/linux.rs"
 required-features = ["native", "libsystemd"]
 doc-scrape-examples = true
 [[example]]
-name = "native_windows"
+name = "native-windows"
 path = "examples/native/windows.rs"
 required-features = ["native"]
 doc-scrape-examples = true
 [[example]]
-name = "native_android"
+name = "native-android"
 path = "examples/native/android.rs"
 required-features = ["native", "android-ndk"]
 doc-scrape-examples = true
