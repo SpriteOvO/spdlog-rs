@@ -2,7 +2,7 @@
 
 use std::{
     convert::Infallible,
-    io::{self, Write},
+    io::{self, IsTerminal as _, Write},
     // Import `str` module for function `std::str::from_utf8`, because method `str::from_utf8` is
     // stabilized since Rust 1.87.
     //
@@ -188,7 +188,6 @@ impl StdStreamSink {
 
     #[must_use]
     fn should_render_style(style_mode: StyleMode, stream: StdStream) -> bool {
-        use is_terminal::IsTerminal;
         let is_terminal = match stream {
             StdStream::Stdout => io::stdout().is_terminal(),
             StdStream::Stderr => io::stderr().is_terminal(),
