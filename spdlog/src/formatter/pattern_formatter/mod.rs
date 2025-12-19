@@ -5,7 +5,7 @@ pub mod __pattern;
 #[cfg(feature = "runtime-pattern")]
 mod runtime;
 
-use std::{fmt::Write, sync::Arc};
+use std::{fmt::Write as _, sync::Arc};
 
 use dyn_clone::*;
 #[cfg(feature = "runtime-pattern")]

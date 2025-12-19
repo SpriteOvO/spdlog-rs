@@ -53,7 +53,7 @@ impl GetSinkProp for WinDebugSink {
 impl Sink for WinDebugSink {
     fn log(&self, record: &Record) -> Result<()> {
         #[cfg(windows)] // https://github.com/rust-lang/rust/issues/97976
-        use std::os::windows::ffi::OsStrExt;
+        use std::os::windows::ffi::OsStrExt as _;
 
         let mut string_buf = StringBuf::new();
         let mut ctx = FormatterContext::new();

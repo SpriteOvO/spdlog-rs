@@ -1,6 +1,6 @@
 use std::{
     env,
-    fmt::Write,
+    fmt::Write as _,
     os::raw::c_int,
     process::{self, Stdio},
     sync::{

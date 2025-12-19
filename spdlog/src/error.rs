@@ -8,7 +8,7 @@
 use std::{
     error::Error as StdError,
     fmt::{self, Display},
-    io::{self, Write},
+    io::{self, Write as _},
     result,
     sync::Arc,
 };

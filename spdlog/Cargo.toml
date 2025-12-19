@@ -17,6 +17,9 @@ cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
 [lib]
 name = "spdlog"
 
+[lints]
+workspace = true
+
 [features]
 level-off      = []
 level-critical = []

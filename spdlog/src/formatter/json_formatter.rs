@@ -1,11 +1,11 @@
 use std::{
-    fmt::{self, Write},
+    fmt::{self, Write as _},
     marker::PhantomData,
     time::SystemTime,
 };
 
 use serde::{
-    ser::{SerializeMap, SerializeStruct},
+    ser::{SerializeMap as _, SerializeStruct as _},
     Serialize, Serializer,
 };
 

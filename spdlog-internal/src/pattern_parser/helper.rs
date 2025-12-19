@@ -1,5 +1,5 @@
 use nom::{
-    error::{Error, ErrorKind, ParseError},
+    error::{Error, ErrorKind, ParseError as _},
     Err, IResult,
 };
 
@@ -55,7 +55,7 @@ pub(crate) fn take_until_unbalanced(
 
 #[cfg(test)]
 mod tests {
-    use nom::{bytes::complete::tag, error::ErrorKind, sequence::delimited, Parser};
+    use nom::{bytes::complete::tag, error::ErrorKind, sequence::delimited, Parser as _};
 
     use super::*;
 

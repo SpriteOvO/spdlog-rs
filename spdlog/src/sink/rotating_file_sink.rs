@@ -6,7 +6,7 @@ use std::{
     ffi::OsString,
     fs::{self, File},
     hash::Hash,
-    io::{BufWriter, Write},
+    io::{BufWriter, Write as _},
     path::{Path, PathBuf},
     result::Result as StdResult,
     time::{Duration, SystemTime},

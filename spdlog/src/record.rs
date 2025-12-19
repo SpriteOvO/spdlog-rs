@@ -1,5 +1,5 @@
 use std::{
-    borrow::{Borrow, Cow},
+    borrow::{Borrow as _, Cow},
     cell::RefCell,
     time::SystemTime,
 };

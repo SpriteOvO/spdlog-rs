@@ -1,6 +1,6 @@
 use std::{
     env,
-    fmt::Write,
+    fmt::Write as _,
     fs,
     path::{Path, PathBuf},
     process::{self, Stdio},
