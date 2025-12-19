@@ -1,17 +1,17 @@
 error: unexpected end of input, expected identifier
- --> tests/compile_fail/pattern_macro_syntax.rs:8:79
+ --> tests/compile-fail/pattern-macro-syntax.rs:8:79
   |
 8 |     pattern!("{logger} {$custom_pat}", {$custom_pat} => custom_pat_creator, {$} => custom_pat_creator);
   |                                                                               ^
 
 error: unexpected token, expected `}`
- --> tests/compile_fail/pattern_macro_syntax.rs:9:85
+ --> tests/compile-fail/pattern-macro-syntax.rs:9:85
   |
 9 |     pattern!("{logger} {$custom_pat}", {$custom_pat} => custom_pat_creator, {$custom-pat2} => custom_pat_creator);
   |                                                                                     ^
 
 error: expected identifier
-  --> tests/compile_fail/pattern_macro_syntax.rs:10:79
+  --> tests/compile-fail/pattern-macro-syntax.rs:10:79
    |
 10 |     pattern!("{logger} {$custom_pat}", {$custom_pat} => custom_pat_creator, {$2custom_pat} => custom_pat_creator);
    |                                                                               ^^^^^^^^^^^

@@ -28,7 +28,7 @@ fn test_source_location() {
     log::info!("text");
     assert_eq!(
         sink.clone_string(),
-        format!("(log_crate_proxy::log_crate_proxy.rs) text{__EOL}")
+        format!("(log_crate_proxy::log-crate-proxy.rs) text{__EOL}")
     );
 }
 
