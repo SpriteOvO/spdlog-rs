@@ -18,14 +18,12 @@ fn use_pattern_formatter() {
 
     // Building a pattern formatter with a pattern.
     // The `pattern!` macro will parse the template string at compile-time.
-    let new_formatter = Box::new(PatternFormatter::new(pattern!(
-        "{datetime} - {^{level}} - {payload}{eol}"
-    )));
+    let new_formatter = PatternFormatter::new(pattern!("{datetime} - {^{level}} - {payload}{eol}"));
 
     // Setting the new formatter for each sink of the default logger.
-    for sink in spdlog::default_logger().sinks() {
-        sink.set_formatter(new_formatter.clone())
-    }
+    spdlog::default_logger()
+        .sinks()
+        .set_formatter(new_formatter);
 
     info!("format by `PatternFormatter`");
 }
@@ -64,12 +62,12 @@ fn impl_manually() {
     }
 
     // Building a custom formatter.
-    let new_formatter = Box::new(MyFormatter);
+    let new_formatter = MyFormatter;
 
     // Setting the new formatter for each sink of the default logger.
-    for sink in spdlog::default_logger().sinks() {
-        sink.set_formatter(new_formatter.clone())
-    }
+    spdlog::default_logger()
+        .sinks()
+        .set_formatter(new_formatter);
 
     info!("format by `MyFormatter` (impl manually)");
 }

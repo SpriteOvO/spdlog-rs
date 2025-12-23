@@ -103,7 +103,7 @@ impl DedupSink {
     pub fn builder() -> DedupSinkBuilder<()> {
         DedupSinkBuilder {
             prop: SinkProp::default(),
-            sinks: vec![],
+            sinks: Sinks::new(),
             skip_duration: (),
         }
     }
@@ -173,9 +173,7 @@ impl SinkPropAccess for DedupSink {
     }
 
     fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        for sink in &self.sinks {
-            sink.set_formatter(formatter.clone())
-        }
+        self.sinks.set_formatter_boxed(formatter);
     }
 
     fn set_error_handler(&self, handler: ErrorHandler) {

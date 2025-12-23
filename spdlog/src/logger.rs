@@ -168,7 +168,7 @@ impl Logger {
         LoggerBuilder {
             name: None,
             level_filter: LevelFilter::MoreSevereEqual(Level::Info),
-            sinks: vec![],
+            sinks: vec![].into(),
             flush_level_filter: LevelFilter::Off,
             error_handler: ErrorHandler::default(),
         }
@@ -356,7 +356,7 @@ impl Logger {
 
     /// Gets a reference to sinks in the logger.
     #[must_use]
-    pub fn sinks(&self) -> &[Arc<dyn Sink>] {
+    pub fn sinks(&self) -> &Sinks {
         &self.sinks
     }
 

@@ -115,13 +115,8 @@ struct Args {
 fn main() {
     let args = Args::parse_from(env::args().filter(|arg| arg != "--bench"));
 
-    let formatter = Box::new(PatternFormatter::new(pattern!(
-        "[{^{level}}] {payload}{eol}"
-    )));
-    spdlog::default_logger()
-        .sinks()
-        .iter()
-        .for_each(|sink| sink.set_formatter(formatter.clone()));
+    let formatter = PatternFormatter::new(pattern!("[{^{level}}] {payload}{eol}"));
+    spdlog::default_logger().sinks().set_formatter(formatter);
 
     bench_threaded_logging(1, args.iters);
     bench_threaded_logging(args.threads, args.iters);
