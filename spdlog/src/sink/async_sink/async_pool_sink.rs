@@ -3,7 +3,7 @@ use crate::{
     formatter::{Formatter, UnreachableFormatter},
     sink::{OverflowPolicy, Sink, SinkProp, SinkPropAccess, Sinks},
     sync::*,
-    Error, ErrorHandler, LevelFilter, Record, RecordOwned, Result, ThreadPool,
+    utils, Error, ErrorHandler, LevelFilter, Record, RecordOwned, Result, ThreadPool,
 };
 
 /// A [combined sink], logging and flushing asynchronously (thread-pool-based).
@@ -109,9 +109,8 @@ impl SinkPropAccess for AsyncPoolSink {
     /// For [`AsyncPoolSink`], the function performs the same call to all
     /// internal sinks.
     fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        for sink in &self.backend.sinks {
-            sink.set_formatter(formatter.clone())
-        }
+        utils::for_each_with!(self.backend.sinks, formatter, |(sink, formatter)| sink
+            .set_formatter(formatter));
     }
 
     fn set_error_handler(&self, handler: ErrorHandler) {
