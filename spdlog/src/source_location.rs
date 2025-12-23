@@ -108,7 +108,7 @@ impl SourceLocation {
 /// # Examples
 ///
 /// ```
-/// use spdlog::{SourceLocation, source_location_current};
+/// use spdlog::{source_location_current, SourceLocation};
 ///
 /// let source_location: Option<SourceLocation> = source_location_current!();
 /// ```

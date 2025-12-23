@@ -41,7 +41,10 @@ use crate::{
 /// RotationPolicy::FileSize(1024 * 1024 * 10);
 ///
 /// // Rotating every day at 15:30.
-/// RotationPolicy::Daily { hour: 15, minute: 30 };
+/// RotationPolicy::Daily {
+///     hour: 15,
+///     minute: 30,
+/// };
 ///
 /// // Rotating every hour.
 /// RotationPolicy::Hourly;
