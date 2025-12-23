@@ -379,6 +379,7 @@ impl AtomicLevelFilter {
     const ORDERING: Ordering = Ordering::Relaxed;
 
     /// Creates a new `AtomicLevelFilter`.
+    #[must_use]
     pub fn new(init: LevelFilter) -> Self {
         Self {
             inner: atomic::Atomic::new(init.into()),

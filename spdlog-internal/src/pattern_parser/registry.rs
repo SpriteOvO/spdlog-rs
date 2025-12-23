@@ -14,6 +14,7 @@ pub struct PatternRegistry<F> {
 }
 
 impl<F> PatternRegistry<F> {
+    #[must_use]
     pub fn with_builtin() -> Self {
         let mut registry = Self {
             formatters: HashMap::new(),

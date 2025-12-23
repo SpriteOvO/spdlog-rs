@@ -104,14 +104,17 @@ impl BuiltInFormatter {
         BuiltInFormatterInner::iter().map(BuiltInFormatter)
     }
 
+    #[must_use]
     pub fn struct_name(&self) -> &'static str {
         BuiltInFormatterInnerDiscriminants::from(self.0).into()
     }
 
+    #[must_use]
     pub fn placeholder(&self) -> &'static str {
         self.0.into()
     }
 
+    #[must_use]
     pub fn inner(&self) -> BuiltInFormatterInner {
         self.0
     }

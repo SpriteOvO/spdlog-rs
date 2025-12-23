@@ -100,6 +100,7 @@ pub struct Key<'a>(RefStr<'a>);
 
 impl Key<'_> {
     /// Gets the key string.
+    #[must_use]
     pub fn as_str(&self) -> &str {
         self.0.get()
     }
@@ -107,6 +108,7 @@ impl Key<'_> {
 
 impl<'a> Key<'a> {
     #[doc(hidden)]
+    #[must_use]
     pub fn __from_static_str(key: &'static str) -> Self {
         Key(RefStr::new_static(key))
     }
@@ -187,6 +189,7 @@ pub struct KeyValues<'a>(KeyValuesInner<'a>);
 
 impl<'a> KeyValues<'a> {
     /// Gets the number of key-value pairs.
+    #[must_use]
     pub fn len(&self) -> usize {
         match self.0 {
             KeyValuesInner::Borrowed(p) => p.len(),
@@ -195,6 +198,7 @@ impl<'a> KeyValues<'a> {
     }
 
     /// Checks if there are no key-value pairs.
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         match self.0 {
             KeyValuesInner::Borrowed(p) => p.is_empty(),
@@ -203,6 +207,7 @@ impl<'a> KeyValues<'a> {
     }
 
     /// Gets the value of the specified key.
+    #[must_use]
     pub fn get(&self, key: Key) -> Option<Value<'a>> {
         match self.0 {
             KeyValuesInner::Borrowed(p) => {
@@ -274,6 +279,7 @@ impl<'a> IntoIterator for KeyValues<'a> {
 }
 
 /// Represents an iterator over key-value pairs.
+#[must_use]
 pub struct KeyValuesIter<'a>(KeyValuesIterInner<'a>);
 
 impl<'a> Iterator for KeyValuesIter<'a> {
