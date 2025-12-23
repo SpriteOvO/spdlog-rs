@@ -2,7 +2,7 @@ use std::{cmp::Ordering, convert::Infallible, sync::Arc, time::Duration};
 
 use crate::{
     formatter::Formatter,
-    sink::{GetSinkProp, Sink, SinkProp, Sinks},
+    sink::{Sink, SinkProp, SinkPropAccess, Sinks},
     sync::*,
     Error, ErrorHandler, LevelFilter, Record, RecordOwned, Result,
 };
@@ -163,9 +163,23 @@ impl DedupSink {
     }
 }
 
-impl GetSinkProp for DedupSink {
-    fn prop(&self) -> &SinkProp {
-        &self.prop
+impl SinkPropAccess for DedupSink {
+    fn level_filter(&self) -> LevelFilter {
+        self.prop.level_filter()
+    }
+
+    fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.prop.set_level_filter(level_filter);
+    }
+
+    fn set_formatter(&self, formatter: Box<dyn Formatter>) {
+        for sink in &self.sinks {
+            sink.set_formatter(formatter.clone())
+        }
+    }
+
+    fn set_error_handler(&self, handler: ErrorHandler) {
+        self.prop.set_error_handler(handler);
     }
 }
 
