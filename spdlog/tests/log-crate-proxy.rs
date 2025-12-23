@@ -21,7 +21,7 @@ fn test_source_location() {
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
     let _guard = GLOBAL_LOG_CRATE_PROXY_MUTEX.lock().unwrap();
-    spdlog::init_log_crate_proxy().ok();
+    _ = spdlog::init_log_crate_proxy();
     spdlog::log_crate_proxy().set_logger(Some(logger));
     log::set_max_level(log::LevelFilter::Trace);
 
@@ -40,7 +40,7 @@ fn test_target() {
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
     let _guard = GLOBAL_LOG_CRATE_PROXY_MUTEX.lock().unwrap();
-    spdlog::init_log_crate_proxy().ok();
+    _ = spdlog::init_log_crate_proxy();
     spdlog::log_crate_proxy().set_logger(Some(logger));
     log::set_max_level(log::LevelFilter::Trace);
 
@@ -56,7 +56,7 @@ fn test_kv() {
     let logger = Arc::new(build_test_logger(|b| b.sink(sink.clone())));
 
     let _guard = GLOBAL_LOG_CRATE_PROXY_MUTEX.lock().unwrap();
-    spdlog::init_log_crate_proxy().ok();
+    _ = spdlog::init_log_crate_proxy();
     spdlog::log_crate_proxy().set_logger(Some(logger));
     log::set_max_level(log::LevelFilter::Trace);
 
