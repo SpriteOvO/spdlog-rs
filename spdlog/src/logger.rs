@@ -377,9 +377,8 @@ impl Logger {
     /// ```
     /// use spdlog::prelude::*;
     ///
-    /// spdlog::default_logger().set_error_handler(|err| {
-    ///     panic!("An error occurred in the default logger: {}", err)
-    /// });
+    /// spdlog::default_logger()
+    ///     .set_error_handler(|err| panic!("An error occurred in the default logger: {}", err));
     /// ```
     pub fn set_error_handler<F: Into<ErrorHandler>>(&self, handler: F) {
         *self.error_handler.write_expect() = handler.into();

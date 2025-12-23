@@ -161,6 +161,7 @@ enum KeyValuesIterInner<'a> {
 ///
 /// ```
 /// use std::fmt::Write;
+///
 /// use spdlog::{
 ///     formatter::{Formatter, FormatterContext},
 ///     Record, StringBuf,
