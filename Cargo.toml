@@ -15,4 +15,5 @@ keywords = ["spdlog", "log", "logging"]
 categories = ["development-tools::debugging"]
 
 [workspace.lints.clippy]
+must_use_candidate = "warn"
 unused_trait_names = "warn"
