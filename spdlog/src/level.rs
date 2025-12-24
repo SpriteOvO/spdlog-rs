@@ -618,4 +618,9 @@ mod tests {
         produce_all(LevelFilter::MoreVerboseEqual).for_each(assert_this);
         assert_this(LevelFilter::All);
     }
+
+    #[test]
+    fn level_count() {
+        assert_eq!(Level::iter().count(), Level::count());
+    }
 }
