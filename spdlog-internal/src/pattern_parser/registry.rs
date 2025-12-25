@@ -143,7 +143,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pattern_parser::BuiltInFormatterInner;
 
     #[test]
     fn custom_pattern_names_checker() {
@@ -179,7 +178,7 @@ mod tests {
         assert_eq!(
             check(["date"]),
             Err(Error::ConflictName {
-                existing: PatternKind::BuiltIn(BuiltInFormatter(BuiltInFormatterInner::Date)),
+                existing: PatternKind::BuiltIn(BuiltInFormatter::Date),
                 incoming: PatternKind::Custom {
                     placeholder: "date".into(),
                     factory: ()
@@ -190,7 +189,7 @@ mod tests {
             check(["date", "a", "a"]),
             Err(Error::Multiple(vec![
                 Error::ConflictName {
-                    existing: PatternKind::BuiltIn(BuiltInFormatter(BuiltInFormatterInner::Date)),
+                    existing: PatternKind::BuiltIn(BuiltInFormatter::Date),
                     incoming: PatternKind::Custom {
                         placeholder: "date".into(),
                         factory: ()
@@ -212,7 +211,7 @@ mod tests {
             check(["date", "a", "a", "a"]),
             Err(Error::Multiple(vec![
                 Error::ConflictName {
-                    existing: PatternKind::BuiltIn(BuiltInFormatter(BuiltInFormatterInner::Date)),
+                    existing: PatternKind::BuiltIn(BuiltInFormatter::Date),
                     incoming: PatternKind::Custom {
                         placeholder: "date".into(),
                         factory: ()
@@ -234,7 +233,7 @@ mod tests {
             check(["b", "date", "a", "b", "a", "a"]),
             Err(Error::Multiple(vec![
                 Error::ConflictName {
-                    existing: PatternKind::BuiltIn(BuiltInFormatter(BuiltInFormatterInner::Date)),
+                    existing: PatternKind::BuiltIn(BuiltInFormatter::Date),
                     incoming: PatternKind::Custom {
                         placeholder: "date".into(),
                         factory: ()
