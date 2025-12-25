@@ -1,9 +1,8 @@
 use spdlog_internal::pattern_parser::{
     error::TemplateError,
     parse::{Template, TemplateToken},
-    BuiltInFormatter, BuiltInFormatterInner, Error as PatternParserError,
-    PatternKind as GenericPatternKind, PatternRegistry as GenericPatternRegistry,
-    Result as PatternParserResult,
+    BuiltInFormatter, Error as PatternParserError, PatternKind as GenericPatternKind,
+    PatternRegistry as GenericPatternRegistry, Result as PatternParserResult,
 };
 
 use super::{Pattern, PatternContext, __pattern as pattern};
@@ -205,8 +204,8 @@ impl Synthesiser {
 fn build_builtin_pattern(builtin: &BuiltInFormatter) -> Box<dyn Pattern> {
     macro_rules! match_builtin {
         (  $($name:ident),+ $(,)? ) => {
-            match builtin.inner() {
-                $(BuiltInFormatterInner::$name => Box::<pattern::$name>::default()),+
+            match builtin {
+                $(BuiltInFormatter::$name => Box::<pattern::$name>::default()),+
             }
         };
     }

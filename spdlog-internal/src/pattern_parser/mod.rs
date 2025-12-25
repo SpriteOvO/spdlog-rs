@@ -1,8 +1,5 @@
 use std::borrow::Cow;
 
-use strum::IntoEnumIterator as _;
-use strum_macros::{EnumDiscriminants, EnumIter, EnumString, IntoStaticStr};
-
 pub mod error;
 mod helper;
 pub mod parse;
@@ -11,113 +8,85 @@ mod registry;
 pub use error::{Error, Result};
 pub use registry::{check_custom_pattern_names, PatternRegistry};
 
-#[derive(
-    Clone, Copy, Debug, Eq, PartialEq, IntoStaticStr, EnumDiscriminants, EnumIter, EnumString,
-)]
-#[strum_discriminants(derive(IntoStaticStr))]
-pub enum BuiltInFormatterInner {
-    #[strum(serialize = "weekday_name")]
-    AbbrWeekdayName,
-    #[strum(serialize = "weekday_name_full")]
-    WeekdayName,
-    #[strum(serialize = "month_name")]
-    AbbrMonthName,
-    #[strum(serialize = "month_name_full")]
-    MonthName,
-    #[strum(serialize = "datetime")]
-    FullDateTime,
-    #[strum(serialize = "year_short")]
-    ShortYear,
-    #[strum(serialize = "year")]
-    Year,
-    #[strum(serialize = "date_short")]
-    ShortDate,
-    #[strum(serialize = "date")]
-    Date,
-    #[strum(serialize = "month")]
-    Month,
-    #[strum(serialize = "day")]
-    Day,
-    #[strum(serialize = "hour")]
-    Hour,
-    #[strum(serialize = "hour_12")]
-    Hour12,
-    #[strum(serialize = "minute")]
-    Minute,
-    #[strum(serialize = "second")]
-    Second,
-    #[strum(serialize = "millisecond")]
-    Millisecond,
-    #[strum(serialize = "microsecond")]
-    Microsecond,
-    #[strum(serialize = "nanosecond")]
-    Nanosecond,
-    #[strum(serialize = "am_pm")]
-    AmPm,
-    #[strum(serialize = "time_12")]
-    Time12,
-    #[strum(serialize = "time_short")]
-    ShortTime,
-    #[strum(serialize = "time")]
-    Time,
-    #[strum(serialize = "tz_offset")]
-    TzOffset,
-    #[strum(serialize = "unix_timestamp")]
-    UnixTimestamp,
-    #[strum(serialize = "full")]
-    Full,
-    #[strum(serialize = "level")]
-    Level,
-    #[strum(serialize = "level_short")]
-    ShortLevel,
-    #[strum(serialize = "source")]
-    Source,
-    #[strum(serialize = "file_name")]
-    SourceFilename,
-    #[strum(serialize = "file")]
-    SourceFile,
-    #[strum(serialize = "line")]
-    SourceLine,
-    #[strum(serialize = "column")]
-    SourceColumn,
-    #[strum(serialize = "module_path")]
-    SourceModulePath,
-    #[strum(serialize = "logger")]
-    LoggerName,
-    #[strum(serialize = "payload")]
-    Payload,
-    #[strum(serialize = "kv")]
-    KV,
-    #[strum(serialize = "pid")]
-    ProcessId,
-    #[strum(serialize = "tid")]
-    ThreadId,
-    #[strum(serialize = "eol")]
-    Eol,
+macro_rules! for_builtin_formatters {
+    ( ( $($macro_params:tt)* ) => { $($macro_impl:tt)* }; ) => {
+        mod __private {
+            macro_rules! __callback {
+                ( $($macro_params)* ) => { $($macro_impl)* };
+            }
+            pub(crate) use __callback;
+        }
+        __private::__callback! {
+            AbbrWeekdayName => "weekday_name",
+            WeekdayName => "weekday_name_full",
+            AbbrMonthName => "month_name",
+            MonthName => "month_name_full",
+            FullDateTime => "datetime",
+            ShortYear => "year_short",
+            Year => "year",
+            ShortDate => "date_short",
+            Date => "date",
+            Month => "month",
+            Day => "day",
+            Hour => "hour",
+            Hour12 => "hour_12",
+            Minute => "minute",
+            Second => "second",
+            Millisecond => "millisecond",
+            Microsecond => "microsecond",
+            Nanosecond => "nanosecond",
+            AmPm => "am_pm",
+            Time12 => "time_12",
+            ShortTime => "time_short",
+            Time => "time",
+            TzOffset => "tz_offset",
+            UnixTimestamp => "unix_timestamp",
+            Full => "full",
+            Level => "level",
+            ShortLevel => "level_short",
+            Source => "source",
+            SourceFilename => "file_name",
+            SourceFile => "file",
+            SourceLine => "line",
+            SourceColumn => "column",
+            SourceModulePath => "module_path",
+            LoggerName => "logger",
+            Payload => "payload",
+            KV => "kv",
+            ProcessId => "pid",
+            ThreadId => "tid",
+            Eol => "eol",
+        }
+    };
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BuiltInFormatter(BuiltInFormatterInner);
+for_builtin_formatters! {
+    ( $( $variant:ident => $serialize:literal ),+ $(,)? ) => {
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        pub enum BuiltInFormatter {
+            $( $variant ),+
+        }
 
-impl BuiltInFormatter {
-    pub fn iter() -> impl Iterator<Item = BuiltInFormatter> {
-        BuiltInFormatterInner::iter().map(BuiltInFormatter)
-    }
+        impl BuiltInFormatter {
+            pub fn iter() -> impl Iterator<Item = Self> {
+                [ $( Self::$variant ),+ ].into_iter()
+            }
 
-    #[must_use]
-    pub fn struct_name(&self) -> &'static str {
-        BuiltInFormatterInnerDiscriminants::from(self.0).into()
-    }
+            #[must_use]
+            pub fn struct_name(&self) -> &'static str {
+                match self {
+                    $( Self::$variant => stringify!($variant), )+
+                }
+            }
 
-    #[must_use]
-    pub fn placeholder(&self) -> &'static str {
-        self.0.into()
-    }
-
-    #[must_use]
-    pub fn inner(&self) -> BuiltInFormatterInner {
-        self.0
-    }
+            #[must_use]
+            pub fn placeholder(&self) -> &'static str {
+                match self {
+                    $( Self::$variant => $serialize, )+
+                }
+            }
+        }
+    };
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
