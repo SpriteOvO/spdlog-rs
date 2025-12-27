@@ -56,6 +56,17 @@ macro_rules! const_assert {
 #[allow(unused_imports)]
 pub(crate) use const_assert;
 
+// https://github.com/rust-lang/rust-clippy/issues/16291
+macro_rules! for_each_with {
+    ( $slice:expr, $value:expr, $closure:expr ) => {
+        $slice
+            .iter()
+            .zip(std::iter::repeat_n($value, $slice.len()))
+            .for_each($closure)
+    };
+}
+pub(crate) use for_each_with;
+
 // TODO: Remove this when MSRV reaches 1.82.
 pub(crate) fn is_none_or<T>(opt: Option<T>, f: impl FnOnce(T) -> bool) -> bool {
     match opt {
