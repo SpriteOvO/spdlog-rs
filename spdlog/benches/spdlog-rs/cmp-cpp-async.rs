@@ -139,13 +139,8 @@ fn main() {
         args.queue_size = Some(cmp::min(args.message_count + 2, 8192));
     }
 
-    let formatter = Box::new(PatternFormatter::new(pattern!(
-        "[{^{level}}] {payload}{eol}"
-    )));
-    spdlog::default_logger()
-        .sinks()
-        .iter()
-        .for_each(|sink| sink.set_formatter(formatter.clone()));
+    let formatter = PatternFormatter::new(pattern!("[{^{level}}] {payload}{eol}"));
+    spdlog::default_logger().sinks().set_formatter(formatter);
 
     const SLOT_SIZE: usize = std::mem::size_of::<spdlog::RecordOwned>();
     let queue_size = args.queue_size.unwrap();

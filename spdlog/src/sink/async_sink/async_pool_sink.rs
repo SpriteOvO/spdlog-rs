@@ -109,9 +109,7 @@ impl SinkPropAccess for AsyncPoolSink {
     /// For [`AsyncPoolSink`], the function performs the same call to all
     /// internal sinks.
     fn set_formatter(&self, formatter: Box<dyn Formatter>) {
-        for sink in &self.backend.sinks {
-            sink.set_formatter(formatter.clone())
-        }
+        self.backend.sinks.set_formatter_boxed(formatter);
     }
 
     fn set_error_handler(&self, handler: ErrorHandler) {

@@ -39,7 +39,7 @@ mod std_stream_sink;
 mod win_debug_sink;
 mod write_sink;
 
-use std::ops::Deref;
+use std::{iter, ops, slice, vec};
 
 #[cfg(any(
     all(target_os = "android", feature = "native", feature = "android-ndk"),
@@ -116,7 +116,7 @@ impl SinkProp {
     ///
     /// The returned value is a lock guard, so please avoid storing it in a
     /// variable with a longer lifetime.
-    pub fn formatter<'a>(&'a self) -> impl Deref<Target = dyn Formatter> + 'a {
+    pub fn formatter<'a>(&'a self) -> impl ops::Deref<Target = dyn Formatter> + 'a {
         RwLockMappableReadGuard::map(self.formatter.read(), |f| &**f)
     }
 
@@ -264,5 +264,99 @@ pub trait Sink: SinkPropAccess + Sync + Send {
     }
 }
 
-/// Container type for [`Sink`]s.
-pub type Sinks = Vec<Arc<dyn Sink>>;
+/// Ordered collection container for [`Sink`].
+///
+/// In the current implementation, it is essentially a wrapper for `Vec<Arc<dyn
+/// Sink>>`. Through this wrapper users can batch-configure the sinks within it
+/// without manually iterating through them.
+#[derive(Clone)]
+pub struct Sinks(Vec<Arc<dyn Sink>>);
+
+impl Sinks {
+    #[must_use]
+    pub fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    pub fn set_level_filter(&self, level_filter: LevelFilter) {
+        self.0
+            .iter()
+            .for_each(|sink| sink.set_level_filter(level_filter));
+    }
+
+    pub fn set_formatter<F>(&self, formatter: F)
+    where
+        F: Formatter + Clone + 'static,
+    {
+        self.set_formatter_boxed(Box::new(formatter));
+    }
+
+    pub fn set_formatter_boxed(&self, formatter: Box<dyn Formatter>) {
+        // TODO: When MSRV >= 1.82, use `zip` + `repeat_n`
+        // https://github.com/SpriteOvO/spdlog-rs/pull/117
+        self.0
+            .iter()
+            .for_each(|sink| sink.set_formatter(formatter.clone()));
+    }
+
+    pub fn set_error_handler(&self, handler: ErrorHandler) {
+        // TODO: When MSRV >= 1.82, use `zip` + `repeat_n`
+        // https://github.com/SpriteOvO/spdlog-rs/pull/117
+        self.0
+            .iter()
+            .for_each(|sink| sink.set_error_handler(handler.clone()));
+    }
+}
+
+impl From<Vec<Arc<dyn Sink>>> for Sinks {
+    fn from(v: Vec<Arc<dyn Sink>>) -> Self {
+        Self(v)
+    }
+}
+
+impl ops::Deref for Sinks {
+    type Target = Vec<Arc<dyn Sink>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ops::DerefMut for Sinks {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl IntoIterator for Sinks {
+    type Item = Arc<dyn Sink>;
+    type IntoIter = vec::IntoIter<Arc<dyn Sink>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Sinks {
+    type Item = &'a Arc<dyn Sink>;
+    type IntoIter = slice::Iter<'a, Arc<dyn Sink>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a mut Sinks {
+    type Item = &'a mut Arc<dyn Sink>;
+    type IntoIter = slice::IterMut<'a, Arc<dyn Sink>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter_mut()
+    }
+}
+
+impl Default for Sinks {
+    fn default() -> Self {
+        Self::new()
+    }
+}
