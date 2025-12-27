@@ -35,7 +35,7 @@ Add this to `Cargo.toml`:
 spdlog-rs = "0.5"
 ```
 
-The documentation of this crate is hosted on [docs.rs], and you can learn examples under [./examples] directory along with it.
+The documentation of this crate is hosted on [docs.rs/~], and you can learn examples under [./examples] directory along with it.
 
 If you have any trouble while using this crate, please don't hesitate to [open a discussion] for help. For feature requests or bug reports, please [open an issue].
 
@@ -78,7 +78,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [Benchmarks]: https://github.com/SpriteOvO/spdlog-rs/blob/main/spdlog/benches/README.md
 [#103]: https://github.com/SpriteOvO/spdlog-rs/issues/103
 [./examples]: https://github.com/SpriteOvO/spdlog-rs/tree/main/spdlog/examples
-[docs.rs]: https://docs.rs/spdlog-rs/
+[docs.rs/~]: https://docs.rs/spdlog-rs/
 [open a discussion]: https://github.com/SpriteOvO/spdlog-rs/discussions/new
 [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
 [`main-dev`]: https://github.com/SpriteOvO/spdlog-rs/tree/main-dev
