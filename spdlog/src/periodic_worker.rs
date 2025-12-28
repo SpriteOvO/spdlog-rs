@@ -11,7 +11,7 @@ impl PeriodicWorker {
     // Panic if the `interval.is_zero()` is `true`.
     #[allow(clippy::mutex_atomic)]
     #[must_use]
-    pub fn new(callback: impl Fn() -> bool + Send + 'static, interval: Duration) -> Self {
+    pub fn new<F: Fn() -> bool + Send + 'static>(callback: F, interval: Duration) -> Self {
         if interval.is_zero() {
             panic!("PeriodicWorker: the interval cannot be zero")
         }

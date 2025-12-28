@@ -130,11 +130,12 @@ impl StringSink {
         }
     }
 
-    pub fn with(
-        cb: impl FnOnce(
+    pub fn with<F>(cb: F) -> Self
+    where
+        F: FnOnce(
             WriteSinkBuilder<Vec<u8>, PhantomData<Vec<u8>>>,
         ) -> WriteSinkBuilder<Vec<u8>, PhantomData<Vec<u8>>>,
-    ) -> Self {
+    {
         Self {
             underlying: cb(WriteSink::builder().target(vec![])).build().unwrap(),
         }
@@ -196,7 +197,10 @@ impl Default for NoModFormatter {
 //////////////////////////////////////////////////
 
 #[must_use]
-pub fn build_test_logger(cb: impl FnOnce(&mut LoggerBuilder) -> &mut LoggerBuilder) -> Logger {
+pub fn build_test_logger<F>(cb: F) -> Logger
+where
+    F: FnOnce(&mut LoggerBuilder) -> &mut LoggerBuilder,
+{
     let mut builder = Logger::builder();
     cb(builder.error_handler(|err| panic!("{}", err)));
     builder.build().unwrap()
@@ -214,18 +218,24 @@ macro_rules! assert_trait {
 pub use assert_trait;
 
 #[must_use]
-pub fn echo_logger_from_pattern(
-    pattern: impl Pattern + Clone + 'static,
+pub fn echo_logger_from_pattern<P>(
+    pattern: P,
     name: Option<&'static str>,
-) -> (Logger, Arc<StringSink>) {
+) -> (Logger, Arc<StringSink>)
+where
+    P: Pattern + Clone + 'static,
+{
     echo_logger_from_formatter(PatternFormatter::new(pattern), name)
 }
 
 #[must_use]
-pub fn echo_logger_from_formatter(
-    formatter: impl Formatter + 'static,
+pub fn echo_logger_from_formatter<P>(
+    formatter: P,
     name: Option<&'static str>,
-) -> (Logger, Arc<StringSink>) {
+) -> (Logger, Arc<StringSink>)
+where
+    P: Formatter + 'static,
+{
     let sink = Arc::new(StringSink::with(|b| b.formatter(formatter)));
 
     let mut builder = Logger::builder();

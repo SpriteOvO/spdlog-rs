@@ -10,7 +10,7 @@ pub(crate) use ref_str::*;
 
 use crate::{Error, Result};
 
-pub fn open_file(path: impl AsRef<Path>, truncate: bool) -> Result<File> {
+pub fn open_file<P: AsRef<Path>>(path: P, truncate: bool) -> Result<File> {
     if let Some(parent) = path.as_ref().parent() {
         if !parent.exists() {
             fs::create_dir_all(parent).map_err(Error::CreateDirectory)?;
@@ -31,8 +31,8 @@ pub fn open_file(path: impl AsRef<Path>, truncate: bool) -> Result<File> {
         .map_err(Error::OpenFile)
 }
 
-pub fn open_file_bufw(
-    path: impl AsRef<Path>,
+pub fn open_file_bufw<P: AsRef<Path>>(
+    path: P,
     truncate: bool,
     capacity: Option<usize>,
 ) -> Result<BufWriter<File>> {
