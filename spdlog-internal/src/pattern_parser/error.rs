@@ -1,12 +1,11 @@
 use std::fmt::{self, Display};
 
 use nom::error::Error as NomError;
-use thiserror::Error;
 
 use super::PatternKind;
 use crate::impossible;
 
-#[derive(Error, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Error {
     ConflictName {
         existing: PatternKind<()>,
@@ -82,7 +81,7 @@ impl Display for Error {
     }
 }
 
-#[derive(Error, Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum TemplateError {
     WrongPatternKindReference {
         is_builtin_as_custom: bool,

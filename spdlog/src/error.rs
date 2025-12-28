@@ -13,82 +13,69 @@ use std::{
     sync::Arc,
 };
 
-use thiserror::Error;
-
 pub use crate::env_level::EnvLevelError;
 #[cfg(feature = "multi-thread")]
 use crate::{sink::Task, RecordOwned};
 
 /// Contains most errors of this crate.
-#[derive(Error, Debug)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
     /// Returned by [`Formatter`]s when an error occurs in formatting a record.
     ///
     /// [`Formatter`]: crate::formatter::Formatter
-    #[error("format record error: {0}")]
     FormatRecord(fmt::Error),
 
     /// Returned by [`Sink`]s when an error occurs in writing a record to the
     /// target.
     ///
     /// [`Sink`]: crate::sink::Sink
-    #[error("write record error: {0}")]
     WriteRecord(io::Error),
 
     /// Returned by [`Sink`]s when an error occurs in flushing the buffer.
     ///
     /// [`Sink`]: crate::sink::Sink
-    #[error("flush buffer error: {0}")]
     FlushBuffer(io::Error),
 
     /// Returned by [`Sink`]s when an error occurs in creating a directory.
     ///
     /// [`Sink`]: crate::sink::Sink
-    #[error("create directory error: {0}")]
     CreateDirectory(io::Error),
 
     /// Returned by [`Sink`]s when an error occurs in opening a file.
     ///
     /// [`Sink`]: crate::sink::Sink
-    #[error("open file error: {0}")]
     OpenFile(io::Error),
 
     /// Returned by [`Sink`]s when an error occurs in querying the metadata of a
     /// file.
     ///
     /// [`Sink`]: crate::sink::Sink
-    #[error("query file metadata error: {0}")]
     QueryFileMetadata(io::Error),
 
     /// Returned by [`Sink`]s when an error occurs in renaming a file.
     ///
     /// [`Sink`]: crate::sink::Sink
-    #[error("rename file error: {0}")]
     RenameFile(io::Error),
 
     /// Returned by [`Sink`]s when an error occurs in removing a file.
     ///
     /// [`Sink`]: crate::sink::Sink
-    #[error("remove file error: {0}")]
     RemoveFile(io::Error),
 
     /// Returned by [`from_str`] when the string doesn't match any of the log
     /// levels.
     ///
     /// [`from_str`]: std::str::FromStr::from_str
-    #[error("attempted to convert a string that doesn't match an existing log level: {0}")]
     ParseLevel(String),
 
     /// Returned if an invalid argument was passed in.
-    #[error("invalid argument {0}")]
-    InvalidArgument(#[from] InvalidArgumentError),
+    InvalidArgument(InvalidArgumentError),
 
     /// Returned by [`Sink`]s when an error occurs in sending to the channel.
     ///
     /// [`Sink`]: crate::sink::Sink
     #[cfg(feature = "multi-thread")]
-    #[error("failed to send message to channel: {0}")]
     SendToChannel(SendToChannelError, SendToChannelErrorDropped),
 
     /// Returned by [`runtime_pattern!`] when the pattern is failed to be built
@@ -96,14 +83,12 @@ pub enum Error {
     ///
     /// [`runtime_pattern!`]: crate::formatter::runtime_pattern
     #[cfg(feature = "runtime-pattern")]
-    #[error("failed to build pattern at runtime: {0}")]
     BuildPattern(BuildPatternError),
 
     /// Returned by [`Formatter`]s when an error occurs in serializing a log.
     ///
     /// [`Formatter`]: crate::formatter::Formatter
     #[cfg(feature = "serde")]
-    #[error("failed to serialize log: {0}")]
     SerializeRecord(io::Error),
 
     /// Returned from a downstream implementation of `spdlog-rs`. Its actual
@@ -112,21 +97,55 @@ pub enum Error {
     /// When downstream crates encounter errors, other more specific error
     /// variants should be used first, this variant should only be used as a
     /// last option when other variant types are incompatible.
-    #[error("{0}")]
     Downstream(Box<dyn StdError + Send + Sync>),
 
     /// Returned when multiple errors occurred.
-    #[error("{0:?}")]
     Multiple(Vec<Error>),
 
     #[cfg(test)]
     #[doc(hidden)]
-    #[error("{0}")]
     __ForInternalTestsUseOnly(i32),
 }
 
+impl StdError for Error {}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::FormatRecord(err) => write!(f, "format record error: {err}"),
+            Self::WriteRecord(err) => write!(f, "write record error: {err}"),
+            Self::FlushBuffer(err) => write!(f, "flush buffer error: {err}"),
+            Self::CreateDirectory(err) => write!(f, "create directory error: {err}"),
+            Self::OpenFile(err) => write!(f, "open file error: {err}"),
+            Self::QueryFileMetadata(err) => write!(f, "query file metadata error: {err}"),
+            Self::RenameFile(err) => write!(f, "rename file error: {err}"),
+            Self::RemoveFile(err) => write!(f, "remove file error: {err}"),
+            Self::ParseLevel(level_str) => {
+                write!(f, "attempted to convert a string that doesn't match an existing log level: {level_str}")
+            }
+            Self::InvalidArgument(err) => write!(f, "invalid argument {err}"),
+            #[cfg(feature = "multi-thread")]
+            Self::SendToChannel(err, _) => write!(f, "failed to send message to channel: {err}"),
+            #[cfg(feature = "runtime-pattern")]
+            Self::BuildPattern(err) => write!(f, "failed to build pattern at runtime: {err}"),
+            #[cfg(feature = "serde")]
+            Self::SerializeRecord(err) => write!(f, "failed to serialize log: {err}"),
+            Self::Downstream(err) => write!(f, "{err}"),
+            Self::Multiple(errs) => write!(f, "{errs:?}"),
+            #[cfg(test)]
+            Self::__ForInternalTestsUseOnly(i) => write!(f, "{i}"),
+        }
+    }
+}
+
+impl From<InvalidArgumentError> for Error {
+    fn from(err: InvalidArgumentError) -> Self {
+        Self::InvalidArgument(err)
+    }
+}
+
 /// Indicates that an invalid parameter was specified.
-#[derive(Error, Debug)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum InvalidArgumentError {
     /// Invalid logger name.
@@ -135,15 +154,13 @@ pub enum InvalidArgumentError {
     /// requirements.
     ///
     /// [`LoggerBuilder::name`]: crate::LoggerBuilder::name
-    #[error("'logger name': {0}")]
-    LoggerName(#[from] SetLoggerNameError),
+    LoggerName(SetLoggerNameError),
 
     /// Invalid [`RotationPolicy`].
     ///
     /// See the documentation of [`RotationPolicy`] for the input requirements.
     ///
     /// [`RotationPolicy`]: crate::sink::RotationPolicy
-    #[error("'rotation policy': {0}")]
     RotationPolicy(String),
 
     /// Invalid thread pool capacity.
@@ -151,8 +168,26 @@ pub enum InvalidArgumentError {
         since = "0.5.0",
         note = "non-zero thread pool capacity is now guarded by NonZeroUsize type"
     )]
-    #[error("'thread pool capacity': {0}")]
     ThreadPoolCapacity(String),
+}
+
+impl StdError for InvalidArgumentError {}
+
+impl Display for InvalidArgumentError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::LoggerName(err) => write!(f, "'logger name': {err}"),
+            Self::RotationPolicy(value) => write!(f, "'rotation policy': {value}"),
+            #[allow(deprecated)]
+            Self::ThreadPoolCapacity(value) => write!(f, "'thread pool capacity': {value}"),
+        }
+    }
+}
+
+impl From<SetLoggerNameError> for InvalidArgumentError {
+    fn from(err: SetLoggerNameError) -> Self {
+        Self::LoggerName(err)
+    }
 }
 
 /// Indicates that an invalid logger name was set.
@@ -160,7 +195,7 @@ pub enum InvalidArgumentError {
 /// See the documentation of [`LoggerBuilder::name`] for the name requirements.
 ///
 /// [`LoggerBuilder::name`]: crate::LoggerBuilder::name
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub struct SetLoggerNameError {
     name: String,
 }
@@ -178,6 +213,8 @@ impl SetLoggerNameError {
     }
 }
 
+impl StdError for SetLoggerNameError {}
+
 impl Display for SetLoggerNameError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "name '{}' contains disallowed characters", self.name)
@@ -186,7 +223,7 @@ impl Display for SetLoggerNameError {
 
 /// Indicates that an error occurred while sending to channel.
 #[cfg(feature = "multi-thread")]
-#[derive(Error, Debug)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum SendToChannelError {
     /// The channel is full.
@@ -194,12 +231,23 @@ pub enum SendToChannelError {
     /// The variant returned only when [`OverflowPolicy::DropIncoming`] is used.
     ///
     /// [`OverflowPolicy::DropIncoming`]: crate::sink::async_sink::OverflowPolicy::DropIncoming
-    #[error("the channel is full")]
     Full,
 
     /// The channel is disconnected.
-    #[error("the channel is disconnected")]
     Disconnected,
+}
+
+#[cfg(feature = "multi-thread")]
+impl StdError for SendToChannelError {}
+
+#[cfg(feature = "multi-thread")]
+impl Display for SendToChannelError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Full => write!(f, "the channel is full"),
+            Self::Disconnected => write!(f, "the channel is disconnected"),
+        }
+    }
 }
 
 /// Contains data that is dropped after sending to the channel failed.
@@ -271,9 +319,18 @@ impl SendToChannelErrorDropped {
 
 /// Indicates that an error occurred while building a pattern at compile-time.
 #[cfg(feature = "runtime-pattern")]
-#[derive(Error, Debug)]
-#[error("{0}")]
+#[derive(Debug)]
 pub struct BuildPatternError(pub(crate) spdlog_internal::pattern_parser::Error);
+
+#[cfg(feature = "runtime-pattern")]
+impl StdError for BuildPatternError {}
+
+#[cfg(feature = "runtime-pattern")]
+impl Display for BuildPatternError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 /// The result type of this crate.
 pub type Result<T> = result::Result<T, Error>;

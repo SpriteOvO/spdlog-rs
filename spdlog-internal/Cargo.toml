@@ -14,4 +14,3 @@ workspace = true
 
 [dependencies]
 nom = "8.0.0"
-thiserror = "2.0.0"

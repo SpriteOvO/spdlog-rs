@@ -1,9 +1,9 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
     env::VarError,
+    error::Error as StdError,
+    fmt,
 };
-
-use thiserror::Error;
 
 use crate::{sync::*, LevelFilter};
 
@@ -20,18 +20,29 @@ pub(crate) enum EnvLevelLogger {
 }
 
 /// The error type of environment level initialization.
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum EnvLevelError {
     /// Fetch environment variable error.
-    #[error("fetch environment variable error: {0}")]
     FetchEnvVar(VarError),
 
     /// Parse environment variable error, usually caused by incorrect format.
-    #[error("parse environment variable error: {0}")]
     ParseEnvVar(
         /// Parse error description
         String,
     ),
+}
+
+impl StdError for EnvLevelError {}
+
+impl fmt::Display for EnvLevelError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EnvLevelError::FetchEnvVar(err) => write!(f, "fetch environment variable error: {err}"),
+            EnvLevelError::ParseEnvVar(description) => {
+                write!(f, "parse environment variable error: {description}")
+            }
+        }
+    }
 }
 
 impl EnvLevelLogger {
