@@ -21,6 +21,7 @@ Fast, highly configurable Rust logging crate, inspired by the C++ logging librar
     - platform-specific (e.g. `journald` for Linux and `OutputDebugStringW` for Windows);
     - third-party services (maintained in separate repositories):
       - [spdlog-telegram](https://crates.io/crates/spdlog-telegram)
+      - [spdlog-opentelemetry](https://crates.io/crates/spdlog-opentelemetry)
       - ... more ideas? see [#103].
     - and able to implement one yourself.
  - Structured logging.

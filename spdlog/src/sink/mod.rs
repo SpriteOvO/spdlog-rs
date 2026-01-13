@@ -17,6 +17,15 @@
 //! Operations on a combined sink will be forwarded to its sub-sinks according
 //! to the implementation.
 //!
+//! # Third-party service sinks
+//!
+//! Sinks for third-party services are maintained in separate repositories.
+//! Known crates are:
+//!
+//! - [spdlog-telegram](https://crates.io/crates/spdlog-telegram)
+//! - [spdlog-opentelemetry](https://crates.io/crates/spdlog-opentelemetry)
+//! - ... More ideas? See [#103].
+//!
 //! [`Logger`]: crate::logger::Logger
 
 #[cfg(any(

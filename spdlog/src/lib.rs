@@ -95,12 +95,6 @@
 //! [`RotatingFileSink`] that automatically rotates files by time point or file
 //! size, and [`AsyncPoolSink`] that outputs logs asynchronously.
 //!
-//! Sinks for third-party services are maintained in separate repositories.
-//! Known crates are:
-//!
-//! - [spdlog-telegram](https://crates.io/crates/spdlog-telegram)
-//! - ... More ideas? See [#103].
-//!
 //! ## Logger
 //!
 //! A complex program may consist of many separated components.
