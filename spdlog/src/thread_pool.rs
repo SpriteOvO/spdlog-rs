@@ -85,27 +85,44 @@ impl ThreadPool {
 
     pub(super) fn assign_task(&self, task: Task, overflow_policy: OverflowPolicy) -> Result<()> {
         let inner = self.0.load();
-        let sender = inner.as_ref().unwrap().sender.as_ref().unwrap();
+        if let Some(inner) = inner.as_ref() {
+            let sender = inner.sender.as_ref().unwrap();
 
-        match overflow_policy {
-            OverflowPolicy::Block => sender.send(task).map_err(Error::from_crossbeam_send),
-            OverflowPolicy::DropIncoming => sender
-                .try_send(task)
-                .map_err(Error::from_crossbeam_try_send),
+            match overflow_policy {
+                OverflowPolicy::Block => sender.send(task).map_err(Error::from_crossbeam_send),
+                OverflowPolicy::DropIncoming => sender
+                    .try_send(task)
+                    .map_err(Error::from_crossbeam_try_send),
+            }
+        } else {
+            // https://github.com/SpriteOvO/spdlog-rs/issues/120
+            //
+            // The thread pool has been destroyed
+            //
+            // TODO: Return an error and perform the task directly on the current thread.
+            Ok(())
         }
     }
 
     pub(super) fn destroy(&self) {
         if let Some(inner) = self.0.swap(None) {
-            let mut inner = Arc::into_inner(inner).unwrap();
+            // https://github.com/SpriteOvO/spdlog-rs/issues/120
+            //
+            // If a task is being assigned, there will be more than one strong reference,
+            // causing `into_inner` to return `None`.
+            //
+            // TODO: Skip it if it's None. This avoids panic, but might introduce a memory
+            // leak? However, it's not a big deal since this isn't a frequent operation.
+            // Anyway, we should eventually fix it.
+            if let Some(mut inner) = Arc::into_inner(inner) {
+                // drop our sender, threads will break the loop after receiving and processing
+                // the remaining tasks
+                inner.sender.take();
 
-            // drop our sender, threads will break the loop after receiving and processing
-            // the remaining tasks
-            inner.sender.take();
-
-            for thread in &mut inner.threads {
-                if let Some(thread) = thread.take() {
-                    thread.join().expect("failed to join a thread from pool");
+                for thread in &mut inner.threads {
+                    if let Some(thread) = thread.take() {
+                        thread.join().expect("failed to join a thread from pool");
+                    }
                 }
             }
         }
@@ -224,5 +241,74 @@ pub(crate) fn default_thread_pool() -> Arc<ThreadPool> {
             *pool_weak = Arc::downgrade(&pool);
             pool
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{thread::sleep, time::Duration};
+
+    use super::*;
+
+    // https://github.com/SpriteOvO/spdlog-rs/issues/120
+    #[test]
+    fn inner_arc_multiple_strong_refs() {
+        let thread_pool = ThreadPool::builder()
+            .capacity(1.try_into().unwrap())
+            .build_arc()
+            .unwrap();
+
+        let task = || Task::__ForTestUse {
+            sleep: Some(Duration::from_secs(1)),
+        };
+
+        thread_pool
+            .assign_task(task(), OverflowPolicy::Block)
+            .unwrap();
+
+        let (first_blocked_assign, second_blocked_assign, destroy, third_assign) =
+            std::thread::scope(|s| {
+                let first_blocked_assign = s.spawn({
+                    let thread_pool = thread_pool.clone();
+                    move || {
+                        thread_pool
+                            .assign_task(task(), OverflowPolicy::Block)
+                            .unwrap();
+                    }
+                });
+                let second_blocked_assign = s.spawn({
+                    let thread_pool = thread_pool.clone();
+                    move || {
+                        thread_pool
+                            .assign_task(task(), OverflowPolicy::Block)
+                            .unwrap();
+                    }
+                });
+                sleep(Duration::from_millis(200));
+                let destroy = s.spawn({
+                    let thread_pool = thread_pool.clone();
+                    move || {
+                        thread_pool.destroy();
+                    }
+                });
+                let third_assign = s.spawn({
+                    let thread_pool = thread_pool.clone();
+                    move || {
+                        thread_pool
+                            .assign_task(task(), OverflowPolicy::Block)
+                            .unwrap();
+                    }
+                });
+                (
+                    first_blocked_assign.join(),
+                    second_blocked_assign.join(),
+                    destroy.join(),
+                    third_assign.join(),
+                )
+            });
+        first_blocked_assign.unwrap();
+        second_blocked_assign.unwrap();
+        destroy.unwrap();
+        third_assign.unwrap();
     }
 }

@@ -313,6 +313,8 @@ impl SendToChannelErrorDropped {
         match task {
             Task::Log { record, .. } => Self::Record(Box::new(record)),
             Task::Flush { .. } => Self::Flush,
+            #[cfg(test)]
+            Task::__ForTestUse { .. } => unreachable!(),
         }
     }
 }

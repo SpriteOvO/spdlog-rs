@@ -298,6 +298,10 @@ pub(crate) enum Task {
     Flush {
         backend: Arc<Backend>,
     },
+    #[cfg(test)]
+    __ForTestUse {
+        sleep: Option<std::time::Duration>,
+    },
 }
 
 impl Task {
@@ -312,6 +316,12 @@ impl Task {
             Task::Flush { backend } => {
                 if let Err(err) = backend.flush() {
                     backend.handle_error(err)
+                }
+            }
+            #[cfg(test)]
+            Task::__ForTestUse { sleep } => {
+                if let Some(sleep) = sleep {
+                    std::thread::sleep(sleep);
                 }
             }
         }
