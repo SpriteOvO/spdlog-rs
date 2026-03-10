@@ -1,6 +1,6 @@
 [package]
 name = "spdlog-rs"
-version = "0.5.2"
+version = "0.5.3"
 description = "Fast, highly configurable Rust logging crate, inspired by the C++ logging library spdlog"
 exclude = ["/benches"]
 edition.workspace = true
@@ -63,8 +63,8 @@ once_cell = "1.16.0"
 parking_lot = "0.12.0"
 serde = { version = "1.0.163", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.120", optional = true }
-spdlog-internal = { version = "=0.2.0", path = "../spdlog-internal", optional = true }
-spdlog-macros = { version = "=0.3.0", path = "../spdlog-macros" }
+spdlog-internal = { version = "=0.2.1", path = "../spdlog-internal", optional = true }
+spdlog-macros = { version = "=0.3.1", path = "../spdlog-macros" }
 value-bag = { version = "1.11.1", features = ["owned", "inline-i128"] }
 
 [target.'cfg(windows)'.dependencies]
