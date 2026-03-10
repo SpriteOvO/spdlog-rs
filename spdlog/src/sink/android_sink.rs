@@ -12,7 +12,7 @@ use crate::{
 
 #[cfg(not(doc))]
 mod ffi {
-    use android_log_sys::{LogPriority, __android_log_write, c_int};
+    use android_log_sys::{__android_log_write, c_int, LogPriority};
 
     use super::*;
 

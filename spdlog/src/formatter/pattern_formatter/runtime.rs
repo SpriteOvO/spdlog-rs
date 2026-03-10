@@ -5,7 +5,7 @@ use spdlog_internal::pattern_parser::{
     PatternRegistry as GenericPatternRegistry, Result as PatternParserResult,
 };
 
-use super::{Pattern, PatternContext, __pattern as pattern};
+use super::{__pattern as pattern, Pattern, PatternContext};
 use crate::{
     error::{BuildPatternError, Error},
     Record, Result, StringBuf,
