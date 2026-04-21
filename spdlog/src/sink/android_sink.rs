@@ -86,21 +86,6 @@ mod ffi {
 }
 
 /// Represents how to choose a tag for Android logs.
-///
-/// # Log Level Mapping
-///
-/// | spdlog-rs  | Android NDK |
-/// |------------|-------------|
-/// | `Critical` | `FATAL`     |
-/// | `Error`    | `ERROR`     |
-/// | `Warn`     | `WARN`      |
-/// | `Info`     | `INFO`      |
-/// | `Debug`    | `DEBUG`     |
-/// | `Trace`    | `VERBOSE`   |
-///
-/// # Note
-///
-/// It requires linking to Android NDK `liblog`.
 pub enum AndroidLogTag {
     /// The default tag determined by Android NDK.
     Default,
@@ -181,6 +166,21 @@ impl AndroidSinkBuilder {
 }
 
 /// A sink with Android NDK API `__android_log_write` as the target.
+///
+/// # Log Level Mapping
+///
+/// | spdlog-rs  | Android NDK |
+/// |------------|-------------|
+/// | `Critical` | `FATAL`     |
+/// | `Error`    | `ERROR`     |
+/// | `Warn`     | `WARN`      |
+/// | `Info`     | `INFO`      |
+/// | `Debug`    | `DEBUG`     |
+/// | `Trace`    | `VERBOSE`   |
+///
+/// # Note
+///
+/// It requires linking to Android NDK `liblog`.
 pub struct AndroidSink {
     prop: SinkProp,
     tag: AndroidLogTag,
