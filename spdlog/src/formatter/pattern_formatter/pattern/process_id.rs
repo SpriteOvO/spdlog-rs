@@ -46,3 +46,9 @@ fn get_current_process_id() -> u64 {
     let pid = unsafe { winapi::um::processthreadsapi::GetCurrentProcessId() };
     pid as u64
 }
+
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+#[must_use]
+fn get_current_process_id() -> u64 {
+    0 // TODO: Any other magic number to use?
+}

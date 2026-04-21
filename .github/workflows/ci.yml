@@ -15,7 +15,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  ci_targets: "['x86_64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'aarch64-apple-darwin', 'x86_64-apple-ios', 'x86_64-unknown-freebsd', 'x86_64-unknown-illumos', 'aarch64-linux-android']"
+  ci_targets: "['x86_64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'aarch64-apple-darwin', 'x86_64-apple-ios', 'x86_64-unknown-freebsd', 'x86_64-unknown-illumos', 'aarch64-linux-android', 'wasm32-unknown-unknown']"
 
 defaults:
   run:

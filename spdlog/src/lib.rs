@@ -349,7 +349,7 @@ use std::{
 };
 
 use error::EnvLevelError;
-use sink::{Sink, StdStreamSink};
+use sink::Sink;
 use sync::*;
 
 /// The statically resolved log level filter.
@@ -411,21 +411,35 @@ static DEFAULT_LOGGER: OnceCell<ArcSwap<Logger>> = OnceCell::new();
 #[must_use]
 fn default_logger_ref() -> &'static ArcSwap<Logger> {
     DEFAULT_LOGGER.get_or_init(|| {
-        let stdout = StdStreamSink::builder()
-            .stdout()
-            .level_filter(LevelFilter::MoreVerbose(Level::Warn))
-            .build_arc()
-            .unwrap();
+        fn default_sinks() -> impl IntoIterator<Item = Arc<dyn Sink>> {
+            #[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
+            {
+                use sink::StdStreamSink;
 
-        let stderr = StdStreamSink::builder()
-            .stderr()
-            .level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
-            .build_arc()
-            .unwrap();
+                let stdout = StdStreamSink::builder()
+                    .stdout()
+                    .level_filter(LevelFilter::MoreVerbose(Level::Warn))
+                    .build_arc()
+                    .unwrap();
+                let stderr = StdStreamSink::builder()
+                    .stderr()
+                    .level_filter(LevelFilter::MoreSevereEqual(Level::Warn))
+                    .build_arc()
+                    .unwrap();
+                [stdout, stderr] as [Arc<dyn Sink>; 2]
+            }
+            #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+            {
+                [sink::WebConsoleSink::builder().build_arc().unwrap()] as [Arc<dyn Sink>; 1]
+            }
+        }
 
-        let sinks: [Arc<dyn Sink>; 2] = [stdout, stderr];
-
-        let res = ArcSwap::from_pointee(Logger::builder().sinks(sinks).build_default().unwrap());
+        let res = ArcSwap::from_pointee(
+            Logger::builder()
+                .sinks(default_sinks())
+                .build_default()
+                .unwrap(),
+        );
 
         flush_default_logger_at_exit();
         res
@@ -770,7 +784,14 @@ fn flush_default_logger_at_exit() {
             fn atexit(cb: extern "C" fn()) -> c_int;
         }
 
-        (unsafe { atexit(handler) }) == 0
+        #[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
+        let ret = (unsafe { atexit(handler) }) == 0;
+
+        // TODO: FIXME: Provide a explicit shutdown function?
+        #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+        let ret = false;
+
+        ret
     }
 
     fn hook_panic() {

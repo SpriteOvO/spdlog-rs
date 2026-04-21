@@ -52,7 +52,7 @@ impl<'a> Record<'a> {
             inner: Cow::Owned(RecordInner {
                 level,
                 source_location: srcloc,
-                time: SystemTime::now(),
+                time: get_current_time(),
                 tid: get_current_tid(),
             }),
         }
@@ -306,9 +306,31 @@ fn get_current_tid() -> u64 {
         tid as u64
     }
 
+    #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+    #[must_use]
+    fn get_current_tid_inner() -> u64 {
+        0 // TODO: Any other magic number to use?
+    }
+
     thread_local! {
         static TID: RefCell<Option<u64>> = const { RefCell::new(None)} ;
     }
 
     TID.with(|tid| *tid.borrow_mut().get_or_insert_with(get_current_tid_inner))
+}
+
+#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
+#[must_use]
+fn get_current_time() -> SystemTime {
+    SystemTime::now()
+}
+
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+#[must_use]
+fn get_current_time() -> SystemTime {
+    use std::time::Duration;
+
+    SystemTime::UNIX_EPOCH
+        .checked_add(Duration::from_millis(web_sys::js_sys::Date::now() as u64))
+        .unwrap()
 }

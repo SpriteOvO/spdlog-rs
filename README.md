@@ -18,7 +18,11 @@ Fast, highly configurable Rust logging crate, inspired by the C++ logging librar
  - Various combinable sinks:
     - standard streams with optional color support;
     - files (single file, rotating hourly, daily, periodically or by file size);
-    - platform-specific (e.g. `journald` for Linux and `OutputDebugStringW` for Windows);
+    - platform-specific:
+      - `journald` for Linux
+      - `OutputDebugStringW` for Windows
+      - Web console API for WebAssembly
+      - Android NDK API for Android
     - third-party services (maintained in separate repositories):
       - [spdlog-telegram](https://crates.io/crates/spdlog-telegram)
       - [spdlog-opentelemetry](https://crates.io/crates/spdlog-opentelemetry)
