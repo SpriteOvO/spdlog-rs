@@ -1,6 +1,6 @@
 # Benchmarks
 
-[The tracking page] for benchmark changes for each commit during development.
+[This tracking page] records benchmark changes for each commit during development.
 
 Run `just bench` in the root directory of this repository for benchmarking.
 
@@ -47,4 +47,4 @@ Compiler for C++ spdlog is `MSVC 19.44.35217.0`.
 
 ![](./results/chart-cpp-async.svg)
 
-[The tracking page]: https://spriteovo.github.io/spdlog-rs/dev/benchmarks/
+[This tracking page]: https://spriteovo.github.io/spdlog-rs/dev/benchmarks/
