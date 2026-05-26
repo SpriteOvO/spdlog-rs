@@ -84,5 +84,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [open an issue]: https://github.com/SpriteOvO/spdlog-rs/issues/new/choose
 [`main-dev`]: https://github.com/SpriteOvO/spdlog-rs/tree/main-dev
 [`main`]: https://github.com/SpriteOvO/spdlog-rs/tree/main
-[./justfile]: /justfile
+[./justfile]: https://github.com/SpriteOvO/spdlog-rs/blob/main/justfile
 [`just`]: https://github.com/casey/just
