@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777248022861,
+  "lastUpdate": 1782622070782,
   "repoUrl": "https://github.com/SpriteOvO/spdlog-rs",
   "entries": {
     "spdlog-rs on Linux": [
@@ -136847,6 +136847,552 @@ window.BENCHMARK_DATA = {
             "name": "bench_5_rt_year_short",
             "value": 101.99,
             "range": "± 1.69",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sakiiily@aosc.io",
+            "name": "eatradish",
+            "username": "eatradish"
+          },
+          "committer": {
+            "email": "SpriteOvO@gmail.com",
+            "name": "Asuna",
+            "username": "SpriteOvO"
+          },
+          "distinct": true,
+          "id": "42810125446b7a8f4c853d121a10c700f6fa394d",
+          "message": "Update `env-filter` to v1",
+          "timestamp": "2026-06-28T12:42:05+08:00",
+          "tree_id": "d76dbbd9e446a94b53314e9511845b8af34d3b3a",
+          "url": "https://github.com/SpriteOvO/spdlog-rs/commit/42810125446b7a8f4c853d121a10c700f6fa394d"
+        },
+        "date": 1782622067954,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "bench_1_file",
+            "value": 182.85,
+            "range": "± 2.91",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_2_file_async",
+            "value": 238.07,
+            "range": "± 3.37",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_3_rotating_file_size",
+            "value": 185.65,
+            "range": "± 84.81",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_rotating_daily",
+            "value": 183.43,
+            "range": "± 4.76",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_level_off",
+            "value": 2.18,
+            "range": "± 0.02",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_log_crate_proxy",
+            "value": 87.32,
+            "range": "± 2.77",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_log_crate_proxy_kv",
+            "value": 193.25,
+            "range": "± 2.9",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_1_full_formatter",
+            "value": 119.62,
+            "range": "± 13.28",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_1_json_formatter",
+            "value": 185.66,
+            "range": "± 9.89",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_2_full_pattern_ct",
+            "value": 191.35,
+            "range": "± 12.09",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_3_full_pattern_rt",
+            "value": 197.61,
+            "range": "± 18.52",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_am_pm",
+            "value": 97.3,
+            "range": "± 1.98",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_column",
+            "value": 65.38,
+            "range": "± 0.32",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_date",
+            "value": 105.91,
+            "range": "± 4.08",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_date_short",
+            "value": 107.08,
+            "range": "± 3.06",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_datetime",
+            "value": 129.5,
+            "range": "± 8.19",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_day",
+            "value": 96.37,
+            "range": "± 1.47",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_eol",
+            "value": 66.48,
+            "range": "± 0.36",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_file",
+            "value": 65.67,
+            "range": "± 0.36",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_file_name",
+            "value": 65.67,
+            "range": "± 0.47",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_full",
+            "value": 132.11,
+            "range": "± 14.38",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_hour",
+            "value": 95.95,
+            "range": "± 1.67",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_hour_12",
+            "value": 95.72,
+            "range": "± 1.74",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_level",
+            "value": 67.04,
+            "range": "± 1.07",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_level_short",
+            "value": 66.33,
+            "range": "± 0.52",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_line",
+            "value": 65.37,
+            "range": "± 0.8",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_logger",
+            "value": 65.98,
+            "range": "± 0.5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_microsecond",
+            "value": 112.71,
+            "range": "± 3.61",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_millsecond",
+            "value": 110.39,
+            "range": "± 5.16",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_minute",
+            "value": 96.13,
+            "range": "± 1.19",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_module_path",
+            "value": 65.73,
+            "range": "± 0.48",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_month",
+            "value": 96.34,
+            "range": "± 1.82",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_month_name",
+            "value": 96.82,
+            "range": "± 1.93",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_month_name_full",
+            "value": 95.91,
+            "range": "± 3.99",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_nanosecond",
+            "value": 115.16,
+            "range": "± 4.64",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_payload",
+            "value": 67.29,
+            "range": "± 2.54",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_pid",
+            "value": 264.02,
+            "range": "± 6.45",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_second",
+            "value": 95.92,
+            "range": "± 1.59",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_source",
+            "value": 66,
+            "range": "± 0.55",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_tid",
+            "value": 82.64,
+            "range": "± 1.94",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_time",
+            "value": 105.2,
+            "range": "± 3.99",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_time_12",
+            "value": 110.42,
+            "range": "± 5.17",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_time_short",
+            "value": 99.27,
+            "range": "± 1.36",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_tz_offset",
+            "value": 96.67,
+            "range": "± 3.55",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_unix_timestamp",
+            "value": 96.22,
+            "range": "± 3.29",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_weekday_name",
+            "value": 96.69,
+            "range": "± 1.49",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_weekday_name_full",
+            "value": 95.26,
+            "range": "± 3.27",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_year",
+            "value": 96.6,
+            "range": "± 2.21",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_4_ct_year_short",
+            "value": 96.12,
+            "range": "± 1.55",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_am_pm",
+            "value": 101.37,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_column",
+            "value": 69.83,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_date",
+            "value": 111.27,
+            "range": "± 3.17",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_date_short",
+            "value": 111.82,
+            "range": "± 3.04",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_datetime",
+            "value": 140.31,
+            "range": "± 8.78",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_day",
+            "value": 102.81,
+            "range": "± 2.24",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_eol",
+            "value": 69.95,
+            "range": "± 0.6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_file",
+            "value": 70.51,
+            "range": "± 0.52",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_file_name",
+            "value": 70.52,
+            "range": "± 0.73",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_full",
+            "value": 139.02,
+            "range": "± 6.78",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_hour",
+            "value": 102.81,
+            "range": "± 3.42",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_hour_12",
+            "value": 104.41,
+            "range": "± 3.55",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_level",
+            "value": 71.87,
+            "range": "± 1.77",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_level_short",
+            "value": 71.41,
+            "range": "± 0.7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_line",
+            "value": 69.77,
+            "range": "± 1.27",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_logger",
+            "value": 70.77,
+            "range": "± 0.5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_microsecond",
+            "value": 118.96,
+            "range": "± 6.37",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_millsecond",
+            "value": 123.49,
+            "range": "± 4.16",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_minute",
+            "value": 104.13,
+            "range": "± 4.12",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_module_path",
+            "value": 70.48,
+            "range": "± 0.96",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_month",
+            "value": 103.26,
+            "range": "± 2.28",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_month_name",
+            "value": 100.42,
+            "range": "± 1.55",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_month_name_full",
+            "value": 100.43,
+            "range": "± 1.96",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_nanosecond",
+            "value": 138.37,
+            "range": "± 21.79",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_payload",
+            "value": 71.89,
+            "range": "± 1.27",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_pid",
+            "value": 276.87,
+            "range": "± 3.56",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_second",
+            "value": 103.36,
+            "range": "± 2.49",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_source",
+            "value": 71.06,
+            "range": "± 0.46",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_tid",
+            "value": 91.66,
+            "range": "± 1.07",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_time",
+            "value": 109.76,
+            "range": "± 1.56",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_time_12",
+            "value": 116.78,
+            "range": "± 3.26",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_time_short",
+            "value": 105.6,
+            "range": "± 2.94",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_tz_offset",
+            "value": 101.43,
+            "range": "± 3.16",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_unix_timestamp",
+            "value": 101.05,
+            "range": "± 3.13",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_weekday_name",
+            "value": 100.89,
+            "range": "± 0.91",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_weekday_name_full",
+            "value": 100.51,
+            "range": "± 1.17",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_year",
+            "value": 101.44,
+            "range": "± 2.32",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_5_rt_year_short",
+            "value": 103.32,
+            "range": "± 1.95",
             "unit": "ns/iter"
           }
         ]
