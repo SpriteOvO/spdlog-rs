@@ -44,6 +44,8 @@ mod file_sink;
 mod journald_sink;
 mod rotating_file_sink;
 mod std_stream_sink;
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+mod web_console_sink;
 #[cfg(any(all(windows, feature = "native"), all(doc, not(doctest))))]
 mod win_debug_sink;
 mod write_sink;
@@ -66,6 +68,8 @@ pub use file_sink::*;
 pub use journald_sink::*;
 pub use rotating_file_sink::*;
 pub use std_stream_sink::*;
+#[cfg(all(target_family = "wasm", target_os = "unknown"))]
+pub use web_console_sink::*;
 #[cfg(any(all(windows, feature = "native"), all(doc, not(doctest))))]
 pub use win_debug_sink::*;
 pub use write_sink::*;
