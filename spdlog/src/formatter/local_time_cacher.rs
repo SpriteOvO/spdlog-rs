@@ -31,6 +31,30 @@ pub(crate) struct TimeDate<'a> {
     millisecond: u32,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub(crate) enum Hour12 {
+    Am(u32),
+    Pm(u32),
+}
+
+impl Hour12 {
+    #[must_use]
+    pub(crate) fn am_pm_str(&self) -> &'static str {
+        match self {
+            Hour12::Am(_) => "AM",
+            Hour12::Pm(_) => "PM",
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn hour(&self) -> u32 {
+        match self {
+            Hour12::Am(hour) => *hour,
+            Hour12::Pm(hour) => *hour,
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq)]
 struct CacheValues {
     local_time: Zoned,
@@ -46,7 +70,7 @@ struct CacheValues {
     day_str: Option<String>,
     hour: Option<u32>,
     hour_str: Option<String>,
-    hour12: Option<(bool, u32)>,
+    hour12: Option<Hour12>,
     hour12_str: Option<String>,
     am_pm_str: Option<&'static str>,
     minute: Option<u32>,
@@ -148,18 +172,20 @@ impl TimeDate<'_> {
     }
 
     #[must_use]
-    pub(crate) fn hour12(&mut self) -> (bool, u32) {
+    pub(crate) fn hour12(&mut self) -> Hour12 {
         match self.cached.hour12 {
             Some(value) => value,
             None => {
                 let hour = self.hour();
-                let value = (
-                    hour >= 12,
-                    match hour % 12 {
-                        0 => 12,
-                        hour => hour,
-                    },
-                );
+                let value = if hour == 0 {
+                    Hour12::Am(12)
+                } else if hour < 12 {
+                    Hour12::Am(hour)
+                } else if hour == 12 {
+                    Hour12::Pm(12)
+                } else {
+                    Hour12::Pm(hour - 12)
+                };
                 self.cached.hour12 = Some(value);
                 value
             }
@@ -266,7 +292,7 @@ impl TimeDate<'_> {
     #[must_use]
     pub(crate) fn hour12_str(&mut self) -> &str {
         if self.cached.hour12_str.is_none() {
-            self.cached.hour12_str = Some(format!("{:02}", self.hour12().1));
+            self.cached.hour12_str = Some(format!("{:02}", self.hour12().hour()));
         }
         self.cached.hour12_str.as_deref().unwrap()
     }
@@ -276,7 +302,7 @@ impl TimeDate<'_> {
         match self.cached.am_pm_str {
             Some(value) => value,
             None => {
-                let value = if !self.hour12().0 { "AM" } else { "PM" };
+                let value = self.hour12().am_pm_str();
                 self.cached.am_pm_str = Some(value);
                 value
             }
