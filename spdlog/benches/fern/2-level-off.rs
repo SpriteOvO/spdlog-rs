@@ -17,7 +17,7 @@ fn bench_5_level_off(bencher: &mut Bencher) {
         .format(|out, message, record| {
             out.finish(format_args!(
                 "{}[{}][{}] {}",
-                chrono::Local::now().format("[%Y-%m-%d][%H:%M:%S]"),
+                jiff::Zoned::now().strftime("[%Y-%m-%d][%H:%M:%S]"),
                 record.target(),
                 record.level(),
                 message

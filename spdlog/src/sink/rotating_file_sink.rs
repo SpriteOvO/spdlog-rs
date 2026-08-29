@@ -12,7 +12,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use chrono::prelude::*;
+use jiff::Zoned;
 
 use crate::{
     error::InvalidArgumentError,
@@ -541,37 +541,34 @@ impl RotatorTimePoint {
     // constructor.
     #[must_use]
     fn next_rotation_time_point(time_point: TimePoint, now: SystemTime) -> SystemTime {
-        let now: DateTime<Local> = now.into();
-        let mut rotation_time = now;
+        let now = Zoned::try_from(now).expect("valid system time");
+        let mut rotation_time = now.clone();
 
         match time_point {
             TimePoint::Daily { hour, minute } => {
                 rotation_time = rotation_time
-                    .with_hour(hour)
-                    .unwrap()
-                    .with_minute(minute)
-                    .unwrap()
-                    .with_second(0)
-                    .unwrap()
-                    .with_nanosecond(0)
+                    .with()
+                    .hour(hour as i8)
+                    .minute(minute as i8)
+                    .second(0)
+                    .subsec_nanosecond(0)
+                    .build()
                     .unwrap()
             }
             TimePoint::Hourly => {
                 rotation_time = rotation_time
-                    .with_minute(0)
-                    .unwrap()
-                    .with_second(0)
-                    .unwrap()
-                    .with_nanosecond(0)
+                    .with()
+                    .minute(0)
+                    .second(0)
+                    .subsec_nanosecond(0)
+                    .build()
                     .unwrap()
             }
             TimePoint::Period { .. } => {}
         };
 
         if rotation_time <= now {
-            rotation_time = rotation_time
-                .checked_add_signed(time_point.delta_chrono())
-                .unwrap();
+            rotation_time = rotation_time.checked_add(time_point.delta_std()).unwrap();
         }
         rotation_time.into()
     }
@@ -601,7 +598,7 @@ impl RotatorTimePoint {
         system_time: SystemTime,
     ) -> PathBuf {
         let base_path = base_path.as_ref();
-        let local_time: DateTime<Local> = system_time.into();
+        let local_time = Zoned::try_from(system_time).expect("valid system time");
 
         let mut file_name = base_path
             .file_stem()
@@ -700,15 +697,6 @@ impl TimePoint {
             Self::Daily { .. } => DAY_1,
             Self::Hourly { .. } => HOUR_1,
             Self::Period(duration) => *duration,
-        }
-    }
-
-    #[must_use]
-    fn delta_chrono(&self) -> chrono::Duration {
-        match self {
-            Self::Daily { .. } => chrono::Duration::days(1),
-            Self::Hourly { .. } => chrono::Duration::hours(1),
-            Self::Period(duration) => chrono::Duration::from_std(*duration).unwrap(),
         }
     }
 }
@@ -946,6 +934,8 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
 
 #[cfg(test)]
 mod tests {
+    use jiff::{civil::date, tz::TimeZone};
+
     use super::*;
     use crate::{prelude::*, test_utils::*, Level, Record};
 
@@ -1264,7 +1254,11 @@ mod tests {
 
         #[test]
         fn calc_file_path() {
-            let system_time = Local.with_ymd_and_hms(2012, 3, 4, 5, 6, 7).unwrap().into();
+            let system_time = date(2012, 3, 4)
+                .at(5, 6, 7, 0)
+                .to_zoned(TimeZone::system())
+                .unwrap()
+                .into();
 
             let calc_daily = |base_path| {
                 RotatorTimePoint::calc_file_path(
@@ -1343,12 +1337,12 @@ mod tests {
                     .build_arc()
                     .unwrap();
 
-                let local_time_now = Local::now();
+                let local_time_now = Zoned::now();
                 let daily_sink = RotatingFileSink::builder()
                     .base_path(LOGS_PATH.join("daily.log"))
                     .rotation_policy(RotationPolicy::Daily {
-                        hour: local_time_now.hour(),
-                        minute: local_time_now.minute(),
+                        hour: local_time_now.hour() as u32,
+                        minute: local_time_now.minute() as u32,
                     })
                     .rotate_on_open(rotate_on_open)
                     .build_arc()
@@ -1402,10 +1396,10 @@ mod tests {
 
         #[test]
         fn capacity_takes_effect() {
-            let initial_sys_time: SystemTime = Local
-                .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
+            let initial_sys_time: SystemTime = date(2012, 3, 4)
+                .at(5, 6, 7, 0)
+                .to_zoned(TimeZone::system())
                 .unwrap()
-                .to_utc()
                 .into();
             let after_rotation = initial_sys_time + HOUR_1 + SECOND_1;
 
@@ -1446,8 +1440,9 @@ mod tests {
         fn respect_local_tz() {
             let prefix = "respect_local_tz";
 
-            let initial_time = Local // FixedOffset::east_opt(8 * 3600).unwrap()
-                .with_ymd_and_hms(2024, 8, 29, 11, 45, 14)
+            let initial_time = date(2024, 8, 29)
+                .at(11, 45, 14, 0)
+                .to_zoned(TimeZone::system())
                 .unwrap();
 
             let logger = {
@@ -1455,7 +1450,7 @@ mod tests {
                     .base_path(LOGS_PATH.join(format!("{prefix}.log")))
                     .rotation_policy(RotationPolicy::Daily { hour: 0, minute: 0 })
                     .rotate_on_open(true)
-                    .build_with_initial_time(Some(initial_time.to_utc().into()))
+                    .build_with_initial_time(Some((&initial_time).into()))
                     .unwrap();
 
                 build_test_logger(|b| b.sink(Arc::new(daily_sink)).level_filter(LevelFilter::All))
@@ -1466,7 +1461,7 @@ mod tests {
 
                 assert_files_count(prefix, 1);
 
-                record.set_time(initial_time.to_utc().into());
+                record.set_time((&initial_time).into());
                 logger.log(&record);
                 assert_files_count(prefix, 1);
 
@@ -1480,13 +1475,12 @@ mod tests {
 
                 record.set_time(
                     initial_time
-                        .with_day(30)
+                        .with()
+                        .day(30)
+                        .hour(0)
+                        .minute(1)
+                        .build()
                         .unwrap()
-                        .with_hour(0)
-                        .unwrap()
-                        .with_minute(1)
-                        .unwrap()
-                        .to_utc()
                         .into(),
                 );
                 logger.log(&record);
@@ -1498,13 +1492,12 @@ mod tests {
 
                 record.set_time(
                     initial_time
-                        .with_day(30)
+                        .with()
+                        .day(30)
+                        .hour(8)
+                        .minute(2)
+                        .build()
                         .unwrap()
-                        .with_hour(8)
-                        .unwrap()
-                        .with_minute(2)
-                        .unwrap()
-                        .to_utc()
                         .into(),
                 );
                 logger.log(&record);
@@ -1514,15 +1507,7 @@ mod tests {
                 logger.log(&record);
                 assert_files_count(prefix, 2);
 
-                record.set_time(
-                    initial_time
-                        .with_day(31)
-                        .unwrap()
-                        .with_hour(0)
-                        .unwrap()
-                        .to_utc()
-                        .into(),
-                );
+                record.set_time(initial_time.with().day(31).hour(0).build().unwrap().into());
                 logger.log(&record);
                 assert_files_count(prefix, 3);
 

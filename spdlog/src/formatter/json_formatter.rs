@@ -210,7 +210,7 @@ impl Default for JsonFormatter {
 
 #[cfg(test)]
 mod tests {
-    use chrono::prelude::*;
+    use jiff::Timestamp;
 
     use super::*;
     use crate::{kv, Level, SourceLocation, __EOL};
@@ -223,14 +223,14 @@ mod tests {
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
-        let local_time: DateTime<Local> = record.time().into();
+        let timestamp = Timestamp::try_from(record.time()).unwrap();
 
         assert_eq!(ctx.style_range(), None);
         assert_eq!(
             dest.to_string(),
             format!(
                 r#"{{"level":"info","timestamp":{},"payload":"{}","tid":{}}}{}"#,
-                local_time.timestamp_millis(),
+                timestamp.as_millisecond(),
                 "payload",
                 record.tid(),
                 __EOL
@@ -246,14 +246,14 @@ mod tests {
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
-        let local_time: DateTime<Local> = record.time().into();
+        let timestamp = Timestamp::try_from(record.time()).unwrap();
 
         assert_eq!(ctx.style_range(), None);
         assert_eq!(
             dest.to_string(),
             format!(
                 r#"{{"level":"info","timestamp":{},"payload":"{}","logger":"my-component","tid":{}}}{}"#,
-                local_time.timestamp_millis(),
+                timestamp.as_millisecond(),
                 "payload",
                 record.tid(),
                 __EOL
@@ -275,14 +275,14 @@ mod tests {
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
-        let local_time: DateTime<Local> = record.time().into();
+        let timestamp = Timestamp::try_from(record.time()).unwrap();
 
         assert_eq!(ctx.style_range(), None);
         assert_eq!(
             dest.to_string(),
             format!(
                 r#"{{"level":"info","timestamp":{},"payload":"{}","tid":{},"source":{{"module_path":"module","file":"file.rs","line":1,"column":2}}}}{}"#,
-                local_time.timestamp_millis(),
+                timestamp.as_millisecond(),
                 "payload",
                 record.tid(),
                 __EOL
@@ -302,14 +302,14 @@ mod tests {
         let mut ctx = FormatterContext::new();
         formatter.format(&record, &mut dest, &mut ctx).unwrap();
 
-        let local_time: DateTime<Local> = record.time().into();
+        let timestamp = Timestamp::try_from(record.time()).unwrap();
 
         assert_eq!(ctx.style_range(), None);
         assert_eq!(
             dest.to_string(),
             format!(
                 r#"{{"level":"info","timestamp":{},"payload":"{}","kv":{{"k1":114,"k2":"514"}},"tid":{}}}{}"#,
-                local_time.timestamp_millis(),
+                timestamp.as_millisecond(),
                 "payload",
                 record.tid(),
                 __EOL

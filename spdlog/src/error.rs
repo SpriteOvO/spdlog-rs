@@ -377,8 +377,8 @@ impl ErrorHandler {
             return;
         }
 
-        let date = chrono::Local::now()
-            .format("%Y-%m-%d %H:%M:%S.%3f")
+        let date = jiff::Zoned::now()
+            .strftime("%Y-%m-%d %H:%M:%S.%3f")
             .to_string();
 
         // https://github.com/SpriteOvO/spdlog-rs/discussions/87

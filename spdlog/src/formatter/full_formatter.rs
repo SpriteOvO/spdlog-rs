@@ -349,7 +349,7 @@ impl AutoSpacer {
 
 #[cfg(test)]
 mod tests {
-    use chrono::prelude::*;
+    use jiff::Zoned;
 
     use super::*;
     use crate::{kv, Level, RecordOwned, __EOL};
@@ -372,11 +372,11 @@ mod tests {
             .format(&record, &mut buf, &mut ctx)
             .unwrap();
 
-        let local_time: DateTime<Local> = record.time().into();
+        let local_time = Zoned::try_from(record.time()).unwrap();
         assert_eq!(
             format!(
                 "[{}] [logger] [warn] test log content {{ k1=114 k2=514 }}{}",
-                local_time.format("%Y-%m-%d %H:%M:%S.%3f"),
+                local_time.strftime("%Y-%m-%d %H:%M:%S.%3f"),
                 __EOL
             ),
             buf

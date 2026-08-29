@@ -1,6 +1,6 @@
 use std::{fmt, time::SystemTime};
 
-use chrono::prelude::*;
+use jiff::Zoned;
 use once_cell::sync::Lazy;
 
 use crate::{formatter::FormatterContext, sync::*, Record};
@@ -31,9 +31,33 @@ pub(crate) struct TimeDate<'a> {
     millisecond: u32,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub(crate) enum Hour12 {
+    Am(u32),
+    Pm(u32),
+}
+
+impl Hour12 {
+    #[must_use]
+    pub(crate) fn am_pm_str(&self) -> &'static str {
+        match self {
+            Hour12::Am(_) => "AM",
+            Hour12::Pm(_) => "PM",
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn hour(&self) -> u32 {
+        match self {
+            Hour12::Am(hour) => *hour,
+            Hour12::Pm(hour) => *hour,
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq)]
 struct CacheValues {
-    local_time: DateTime<Local>,
+    local_time: Zoned,
     full_second_str: Option<String>,
     year: Option<i32>,
     year_str: Option<String>,
@@ -46,7 +70,7 @@ struct CacheValues {
     day_str: Option<String>,
     hour: Option<u32>,
     hour_str: Option<String>,
-    hour12: Option<(bool, u32)>,
+    hour12: Option<Hour12>,
     hour12_str: Option<String>,
     am_pm_str: Option<&'static str>,
     minute: Option<u32>,
@@ -99,7 +123,7 @@ macro_rules! impl_cache_fields_getter {
             match self.cached.$field {
                 Some(value) => value,
                 None => {
-                    let value = self.cached.local_time.$field();
+                    let value = self.cached.local_time.$field() as $type;
                     self.cached.$field = Some(value);
                     value
                 }
@@ -143,9 +167,29 @@ impl TimeDate<'_> {
         month: u32,
         day: u32,
         hour: u32,
-        hour12: (bool, u32),
         minute: u32,
         second: u32,
+    }
+
+    #[must_use]
+    pub(crate) fn hour12(&mut self) -> Hour12 {
+        match self.cached.hour12 {
+            Some(value) => value,
+            None => {
+                let hour = self.hour();
+                let value = if hour == 0 {
+                    Hour12::Am(12)
+                } else if hour < 12 {
+                    Hour12::Am(hour)
+                } else if hour == 12 {
+                    Hour12::Pm(12)
+                } else {
+                    Hour12::Pm(hour - 12)
+                };
+                self.cached.hour12 = Some(value);
+                value
+            }
+        }
     }
 
     impl_cache_fields_str_getter! {
@@ -155,7 +199,15 @@ impl TimeDate<'_> {
         hour => hour_str : "{:02}",
         minute => minute_str : "{:02}",
         second => second_str : "{:02}",
-        timestamp => unix_timestamp_str : "{}",
+    }
+
+    #[must_use]
+    pub(crate) fn unix_timestamp_str(&mut self) -> &str {
+        if self.cached.unix_timestamp_str.is_none() {
+            self.cached.unix_timestamp_str =
+                Some(self.cached.local_time.timestamp().as_second().to_string());
+        }
+        self.cached.unix_timestamp_str.as_deref().unwrap()
     }
 
     #[must_use]
@@ -176,7 +228,7 @@ impl TimeDate<'_> {
                     ];
 
                     let weekday_from_monday_0 =
-                        self.cached.local_time.weekday().num_days_from_monday() as usize;
+                        self.cached.local_time.weekday().to_monday_zero_offset() as usize;
 
                     MultiName {
                         short: SHORT[weekday_from_monday_0],
@@ -240,7 +292,7 @@ impl TimeDate<'_> {
     #[must_use]
     pub(crate) fn hour12_str(&mut self) -> &str {
         if self.cached.hour12_str.is_none() {
-            self.cached.hour12_str = Some(format!("{:02}", self.hour12().1));
+            self.cached.hour12_str = Some(format!("{:02}", self.hour12().hour()));
         }
         self.cached.hour12_str.as_deref().unwrap()
     }
@@ -250,7 +302,7 @@ impl TimeDate<'_> {
         match self.cached.am_pm_str {
             Some(value) => value,
             None => {
-                let value = if !self.hour12().0 { "AM" } else { "PM" };
+                let value = self.hour12().am_pm_str();
                 self.cached.am_pm_str = Some(value);
                 value
             }
@@ -269,7 +321,7 @@ impl TimeDate<'_> {
     pub(crate) fn tz_offset_str(&mut self) -> &str {
         if self.cached.tz_offset_str.is_none() {
             self.cached.tz_offset_str = {
-                let offset_secs = self.cached.local_time.offset().local_minus_utc();
+                let offset_secs = self.cached.local_time.offset().seconds();
                 let offset_secs_abs = offset_secs.abs();
 
                 let sign_str = if offset_secs >= 0 { "+" } else { "-" };
@@ -287,7 +339,7 @@ impl CacheValues {
     #[must_use]
     fn new(system_time: SystemTime) -> Self {
         CacheValues {
-            local_time: system_time.into(),
+            local_time: Zoned::try_from(system_time).expect("valid system time"),
             full_second_str: None,
             year: None,
             year_str: None,
@@ -374,14 +426,20 @@ mod tests {
                 break;
             }
             let from_cache = cacher.get(now);
-            let from_chrono = DateTime::<Local>::from(now);
+            let from_jiff = Zoned::try_from(now).unwrap();
 
             assert_eq!(
-                from_cache.cached.local_time.with_nanosecond(0),
-                from_chrono.with_nanosecond(0)
+                from_cache
+                    .cached
+                    .local_time
+                    .with()
+                    .subsec_nanosecond(0)
+                    .build()
+                    .unwrap(),
+                from_jiff.with().subsec_nanosecond(0).build().unwrap()
             );
-            assert_eq!(from_cache.nanosecond, from_chrono.nanosecond());
-            assert_eq!(from_cache.millisecond, from_chrono.nanosecond() / 1_000_000);
+            assert_eq!(from_cache.nanosecond, from_jiff.subsec_nanosecond() as u32);
+            assert_eq!(from_cache.millisecond, from_jiff.millisecond() as u32);
         }
     }
 }

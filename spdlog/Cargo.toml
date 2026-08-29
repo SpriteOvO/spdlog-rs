@@ -53,11 +53,11 @@ log = ["dep:log", "dep:env_filter"]
 arc-swap = "1.5.1"
 atomic = "0.6.1"
 bytemuck = { version = "1.24.0", features = ["derive"] }
-chrono = "0.4.22"
 crossbeam = { version = "0.8.2", optional = true }
 dyn-clone = "1.0.14"
 env_filter = { version = "1", optional = true }
 flexible-string = { version = "0.1.0", optional = true }
+jiff = "0.2.0"
 log = { version = "0.4.21", optional = true, features = ["kv"] }
 once_cell = "1.16.0"
 parking_lot = "0.12.0"
@@ -71,7 +71,7 @@ value-bag = { version = "1.11.1", features = ["owned", "inline-i128"] }
 winapi = { version = "0.3.9", features = ["consoleapi", "debugapi", "handleapi", "processenv", "processthreadsapi", "winbase", "wincon"] }
 
 [target.'cfg(unix)'.dependencies]
-libc = "0.2"
+libc = "0.2.147"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libsystemd-sys = { version = "0.9.3", optional = true }
