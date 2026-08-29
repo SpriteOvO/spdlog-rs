@@ -116,6 +116,7 @@ struct RotatorTimePoint {
     base_path: PathBuf,
     time_point: TimePoint,
     max_files: usize,
+    capacity: Option<usize>,
     inner: Mutex<RotatorTimePointInner>,
 }
 
@@ -508,6 +509,7 @@ impl RotatorTimePoint {
             base_path,
             time_point,
             max_files,
+            capacity,
             inner: Mutex::new(inner),
         };
 
@@ -665,7 +667,7 @@ impl Rotator for RotatorTimePoint {
                 self.time_point,
                 record_time,
             ));
-            inner.file = BufWriter::new(utils::open_file(file_path.as_ref().unwrap(), true)?);
+            inner.file = utils::open_file_bufw(file_path.as_ref().unwrap(), true, self.capacity)?;
             inner.rotation_time_point =
                 Self::next_rotation_time_point(self.time_point, record_time);
         }
@@ -903,7 +905,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 max_size,
                 self.max_files,
                 self.rotate_on_open,
-                None,
+                self.capacity,
             )?),
             RotationPolicy::Daily { hour, minute } => {
                 RotatorKind::TimePoint(RotatorTimePoint::new(
@@ -912,7 +914,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                     TimePoint::Daily { hour, minute },
                     self.max_files,
                     self.rotate_on_open,
-                    None,
+                    self.capacity,
                 )?)
             }
             RotationPolicy::Hourly => RotatorKind::TimePoint(RotatorTimePoint::new(
@@ -921,7 +923,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 TimePoint::Hourly,
                 self.max_files,
                 self.rotate_on_open,
-                None,
+                self.capacity,
             )?),
             RotationPolicy::Period(duration) => RotatorKind::TimePoint(RotatorTimePoint::new(
                 override_now,
@@ -929,7 +931,7 @@ impl RotatingFileSinkBuilder<PathBuf, RotationPolicy> {
                 TimePoint::Period(duration),
                 self.max_files,
                 self.rotate_on_open,
-                None,
+                self.capacity,
             )?),
         };
 
@@ -1171,6 +1173,66 @@ mod tests {
                 )
             );
         }
+
+        #[test]
+        fn capacity_takes_effect() {
+            let logs_path = BASE_LOGS_PATH.join("capacity");
+
+            let record = || Record::new(Level::Info, "hello capacity", None, None, &[]);
+
+            // a large buffer keeps the record in memory until an explicit flush
+            {
+                let base_path = logs_path.join("large.log");
+                _ = fs::remove_file(&base_path);
+
+                let sink = RotatingFileSink::builder()
+                    .base_path(base_path.clone())
+                    .rotation_policy(RotationPolicy::FileSize(1024 * 1024))
+                    .capacity(1024 * 1024)
+                    .build()
+                    .unwrap();
+
+                sink.log(&record()).unwrap();
+                assert_eq!(fs::read_to_string(&base_path).unwrap(), "");
+            }
+
+            // a 1-byte buffer writes the record through to the file immediately
+            {
+                let base_path = logs_path.join("small.log");
+                _ = fs::remove_file(&base_path);
+
+                let sink = RotatingFileSink::builder()
+                    .base_path(base_path.clone())
+                    .rotation_policy(RotationPolicy::FileSize(1024 * 1024))
+                    .capacity(1)
+                    .build()
+                    .unwrap();
+
+                sink.log(&record()).unwrap();
+                assert!(fs::read_to_string(&base_path)
+                    .unwrap()
+                    .contains("hello capacity"));
+            }
+
+            // the capacity must also apply to the file reopened on rotation
+            {
+                let base_path = logs_path.join("rotate.log");
+                _ = fs::remove_file(&base_path);
+
+                let sink = RotatingFileSink::builder()
+                    .base_path(base_path.clone())
+                    // any record longer than 16 bytes triggers a rotation
+                    .rotation_policy(RotationPolicy::FileSize(16))
+                    .capacity(1)
+                    .build()
+                    .unwrap();
+
+                sink.log(&record()).unwrap();
+                assert!(fs::read_to_string(&base_path)
+                    .unwrap()
+                    .contains("hello capacity"));
+            }
+        }
     }
 
     mod policy_time_point {
@@ -1336,6 +1398,47 @@ mod tests {
                 assert_files_count("period", 3);
                 assert_files_count("daily", 2);
             }
+        }
+
+        #[test]
+        fn capacity_takes_effect() {
+            let initial_sys_time: SystemTime = Local
+                .with_ymd_and_hms(2012, 3, 4, 5, 6, 7)
+                .unwrap()
+                .to_utc()
+                .into();
+            let after_rotation = initial_sys_time + HOUR_1 + SECOND_1;
+
+            let base_path = LOGS_PATH.join("capacity.log");
+            let file_of = |sys_time: SystemTime| {
+                RotatorTimePoint::calc_file_path(&base_path, TimePoint::Hourly, sys_time)
+            };
+
+            _ = fs::remove_file(file_of(initial_sys_time));
+            _ = fs::remove_file(file_of(after_rotation));
+
+            let sink = RotatingFileSink::builder()
+                .base_path(base_path.clone())
+                .rotation_policy(RotationPolicy::Hourly)
+                .capacity(1)
+                .build_with_initial_time(Some(initial_sys_time))
+                .unwrap();
+
+            let mut record = Record::new(Level::Info, "hello capacity", None, None, &[]);
+
+            // a 1-byte buffer writes the record through to the file immediately
+            record.set_time(initial_sys_time);
+            sink.log(&record).unwrap();
+            assert!(fs::read_to_string(file_of(initial_sys_time))
+                .unwrap()
+                .contains("hello capacity"));
+
+            // the capacity must also apply to the file opened on rotation
+            record.set_time(after_rotation);
+            sink.log(&record).unwrap();
+            assert!(fs::read_to_string(file_of(after_rotation))
+                .unwrap()
+                .contains("hello capacity"));
         }
 
         // This test may only detect issues if the system time zone is not UTC.
